@@ -144,6 +144,8 @@ groupToDotNode fdt g bId =
                          , toAttr "weight" (pack $ show (g ^. phylo_groupWeight))
                          , toAttr "source" (pack $ show (nub $ g ^. phylo_groupSources))
                          , toAttr "sourceFull" (pack $ show (g ^. phylo_groupSources))
+                         , toAttr "density" (pack $ show (g ^. phylo_groupDensity))
+                         , toAttr "cooc" (pack $ show (g ^. phylo_groupCooc))
                          , toAttr "lbl" (pack $ show (ngramsToLabel fdt (g ^. phylo_groupNgrams)))
                          , toAttr "foundation" (pack $ show (idxToLabel (g ^. phylo_groupNgrams)))
                          , toAttr "role" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "dynamics")))
@@ -432,8 +434,10 @@ branchDating export =
                                       else acc ) [] $ export ^. export_groups
             periods = nub groups
             birth = fst $ head' "birth" groups
-            age   = (snd $ last' "age"  groups) - birth
+            death = snd $ last' "death" groups
+            age   = death - birth
         in b & branch_meta %~ insert "birth" [fromIntegral birth]
+             & branch_meta %~ insert "death" [fromIntegral death]
              & branch_meta %~ insert "age"   [fromIntegral age]
              & branch_meta %~ insert "size"  [fromIntegral $ length periods] ) export
 

@@ -34,6 +34,7 @@ import Gargantext.Core.Viz.Phylo.TemporalMatching (toPhyloQuality, temporalMatch
 import Gargantext.Prelude
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Vector as Vector
 
@@ -191,7 +192,7 @@ findSeaLadder phylo = case getSeaElevation phylo of
                    in acc ++ (concat pairs')
                ) [] $ keys $ phylo ^. phylo_periods
 
-appendGroups :: (a -> Period -> (Text,Text) -> Scale -> Int -> [Cooc] -> PhyloGroup) -> Scale -> Map (Date,Date) [a] -> Phylo -> Phylo
+appendGroups :: (a -> Period -> (Text,Text) -> Scale -> Int -> [Cooc] ->  Map Int Double -> PhyloGroup) -> Scale -> Map (Date,Date) [a] -> Phylo -> Phylo
 appendGroups f lvl m phylo =  trace ("\n" <> "-- | Append " <> show (length $ concat $ elems m) <> " groups to Level " <> show (lvl) <> "\n")
     $ over ( phylo_periods
            .  traverse
@@ -206,23 +207,28 @@ appendGroups f lvl m phylo =  trace ("\n" <> "-- | Append " <> show (length $ co
                               & phylo_scaleGroups .~ (fromList $ foldl (\groups obj ->
                                     groups ++ [ (((pId,lvl),length groups)
                                               , f obj pId pId' lvl (length groups)
-                                                  (elems $ restrictKeys (getCoocByDate phylo) $ periodsToYears [pId]))
+                                                  -- select the cooc of the periods
+                                                  (elems $ restrictKeys (getCoocByDate phylo) $ periodsToYears [pId])
+                                                  -- select and merge the roots count of the periods
+                                                  (foldl (\acc count -> unionWith (+) acc count) empty 
+                                                    $ elems $ restrictKeys (getRootsCountByDate phylo) $ periodsToYears [pId]))
                                               ] ) [] phyloCUnit)
                          else 
                             phyloLvl )
            phylo  
 
 
-clusterToGroup :: Clustering -> Period -> (Text,Text) -> Scale ->  Int -> [Cooc] -> PhyloGroup
-clusterToGroup fis pId pId' lvl idx coocs = PhyloGroup pId pId' lvl idx ""
+clusterToGroup :: Clustering -> Period -> (Text,Text) -> Scale ->  Int -> [Cooc] -> Map Int Double -> PhyloGroup
+clusterToGroup fis pId pId' lvl idx coocs rootsCount = PhyloGroup pId pId' lvl idx ""
                    (fis ^. clustering_support )
                    (fis ^. clustering_visWeighting)
                    (fis ^. clustering_visFiltering)
                    (fis ^. clustering_roots)
                    (ngramsToCooc (fis ^. clustering_roots) coocs)
+                   (ngramsToDensity (fis ^. clustering_roots) coocs rootsCount)
                    (1,[0]) -- branchid (lvl,[path in the branching tree])
                    (fromList [("breaks",[0]),("seaLevels",[0])])
-                   [] [] [] [] [] [] []
+                   rootsCount [] [] [] [] [] [] []
 
 
 -----------------------
@@ -447,6 +453,16 @@ docsToTermCount docs roots = fromList
 
 
 
+docsToTimeTermCount :: [Document] -> Vector Ngrams  -> (Map Date (Map Int Double))
+docsToTimeTermCount docs roots = 
+    let docs' = Map.map (\l -> fromList $ map (\lst -> (head' "docsToTimeTermCount" lst, fromIntegral $ length lst))
+                             $ group $ sort l)
+              $ fromListWith (++)
+              $ map (\d -> (date d, nub $ ngramsToIdx (text d) roots)) docs
+        time  = fromList $ map (\t -> (t,Map.empty)) $ toTimeScale (keys docs') 1
+     in unionWith (Map.union) time docs'
+
+
 docsToLastTermFreq :: Int -> [Document] -> Vector Ngrams -> Map Int Double
 docsToLastTermFreq n docs fdt = 
   let last   = take n $ reverse $ sort $ map date docs
@@ -497,6 +513,7 @@ initPhylo docs conf =
         docsSources = PhyloSources (Vector.fromList $ nub $ concat $ map sources docs)
         docsCounts  = PhyloCounts (docsToTimeScaleCooc docs (foundations ^. foundations_roots))
                              (docsToTimeScaleNb docs)
+                             (docsToTimeTermCount docs (foundations ^. foundations_roots))
                              (docsToTermCount docs (foundations ^. foundations_roots))
                              (docsToTermFreq docs (foundations ^. foundations_roots))
                              (docsToLastTermFreq (getTimePeriod $ timeUnit conf) docs (foundations ^. foundations_roots))                             

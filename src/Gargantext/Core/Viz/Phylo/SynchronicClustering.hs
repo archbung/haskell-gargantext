@@ -16,7 +16,7 @@ import Control.Lens hiding (Level)
 import Control.Monad (sequence)
 import Control.Parallel.Strategies (parList, rdeepseq, using)
 import Data.List ((++), null, intersect, nub, concat, sort, sortOn, groupBy)
-import Data.Map  (Map, fromList, fromListWith, foldlWithKey, (!), insert, empty, restrictKeys, elems, mapWithKey, member)
+import Data.Map  (Map, fromList, fromListWith, foldlWithKey, (!), insert, empty, restrictKeys, elems, mapWithKey, member, unionWith)
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.PhyloExport (processDynamics)
 import Gargantext.Core.Viz.Phylo.PhyloTools
@@ -32,6 +32,7 @@ import qualified Data.Map as Map
 mergeGroups :: [Cooc] -> PhyloGroupId -> Map PhyloGroupId PhyloGroupId -> [PhyloGroup] -> PhyloGroup
 mergeGroups coocs id mapIds childs = 
     let ngrams = (sort . nub . concat) $ map _phylo_groupNgrams childs
+        counts = foldl (\acc count -> unionWith (+) acc count) empty $ map _phylo_groupRootsCount childs
     in PhyloGroup (fst $ fst id) (_phylo_groupPeriod' $ head' "mergeGroups" childs)
                   (snd $ fst id) (snd id) ""
                   (sum $ map _phylo_groupSupport childs) 
@@ -40,8 +41,12 @@ mergeGroups coocs id mapIds childs =
                   (concat $ map _phylo_groupSources childs) 
                   ngrams
                   (ngramsToCooc ngrams coocs) 
+                  (ngramsToDensity ngrams coocs counts)
+                  -- todo add density here
                   ((snd $ fst id),bId)
-                  (mergeMeta bId childs) [] (map (\g -> (getGroupId g, 1)) childs)
+                  (mergeMeta bId childs)
+                  counts 
+                  [] (map (\g -> (getGroupId g, 1)) childs)
                   (updatePointers $ concat $ map _phylo_groupPeriodParents childs)
                   (updatePointers $ concat $ map _phylo_groupPeriodChilds  childs)
                   (mergeAncestors $ concat $ map _phylo_groupAncestors childs)
