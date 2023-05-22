@@ -13,11 +13,12 @@ commentary with @some markup@.
 
 ------------------------------------------------------------------------
 {-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE DerivingStrategies   #-}
 
 module Gargantext.Core.Types ( module Gargantext.Core.Types.Main
                              , module Gargantext.Database.Admin.Types.Node
                              , DebugMode(..), withDebugMode
-                             , Term, Terms(..), TermsCount, TermsWithCount
+                             , Term(..), Terms(..), TermsCount, TermsWithCount
                              , TokenTag(..), POS(..), NER(..)
                              , Label, Stems
                              , HasInvalidError(..), assertValid
@@ -38,6 +39,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Semigroup
 import Data.Set (Set, empty)
+import Data.String
 import Data.Swagger (ToParamSchema)
 import Data.Swagger (ToSchema(..))
 import Data.Text (Text, unpack)
@@ -63,7 +65,10 @@ data Ordering = Down | Up
 
 ------------------------------------------------------------------------
 type Name = Text
-type Term  = Text
+
+newtype Term = Term { getTerm :: Text }
+  deriving newtype (IsString, Show)
+
 type Stems = Set Text
 type Label = [Text]
 

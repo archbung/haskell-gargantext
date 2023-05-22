@@ -37,6 +37,7 @@ extra-deps:
 - HSvm-0.1.1.3.22
 - hsparql-0.3.8
 - ghc-clippy-plugin-0.0.0.1
+- boolexpr-0.2
 
   #- git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude.git
 #  commit: 791c2a7046a3760f8ae5fabdbd708f61caa63741

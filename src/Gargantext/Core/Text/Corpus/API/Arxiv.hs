@@ -10,34 +10,41 @@ Portability : POSIX
 -}
 
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-top-binds #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.Core.Text.Corpus.API.Arxiv
     where
 
 import Conduit
-import Data.Either (Either(..))
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Servant.Client (ClientError)
 
 import Gargantext.Prelude
 import Gargantext.Core (Lang(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Core.Text.Corpus.Query as Corpus
 
 import qualified Arxiv as Arxiv
 import qualified Network.Api.Arxiv as Ax
 
 
-type Query = Text
-type Limit = Arxiv.Limit
+-- | Converts a Gargantext's generic boolean query into an Arxiv Query.
+convertQuery :: Corpus.Query -> Ax.Query
+convertQuery _q = undefined
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs
-get :: Lang -> Query -> Maybe Limit -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get la q _l = do
-  (cnt, resC) <- Arxiv.apiSimpleC Nothing [Text.unpack q]
-  pure $ Right (Just $ fromIntegral cnt, resC .| mapC (toDoc la))
+get :: Lang
+    -> Corpus.Query
+    -> Maybe Arxiv.Limit
+    -> IO (Maybe Integer, ConduitT () HyperdataDocument IO ())
+get la (convertQuery -> query) limit = do
+  (cnt, resC) <- case limit of
+    Nothing  -> Arxiv.searchAxv' query
+    (Just l) -> do (cnt, res) <- Arxiv.searchAxv' query
+                   pure (cnt, res .| takeC l)
+  pure $ (Just $ fromIntegral cnt, resC .| mapC (toDoc la))
 
 toDoc :: Lang -> Arxiv.Result -> HyperdataDocument
 toDoc l (Arxiv.Result { abstract

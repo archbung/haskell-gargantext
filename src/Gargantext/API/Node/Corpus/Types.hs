@@ -11,7 +11,7 @@ import GHC.Generics (Generic)
 
 import Gargantext.Prelude
 
-import qualified Gargantext.API.Admin.Orchestrator.Types as T
+import qualified Gargantext.API.Admin.Orchestrator.Types as Types
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (DataOrigin(..))
 
@@ -28,12 +28,12 @@ instance ToSchema Database where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 database2origin :: Database -> DataOrigin
-database2origin Empty   = InternalOrigin T.IsTex
-database2origin PubMed  = ExternalOrigin T.PubMed
-database2origin Arxiv   = ExternalOrigin T.Arxiv
-database2origin HAL     = ExternalOrigin T.HAL
-database2origin IsTex   = ExternalOrigin T.IsTex
-database2origin Isidore = ExternalOrigin T.Isidore
+database2origin Empty   = InternalOrigin Types.IsTex
+database2origin PubMed  = ExternalOrigin Types.PubMed
+database2origin Arxiv   = ExternalOrigin Types.Arxiv
+database2origin HAL     = ExternalOrigin Types.HAL
+database2origin IsTex   = ExternalOrigin Types.IsTex
+database2origin Isidore = ExternalOrigin Types.Isidore
 
 ------------------------------------------------------------------------
 data Datafield = Gargantext

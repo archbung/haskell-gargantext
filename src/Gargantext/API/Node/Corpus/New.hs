@@ -65,6 +65,7 @@ import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
 import qualified Gargantext.Database.GargDB as GargDB
+
 ------------------------------------------------------------------------
 {-
 data Query = Query { query_query      :: Text
@@ -136,7 +137,7 @@ info = ApiInfo API.externalAPIs
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 data WithQuery = WithQuery
-  { _wq_query        :: !Text
+  { _wq_query        :: !API.RawQuery
   , _wq_databases    :: !Database
   , _wq_datafield    :: !(Maybe Datafield)
   , _wq_lang         :: !Lang
@@ -182,7 +183,7 @@ addToCorpusWithQuery :: (FlowCmdM env err m, MonadJobStatus m)
                        => User
                        -> CorpusId
                        -> WithQuery
-                       -> Maybe Integer
+                       -> Maybe API.Limit
                        -> JobHandle m
                        -> m ()
 addToCorpusWithQuery user cid (WithQuery { _wq_query = q

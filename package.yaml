@@ -81,6 +81,7 @@ library:
   - Gargantext.Core.Text
   - Gargantext.Core.Text.Context
   - Gargantext.Core.Text.Corpus.API
+  - Gargantext.Core.Text.Corpus.Query
   - Gargantext.Core.Text.Corpus.Parsers
   - Gargantext.Core.Text.Corpus.Parsers.CSV
   - Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
@@ -166,6 +167,7 @@ library:
   - blaze-html
   - blaze-markup
   - blaze-svg
+  - boolexpr
   - bytestring
   - case-insensitive
   - cassava

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Gargantext.API.Admin.Orchestrator.Types
   where
@@ -34,8 +34,7 @@ instance Arbitrary a => Arbitrary (JobOutput a) where
 
 -- | Main Types
 -- TODO IsidoreAuth
-data ExternalAPIs = All
-                  | PubMed
+data ExternalAPIs = PubMed
                   | Arxiv
                   | HAL
                   | IsTex

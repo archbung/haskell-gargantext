@@ -64,7 +64,6 @@ import Data.Swagger
 import qualified Data.Text as T
 import Data.Tuple.Extra (first, second)
 import GHC.Generics (Generic)
-import Servant.Client (ClientError)
 import System.FilePath (FilePath)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
@@ -151,9 +150,9 @@ printDataText (DataNew (maybeInt, conduitData)) = do
 getDataText :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
             -> Maybe API.Limit
-            -> m (Either ClientError DataText)
+            -> m (Either API.GetCorpusError DataText)
 getDataText (ExternalOrigin api) la q li = do
   cfg  <- view $ hasConfig
   eRes <- liftBase $ API.get cfg api (_tt_lang la) q li
@@ -164,13 +163,13 @@ getDataText (InternalOrigin _) _la q _li = do
                                            (UserName userMaster)
                                            (Left "")
                                            (Nothing :: Maybe HyperdataCorpus)
-  ids <-  map fst <$> searchDocInDatabase cId (stemIt q)
+  ids <-  map fst <$> searchDocInDatabase cId (stemIt $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
 getDataText_Debug :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
             -> Maybe API.Limit
             -> m ()
 getDataText_Debug a l q li = do

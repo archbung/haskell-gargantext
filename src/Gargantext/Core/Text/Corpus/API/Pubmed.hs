@@ -11,6 +11,7 @@ Portability : POSIX
 
 
 module Gargantext.Core.Text.Corpus.API.Pubmed
+    ( get )
     where
 
 import Conduit
@@ -31,7 +32,7 @@ import PUBMED.Types (Config(..))
 
 
 type Query = Text
-type Limit = Integer
+type Limit = Int
 
 
 -- | TODO put default pubmed query in gargantext.ini
