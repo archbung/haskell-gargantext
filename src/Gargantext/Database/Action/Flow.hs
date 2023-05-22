@@ -50,7 +50,6 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
 
 import Conduit
 import Control.Lens ((^.), view, _Just, makeLenses, over, traverse)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson.TH (deriveJSON)
 import Data.Conduit.Internal (zipSources)
 import qualified Data.Conduit.List as CList
@@ -133,13 +132,8 @@ deriveJSON (unPrefix "_do_") ''DataOrigin
 instance ToSchema DataOrigin where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_do_")
 
-allDataOrigins :: ( MonadReader env m
-                  , HasConfig env) => m [DataOrigin]
-allDataOrigins = do
-  ext <- API.externalAPIs
-
-  pure $ map InternalOrigin ext
-      <> map ExternalOrigin ext
+allDataOrigins :: [DataOrigin]
+allDataOrigins = map InternalOrigin API.externalAPIs <> map ExternalOrigin API.externalAPIs
 
 ---------------
 data DataText = DataOld ![NodeId]
@@ -160,8 +154,9 @@ getDataText :: FlowCmdM env err m
             -> API.Query
             -> Maybe API.Limit
             -> m (Either ClientError DataText)
-getDataText (ExternalOrigin api) la q li = liftBase $ do
-  eRes <- API.get api (_tt_lang la) q li
+getDataText (ExternalOrigin api) la q li = do
+  cfg  <- view $ hasConfig
+  eRes <- liftBase $ API.get cfg api (_tt_lang la) q li
   pure $ DataNew <$> eRes
 
 getDataText (InternalOrigin _) _la q _li = do

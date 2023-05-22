@@ -36,12 +36,12 @@ type Limit = Integer
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs
-get :: Maybe Text
+get :: Text
     -> Query
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get mAPIKey q l = do
-  eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = mAPIKey
+get apiKey q l = do
+  eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = Just apiKey
                                                      , query   = q
                                                      , perPage = Just 200
                                                      , mWebEnv = Nothing })
