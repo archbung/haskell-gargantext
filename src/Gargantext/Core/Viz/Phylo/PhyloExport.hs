@@ -66,50 +66,58 @@ toAttr :: AttributeName -> Lazy.Text -> CustomAttribute
 toAttr k v = customAttribute k v
 
 metaToAttr :: Map Text.Text [Double] -> [CustomAttribute]
-metaToAttr meta = map (\(k,v) -> toAttr (fromStrict k) $ (pack . unwords) $ map show v) $ toList meta
+metaToAttr meta = map (\(k, v) -> toAttr (fromStrict k) $ (pack . unwords) $ map show v) $ toList meta
 
 groupIdToDotId :: PhyloGroupId -> DotId
-groupIdToDotId (((d,d'),lvl),idx) = (fromStrict . Text.pack) $ ("group" <> (show d) <> (show d') <> (show lvl) <> (show idx))
+groupIdToDotId (((d, d'), lvl), idx) =
+  (fromStrict . Text.pack) $ "group" <> show d <> show d' <> show lvl <> show idx
 
 branchIdToDotId :: PhyloBranchId -> DotId
-branchIdToDotId bId = (fromStrict . Text.pack) $ ("branch" <> show (snd bId))
+branchIdToDotId bId = (fromStrict . Text.pack) $ "branch" <> show (snd bId)
 
 periodIdToDotId :: Period -> DotId
-periodIdToDotId prd = (fromStrict . Text.pack) $ ("period" <> show (fst prd) <> show (snd prd))
+periodIdToDotId prd = (fromStrict . Text.pack) $ "period" <> show (fst prd) <> show (snd prd)
 
 groupToTable :: Vector Ngrams -> PhyloGroup -> H.Label
-groupToTable fdt g = H.Table H.HTable
-                    { H.tableFontAttrs = Just [H.PointSize 14, H.Align H.HLeft]
-                    , H.tableAttrs = [H.Border 0, H.CellBorder 0, H.BGColor (toColor White)]
-                    , H.tableRows = [header]
-                                 <> [H.Cells [H.LabelCell [H.Height 10] $ H.Text [H.Str $ fromStrict ""]]]
-                                 <> ( map ngramsToRow $ splitEvery 4
-                                    $ reverse $ sortOn (snd . snd)
-                                    $ zip (ngramsToText fdt (g ^. phylo_groupNgrams))
-                                    $ zip ((g ^. phylo_groupMeta) ! "dynamics") ((g ^. phylo_groupMeta) ! "inclusion"))}
+groupToTable fdt g =
+  H.Table H.HTable
+  { H.tableFontAttrs = Just [H.PointSize 14, H.Align H.HLeft]
+  , H.tableAttrs = [H.Border 0, H.CellBorder 0, H.BGColor (toColor White)]
+  , H.tableRows = [header]
+                  <> [H.Cells [H.LabelCell [H.Height 10] $ H.Text [H.Str $ fromStrict ""]]]
+                  <> ( map ngramsToRow $ splitEvery 4
+                       $ reverse $ sortOn (snd . snd)
+                       $ zip (ngramsToText fdt (g ^. phylo_groupNgrams))
+                       $ zip ((g ^. phylo_groupMeta) ! "dynamics") ((g ^. phylo_groupMeta) ! "inclusion"))}
     where
-        --------------------------------------
-        ngramsToRow :: [(Ngrams, (Double, Double))] -> H.Row
-        ngramsToRow ns = H.Cells $ map (\(n,(d,_)) ->
-                            H.LabelCell [ H.Align H.HLeft
-                                        , dynamicToColor $ floor d] $ H.Text [H.Str $ fromStrict n]) ns
-        --------------------------------------
-        header :: H.Row
-        header =
-            H.Cells [ H.LabelCell [pickLabelColor $ floor <$> ((g ^. phylo_groupMeta) ! "dynamics")]
-                    $ H.Text [H.Str $ ((fromStrict . Text.toUpper) $ g ^. phylo_groupLabel)
-                                   <> fromStrict " ( "
-                                   <> (pack $ show (fst $ g ^. phylo_groupPeriod))
-                                   <> fromStrict " , "
-                                   <> (pack $ show (snd $ g ^. phylo_groupPeriod))
-                                   <> fromStrict " ) "
-                                   <> (pack $ show (getGroupId g))]]
+      --------------------------------------
+      ngramsToRow :: [(Ngrams, (Double, Double))] -> H.Row
+      ngramsToRow ns =
+        H.Cells $ map (\(n, (d, _)) ->
+                          H.LabelCell [ H.Align H.HLeft
+                                      , dynamicToColor $ floor d] $ H.Text [H.Str $ fromStrict n]) ns
+      --------------------------------------
+      header :: H.Row
+      header =
+        H.Cells [ H.LabelCell [pickLabelColor $ floor <$> ((g ^. phylo_groupMeta) ! "dynamics")]
+                  $ H.Text [H.Str $ ((fromStrict . Text.toUpper) $ g ^. phylo_groupLabel)
+                             <> fromStrict " ( "
+                             <> (pack $ show (fst $ g ^. phylo_groupPeriod))
+                             <> fromStrict " , "
+                             <> (pack $ show (snd $ g ^. phylo_groupPeriod))
+                             <> fromStrict " ) "
+                             <> (pack $ show (getGroupId g))]]
         --------------------------------------
 
 branchToDotNode :: PhyloBranch -> Int -> Dot DotId
 branchToDotNode b bId =
     node (branchIdToDotId $ b ^. branch_id)
-         ([FillColor [toWColor CornSilk], FontName "Arial", FontSize 40, Shape Egg, Style [SItem Bold []], Label (toDotLabel $ b ^. branch_label)]
+         ( [ FillColor [toWColor CornSilk]
+           , FontName "Arial"
+           , FontSize 40
+           , Shape Egg
+           , Style [SItem Bold []]
+           , Label (toDotLabel $ b ^. branch_label) ]
          <> (metaToAttr $ b ^. branch_meta)
          <> [ toAttr "nodeType" "branch"
             , toAttr "bId"      (pack $ show bId)
@@ -121,37 +129,42 @@ branchToDotNode b bId =
 
 periodToDotNode :: (Date,Date) -> (Text.Text,Text.Text) -> Dot DotId
 periodToDotNode prd prd' =
-    node (periodIdToDotId prd)
-         ([Shape BoxShape, FontSize 50, Label (toDotLabel $ Text.pack (show (fst prd) <> " " <> show (snd prd)))]
+    node (periodIdToDotId prd) $
+         [ Shape BoxShape
+         , FontSize 50
+         , Label $ toDotLabel $ Text.pack $ show (fst prd) <> " " <> show (snd prd) ]
          <> [ toAttr "nodeType" "period"
-            , toAttr "strFrom" (fromStrict $ Text.pack $ (show $ fst prd'))
-            , toAttr "strTo"   (fromStrict $ Text.pack $ (show $ snd prd'))
-            , toAttr "from" (fromStrict $ Text.pack $ (show $ fst prd))
-            , toAttr "to"   (fromStrict $ Text.pack $ (show $ snd prd))])
+            , toAttr "strFrom" $ fromStrict $ Text.pack $ show $ fst prd'
+            , toAttr "strTo"   $ fromStrict $ Text.pack $ show $ snd prd'
+            , toAttr "from" $ fromStrict $ Text.pack $ show $ fst prd
+            , toAttr "to"   $ fromStrict $ Text.pack $ show $ snd prd ]
 
 
 groupToDotNode :: Vector Ngrams -> PhyloGroup -> Int -> Dot DotId
 groupToDotNode fdt g bId =
     node (groupIdToDotId $ getGroupId g)
-                     ([FontName "Arial", Shape Square, penWidth 4,  toLabel (groupToTable fdt g)]
-                      <> [ toAttr "nodeType" "group"
-                         , toAttr "gid" (groupIdToDotId $ getGroupId g)
-                         , toAttr "from" (pack $ show (fst $ g ^. phylo_groupPeriod))
-                         , toAttr "to"   (pack $ show (snd $ g ^. phylo_groupPeriod))
-                         , toAttr "strFrom" (pack $ show (fst $ g ^. phylo_groupPeriod'))
-                         , toAttr "strTo"   (pack $ show (snd $ g ^. phylo_groupPeriod'))
-                         , toAttr "branchId" (pack $ unwords (init $ map show $ snd $ g ^. phylo_groupBranchId))
-                         , toAttr "bId" (pack $ show bId)
-                         , toAttr "support" (pack $ show (g ^. phylo_groupSupport))
-                         , toAttr "weight" (pack $ show (g ^. phylo_groupWeight))
-                         , toAttr "source" (pack $ show (nub $ g ^. phylo_groupSources))
-                         , toAttr "sourceFull" (pack $ show (g ^. phylo_groupSources))
-                         , toAttr "lbl" (pack $ show (ngramsToLabel fdt (g ^. phylo_groupNgrams)))
-                         , toAttr "foundation" (pack $ show (idxToLabel (g ^. phylo_groupNgrams)))
-                         , toAttr "role" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "dynamics")))
-                         , toAttr "frequence" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "frequence")))
-                         , toAttr "seaLvl" (pack $ show ((g ^. phylo_groupMeta) ! "seaLevels"))
-                         ])
+    ( [ FontName "Arial"
+      , Shape Square
+      , penWidth 4
+      , toLabel (groupToTable fdt g) ]
+      <> [ toAttr "nodeType" "group"
+         , toAttr "gid" (groupIdToDotId $ getGroupId g)
+         , toAttr "from" (pack $ show (fst $ g ^. phylo_groupPeriod))
+         , toAttr "to"   (pack $ show (snd $ g ^. phylo_groupPeriod))
+         , toAttr "strFrom" (pack $ show (fst $ g ^. phylo_groupPeriod'))
+         , toAttr "strTo"   (pack $ show (snd $ g ^. phylo_groupPeriod'))
+         , toAttr "branchId" (pack $ unwords (init $ map show $ snd $ g ^. phylo_groupBranchId))
+         , toAttr "bId" (pack $ show bId)
+         , toAttr "support" (pack $ show (g ^. phylo_groupSupport))
+         , toAttr "weight" (pack $ show (g ^. phylo_groupWeight))
+         , toAttr "source" (pack $ show (nub $ g ^. phylo_groupSources))
+         , toAttr "sourceFull" (pack $ show (g ^. phylo_groupSources))
+         , toAttr "lbl" (pack $ show (ngramsToLabel fdt (g ^. phylo_groupNgrams)))
+         , toAttr "foundation" (pack $ show (idxToLabel (g ^. phylo_groupNgrams)))
+         , toAttr "role" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "dynamics")))
+         , toAttr "frequence" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "frequence")))
+         , toAttr "seaLvl" (pack $ show ((g ^. phylo_groupMeta) ! "seaLevels"))
+         ])
 
 
 toDotEdge' :: DotId -> DotId -> [Char] -> [Char] -> EdgeType -> Dot DotId
@@ -598,7 +611,13 @@ getGroupThr step g =
         breaks = (g ^. phylo_groupMeta) ! "breaks"
      in (last' "export" (take (round $ (last' "export" breaks) + 1) seaLvl)) - step
 
-toAncestor :: Double -> Map Int Double -> PhyloSimilarity -> Double -> [PhyloGroup] -> PhyloGroup -> PhyloGroup
+toAncestor :: Double
+           -> Map Int Double
+           -> PhyloSimilarity
+           -> Double
+           -> [PhyloGroup]
+           -> PhyloGroup
+           -> PhyloGroup
 toAncestor nbDocs diago similarity step candidates ego =
   let curr = ego ^. phylo_groupAncestors
    in ego & phylo_groupAncestors .~ (curr ++ (map (\(g,w) -> (getGroupId g,w))
@@ -607,7 +626,13 @@ toAncestor nbDocs diago similarity step candidates ego =
          $ filter (\g -> g ^. phylo_groupBranchId /= ego ^. phylo_groupBranchId ) candidates))
 
 
-headsToAncestors :: Double -> Map Int Double -> PhyloSimilarity -> Double -> [PhyloGroup] -> [PhyloGroup] -> [PhyloGroup]
+headsToAncestors :: Double
+                 -> Map Int Double
+                 -> PhyloSimilarity
+                 -> Double
+                 -> [PhyloGroup]
+                 -> [PhyloGroup]
+                 -> [PhyloGroup]
 headsToAncestors nbDocs diago similarity step heads acc =
   if (null heads)
     then acc

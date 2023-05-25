@@ -66,7 +66,7 @@ data SeaElevation =
     | Adaptative
       { _adap_steps :: Double }
     | Evolving
-      { _evol_neighborhood :: Bool }      
+      { _evol_neighborhood :: Bool }
     deriving (Show,Generic,Eq)
 
 instance ToSchema SeaElevation
@@ -78,8 +78,8 @@ data PhyloSimilarity =
     | WeightedLogSim
       { _wls_sensibility     :: Double
       , _wls_minSharedNgrams :: Int }
-    | Hamming 
-      { _hmg_sensibility     :: Double 
+    | Hamming
+      { _hmg_sensibility     :: Double
       , _hmg_minSharedNgrams :: Int}
 
     deriving (Show,Generic,Eq)
@@ -207,7 +207,7 @@ data PhyloSubConfig =
 
 
 subConfig2config :: PhyloSubConfig -> PhyloConfig
-subConfig2config subConfig = defaultConfig { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 1 
+subConfig2config subConfig = defaultConfig { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 1
                                            , phyloSynchrony = ByProximityThreshold (_sc_phyloSynchrony subConfig) 0 AllBranches MergeAllGroups
                                            , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 1
                                            , timeUnit       = _sc_timeUnit       subConfig
@@ -429,7 +429,6 @@ data Phylo =
 
 instance ToSchema Phylo where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_phylo_")
-
 
 ----------------
 -- | Period | --

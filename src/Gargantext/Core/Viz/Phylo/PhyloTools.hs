@@ -172,11 +172,11 @@ toLstDate ds = snd
 
 getTimeScale :: Phylo -> [Char]
 getTimeScale p = case (timeUnit $ getConfig p) of
-    Epoch _ _ _ -> "epoch"
-    Year  _ _ _ -> "year"
-    Month _ _ _ -> "month"
-    Week  _ _ _ -> "week"
-    Day   _ _ _ -> "day"
+    Epoch {} -> "epoch"
+    Year  {} -> "year"
+    Month {} -> "month"
+    Week  {} -> "week"
+    Day   {} -> "day"
 
 
 -- | Get a regular & ascendante timeScale from a given list of dates
@@ -188,27 +188,27 @@ toTimeScale dates step =
 
 getTimeStep :: TimeUnit -> Int
 getTimeStep time = case time of
-    Epoch _ s _ -> s
-    Year  _ s _ -> s
-    Month _ s _ -> s
-    Week  _ s _ -> s
-    Day   _ s _ -> s
+    Epoch { .. } -> _epoch_step
+    Year  { .. } -> _year_step
+    Month { .. } -> _month_step
+    Week  { .. } -> _week_step
+    Day   { .. } -> _day_step
 
 getTimePeriod :: TimeUnit -> Int
 getTimePeriod time = case time of
-    Epoch p _ _ -> p
-    Year  p _ _ -> p
-    Month p _ _ -> p
-    Week  p _ _ -> p
-    Day   p _ _ -> p
+    Epoch { .. } -> _epoch_period
+    Year  { .. } -> _year_period
+    Month { .. } -> _month_period
+    Week  { .. } -> _week_period
+    Day   { .. } -> _day_period
 
 getTimeFrame :: TimeUnit -> Int
 getTimeFrame time = case time of
-    Epoch _ _ f -> f
-    Year  _ _ f -> f
-    Month _ _ f -> f
-    Week  _ _ f -> f
-    Day   _ _ f -> f
+    Epoch { .. } -> _epoch_matchingFrame
+    Year  { .. } -> _year_matchingFrame
+    Month { .. } -> _month_matchingFrame
+    Week  { .. } -> _week_matchingFrame
+    Day   { .. } -> _day_matchingFrame
 
 -------------
 -- | Fis | --
@@ -220,7 +220,7 @@ isNested :: Eq a => [a] -> [a] -> Bool
 isNested l l'
   | null l'               = True
   | length l' > length l  = False
-  | (union  l l') == l    = True
+  | union  l l' == l      = True
   | otherwise             = False
 
 
@@ -251,8 +251,8 @@ traceSupport mFis = foldl (\msg cpt -> msg <> show (countSup cpt supports) <> " 
 
 traceFis :: [Char] -> Map (Date, Date) [Clustering] -> Map (Date, Date) [Clustering]
 traceFis msg mFis = trace ( "\n" <> "-- | " <> msg <> " : " <> show (sum $ map length $ elems mFis) <> "\n"
-                         <> "Support : " <> (traceSupport mFis) <> "\n"
-                         <> "Nb Ngrams : "  <> (traceClique mFis)  <> "\n" ) mFis
+                         <> "Support : " <> traceSupport mFis <> "\n"
+                         <> "Nb Ngrams : "  <> traceClique mFis  <> "\n" ) mFis
 
 
 ----------------
@@ -323,7 +323,7 @@ findMaxima lst = map (hasMax) $ toChunk 3 lst
     where
         ------
         hasMax :: [(Double,Double)] -> Bool
-        hasMax chunk = 
+        hasMax chunk =
             if (length chunk) /= 3
                 then False
                 else (snd(chunk !! 0) < snd(chunk !! 1)) && (snd(chunk !! 2) < snd(chunk !! 1))
@@ -331,7 +331,7 @@ findMaxima lst = map (hasMax) $ toChunk 3 lst
 
 -- | split a list into chunks of size n
 toChunk :: Int -> [a] -> [[a]]
-toChunk n = takeWhile ((== n) . length) . transpose . take n . iterate tail      
+toChunk n = takeWhile ((== n) . length) . transpose . take n . iterate tail
 
 
 -- | To compute the average degree from a cooc matrix
@@ -343,7 +343,7 @@ toAverageDegree cooc roots = 2 * (fromIntegral $ Map.size cooc) / (fromIntegral 
 -- | Use the giant component regime to estimate the default level
 --   http://networksciencebook.com/chapter/3#networks-supercritical
 regimeToDefaultLevel :: Cooc -> Vector Ngrams -> Double
-regimeToDefaultLevel cooc roots 
+regimeToDefaultLevel cooc roots
     | avg == 0  = 1
     | avg < 1   = avg * 0.6
     | avg == 1  = 0.6
@@ -356,26 +356,26 @@ regimeToDefaultLevel cooc roots
         lnN = log (fromIntegral $ Vector.length roots)
 
 coocToConfidence :: Phylo -> Cooc
-coocToConfidence phylo = 
+coocToConfidence phylo =
     let count = getRootsCount phylo
-        cooc  = foldl (\acc cooc' -> sumCooc acc cooc') empty 
+        cooc  = foldl (\acc cooc' -> sumCooc acc cooc') empty
               $ elems $ getCoocByDate phylo
      in Map.mapWithKey (\(a,b) w -> confidence a b w count) cooc
-    where 
+    where
         ----
         -- confidence
         confidence :: Int -> Int -> Double -> Map Int Double -> Double
         confidence a b inter card = maximum [(inter / card ! a),(inter / card ! b)]
 
 
-sumtest :: [Int] -> [Int] -> Int 
+sumtest :: [Int] -> [Int] -> Int
 sumtest l1 l2 = (head' "test" l1) + (head' "test" $ reverse l2)
 
 
 findDefaultLevel :: Phylo -> Phylo
-findDefaultLevel phylo = 
-    let confidence = Map.filterWithKey (\(a,b) _ -> a /= b) 
-                   $ Map.filter (> 0.01) 
+findDefaultLevel phylo =
+    let confidence = Map.filterWithKey (\(a,b) _ -> a /= b)
+                   $ Map.filter (> 0.01)
                    $ coocToConfidence phylo
         roots = getRoots phylo
         level = regimeToDefaultLevel confidence roots
@@ -488,7 +488,7 @@ getPhyloSeaRiseSteps :: Phylo -> Double
 getPhyloSeaRiseSteps phylo = case (getSeaElevation phylo) of
     Constante  _ s -> s
     Adaptative s -> s
-    Evolving   _ -> 0.1    
+    Evolving   _ -> 0.1
 
 
 getConfig :: Phylo -> PhyloConfig
@@ -501,10 +501,10 @@ getLadder :: Phylo -> [Double]
 getLadder phylo = phylo ^. phylo_seaLadder
 
 getCoocByDate :: Phylo -> Map Date Cooc
-getCoocByDate phylo = coocByDate (phylo ^. phylo_counts)    
+getCoocByDate phylo = coocByDate (phylo ^. phylo_counts)
 
 getDocsByDate :: Phylo -> Map Date Double
-getDocsByDate phylo = docsByDate (phylo ^. phylo_counts) 
+getDocsByDate phylo = docsByDate (phylo ^. phylo_counts)
 
 getRootsCount :: Phylo -> Map Int  Double
 getRootsCount phylo = rootsCount (phylo ^. phylo_counts)
@@ -599,10 +599,10 @@ updatePeriods periods' phylo =
                 ) phylo
 
 updateQuality :: Double -> Phylo -> Phylo
-updateQuality quality phylo = phylo { _phylo_quality = quality } 
+updateQuality quality phylo = phylo { _phylo_quality = quality }
 
 updateLevel :: Double -> Phylo -> Phylo
-updateLevel level phylo = phylo { _phylo_level = level } 
+updateLevel level phylo = phylo { _phylo_level = level }
 
 traceToPhylo :: Scale -> Phylo -> Phylo
 traceToPhylo lvl phylo =
@@ -697,7 +697,7 @@ getMinSharedNgrams :: PhyloSimilarity -> Int
 getMinSharedNgrams proxi = case proxi of
     WeightedLogJaccard _ m -> m
     WeightedLogSim     _ m -> m
-    Hamming            _ _ -> undefined    
+    Hamming            _ _ -> undefined
 
 ----------------
 -- | Branch | --
