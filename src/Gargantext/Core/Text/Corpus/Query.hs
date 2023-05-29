@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingStrategies #-}
 module Gargantext.Core.Text.Corpus.Query (
     Query -- * opaque
@@ -5,7 +6,11 @@ module Gargantext.Core.Text.Corpus.Query (
   , Limit(..)
   , getQuery
   , parseQuery
+  , renderQuery
   , ExternalAPIs(..)
+
+  -- * Useful for testing
+  , unsafeMkQuery
   ) where
 
 import           Data.Bifunctor
@@ -13,13 +18,14 @@ import           Data.String
 import           Gargantext.API.Admin.Orchestrator.Types
 import           Gargantext.Core.Types
 import           Prelude
-import qualified Data.Aeson           as Aeson
-import qualified Data.BoolExpr        as BoolExpr
-import qualified Data.BoolExpr.Parser as BoolExpr
-import qualified Data.Swagger as Swagger
-import qualified Data.Text            as T
-import qualified Servant.API as Servant
-import qualified Text.Parsec          as P
+import qualified Data.Aeson                               as Aeson
+import qualified Data.BoolExpr                            as BoolExpr
+import qualified Data.BoolExpr.Parser                     as BoolExpr
+import qualified Data.BoolExpr.Printer                    as BoolExpr
+import qualified Data.Swagger                             as Swagger
+import qualified Data.Text                                as T
+import qualified Servant.API                              as Servant
+import qualified Text.Parsec                              as P
 
 -- | A raw query, as typed by the user from the frontend.
 newtype RawQuery = RawQuery { getRawQuery :: T.Text }
@@ -41,7 +47,13 @@ newtype Limit = Limit { getLimit :: Int }
 newtype Query = Query { getQuery :: (BoolExpr.CNF Term) }
   deriving Show
 
+unsafeMkQuery :: BoolExpr.BoolExpr Term -> Query
+unsafeMkQuery = Query . BoolExpr.boolTreeToCNF
+
 -- | Parses an input 'Text' into a 'Query', reporting an error if it fails.
 parseQuery :: RawQuery -> Either String Query
 parseQuery (RawQuery txt) = bimap show (Query . BoolExpr.boolTreeToCNF) $
   P.runParser (BoolExpr.parseBoolExpr (Term . T.pack <$> BoolExpr.identifier)) () "Corpus.Query" (T.unpack txt)
+
+renderQuery :: Query -> RawQuery
+renderQuery (Query cnf) = RawQuery . T.pack $ BoolExpr.boolExprPrinter (showsPrec 0) (BoolExpr.fromCNF cnf) ""

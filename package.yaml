@@ -516,6 +516,7 @@ tests:
      dependencies:
      - aeson
      - base
+     - boolexpr
      - bytestring
      - containers
      - gargantext
@@ -530,6 +531,7 @@ tests:
      - duckling
      - tasty
      - tasty-hunit
+     - tasty-quickcheck
      - text
      - unordered-containers
      - validity

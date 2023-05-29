@@ -848,6 +848,7 @@ test-suite garg-test
   main-is: Main.hs
   other-modules:
       Core.Text
+      Core.Text.Corpus.Query
       Core.Text.Examples
       Core.Text.Flow
       Core.Utils
@@ -896,6 +897,7 @@ test-suite garg-test
       QuickCheck
     , aeson
     , base
+    , boolexpr
     , bytestring
     , containers
     , duckling
@@ -909,6 +911,7 @@ test-suite garg-test
     , quickcheck-instances
     , tasty
     , tasty-hunit
+    , tasty-quickcheck
     , text
     , time
     , unordered-containers

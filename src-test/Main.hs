@@ -11,6 +11,7 @@ Portability : POSIX
 
 import Gargantext.Prelude
 
+import qualified Core.Text.Corpus.Query  as CorpusQuery
 import qualified Core.Utils as Utils
 --import qualified Ngrams.Lang.Fr as Fr
 --import qualified Ngrams.Lang as Lang
@@ -34,3 +35,4 @@ main = do
   Crypto.test
   NLP.main
   NgramsQuery.main
+  CorpusQuery.main
