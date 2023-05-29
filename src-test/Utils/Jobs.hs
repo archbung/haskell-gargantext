@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE NumericUnderscores  #-}
-module Main where
+module Utils.Jobs (test) where
 
 import Control.Concurrent
 import qualified Control.Concurrent.Async as Async
@@ -53,16 +53,6 @@ addJobToSchedule jobt mvar = do
 
 data Counts = Counts { countAs :: Int, countBs :: Int }
   deriving (Eq, Show)
-
-inc, dec :: JobT -> Counts -> Counts
-inc A cs = cs { countAs = countAs cs + 1 }
-inc B cs = cs { countBs = countBs cs + 1 }
-inc C cs = cs
-inc D cs = cs
-dec A cs = cs { countAs = countAs cs - 1 }
-dec B cs = cs { countBs = countBs cs - 1 }
-dec C cs = cs
-dec D cs = cs
 
 jobDuration, initialDelay :: Int
 jobDuration = 100000
@@ -193,9 +183,6 @@ runMyDummyMonad env m = do
 testTlsManager :: Manager
 testTlsManager = unsafePerformIO newTlsManager
 {-# NOINLINE testTlsManager #-}
-
-shouldBeE :: (MonadIO m, HasCallStack, Show a, Eq a) => a -> a -> m ()
-shouldBeE a b = liftIO (shouldBe a b)
 
 withJob :: Env
         -> (JobHandle MyDummyMonad -> () -> MyDummyMonad ())
@@ -362,8 +349,8 @@ testMarkProgress = do
                         ]
                         }
 
-main :: IO ()
-main = hspec $ do
+test :: Spec
+test = do
   describe "job queue" $ do
     it "respects max runners limit" $
       testMaxRunners

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Core.Text.Corpus.Query where
+module Core.Text.Corpus.Query (tests) where
 
 import Data.BoolExpr
 import Gargantext.Core.Text.Corpus.Query
@@ -7,9 +7,6 @@ import Prelude
 
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding (Positive)
-
-main :: IO ()
-main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Boolean Query Engine" [

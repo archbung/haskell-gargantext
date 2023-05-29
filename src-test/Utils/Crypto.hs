@@ -16,11 +16,10 @@ import Test.Hspec
 
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash
-import Gargantext.Prelude.Utils
 
 -- | Crypto Hash tests
-test :: IO ()
-test = hspec $ do
+test :: Spec
+test = do
   describe "Hash String with frontend works" $ do
     let text = "To hash with backend" :: Text
     let hashed = "8a69a94d164279af2b7d1443ce08da6184b3d7e815406076e148159c284b53c3" :: Hash

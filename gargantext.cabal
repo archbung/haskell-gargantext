@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           gargantext
-version: 0.0.6.9.9.6.2
+version:        0.0.6.9.9.6.2
 synopsis:       Search, map, share
 description:    Please see README.md
 category:       Data
@@ -866,6 +866,7 @@ test-suite garg-test
       Parsers.Types
       Parsers.WOS
       Utils.Crypto
+      Utils.Jobs
       Paths_gargantext
   hs-source-dirs:
       src-test
@@ -896,6 +897,7 @@ test-suite garg-test
   build-depends:
       QuickCheck
     , aeson
+    , async
     , base
     , boolexpr
     , bytestring
@@ -905,54 +907,21 @@ test-suite garg-test
     , gargantext
     , gargantext-prelude
     , hspec
+    , http-client
+    , http-client-tls
+    , mtl
     , parsec
     , patches-class
     , patches-map
     , quickcheck-instances
+    , servant-job
+    , stm
     , tasty
+    , tasty-hspec
     , tasty-hunit
     , tasty-quickcheck
     , text
     , time
     , unordered-containers
     , validity
-  default-language: Haskell2010
-
-test-suite jobqueue-test
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Paths_gargantext
-  hs-source-dirs:
-      tests/queue
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      aeson
-    , async
-    , base
-    , containers
-    , extra
-    , gargantext
-    , hspec
-    , http-client
-    , http-client-tls
-    , mtl
-    , servant-job
-    , stm
-    , text
-    , time
   default-language: Haskell2010

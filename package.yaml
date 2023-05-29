@@ -494,7 +494,6 @@ executables:
       - aeson
       - serialise
 
-
 tests:
    garg-test:
      main: Main.hs
@@ -514,47 +513,35 @@ tests:
      - -rtsopts
      - -with-rtsopts=-N
      dependencies:
+     - QuickCheck
      - aeson
+     - async
      - base
      - boolexpr
      - bytestring
      - containers
+     - duckling
      - gargantext
      - gargantext-prelude
      - hspec
-     - QuickCheck
-     - quickcheck-instances
-     - time
+     - http-client
+     - http-client-tls
+     - mtl
      - parsec
      - patches-class
      - patches-map
      - duckling
+     - quickcheck-instances
+     - servant-job
+     - stm
      - tasty
+     - tasty-hspec
      - tasty-hunit
      - tasty-quickcheck
      - text
+     - time
      - unordered-containers
      - validity
-   jobqueue-test:
-     main: Main.hs
-     source-dirs: tests/queue
-     ghc-options:
-     - -threaded
-     - -rtsopts
-     - -with-rtsopts=-N
-     dependencies:
-     - aeson
-     - async
-     - base
-     - containers
-     - gargantext
-     - mtl
-     - hspec
-     - http-client
-     - http-client-tls
-     - servant-job
-     - stm
-     - time
 #  garg-doctest:
 #    main: Main.hs
 #    source-dirs: src-doctest

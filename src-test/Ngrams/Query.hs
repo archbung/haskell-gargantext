@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
-module Ngrams.Query where
+module Ngrams.Query (tests) where
 
 import           Control.Monad
 import           Data.Coerce
@@ -20,9 +20,6 @@ import Ngrams.Query.PaginationCorpus
 import Test.Tasty
 import Test.Tasty.HUnit
 
-
-main :: IO ()
-main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Ngrams" [unitTests]
