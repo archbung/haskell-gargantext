@@ -7,7 +7,9 @@ module Gargantext.Core.Text.Corpus.Query (
   , getQuery
   , parseQuery
   , renderQuery
+  , interpretQuery
   , ExternalAPIs(..)
+  , module BoolExpr
 
   -- * Useful for testing
   , unsafeMkQuery
@@ -20,9 +22,9 @@ import           Gargantext.Core.Types
 import           Prelude
 import           Text.ParserCombinators.Parsec
 import qualified Data.Aeson                               as Aeson
-import qualified Data.BoolExpr                            as BoolExpr
-import qualified Data.BoolExpr.Parser                     as BoolExpr
-import qualified Data.BoolExpr.Printer                    as BoolExpr
+import           Data.BoolExpr                            as BoolExpr
+import           Data.BoolExpr.Parser                     as BoolExpr
+import           Data.BoolExpr.Printer                    as BoolExpr
 import qualified Data.Swagger                             as Swagger
 import qualified Data.Text                                as T
 import qualified Servant.API                              as Servant
@@ -47,6 +49,9 @@ newtype Limit = Limit { getLimit :: Int }
 -- according to the particular service we are targeting.
 newtype Query = Query { getQuery :: (BoolExpr.CNF Term) }
   deriving Show
+
+interpretQuery :: Query -> (BoolExpr.BoolExpr Term -> ast) -> ast
+interpretQuery (Query q) transform = transform (BoolExpr.fromCNF q)
 
 unsafeMkQuery :: BoolExpr.BoolExpr Term -> Query
 unsafeMkQuery = Query . BoolExpr.boolTreeToCNF

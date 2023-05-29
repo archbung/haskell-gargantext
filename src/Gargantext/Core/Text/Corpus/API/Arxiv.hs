@@ -17,13 +17,14 @@ module Gargantext.Core.Text.Corpus.API.Arxiv
 
 import Conduit
 import Data.Maybe
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import qualified Data.Text as Text
 
 import Gargantext.Prelude
 import Gargantext.Core (Lang(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
+import Gargantext.Core.Types (Term(..))
 
 import qualified Arxiv as Arxiv
 import qualified Network.Api.Arxiv as Ax
@@ -31,7 +32,38 @@ import qualified Network.Api.Arxiv as Ax
 
 -- | Converts a Gargantext's generic boolean query into an Arxiv Query.
 convertQuery :: Corpus.Query -> Ax.Query
-convertQuery _q = undefined
+convertQuery q = mkQuery (interpretQuery q transformAST)
+  where
+    transformAST :: BoolExpr Term -> Maybe Ax.Expression
+    transformAST ast = case ast of
+      BAnd sub (BConst (Negative term))
+        -- The second term become positive, so that it can be translated.
+        -> Ax.AndNot <$> (transformAST sub) <*> transformAST (BConst (Positive term))
+      BAnd term1 (BNot term2)
+        -> Ax.AndNot <$> transformAST term1 <*> transformAST term2
+      BAnd sub1 sub2
+        -> Ax.And <$> transformAST sub1 <*> transformAST sub2
+      BOr sub1 sub2
+        -> Ax.Or <$> transformAST sub1 <*> transformAST sub2
+      BNot (BConst (Negative term))
+        -> transformAST (BConst (Positive term)) -- double negation
+      BNot _
+        -> Nothing
+      BTrue
+        -> Nothing
+      BFalse
+        -> Nothing
+      BConst (Positive (Term term))
+        -> Just $ Ax.Exp $ Ax.Abs [unpack term]
+      -- Do not handle negative terms, because we don't have a way to represent them in Arxiv.
+      BConst (Negative _)
+        -> Nothing
+
+    mkQuery :: Maybe Ax.Expression -> Ax.Query
+    mkQuery mb_exp = Ax.Query { Ax.qExp = mb_exp
+                              , Ax.qIds = []
+                              , Ax.qStart = 0
+                              , Ax.qItems = Arxiv.batchSize }
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs
