@@ -67,7 +67,7 @@ data Ordering = Down | Up
 type Name = Text
 
 newtype Term = Term { getTerm :: Text }
-  deriving newtype (IsString, Show)
+  deriving newtype (Eq, Ord, IsString, Show)
 
 type Stems = Set Text
 type Label = [Text]

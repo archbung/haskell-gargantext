@@ -17,7 +17,6 @@ import Data.Either
 import Data.List
 import Data.Sequence (Seq, (|>), fromList)
 import Data.Time
-import GHC.Stack
 import Prelude
 import System.IO.Unsafe
 import Network.HTTP.Client.TLS (newTlsManager)

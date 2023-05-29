@@ -18,6 +18,7 @@ import           Data.String
 import           Gargantext.API.Admin.Orchestrator.Types
 import           Gargantext.Core.Types
 import           Prelude
+import           Text.ParserCombinators.Parsec
 import qualified Data.Aeson                               as Aeson
 import qualified Data.BoolExpr                            as BoolExpr
 import qualified Data.BoolExpr.Parser                     as BoolExpr
@@ -50,10 +51,16 @@ newtype Query = Query { getQuery :: (BoolExpr.CNF Term) }
 unsafeMkQuery :: BoolExpr.BoolExpr Term -> Query
 unsafeMkQuery = Query . BoolExpr.boolTreeToCNF
 
+termToken :: CharParser st Term
+termToken = Term <$> (try (T.pack <$> BoolExpr.identifier) <|> (between dubQuote dubQuote multipleTerms))
+  where
+    dubQuote      = BoolExpr.symbol "\""
+    multipleTerms = T.intercalate " " . map T.pack <$> sepBy BoolExpr.identifier BoolExpr.whiteSpace
+
 -- | Parses an input 'Text' into a 'Query', reporting an error if it fails.
 parseQuery :: RawQuery -> Either String Query
 parseQuery (RawQuery txt) = bimap show (Query . BoolExpr.boolTreeToCNF) $
-  P.runParser (BoolExpr.parseBoolExpr (Term . T.pack <$> BoolExpr.identifier)) () "Corpus.Query" (T.unpack txt)
+  P.runParser (BoolExpr.parseBoolExpr termToken) () "Corpus.Query" (T.unpack txt)
 
 renderQuery :: Query -> RawQuery
 renderQuery (Query cnf) = RawQuery . T.pack $ BoolExpr.boolExprPrinter (showsPrec 0) (BoolExpr.fromCNF cnf) ""
