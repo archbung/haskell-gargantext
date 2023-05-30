@@ -7,6 +7,8 @@ import Data.BoolExpr
 import Gargantext.Core.Text.Corpus.Query
 import Gargantext.Core.Types
 import Prelude
+import qualified Gargantext.Core.Text.Corpus.API.Arxiv as Arxiv
+import qualified Network.Api.Arxiv as Arxiv
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -24,7 +26,18 @@ tests = testGroup "Boolean Query Engine" [
   , testProperty "Parses 'A AND (B -C)' (right associative)" testParse05_01
   , testProperty "Parses (A OR B OR NOT C) AND (D OR E OR F) -(G OR H OR I)" testParse06
   , testCase     "Parses words into a single constant" testWordsIntoConst
-
+  , testGroup "Arxiv expression converter" [
+      testCase "It supports 'A AND B'"     testArxiv01_01
+    , testCase "It supports '\"Haskell\" AND \"Agda\"'" testArxiv01_02
+    , testCase "It supports 'A OR B'"        testArxiv02
+    , testCase "It supports 'A AND NOT B'"   testArxiv03_01
+    , testCase "It supports 'A AND -B'"      testArxiv03_02
+    , testCase "It supports 'A AND -B'"      testArxiv03_02
+    , testCase "It supports 'A AND NOT (NOT B)'"  testArxiv04_01
+    , testCase "It supports 'A AND NOT (NOT (NOT B))'"  testArxiv04_02
+    , testCase "It supports 'A OR NOT B'"  testArxiv05
+    , testCase "It supports '-A'"  testArxiv06
+    ]
   ]
 
 -- | Checks that the 'RawQuery' can be translated into the expected 'BoolExpr' form,
@@ -85,3 +98,63 @@ testWordsIntoConst =
       -> assertBool err False
     Right x
       -> fromCNF (getQuery x) @?= expected
+
+withValidQuery :: RawQuery -> (Query -> Assertion) -> Assertion
+withValidQuery rawQuery onValidParse = do
+  case parseQuery rawQuery of
+    Left err -> assertBool err False
+    Right x  -> onValidParse x
+
+
+testArxiv01_01 :: Assertion
+testArxiv01_01 = withValidQuery "A AND B" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+testArxiv01_02 :: Assertion
+testArxiv01_02 = withValidQuery "\"Haskell\" AND \"Agda\"" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["Haskell"]) ((Arxiv.Exp $ Arxiv.Abs ["Agda"]))))
+
+testArxiv02 :: Assertion
+testArxiv02 = withValidQuery "A OR B" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.Or (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+testArxiv03_01 :: Assertion
+testArxiv03_01 = withValidQuery "A AND NOT B" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+testArxiv03_02 :: Assertion
+testArxiv03_02 = withValidQuery "A AND -B" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+-- Double negation get turned into positive.
+testArxiv04_01 :: Assertion
+testArxiv04_01 = withValidQuery "A AND NOT (NOT B)" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+testArxiv04_02 :: Assertion
+testArxiv04_02 = withValidQuery "A AND NOT (NOT (NOT B))" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
+
+testArxiv05 :: Assertion
+testArxiv05 = withValidQuery "A OR NOT B" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (
+                Arxiv.Or (Arxiv.Exp $ Arxiv.Abs ["A"])
+                         (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["B"]) (Arxiv.Exp $ Arxiv.Abs ["B"]))
+                )
+             )
+
+testArxiv06 :: Assertion
+testArxiv06 = withValidQuery "-A" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Arxiv.qExp (Arxiv.convertQuery q) == Just (
+                Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) (Arxiv.Exp $ Arxiv.Abs ["A"])
+                )
+             )

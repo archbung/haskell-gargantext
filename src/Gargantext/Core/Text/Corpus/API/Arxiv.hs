@@ -13,7 +13,10 @@ Portability : POSIX
 {-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.Core.Text.Corpus.API.Arxiv
-    where
+    ( get
+    -- * Internals for testing
+    , convertQuery
+    ) where
 
 import Conduit
 import Data.Maybe
@@ -34,6 +37,14 @@ import qualified Network.Api.Arxiv as Ax
 convertQuery :: Corpus.Query -> Ax.Query
 convertQuery q = mkQuery (interpretQuery q transformAST)
   where
+    mkQuery :: Maybe Ax.Expression -> Ax.Query
+    mkQuery mb_exp = Ax.Query { Ax.qExp = mb_exp
+                              , Ax.qIds = []
+                              , Ax.qStart = 0
+                              , Ax.qItems = Arxiv.batchSize }
+
+    -- Converts a 'BoolExpr' with 'Term's on the leaves into an Arxiv's expression.
+    -- It yields 'Nothing' if the AST cannot be converted into a meaningful expression.
     transformAST :: BoolExpr Term -> Maybe Ax.Expression
     transformAST ast = case ast of
       BAnd sub (BConst (Negative term))
@@ -47,23 +58,20 @@ convertQuery q = mkQuery (interpretQuery q transformAST)
         -> Ax.Or <$> transformAST sub1 <*> transformAST sub2
       BNot (BConst (Negative term))
         -> transformAST (BConst (Positive term)) -- double negation
-      BNot _
-        -> Nothing
+      -- We can handle negatives via `ANDNOT` with itself.
+      BNot sub
+        -> Ax.AndNot <$> transformAST sub <*> transformAST sub
+      -- BTrue cannot happen is the query parser doesn't support parsing 'TRUE' alone.
       BTrue
         -> Nothing
+      -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
       BFalse
         -> Nothing
       BConst (Positive (Term term))
         -> Just $ Ax.Exp $ Ax.Abs [unpack term]
-      -- Do not handle negative terms, because we don't have a way to represent them in Arxiv.
-      BConst (Negative _)
-        -> Nothing
-
-    mkQuery :: Maybe Ax.Expression -> Ax.Query
-    mkQuery mb_exp = Ax.Query { Ax.qExp = mb_exp
-                              , Ax.qIds = []
-                              , Ax.qStart = 0
-                              , Ax.qItems = Arxiv.batchSize }
+      -- We can handle negatives via `ANDNOT` with itself.
+      BConst (Negative (Term term))
+        -> Just $ Ax.AndNot (Ax.Exp $ Ax.Abs [unpack term]) (Ax.Exp $ Ax.Abs [unpack term])
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs

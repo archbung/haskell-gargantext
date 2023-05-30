@@ -81,6 +81,7 @@ library:
   - Gargantext.Core.Text
   - Gargantext.Core.Text.Context
   - Gargantext.Core.Text.Corpus.API
+  - Gargantext.Core.Text.Corpus.API.Arxiv
   - Gargantext.Core.Text.Corpus.Query
   - Gargantext.Core.Text.Corpus.Parsers
   - Gargantext.Core.Text.Corpus.Parsers.CSV
@@ -520,6 +521,7 @@ tests:
      - boolexpr
      - bytestring
      - containers
+     - crawlerArxiv
      - duckling
      - gargantext
      - gargantext-prelude

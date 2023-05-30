@@ -51,7 +51,27 @@ newtype Query = Query { getQuery :: (BoolExpr.CNF Term) }
   deriving Show
 
 interpretQuery :: Query -> (BoolExpr.BoolExpr Term -> ast) -> ast
-interpretQuery (Query q) transform = transform (BoolExpr.fromCNF q)
+interpretQuery (Query q) transform = transform . simplify . BoolExpr.fromCNF $ q
+
+simplify :: BoolExpr.BoolExpr a -> BoolExpr.BoolExpr a
+simplify expr = case expr of
+  BAnd sub BTrue    -> simplify sub
+  BAnd BTrue sub    -> simplify sub
+  BAnd BFalse _     -> BFalse
+  BAnd _ BFalse     -> BFalse
+  BAnd sub1 sub2    -> BAnd (simplify sub1) (simplify sub2)
+  BOr _ BTrue       -> BTrue
+  BOr BTrue _       -> BTrue
+  BOr sub BFalse    -> simplify sub
+  BOr BFalse sub    -> simplify sub
+  BOr sub1 sub2     -> BOr (simplify sub1) (simplify sub2)
+  BNot BTrue        -> BFalse
+  BNot BFalse       -> BTrue
+  BNot (BNot sub)   -> simplify sub
+  BNot sub          -> BNot (simplify sub)
+  BTrue             -> BTrue
+  BFalse            -> BFalse
+  BConst signed     -> BConst signed
 
 unsafeMkQuery :: BoolExpr.BoolExpr Term -> Query
 unsafeMkQuery = Query . BoolExpr.boolTreeToCNF
