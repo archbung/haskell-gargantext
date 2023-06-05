@@ -57,10 +57,10 @@ get cfg externalAPI la q limit = do
     Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
     Right corpusQuery -> case externalAPI of
       PubMed -> first ExternalAPIError <$>
-                  PUBMED.get (cfg ^. gc_pubmed_api_key) (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+                  PUBMED.get (cfg ^. gc_pubmed_api_key) corpusQuery limit
       --docs <- PUBMED.get   q default_limit -- EN only by default
       --pure (Just $ fromIntegral $ length docs, yieldMany docs)
-      Arxiv   -> Right <$> Arxiv.get la corpusQuery (Corpus.getLimit <$> limit)
+      Arxiv   -> Right <$> Arxiv.get la corpusQuery limit
       HAL     -> first ExternalAPIError <$> HAL.getC  la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
       IsTex   -> do docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
                     pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)

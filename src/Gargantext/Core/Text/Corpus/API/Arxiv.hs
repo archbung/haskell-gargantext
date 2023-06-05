@@ -77,9 +77,9 @@ convertQuery q = mkQuery (interpretQuery q transformAST)
 -- by default: 10K docs
 get :: Lang
     -> Corpus.Query
-    -> Maybe Arxiv.Limit
+    -> Maybe Corpus.Limit
     -> IO (Maybe Integer, ConduitT () HyperdataDocument IO ())
-get la (convertQuery -> query) limit = do
+get la (convertQuery -> query) (fmap getLimit -> limit) = do
   (cnt, resC) <- case limit of
     Nothing  -> Arxiv.searchAxv' query
     (Just l) -> do (cnt, res) <- Arxiv.searchAxv' query

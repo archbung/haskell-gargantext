@@ -9,6 +9,7 @@ import Gargantext.Core.Types
 import Prelude
 import qualified Gargantext.Core.Text.Corpus.API.Arxiv as Arxiv
 import qualified Network.Api.Arxiv as Arxiv
+import qualified Gargantext.Core.Text.Corpus.API.Pubmed as Pubmed
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -37,6 +38,14 @@ tests = testGroup "Boolean Query Engine" [
     , testCase "It supports 'A AND NOT (NOT (NOT B))'"  testArxiv04_02
     , testCase "It supports 'A OR NOT B'"  testArxiv05
     , testCase "It supports '-A'"  testArxiv06
+    ]
+  , testGroup "PUBMED expression converter" [
+      testCase "It supports 'A'" testPubMed01
+    , testCase "It supports '-A'" testPubMed02_01
+    , testCase "It supports 'NOT A'" testPubMed02_02
+    , testCase "It supports 'NOT (NOT A)'" testPubMed02_03
+    , testCase "It supports '\"Haskell\" AND \"Idris\"'" testPubMed03
+    , testCase "It supports 'A OR B'" testPubMed04
     ]
   ]
 
@@ -158,3 +167,29 @@ testArxiv06 = withValidQuery "-A" $ \q ->
                 Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) (Arxiv.Exp $ Arxiv.Abs ["A"])
                 )
              )
+
+--
+-- PUBMED tests
+--
+
+testPubMed01 :: Assertion
+testPubMed01 = withValidQuery "A" $ \q ->
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+             (Pubmed.getESearch (Pubmed.convertQuery q) == "%23A")
+
+testPubMed02_01 :: Assertion
+testPubMed02_01 = withValidQuery "-A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23NOT+A"
+
+testPubMed02_02 :: Assertion
+testPubMed02_02 = withValidQuery "NOT A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23NOT+A"
+
+testPubMed02_03 :: Assertion
+testPubMed02_03 = withValidQuery "NOT (NOT A)" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23A"
+
+testPubMed03 :: Assertion
+testPubMed03 = withValidQuery "\"Haskell\" AND \"Idris\"" $ \q ->
+  Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23Haskell+AND+Idris"
+
+testPubMed04 :: Assertion
+testPubMed04 = withValidQuery "A OR B" $ \q ->
+  Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23A+OR+B"

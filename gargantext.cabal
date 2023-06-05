@@ -54,6 +54,7 @@ library
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
+      Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.Query
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
@@ -190,7 +191,6 @@ library
       Gargantext.Core.Text.Corpus.API.Hal
       Gargantext.Core.Text.Corpus.API.Isidore
       Gargantext.Core.Text.Corpus.API.Istex
-      Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.Parsers.Book
       Gargantext.Core.Text.Corpus.Parsers.Date
       Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec
