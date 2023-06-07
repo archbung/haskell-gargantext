@@ -204,7 +204,7 @@ logDistributional' n m' = trace ("logDistributional'") result
     -- m_{i,j} = 0 if n_{i,j} = 0 or i = j, 
     -- m_{i,j} = log(to * n_{i,j} / s_{i,j}) otherwise.
     mi = (.*) (matrixEye n) 
-        (map (lift1 (\x -> cond (x == 0) 0 (log (x * to)))) ((./) m ss))
+        (map (lift1 (\x -> cond (x == 0) 0 (log (1 + x * to)))) ((./) m ss))
     -- mi_nnz :: Int
     -- mi_nnz = flip indexArray Z . run $
     --   foldAll (+) 0 $ map (\a -> ifThenElse (abs a < 10^(-6 :: Exp Int)) 0 1) mi
