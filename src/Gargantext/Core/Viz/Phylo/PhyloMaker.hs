@@ -489,15 +489,15 @@ initPhyloScales lvlMax pId =
     fromList $ map (\lvl -> ((pId,lvl),PhyloScale pId ("","") lvl empty)) [1..lvlMax]
 
 
-setDefault :: PhyloConfig -> PhyloConfig
-setDefault conf = conf { 
+setDefault :: PhyloConfig -> TimeUnit -> PhyloConfig
+setDefault conf timeScale = conf { 
                     phyloScale = 2,
                     similarity = WeightedLogJaccard 0.5 2,
                     findAncestors = True,
                     phyloSynchrony = ByProximityThreshold 0.6 0 SiblingBranches MergeAllGroups,
                     phyloQuality = Quality 0.5 3,
-                    timeUnit = Year 3 1 3,
-                    clique = MaxClique 5 30 ByNeighbours,
+                    timeUnit = timeScale,
+                    clique = Fis 3 5,
                     exportLabel = [BranchLabel MostEmergentTfIdf 2, GroupLabel MostEmergentInclusive 2],
                     exportSort = ByHierarchy Desc,
                     exportFilter = [ByBranchSize 3]
@@ -509,6 +509,7 @@ setDefault conf = conf {
 initPhylo :: [Document] -> PhyloConfig -> Phylo
 initPhylo docs conf = 
     let roots = Vector.fromList $ nub $ concat $ map text docs
+        timeScale = head' "initPhylo" $ map docTime docs
         foundations = PhyloFoundations roots empty
         docsSources = PhyloSources (Vector.fromList $ nub $ concat $ map sources docs)
         docsCounts  = PhyloCounts (docsToTimeScaleCooc docs (foundations ^. foundations_roots))
@@ -516,11 +517,11 @@ initPhylo docs conf =
                              (docsToTimeTermCount docs (foundations ^. foundations_roots))
                              (docsToTermCount docs (foundations ^. foundations_roots))
                              (docsToTermFreq docs (foundations ^. foundations_roots))
-                             (docsToLastTermFreq (getTimePeriod $ timeUnit conf) docs (foundations ^. foundations_roots))                             
+                             (docsToLastTermFreq (getTimePeriod timeScale) docs (foundations ^. foundations_roots))                             
         params = if (defaultMode conf)
-                 then defaultPhyloParam { _phyloParam_config = setDefault conf }
+                 then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale }
                  else defaultPhyloParam { _phyloParam_config = conf }
-        periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod $ timeUnit conf) (getTimeStep $ timeUnit conf)
+        periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
     in trace ("\n" <> "-- | Init a phylo out of " <> show(length docs) <> " docs \n") 
        $ Phylo foundations
                docsSources
@@ -529,4 +530,4 @@ initPhylo docs conf =
                params
                (fromList $ map (\prd -> (prd, PhyloPeriod prd ("","") (initPhyloScales 1 prd))) periods)
                0
-               (_qua_granularity $ phyloQuality $ conf)
+               (_qua_granularity $ phyloQuality $ _phyloParam_config params)

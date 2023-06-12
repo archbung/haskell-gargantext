@@ -128,7 +128,7 @@ context2phyloDocument timeUnit context (ngs_terms, ngs_sources) = do
     text'    = maybe [] toText $ Map.lookup contextId ngs_terms
     sources' = maybe [] toText $ Map.lookup contextId ngs_sources
 
-  pure $ Document date date' text' Nothing sources'
+  pure $ Document date date' text' Nothing sources' (Year 3 1 5)
 
 
 context2date :: Context HyperdataDocument -> TimeUnit -> Maybe (Date, Text)

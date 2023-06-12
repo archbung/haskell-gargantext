@@ -135,7 +135,7 @@ data TimeUnit =
       { _day_period :: Int
       , _day_step   :: Int
       , _day_matchingFrame :: Int }
-      deriving (Show,Generic,Eq)
+      deriving (Show,Generic,Eq,NFData)
 
 instance ToSchema TimeUnit where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "")
@@ -354,6 +354,7 @@ data Document = Document
       , text    :: [Ngrams]
       , weight  :: Maybe Double
       , sources :: [Text]
+      , docTime :: TimeUnit
       } deriving (Eq,Show,Generic,NFData)
 
 
