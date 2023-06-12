@@ -521,6 +521,7 @@ tests:
      - base
      - boolexpr
      - bytestring
+     - conduit
      - containers
      - crawlerArxiv
      - duckling

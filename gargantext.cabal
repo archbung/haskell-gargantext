@@ -901,6 +901,7 @@ test-suite garg-test
     , base
     , boolexpr
     , bytestring
+    , conduit
     , containers
     , crawlerArxiv
     , duckling

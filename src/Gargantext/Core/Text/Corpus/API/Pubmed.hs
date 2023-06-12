@@ -53,7 +53,7 @@ newtype ESearch = ESearch { _ESearch :: [EscapeItem] }
 getESearch :: ESearch -> Text
 getESearch (ESearch items) =
   Text.replace "term=" "" . TE.decodeUtf8 . renderQueryPartialEscape False $ [
-    ("term", QE "#" : items)
+    ("term", items)
     ]
 
 convertQuery :: Corpus.Query -> ESearch

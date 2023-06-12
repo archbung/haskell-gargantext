@@ -1,22 +1,38 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DerivingStrategies  #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications    #-}
 module Core.Text.Corpus.Query (tests) where
 
 import Data.BoolExpr
+import Data.Conduit
+import Data.String
+import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query
 import Gargantext.Core.Types
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Prelude
+import System.Environment
+import qualified Data.Text as T
 import qualified Gargantext.Core.Text.Corpus.API.Arxiv as Arxiv
-import qualified Network.Api.Arxiv as Arxiv
 import qualified Gargantext.Core.Text.Corpus.API.Pubmed as Pubmed
+import qualified Network.Api.Arxiv as Arxiv
 
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck hiding (Positive, Negative)
 
+newtype PubmedApiKey
+  = PubmedApiKey { _PubmedApiKey :: T.Text }
+  deriving stock (Show, Eq)
+  deriving newtype IsString
+
+pubmedSettings :: IO (Maybe PubmedApiKey)
+pubmedSettings = fmap fromString <$> lookupEnv "PUBMED_API_KEY"
+
 tests :: TestTree
-tests = testGroup "Boolean Query Engine" [
+tests = withResource pubmedSettings (const (pure ())) $ \getPubmedKey ->
+  testGroup "Boolean Query Engine" [
     testProperty "Parses 'A OR B'" testParse01
   , testProperty "Parses 'A AND B'" testParse02
   , testProperty "Parses '-A'" testParse03
@@ -46,6 +62,16 @@ tests = testGroup "Boolean Query Engine" [
     , testCase "It supports 'NOT (NOT A)'" testPubMed02_03
     , testCase "It supports '\"Haskell\" AND \"Idris\"'" testPubMed03
     , testCase "It supports 'A OR B'" testPubMed04
+    ]
+  , testGroup "PUBMED real queries (skipped if PUBMED_API_KEY env var not set)" [
+      testCase "It searches for \"Covid\"" (testPubMedCovid_01 getPubmedKey)
+    , testCase "It searches for \"Covid\" AND \"Alzheimer\"" (testPubMedCovid_02 getPubmedKey)
+    ]
+  -- We skip the Arxiv tests if the PUBMED_API_KEY is not set just for conveniency, to have
+  -- only a single flow-control mechanism.
+  , testGroup "ARXIV real queries (skipped if PUBMED_API_KEY env var not set)" [
+      testCase "It searches for \"Haskell\"" (testArxivRealWorld_01 getPubmedKey)
+    , testCase "It searches for \"Haskell\" AND \"Agda\"" (testArxivRealWorld_02 getPubmedKey)
     ]
   ]
 
@@ -175,21 +201,75 @@ testArxiv06 = withValidQuery "-A" $ \q ->
 testPubMed01 :: Assertion
 testPubMed01 = withValidQuery "A" $ \q ->
   assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
-             (Pubmed.getESearch (Pubmed.convertQuery q) == "%23A")
+             (Pubmed.getESearch (Pubmed.convertQuery q) == "A")
 
 testPubMed02_01 :: Assertion
-testPubMed02_01 = withValidQuery "-A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23NOT+A"
+testPubMed02_01 = withValidQuery "-A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "NOT+A"
 
 testPubMed02_02 :: Assertion
-testPubMed02_02 = withValidQuery "NOT A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23NOT+A"
+testPubMed02_02 = withValidQuery "NOT A" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "NOT+A"
 
 testPubMed02_03 :: Assertion
-testPubMed02_03 = withValidQuery "NOT (NOT A)" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23A"
+testPubMed02_03 = withValidQuery "NOT (NOT A)" $ \q -> Pubmed.getESearch (Pubmed.convertQuery q) @?= "A"
 
 testPubMed03 :: Assertion
 testPubMed03 = withValidQuery "\"Haskell\" AND \"Idris\"" $ \q ->
-  Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23Haskell+AND+Idris"
+  Pubmed.getESearch (Pubmed.convertQuery q) @?= "Haskell+AND+Idris"
 
 testPubMed04 :: Assertion
 testPubMed04 = withValidQuery "A OR B" $ \q ->
-  Pubmed.getESearch (Pubmed.convertQuery q) @?= "%23A+OR+B"
+  Pubmed.getESearch (Pubmed.convertQuery q) @?= "A+OR+B"
+
+testPubMedCovid_01 :: IO (Maybe PubmedApiKey) -> Assertion
+testPubMedCovid_01 getPubmedKey = do
+  mb_key <- getPubmedKey
+  case mb_key of
+    Nothing -> pure ()
+    Just k  -> withValidQuery "\"Covid\"" $ \query -> do
+      res <- Pubmed.get (_PubmedApiKey k) query (Just 1)
+      case res of
+        Left err       -> fail (show err)
+        Right (_, cnd) -> do
+          hyperDocs <- sourceToList cnd
+          case hyperDocs of
+            []    -> fail "No documents found."
+            (x:_) -> _hd_title x @?= Just "Being a Hospice Nurse in Times of the COVID-19 Pandemic: A Phenomenological Study of Providing End-of-Life Care."
+
+testPubMedCovid_02 :: IO (Maybe PubmedApiKey) -> Assertion
+testPubMedCovid_02 getPubmedKey = do
+  mb_key <- getPubmedKey
+  case mb_key of
+    Nothing -> pure ()
+    Just k  -> withValidQuery "\"Covid\" AND \"Alzheimer\"" $ \query -> do
+      res <- Pubmed.get (_PubmedApiKey k) query (Just 1)
+      case res of
+        Left err       -> fail (show err)
+        Right (_, cnd) -> do
+          hyperDocs <- sourceToList cnd
+          case hyperDocs of
+            []    -> fail "No documents found."
+            (x:_) -> _hd_title x @?= Just "Neurodegenerative and Neurodevelopmental Diseases and the Gut-Brain Axis: The Potential of Therapeutic Targeting of the Microbiome."
+
+testArxivRealWorld_01 :: IO (Maybe PubmedApiKey) -> Assertion
+testArxivRealWorld_01 getPubmedKey = do
+  mb_key <- getPubmedKey
+  case mb_key of
+    Nothing -> pure ()
+    Just _  -> withValidQuery "\"Haskell\"" $ \query -> do
+      (_, cnd) <- Arxiv.get EN query (Just 1)
+      hyperDocs <- sourceToList cnd
+      case hyperDocs of
+        []    -> fail "No documents found."
+        (x:_) -> _hd_title x @?= Just "Haskell for OCaml programmers"
+
+testArxivRealWorld_02 :: IO (Maybe PubmedApiKey) -> Assertion
+testArxivRealWorld_02 getPubmedKey = do
+  mb_key <- getPubmedKey
+  case mb_key of
+    Nothing -> pure ()
+    Just _  -> withValidQuery "\"Haskell\" AND \"Agda\"" $ \query -> do
+      (_, cnd) <- Arxiv.get EN query (Just 1)
+      hyperDocs <- sourceToList cnd
+      case hyperDocs of
+        []    -> fail "No documents found."
+        (x:_) -> _hd_title x @?= Just "Toward Hole-Driven Development with Liquid Haskell"
