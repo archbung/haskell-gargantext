@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.6.3
+
+
+* [BACK][FIX][Boolean Query Parser (#182)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/182)
+* [BACK][FEAT] Gitlab Issue Parser, Welcome Christian
+
 ## Version 0.0.6.9.9.6.2
 
 * [BACK][FIX][Ngrams Status change (#217)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/217)
