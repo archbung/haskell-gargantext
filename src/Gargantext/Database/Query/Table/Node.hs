@@ -342,8 +342,8 @@ getCorpusPubmedAPIKey cId = do
             |]
     params = PGS.Only cId
 
-updateCorpusPubmedAPIKey :: NodeId -> Maybe PUBMED.APIKey -> Cmd err Int64
-updateCorpusPubmedAPIKey cId mAPIKey =
+updateCorpusPubmedAPIKey :: NodeId -> PUBMED.APIKey -> Cmd err Int64
+updateCorpusPubmedAPIKey cId apiKey =
   execPGSQuery query params
   where
     query :: PGS.Query
@@ -352,7 +352,7 @@ updateCorpusPubmedAPIKey cId mAPIKey =
                 SET hyperdata = hyperdata || ?
                 WHERE id = ?
             |]
-    params = (encode $ object [ "pubmed_api_key" .= mAPIKey ], cId)
+    params = (encode $ object [ "pubmed_api_key" .= apiKey ], cId)
 ------------------------------------------------------------------------
 -- TODO
 -- currently this function removes the child relation

@@ -290,7 +290,7 @@ addCorpusWithQuery :: User -> ServerT New.AddWithQuery (GargM Env GargError)
 addCorpusWithQuery user cid =
   serveJobsAPI AddCorpusQueryJob $ \jHandle q -> do
     limit <- view $ hasConfig . gc_max_docs_scrapers
-    New.addToCorpusWithQuery user cid q (Just limit) jHandle
+    New.addToCorpusWithQuery user cid q (Just $ fromIntegral limit) jHandle
       {- let log' x = do
         printDebug "addToCorpusWithQuery" x
         liftBase $ log x

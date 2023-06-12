@@ -29,7 +29,7 @@ import qualified ISTEX        as ISTEX
 import qualified ISTEX.Client as ISTEX
 
 type Query = Text
-type MaxResults = Maybe Integer
+type MaxResults = Maybe Int
 
 get :: Lang -> Query -> MaxResults -> IO [HyperdataDocument]
 get la query' maxResults = do
@@ -57,7 +57,7 @@ get la query' maxResults = do
         -- Complex queries of IsTex needs parameters using ":" so we leave the query as it is
         -- in that case we suppose user is knowing what s.he is doing
 
-  eDocs <- ISTEX.getMetadataWith query (fromIntegral <$> maxResults)
+  eDocs <- ISTEX.getMetadataWith query maxResults
   -- printDebug "[Istex.get] will print length" (0 :: Int)
   case eDocs of
     Left _ -> pure ()

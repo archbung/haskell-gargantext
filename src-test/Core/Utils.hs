@@ -18,8 +18,8 @@ import Gargantext.Prelude
 import Gargantext.Core.Utils
 
 -- | Core.Utils tests
-test :: IO ()
-test = hspec $ do
+test :: Spec
+test = do
   describe "check if groupWithCounts works" $ do
     it "simple integer array" $ do
       (groupWithCounts [1, 2, 3, 1, 2, 3]) `shouldBe` [(1, 2), (2, 2), (3, 2)]

@@ -150,7 +150,7 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
 triggerSearxSearch :: (MonadBase IO m, FlowCmdM env err m, MonadJobStatus m)
             => User
             -> CorpusId
-            -> API.Query
+            -> API.RawQuery
             -> Lang
             -> JobHandle m
             -> m ()
@@ -183,7 +183,7 @@ triggerSearxSearch user cId q l jobHandle = do
                 res <- liftBase $ fetchSearxPage $ FetchSearxParams { _fsp_language = l
                                                                     , _fsp_manager = manager
                                                                     , _fsp_pageno = page
-                                                                    , _fsp_query = q
+                                                                    , _fsp_query = API.getRawQuery q
                                                                     , _fsp_url = surl }
 
                 insertSearxResponse user cId listId l res

@@ -30,8 +30,8 @@ myCooc = HashMap.fromList [((NgramsTerm {unNgramsTerm = "gev au"},NgramsTerm {un
 
 
 
-test :: IO ()
-test = hspec $ do
+test :: Spec
+test = do
   describe "Cross" $ do
     let
       (distanceMap,_,_) = doSimilarityMap Conditional 0 Weak myCooc

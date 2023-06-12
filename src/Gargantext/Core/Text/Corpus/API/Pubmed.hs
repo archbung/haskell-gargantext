@@ -9,20 +9,33 @@ Portability : POSIX
 
 -}
 
+{-# LANGUAGE DerivingStrategies #-}
 
 module Gargantext.Core.Text.Corpus.API.Pubmed
+    ( get
+    -- * Internals for testing
+    , ESearch(..)
+    , convertQuery
+    , getESearch
+    )
     where
 
 import Conduit
 import Control.Monad.Reader (runReaderT)
 import Data.Either (Either)
 import Data.Maybe
+import Data.Semigroup
+import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TE
+import Network.HTTP.Types.URI (EscapeItem(..), renderQueryPartialEscape)
 import Servant.Client (ClientError)
 
 import Gargantext.Prelude
 import Gargantext.Core (Lang(..))
+import Gargantext.Core.Text.Corpus.Query as Corpus
+import Gargantext.Core.Types (Term(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 
 import qualified PUBMED as PubMed
@@ -30,24 +43,72 @@ import qualified PUBMED.Parser as PubMedDoc
 import PUBMED.Types (Config(..))
 
 
-type Query = Text
-type Limit = Integer
+-- | A pubmed query.
+-- See: https://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ESearch
+newtype ESearch = ESearch { _ESearch :: [EscapeItem] }
+  deriving stock (Show, Eq)
+  deriving newtype (Semigroup, Monoid)
 
+-- | Returns an /url encoded/ query ready to be sent to pubmed.
+getESearch :: ESearch -> Text
+getESearch (ESearch items) =
+  Text.replace "term=" "" . TE.decodeUtf8 . renderQueryPartialEscape False $ [
+    ("term", items)
+    ]
+
+convertQuery :: Corpus.Query -> ESearch
+convertQuery q = ESearch (interpretQuery q transformAST)
+  where
+    transformAST :: BoolExpr Term -> [EscapeItem]
+    transformAST ast = case ast of
+      BAnd sub (BConst (Negative term))
+        -- The second term become positive, so that it can be translated.
+        -> (transformAST sub) <> [QN "+AND+NOT+"] <> transformAST (BConst (Positive term))
+      BAnd term1 (BNot term2)
+        -> transformAST term1 <> [QN "+AND+NOT+"] <> transformAST term2
+      BAnd sub1 sub2
+        -> transformAST sub1 <> [QN "+AND+"] <> transformAST sub2
+      BOr sub1 sub2
+        -> transformAST sub1 <> [QN "+OR+"] <> transformAST sub2
+      BNot (BConst (Negative term))
+        -> transformAST (BConst (Positive term)) -- double negation
+      BNot sub
+        -> [QN "NOT+"] <> transformAST sub
+      -- BTrue cannot happen is the query parser doesn't support parsing 'TRUE' alone.
+      BTrue
+        -> mempty
+      -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
+      BFalse
+        -> mempty
+      BConst (Positive (Term term))
+        -> [QE (TE.encodeUtf8 term)]
+      -- We can handle negatives via `ANDNOT` with itself.
+      BConst (Negative (Term term))
+        -> [QN "NOT+", QE (TE.encodeUtf8 term)]
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs
-get :: Maybe Text
-    -> Query
+get :: Text
+    -> Corpus.Query
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get mAPIKey q l = do
-  eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = mAPIKey
-                                                     , query   = q
+get apiKey q l = do
+  -- The documentation for PUBMED says:
+  -- Values for query keys may also be provided in term if they are preceeded by a
+  -- '#' (%23 in the URL). While only one query_key parameter can be provided to ESearch,
+  -- any number of query keys can be combined in term. Also, if query keys are provided in term,
+  -- they can be combined with OR or NOT in addition to AND.
+  -- Example:
+  -- esearch.fcgi?db=pubmed&term=%231+AND+asthma&WebEnv=<webenv string>&usehistory=y
+  --
+  -- Therefore, we can pretty-print our 'Query' back into something that PubMed could understand.
+  eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = Just apiKey
+                                                     , query   = getESearch $ convertQuery q
                                                      , perPage = Just 200
                                                      , mWebEnv = Nothing })
   let takeLimit = case l of
         Nothing -> mapC identity
-        Just l' -> takeC $ fromIntegral l'
+        Just l' -> takeC $ getLimit l'
   pure $ (\(len, docsC) -> (len, docsC .| takeLimit .| mapC (toDoc EN))) <$> eRes
   --either (\e -> panic $ "CRAWL: PubMed" <> e) (map (toDoc EN))
   --      <$> PubMed.getMetadataWithC q l
