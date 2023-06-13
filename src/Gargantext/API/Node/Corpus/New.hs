@@ -54,17 +54,18 @@ import Gargantext.Database.Action.Mail (sendMail)
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..), UserId)
+import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getNodeWith, updateCorpusPubmedAPIKey)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
-import Gargantext.Prelude.Config (gc_max_docs_parsers)
+import Gargantext.Prelude.Config (gc_max_docs_parsers, gc_pubmed_api_key)
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
 import qualified Gargantext.Database.GargDB as GargDB
+
 ------------------------------------------------------------------------
 {-
 data Query = Query { query_query      :: Text
@@ -130,16 +131,13 @@ deriveJSON (unPrefix "") 'ApiInfo
 
 instance ToSchema ApiInfo
 
-info :: FlowCmdM env err m => UserId -> m ApiInfo
-info _u = do
-  ext <- API.externalAPIs
-
-  pure $ ApiInfo ext
+info :: ApiInfo
+info = ApiInfo API.externalAPIs
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 data WithQuery = WithQuery
-  { _wq_query        :: !Text
+  { _wq_query        :: !API.RawQuery
   , _wq_databases    :: !Database
   , _wq_datafield    :: !(Maybe Datafield)
   , _wq_lang         :: !Lang
@@ -185,7 +183,7 @@ addToCorpusWithQuery :: (FlowCmdM env err m, MonadJobStatus m)
                        => User
                        -> CorpusId
                        -> WithQuery
-                       -> Maybe Integer
+                       -> Maybe API.Limit
                        -> JobHandle m
                        -> m ()
 addToCorpusWithQuery user cid (WithQuery { _wq_query = q
@@ -210,7 +208,8 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
     _ -> do
       case datafield of
-         Just (External (PubMed { _api_key })) -> do
+         Just (External PubMed) -> do
+           _api_key <- view $ hasConfig . gc_pubmed_api_key
            printDebug "[addToCorpusWithQuery] pubmed api key" _api_key
            _ <- updateCorpusPubmedAPIKey cid _api_key
            pure ()
@@ -222,7 +221,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       --      if cid is corpus -> add to corpus
       --      if cid is root   -> create corpus in Private
       -- printDebug "[G.A.N.C.New] getDataText with query" q
-      db   <- database2origin dbs
+      let db = database2origin dbs
       eTxt <- getDataText db (Multi l) q maybeLimit
 
       -- printDebug "[G.A.N.C.New] lTxts" lTxts

@@ -27,14 +27,14 @@ import qualified HAL            as HAL
 import qualified HAL.Client     as HAL
 import qualified HAL.Doc.Corpus as HAL
 
-get :: Lang -> Text -> Maybe Integer -> IO [HyperdataDocument]
+get :: Lang -> Text -> Maybe Int -> IO [HyperdataDocument]
 get la q ml = do
-  eDocs <- HAL.getMetadataWith q (Just 0) ml
+  eDocs <- HAL.getMetadataWith q (Just 0) (fromIntegral <$> ml)
   either (panic . pack . show) (\d -> mapM (toDoc' la) $ HAL._docs d) eDocs
 
-getC :: Lang -> Text -> Maybe Integer -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
+getC :: Lang -> Text -> Maybe Int -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 getC la q ml = do
-  eRes <- HAL.getMetadataWithC q (Just 0) ml
+  eRes <- HAL.getMetadataWithC q (Just 0) (fromIntegral <$> ml)
   pure $ (\(len, docsC) -> (len, docsC .| mapMC (toDoc' la))) <$> eRes
 --  case eRes of
 --    Left err -> panic $ pack $ show err

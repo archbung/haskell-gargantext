@@ -50,7 +50,6 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
 
 import Conduit
 import Control.Lens ((^.), view, _Just, makeLenses, over, traverse)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson.TH (deriveJSON)
 import Data.Conduit.Internal (zipSources)
 import qualified Data.Conduit.List as CList
@@ -65,7 +64,6 @@ import Data.Swagger
 import qualified Data.Text as T
 import Data.Tuple.Extra (first, second)
 import GHC.Generics (Generic)
-import Servant.Client (ClientError)
 import System.FilePath (FilePath)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
@@ -133,13 +131,8 @@ deriveJSON (unPrefix "_do_") ''DataOrigin
 instance ToSchema DataOrigin where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_do_")
 
-allDataOrigins :: ( MonadReader env m
-                  , HasConfig env) => m [DataOrigin]
-allDataOrigins = do
-  ext <- API.externalAPIs
-
-  pure $ map InternalOrigin ext
-      <> map ExternalOrigin ext
+allDataOrigins :: [DataOrigin]
+allDataOrigins = map InternalOrigin API.externalAPIs <> map ExternalOrigin API.externalAPIs
 
 ---------------
 data DataText = DataOld ![NodeId]
@@ -157,11 +150,12 @@ printDataText (DataNew (maybeInt, conduitData)) = do
 getDataText :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
             -> Maybe API.Limit
-            -> m (Either ClientError DataText)
-getDataText (ExternalOrigin api) la q li = liftBase $ do
-  eRes <- API.get api (_tt_lang la) q li
+            -> m (Either API.GetCorpusError DataText)
+getDataText (ExternalOrigin api) la q li = do
+  cfg  <- view $ hasConfig
+  eRes <- liftBase $ API.get cfg api (_tt_lang la) q li
   pure $ DataNew <$> eRes
 
 getDataText (InternalOrigin _) _la q _li = do
@@ -169,13 +163,13 @@ getDataText (InternalOrigin _) _la q _li = do
                                            (UserName userMaster)
                                            (Left "")
                                            (Nothing :: Maybe HyperdataCorpus)
-  ids <-  map fst <$> searchDocInDatabase cId (stemIt q)
+  ids <-  map fst <$> searchDocInDatabase cId (stemIt $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
 getDataText_Debug :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
             -> Maybe API.Limit
             -> m ()
 getDataText_Debug a l q li = do

@@ -6,7 +6,7 @@ name: gargantext
 #         | | | +-----  Layers * : New versions with API additions
 #         | | | | +---  Layers * : New versions without API breaking changes
 #         | | | | |
-version: '0.0.6.9.9.6.2'
+version: '0.0.6.9.9.6.3'
 synopsis: Search, map, share
 description: Please see README.md
 category: Data
@@ -81,6 +81,9 @@ library:
   - Gargantext.Core.Text
   - Gargantext.Core.Text.Context
   - Gargantext.Core.Text.Corpus.API
+  - Gargantext.Core.Text.Corpus.API.Arxiv
+  - Gargantext.Core.Text.Corpus.API.Pubmed
+  - Gargantext.Core.Text.Corpus.Query
   - Gargantext.Core.Text.Corpus.Parsers
   - Gargantext.Core.Text.Corpus.Parsers.CSV
   - Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
@@ -166,6 +169,7 @@ library:
   - blaze-html
   - blaze-markup
   - blaze-svg
+  - boolexpr
   - bytestring
   - case-insensitive
   - cassava
@@ -492,7 +496,6 @@ executables:
       - aeson
       - serialise
 
-
 tests:
    garg-test:
      main: Main.hs
@@ -512,45 +515,37 @@ tests:
      - -rtsopts
      - -with-rtsopts=-N
      dependencies:
+     - QuickCheck
      - aeson
+     - async
      - base
+     - boolexpr
      - bytestring
+     - conduit
      - containers
+     - crawlerArxiv
+     - duckling
      - gargantext
      - gargantext-prelude
      - hspec
-     - QuickCheck
-     - quickcheck-instances
-     - time
+     - http-client
+     - http-client-tls
+     - mtl
      - parsec
      - patches-class
      - patches-map
      - duckling
-     - tasty
-     - tasty-hunit
-     - text
-     - unordered-containers
-     - validity
-   jobqueue-test:
-     main: Main.hs
-     source-dirs: tests/queue
-     ghc-options:
-     - -threaded
-     - -rtsopts
-     - -with-rtsopts=-N
-     dependencies:
-     - aeson
-     - async
-     - base
-     - containers
-     - gargantext
-     - mtl
-     - hspec
-     - http-client
-     - http-client-tls
+     - quickcheck-instances
      - servant-job
      - stm
+     - tasty
+     - tasty-hspec
+     - tasty-hunit
+     - tasty-quickcheck
+     - text
      - time
+     - unordered-containers
+     - validity
 #  garg-doctest:
 #    main: Main.hs
 #    source-dirs: src-doctest
