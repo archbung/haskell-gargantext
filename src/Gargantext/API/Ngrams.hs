@@ -349,11 +349,11 @@ commitStatePatch listId (Versioned _p_version p) = do
 
     pure (newNs', snd newNs)
 
-  -- NOTE State (i.e. `NodeStory` can be saved asynchronously, i.e. with debounce)
-  saveNodeStory
-  --saveNodeStoryImmediate
   -- Save new ngrams
   _ <- insertNgrams (newNgramsFromNgramsStatePatch p)
+  -- NOTE State (i.e. `NodeStory` can be saved asynchronously, i.e. with debounce)
+  -- saveNodeStory
+  saveNodeStoryImmediate
 
   pure vq'
 
