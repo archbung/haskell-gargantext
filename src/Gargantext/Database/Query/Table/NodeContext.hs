@@ -227,24 +227,29 @@ getContextNgramsMatchingFTS :: HasNodeError err
                             -> NodeId
                             -> Cmd err [Text]
 getContextNgramsMatchingFTS contextId listId = do
-  res <- runPGSQuery query (listId, listId, contextId)
+  res <- runPGSQuery query (listId, contextId)
   pure $ (\(PGS.Only term) -> term) <$> res
 
   where
     query :: PGS.Query
-    query = [sql| WITH ngrams_ids AS
+    query = [sql| WITH constants AS
+                (SELECT ? AS list_id, ? AS context_id),
+                ngrams_ids AS
                 (SELECT ngrams_id
                  FROM node_stories
-                 WHERE node_id = ?
+                 CROSS JOIN constants
+                 WHERE node_id = constants.list_id
                  UNION SELECT ngrams_id
                  FROM node_ngrams
-                 WHERE node_id = ?)
+                 CROSS JOIN constants
+                 WHERE node_id = constants.list_id)
                 SELECT DISTINCT ngrams.terms
                 FROM ngrams
                 JOIN ngrams_ids ON ngrams_ids.ngrams_id = ngrams.id
+                CROSS JOIN constants
                 -- JOIN node_ngrams ON node_ngrams.ngrams_id = ngrams.id
                 CROSS JOIN contexts
-                WHERE contexts.id = ?
+                WHERE contexts.id = constants.context_id
                 -- AND node_ngrams.node_id = ?
                 AND (contexts.search @@ plainto_tsquery(ngrams.terms)
                   OR contexts.search @@ plainto_tsquery('french', ngrams.terms)) |]

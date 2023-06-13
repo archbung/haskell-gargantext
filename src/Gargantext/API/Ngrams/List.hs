@@ -34,7 +34,8 @@ import Gargantext.API.Prelude (GargServer, GargM, GargError)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Text.Terms (ExtractedNgrams(..))
-import Gargantext.Core.Text.Terms.WithList (buildPatterns, termsInText)
+import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatterns, termsInText)
+import Gargantext.Core.Types (TermsCount)
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (saveDocNgramsWith)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
@@ -166,15 +167,7 @@ reIndexWith cId lId nt lts = do
     -- fromListWith (<>)
     ngramsByDoc = map (HashMap.fromListWith (Map.unionWith (Map.unionWith (\(_a,b) (_a',b') -> (1,b+b')))))
                   $ map (map (\((k, cnt), v) -> (SimpleNgrams (text2ngrams k), over (traverse . traverse) (\p -> (p, cnt)) v)))
-                  $ map (\doc -> List.zip
-                                 (termsInText (buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts)
-                                              $ Text.unlines $ catMaybes
-                                              [ doc ^. context_hyperdata . hd_title
-                                              , doc ^. context_hyperdata . hd_abstract
-                                              ]
-                                 )
-                                 (List.cycle [Map.fromList $ [(nt, Map.singleton (doc ^. context_id) 1 )]])
-                        ) docs
+                  $ map (docNgrams nt ts) docs
 
   -- printDebug "ngramsByDoc: " ngramsByDoc
 
@@ -182,6 +175,21 @@ reIndexWith cId lId nt lts = do
   _ <- mapM (saveDocNgramsWith lId) ngramsByDoc
   -- _ <- refreshNgramsMaterialized
   pure ()
+
+docNgrams :: NgramsType
+          -> [NgramsTerm]
+          -> Gargantext.Database.Admin.Types.Node.Context HyperdataDocument
+          -> [((MatchedText, TermsCount),
+                Map NgramsType (Map NodeId Int))]
+docNgrams nt ts doc =
+  List.zip
+  (termsInText (buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts)
+    $ Text.unlines $ catMaybes
+    [ doc ^. context_hyperdata . hd_title
+    , doc ^. context_hyperdata . hd_abstract
+    ]
+  )
+  (List.cycle [Map.fromList $ [(nt, Map.singleton (doc ^. context_id) 1 )]])
 
 toIndexedNgrams :: HashMap Text NgramsId -> Text -> Maybe (Indexed Int Ngrams)
 toIndexedNgrams m t = Indexed <$> i <*> n
