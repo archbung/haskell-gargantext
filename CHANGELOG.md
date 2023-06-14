@@ -1,5 +1,13 @@
-## Version 0.0.6.9.9.6.3
+## Version 0.0.6.9.9.6.4
 
+* [BACK][FIX][ngrams children in `node stories` are not in the `ngrams` table (#222)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/222)
+* [BACK][FIX][NodeUser json parse error (#213)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/213)
+* [BACK][FEAT][Gitlab Issue Parser, ZuriHac]
+* [FRONT][FIX][Doc Annotation: the selected term menu selection has disappeared (#562)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/562)
+* [FRONT][FIX][Abstract almost disapear in graph&#39;s doc view when there is too much authors (#555)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/555)
+* [FRONT][FIX][Ngrams Context (#547)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/547)
+
+## Version 0.0.6.9.9.6.3
 
 * [BACK][FIX][Boolean Query Parser (#182)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/182)
 * [BACK][FEAT] Gitlab Issue Parser, Welcome Christian
