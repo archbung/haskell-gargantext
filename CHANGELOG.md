@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.6.5
+
+* [BACK|FRONT][FIX] Order 2
+* [FRONT][FIX][[Node Terms] Restore a good display the main table cols display (since adding the &quot;show&quot; column) (#566)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/566
+)
+
 ## Version 0.0.6.9.9.6.4
 
 * [BACK][FIX][ngrams children in `node stories` are not in the `ngrams` table (#222)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/222)
