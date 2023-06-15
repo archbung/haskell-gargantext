@@ -73,7 +73,6 @@ defaultClustering x = spinglass 1 x
 -------------------------------------------------------------
 type Threshold = Double
 
-
 cooc2graph' :: Ord t => Similarity
                      -> Double
                      -> Map (t, t) Int
@@ -84,14 +83,13 @@ cooc2graph' distance threshold myCooc
     $ measure distance
     $ case distance of
         Conditional    -> map2mat Triangle 0 tiSize
-        Distributional -> map2mat Square   0 tiSize
+        _              -> map2mat Square   0 tiSize
     $ Map.filter (> 1) myCooc'
 
      where
         (ti, _) = createIndices myCooc
         tiSize  = Map.size ti
         myCooc' = toIndex ti myCooc
-
 
 
 -- coocurrences graph computation
@@ -197,7 +195,7 @@ doSimilarityMap Conditional threshold strength myCooc = (distanceMap, toIndex ti
                 $ Map.filter (> threshold)
                 $ similarities `seq` mat2map similarities
 
-doSimilarityMap Distributional threshold strength myCooc = (distanceMap, toIndex ti diag, ti)
+doSimilarityMap distriType threshold strength myCooc = (distanceMap, toIndex ti diag, ti)
   where
     -- TODO remove below
     (diag, theMatrix) = Map.partitionWithKey (\(x,y) _ -> x == y)
@@ -208,7 +206,7 @@ doSimilarityMap Distributional threshold strength myCooc = (distanceMap, toIndex
     tiSize  = Map.size ti
 
     similarities = (\m -> m `seq` m)
-                 $ (\m -> m `seq` measure Distributional m)
+                 $ (\m -> m `seq` measure distriType m)
                  $ (\m -> m `seq` map2mat Square 0 tiSize m)
                  $ theMatrix `seq` toIndex ti theMatrix
 

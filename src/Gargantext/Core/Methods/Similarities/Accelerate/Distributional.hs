@@ -168,16 +168,16 @@ distributional m' = run $ result
 
     result = termDivNan z_1 z_2
 
-logDistributional2 :: Matrix Int -> Matrix Double
-logDistributional2 m = trace ("logDistributional2, dim=" `mappend` show n) . run
-                    $ diagNull n
-                    $ matMaxMini
-                    $ logDistributional' n m
+logDistributional2 :: Exp Double -> Matrix Int -> Matrix Double
+logDistributional2 o m = trace ("logDistributional2, dim=" `mappend` show n) . run
+                       $ diagNull n
+                       $ matMaxMini
+                       $ logDistributional' o n m
   where
     n = dim m
 
-logDistributional' :: Int -> Matrix Int -> Acc (Matrix Double)
-logDistributional' n m' = trace ("logDistributional'") result
+logDistributional' :: Exp Double -> Int -> Matrix Int -> Acc (Matrix Double)
+logDistributional' o n m' = trace ("logDistributional'") result
  where
     -- From Matrix Int to Matrix Double, i.e :
     -- m :: Matrix Int -> Matrix Double
@@ -204,7 +204,7 @@ logDistributional' n m' = trace ("logDistributional'") result
     -- m_{i,j} = 0 if n_{i,j} = 0 or i = j, 
     -- m_{i,j} = log(to * n_{i,j} / s_{i,j}) otherwise.
     mi = (.*) (matrixEye n) 
-        (map (lift1 (\x -> cond (x == 0) 0 (log (1 + x * to)))) ((./) m ss))
+        (map (lift1 (\x -> cond (x == 0) 0 (log (o + x * to)))) ((./) m ss))
     -- mi_nnz :: Int
     -- mi_nnz = flip indexArray Z . run $
     --   foldAll (+) 0 $ map (\a -> ifThenElse (abs a < 10^(-6 :: Exp Int)) 0 1) mi
