@@ -522,7 +522,8 @@ initPhylo docs conf =
                  then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale }
                  else defaultPhyloParam { _phyloParam_config = conf }
         periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
-    in trace ("\n" <> "-- | Init a phylo out of " <> show(length docs) <> " docs \n") 
+    in trace ("\n" <> "-- | Init a phylo out of " <> show(length docs) <> " docs \n")
+       $ trace ("\n" <> "-- | lambda " <> show(_qua_granularity $ phyloQuality $ _phyloParam_config params)) 
        $ Phylo foundations
                docsSources
                docsCounts

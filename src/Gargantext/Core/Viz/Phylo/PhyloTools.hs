@@ -519,7 +519,7 @@ getConfig :: Phylo -> PhyloConfig
 getConfig phylo = (phylo ^. phylo_param) ^. phyloParam_config
 
 getLevel :: Phylo -> Double
-getLevel phylo = _phylo_level phylo
+getLevel phylo = (phyloQuality (getConfig phylo)) ^. qua_granularity
 
 getLadder :: Phylo -> [Double]
 getLadder phylo = phylo ^. phylo_seaLadder
