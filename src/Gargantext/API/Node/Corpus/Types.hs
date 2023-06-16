@@ -4,7 +4,6 @@ module Gargantext.API.Node.Corpus.Types where
 
 import Control.Lens hiding (elements, Empty)
 import Control.Monad.Fail (fail)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Monoid (mempty)

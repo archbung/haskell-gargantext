@@ -56,7 +56,7 @@ import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (getNodeWith)
+import Gargantext.Database.Query.Table.Node (getNodeWith, updateCorpusPubmedAPIKey)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
@@ -208,10 +208,10 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
     _ -> do
       case datafield of
-         Just (External PubMed) -> do
+         Just (External (Just PubMed)) -> do
            _api_key <- view $ hasConfig . gc_pubmed_api_key
            printDebug "[addToCorpusWithQuery] pubmed api key" _api_key
-           _ <- updateCorpusPubmedAPIKey cid _api_key
+           _ <- updateCorpusPubmedAPIKey cid (Just _api_key)
            pure ()
          _ -> pure ()
       markStarted 3 jobHandle
