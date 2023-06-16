@@ -56,7 +56,7 @@ import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (getNodeWith, updateCorpusPubmedAPIKey)
+import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude

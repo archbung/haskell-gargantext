@@ -24,26 +24,22 @@ module Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Prelude
 import Gargantext.Database.Admin.Types.Hyperdata.CorpusField
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
-import PUBMED.Types (APIKey)
 
 ------------------------------------------------------------------------
 data HyperdataCorpus =
-  HyperdataCorpus { _hc_fields         :: ![HyperdataField CorpusField]
-                  , _hc_pubmed_api_key :: Maybe APIKey }
+  HyperdataCorpus { _hc_fields :: ![HyperdataField CorpusField] }
     deriving (Generic)
 
 defaultHyperdataCorpus :: HyperdataCorpus
 defaultHyperdataCorpus =
-  HyperdataCorpus
-    { _hc_fields = [ HyperdataField Markdown
-                     "Corpus analysis"
-                     (MarkdownField "# title\n## subtitle")
+  HyperdataCorpus [ HyperdataField Markdown
+                                   "Corpus analysis"
+                                   (MarkdownField "# title\n## subtitle")
 
-                   , HyperdataField JSON
-                     "Metadata (Experts only)"
-                     (JsonField "Title" "Descr" "Bool query" "Authors")
-                   ]
-    , _hc_pubmed_api_key = Nothing }
+                  , HyperdataField JSON
+                                   "Metadata (Experts only)"
+                                   (JsonField "Title" "Descr" "Bool query" "Authors")
+                  ]
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
