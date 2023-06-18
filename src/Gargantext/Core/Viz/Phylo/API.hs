@@ -188,4 +188,3 @@ instance ToParamSchema Metric
 instance ToParamSchema Order
 instance ToParamSchema Sort
 instance ToSchema Order
-
