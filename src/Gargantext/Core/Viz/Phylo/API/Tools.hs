@@ -14,18 +14,16 @@ module Gargantext.Core.Viz.Phylo.API.Tools
 
 import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
 import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes)
 import Data.Proxy
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Time.Calendar (fromGregorian, diffGregorianDurationClip, cdMonths, diffDays, showGregorian)
 import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import Gargantext.API.Ngrams.Prelude (getTermList)
-import Gargantext.API.Ngrams.Tools (getRepo)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.API.Node.Corpus.Export (getContextNgrams)
 import Gargantext.API.Prelude (GargNoServer)
-import Gargantext.Core.Text.Context (TermList)
+import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
 import Gargantext.Core.Types (Context)
 -- import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (ListType(MapTerm))
@@ -45,12 +43,11 @@ import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
-import Prelude
+import Prelude hiding (map)
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
 import System.Process      as Shell
 import qualified Data.ByteString.Lazy                    as Lazy
-import qualified Data.List as List
 import qualified Data.Map.Strict  as Map
 import qualified Data.Set  as Set
 
@@ -91,48 +88,41 @@ phylo2dot2json phylo = do
 
 flowPhyloAPI :: PhyloConfig -> CorpusId -> GargNoServer Phylo
 flowPhyloAPI config cId = do
-  (_, corpus) <- corpusIdtoDocuments (timeUnit config) cId
+  corpus <- corpusIdtoDocuments (timeUnit config) cId
   let phyloWithCliques = toPhyloWithoutLink corpus config
   -- writePhylo phyloWithCliquesFile phyloWithCliques
   pure $ toPhylo (setConfig config phyloWithCliques)
 
 --------------------------------------------------------------------
-corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer (TermList, [Document])
+corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer [Document]
 corpusIdtoDocuments timeUnit corpusId = do
   docs <- selectDocNodes corpusId
-  printDebug "docs *****" (length docs)
   lId  <- defaultList corpusId
-
-{-
-  (_masterUserId, _masterRootId, masterCorpusId) <- getOrMk_RootWithCorpus
-                                           (UserName userMaster)
-                                           (Left "")
-                                           (Nothing :: Maybe HyperdataCorpus)
-  mListId <- defaultList masterCorpusId
-  repo <- getRepo [mListId,lId]
--}
-  repo <- getRepo [lId]
-  -- ngs_terms'   <- getContextNgrams corpusId mListId MapTerm NgramsTerms repo
-
-  ngs_terms    <- getContextNgrams corpusId lId MapTerm NgramsTerms repo
-  printDebug "Size ngs_coterms *****" (length ngs_terms)
-
-  ngs_sources  <- getContextNgrams corpusId lId MapTerm Sources repo
-  printDebug "Size ngs_sources Map Sources *****" (length ngs_sources)
-
   termList <- getTermList lId MapTerm NgramsTerms
-  printDebug "Size ngs_terms List Map Ngrams *****" (length <$> termList)
 
-  let docs'= catMaybes
-           $ List.map (\doc
-                        -> context2phyloDocument timeUnit doc (ngs_terms {-<> ngs_terms'-}, ngs_sources)
-                      ) docs
+  let patterns = case termList of
+        Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
+        Just termList' -> buildPatterns termList'
+  pure $ map (toPhyloDocs patterns timeUnit) (map _context_hyperdata docs)
 
-  -- printDebug "corpusIdtoDocuments" (Prelude.map date docs')
+termsInText' :: Patterns -> Text -> [Text]
+termsInText' p t = (map fst) $ termsInText p t
 
-  case termList of
-    Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
-    Just termList' -> pure (termList', docs')
+toPhyloDocs :: Patterns -> TimeUnit -> HyperdataDocument -> Document
+toPhyloDocs patterns time d =
+  let title = fromMaybe "" (_hd_title d)
+      abstr = fromMaybe "" (_hd_abstract d)
+                  in Document (toPhyloDate
+                                      (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
+                                      (fromMaybe 1 $ _hd_publication_month d)
+                                      (fromMaybe 1 $ _hd_publication_day d) time)
+                                    (toPhyloDate'
+                                      (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
+                                      (fromMaybe 1 $ _hd_publication_month d)
+                                      (fromMaybe 1 $ _hd_publication_day d) time)
+                                    (termsInText' patterns $ title <> " " <> abstr) Nothing []
+
+
 
 context2phyloDocument :: TimeUnit
                       -> Context HyperdataDocument
@@ -151,12 +141,14 @@ context2phyloDocument timeUnit context (ngs_terms, ngs_sources) = do
   pure $ Document date date' text' Nothing sources'
 
 
+-- TODO better default date and log the errors to improve data quality
 context2date :: Context HyperdataDocument -> TimeUnit -> Maybe (Date, Text)
 context2date context timeUnit = do
   let hyperdata =  _context_hyperdata context
-  year  <- _hd_publication_year  hyperdata
-  month <- _hd_publication_month hyperdata
-  day   <- _hd_publication_day   hyperdata
+  let
+    year  = fromMaybe 1 $ _hd_publication_year  hyperdata
+    month = fromMaybe 1 $ _hd_publication_month hyperdata
+    day   = fromMaybe 1 $ _hd_publication_day   hyperdata
   pure (toPhyloDate year month day timeUnit, toPhyloDate' year month day timeUnit)
 
 
