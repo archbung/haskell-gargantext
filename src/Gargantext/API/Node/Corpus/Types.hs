@@ -3,7 +3,6 @@
 module Gargantext.API.Node.Corpus.Types where
 
 import Control.Lens hiding (elements, Empty)
-import Control.Monad.Fail (fail)
 import Control.Monad.Reader (MonadReader)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
@@ -11,7 +10,6 @@ import Data.Monoid (mempty)
 import Data.Swagger
 import GHC.Generics (Generic)
 import Test.QuickCheck
-import qualified Data.Text as T
 import qualified PUBMED.Types as PUBMED
 
 import Gargantext.Prelude
@@ -62,23 +60,25 @@ data Datafield = Gargantext
                | Files
   deriving (Eq, Show, Generic)
 
-instance FromJSON Datafield where
-  parseJSON = withText "Datafield" $ \text ->
-    case text of
-      "Gargantext"
-        -> pure Gargantext
-      "Web"
-        -> pure Web
-      "Files"
-        -> pure Files
-      v -> case T.breakOnEnd " " v of
-          ("External ", dbName)
-            -> External <$> parseJSON (String dbName)
-          _ -> fail $ "Cannot match patterh 'External <db>' for string " <> T.unpack v
+instance FromJSON Datafield
+instance ToJSON Datafield
+-- instance FromJSON Datafield where
+--   parseJSON = withText "Datafield" $ \text ->
+--     case text of
+--       "Gargantext"
+--         -> pure Gargantext
+--       "Web"
+--         -> pure Web
+--       "Files"
+--         -> pure Files
+--       v -> case T.breakOnEnd " " v of
+--           ("External ", dbName)
+--             -> External <$> parseJSON (String dbName)
+--           _ -> fail $ "Cannot match patterh 'External <db>' for string " <> T.unpack v
 
-instance ToJSON Datafield where
-  toJSON (External db) = toJSON $ "External " <> show db
-  toJSON s = toJSON $ show s
+-- instance ToJSON Datafield where
+--   toJSON (External db) = toJSON $ "External " <> show db
+--   toJSON s = toJSON $ show s
 
 instance Arbitrary Datafield where
   arbitrary = oneof [pure Gargantext, pure Web, pure Files, External <$> arbitrary]
