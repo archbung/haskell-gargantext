@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Either
 import Gargantext.API.Node.Corpus.New
 import Gargantext.API.Node.Corpus.Types
+import Gargantext.Core.Types.Phylo
 import Gargantext.Core.Viz.Phylo.API
 import Prelude
 import Test.Tasty
@@ -18,7 +19,8 @@ import Text.RawString.QQ
 import qualified Data.ByteString.Lazy.Char8 as C8
 
 jsonRoundtrip :: (Show a, FromJSON a, ToJSON a, Eq a) => a -> Property
-jsonRoundtrip a = eitherDecode (encode a) === Right a
+jsonRoundtrip a =
+  counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
 
 tests :: TestTree
 tests = testGroup "JSON" [
@@ -26,7 +28,11 @@ tests = testGroup "JSON" [
   , testProperty "WithQuery roundtrips" (jsonRoundtrip @WithQuery)
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [
-    testProperty "PhyloData" (jsonRoundtrip @PhyloData)
+    testProperty "PeriodToNode"  (jsonRoundtrip @PeriodToNodeData)
+  , testProperty "GraphData"     (jsonRoundtrip @GraphData)
+  , testProperty "GraphDataData" (jsonRoundtrip @GraphDataData)
+  , testProperty "ObjectData"    (jsonRoundtrip @ObjectData)
+  , testProperty "PhyloData"     (jsonRoundtrip @PhyloData)
   ]
   ]
 
