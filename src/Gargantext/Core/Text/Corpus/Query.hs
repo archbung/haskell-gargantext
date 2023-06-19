@@ -51,7 +51,7 @@ newtype Limit = Limit { getLimit :: Int }
 -- | An opaque wrapper around a 'Query' type which can be parsed from a boolean
 -- expression like (a AND b) OR c, and which can be interpreted in many ways
 -- according to the particular service we are targeting.
-newtype Query = Query { getQuery :: (BoolExpr.CNF Term) }
+newtype Query = Query { getQuery :: BoolExpr.CNF Term }
   deriving Show
 
 interpretQuery :: Query -> (BoolExpr.BoolExpr Term -> ast) -> ast

@@ -19,7 +19,6 @@ module Gargantext.Core.Text.Corpus.API
   ) where
 
 import Conduit
-import Control.Lens ((^.))
 import Data.Bifunctor
 import Data.Either (Either(..))
 import Data.Maybe
@@ -28,7 +27,6 @@ import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
 import Gargantext.Core (Lang(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude
-import Gargantext.Prelude.Config (GargConfig, gc_pubmed_api_key)
 import qualified Gargantext.Core.Text.Corpus.API.Arxiv   as Arxiv
 import qualified Gargantext.Core.Text.Corpus.API.Hal     as HAL
 import qualified Gargantext.Core.Text.Corpus.API.Isidore as ISIDORE
@@ -45,24 +43,33 @@ data GetCorpusError
   deriving (Show, Eq)
 
 -- | Get External API metadata main function
-get :: GargConfig
-    -> ExternalAPIs
+get :: ExternalAPIs
     -> Lang
     -> Corpus.RawQuery
     -> Maybe Corpus.Limit
     -- -> IO [HyperdataDocument]
     -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get cfg externalAPI la q limit = do
+get api la q limit =
   case Corpus.parseQuery q of
     Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
-    Right corpusQuery -> case externalAPI of
-      PubMed -> first ExternalAPIError <$>
-                  PUBMED.get (cfg ^. gc_pubmed_api_key) corpusQuery limit
-      --docs <- PUBMED.get   q default_limit -- EN only by default
-      --pure (Just $ fromIntegral $ length docs, yieldMany docs)
-      Arxiv   -> Right <$> Arxiv.get la corpusQuery limit
-      HAL     -> first ExternalAPIError <$> HAL.getC  la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
-      IsTex   -> do docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
-                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
-      Isidore -> do docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
-                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+    Right corpusQuery ->
+      case api of
+        PubMed { mAPIKey = mAPIKey } -> first ExternalAPIError <$>
+          PUBMED.get (fromMaybe "" mAPIKey) corpusQuery limit
+        --docs <- PUBMED.get   q default_limit -- EN only by default
+        --pure (Just $ fromIntegral $ length docs, yieldMany docs)
+        Arxiv                        -> Right <$> Arxiv.get la corpusQuery limit
+        HAL                          -> first ExternalAPIError <$>
+          HAL.getC  la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+        IsTex                        -> do
+          docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+          pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+        Isidore                      -> do
+          docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
+          pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+        externalApi                  ->
+          panic $ "[G.C.T.Corpus.API] This options are note taken into account: " <>  (cs $ show externalApi)
+
+-- | Some Sugar for the documentation
+-- type Query = PUBMED.Query
+-- type Limit = PUBMED.Limit
