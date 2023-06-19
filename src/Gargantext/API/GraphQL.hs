@@ -76,6 +76,7 @@ data Query m
     , job_logs            :: GQLAT.JobLogArgs -> m (Map Int JobLog)
     , languages           :: GQLNLP.LanguagesArgs -> m GQLNLP.LanguagesMap
     , nodes               :: GQLNode.NodeArgs -> m [GQLNode.Node]
+    , nodes_corpus        :: GQLNode.CorpusArgs -> m [GQLNode.Corpus]
     , node_parent         :: GQLNode.NodeParentArgs -> m [GQLNode.Node]
     , user_infos          :: GQLUserInfo.UserInfoArgs -> m [GQLUserInfo.UserInfo]
     , users               :: GQLUser.UserArgs -> m [GQLUser.User m]
@@ -120,6 +121,7 @@ rootResolver =
                             , job_logs            = GQLAT.resolveJobLogs
                             , languages           = GQLNLP.resolveLanguages
                             , nodes               = GQLNode.resolveNodes
+                            , nodes_corpus        = GQLNode.resolveNodesCorpus
                             , node_parent         = GQLNode.resolveNodeParent
                             , user_infos          = GQLUserInfo.resolveUserInfos
                             , users               = GQLUser.resolveUsers
