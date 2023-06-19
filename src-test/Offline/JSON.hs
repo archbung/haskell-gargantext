@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Either
 import Gargantext.API.Node.Corpus.New
 import Gargantext.API.Node.Corpus.Types
+import Gargantext.Core.Viz.Phylo.API
 import Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -24,6 +25,9 @@ tests = testGroup "JSON" [
     testProperty "Datafield roundtrips" (jsonRoundtrip @Datafield)
   , testProperty "WithQuery roundtrips" (jsonRoundtrip @WithQuery)
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
+  , testGroup "Phylo" [
+    testProperty "PhyloData" (jsonRoundtrip @PhyloData)
+  ]
   ]
 
 testWithQueryFrontend :: Assertion
