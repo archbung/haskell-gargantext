@@ -34,13 +34,12 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree (NodeMode(Private), HasTreeError)
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
+import Test.QuickCheck
 import Web.Internal.HttpApiData (ToHttpApiData, FromHttpApiData, parseUrlPiece, toUrlPiece)
 import qualified Data.List       as List
 import qualified Data.Map.Strict as Map
-import qualified Data.Scientific as Scientific
 import qualified Data.Text       as T
 import qualified Data.Vector     as V
-import qualified Prelude
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 -- | Main parameters
@@ -61,16 +60,28 @@ instance FromJSON FlowSocialListWith where
     case typ of
       "MyListsFirst"     -> pure $ FlowSocialListWithPriority { fslw_priority = MySelfFirst }
       "OtherListsFirst"  -> pure $ FlowSocialListWithPriority { fslw_priority = OthersFirst }
+      "OthersFirst"      -> pure $ FlowSocialListWithPriority { fslw_priority = OthersFirst }
       "SelectedLists"    -> pure $ FlowSocialListWithLists    { fslw_lists    = value       }
-      "NoList"           -> pure $ NoList True
+      "NoList"           -> do
+        mkList <- v .: "makeList"
+        pure $ NoList mkList
       _                  -> pure $ FlowSocialListWithPriority { fslw_priority = MySelfFirst }
   parseJSON _ = mzero
 instance ToJSON FlowSocialListWith where
   toJSON (FlowSocialListWithPriority { fslw_priority = MySelfFirst }) = object [ ("type", String "MyListsFirst") ]
-  toJSON (FlowSocialListWithPriority { fslw_priority = OthersFirst }) = object [ ("type", String "ListsFirst") ]
-  toJSON (NoList _) = object [ ("type", String "NoList") ]
-  toJSON (FlowSocialListWithLists { fslw_lists = ids }) = object [ ("type", String "SelectedLists")
-                                                                 , ("value", Array $ V.fromList $ (map (\(NodeId id) -> Number $ Scientific.scientific (Prelude.toInteger id) 1) ids)) ]
+  toJSON (FlowSocialListWithPriority { fslw_priority = OthersFirst }) = object [ ("type", String "OthersFirst") ]
+  toJSON (NoList v) = object [ ("type", String "NoList"), ("makeList", toJSON v) ]
+  toJSON (FlowSocialListWithLists { fslw_lists = ids }) =
+    object [ ("type", String "SelectedLists")
+           , ("value", Array $ V.fromList (map (\(NodeId id) -> toJSON id) ids)) ]
+
+instance Arbitrary FlowSocialListWith where
+  arbitrary = oneof [
+      FlowSocialListWithPriority <$> arbitrary
+    , FlowSocialListWithLists <$> arbitrary
+    , NoList <$> arbitrary
+    ]
+
 instance ToSchema FlowSocialListWith where
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 instance FromHttpApiData FlowSocialListWith
@@ -87,9 +98,12 @@ instance ToHttpApiData   FlowSocialListWith where
     toUrlPiece (FlowSocialListWithLists _)  = panic "[G.C.T.L.Social] TODO ToHttpApiData FlowSocialListWith"
 
 data FlowSocialListPriority = MySelfFirst | OthersFirst
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Enum, Bounded)
 instance ToSchema FlowSocialListPriority where
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+
+instance Arbitrary FlowSocialListPriority where
+  arbitrary = arbitraryBoundedEnum
 
 flowSocialListPriority :: FlowSocialListPriority -> [NodeMode]
 flowSocialListPriority MySelfFirst = [Private{-, Shared, Public -}]

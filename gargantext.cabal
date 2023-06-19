@@ -43,6 +43,8 @@ library
       Gargantext.API.Ngrams.Tools
       Gargantext.API.Ngrams.Types
       Gargantext.API.Node
+      Gargantext.API.Node.Corpus.New
+      Gargantext.API.Node.Corpus.Types
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
@@ -149,11 +151,9 @@ library
       Gargantext.API.Node.Corpus.Annuaire
       Gargantext.API.Node.Corpus.Export
       Gargantext.API.Node.Corpus.Export.Types
-      Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.New.File
       Gargantext.API.Node.Corpus.New.Types
       Gargantext.API.Node.Corpus.Searx
-      Gargantext.API.Node.Corpus.Types
       Gargantext.API.Node.Document.Export
       Gargantext.API.Node.Document.Export.Types
       Gargantext.API.Node.DocumentsFromWriteNodes
@@ -863,6 +863,7 @@ test-suite garg-test
       Ngrams.NLP
       Ngrams.Query
       Ngrams.Query.PaginationCorpus
+      Offline.JSON
       Parsers.Date
       Parsers.Types
       Parsers.WOS
@@ -917,6 +918,7 @@ test-suite garg-test
     , patches-class
     , patches-map
     , quickcheck-instances
+    , raw-strings-qq
     , servant-job
     , stm
     , tasty

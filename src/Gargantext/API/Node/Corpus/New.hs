@@ -144,7 +144,7 @@ data WithQuery = WithQuery
   , _wq_node_id      :: !Int
   , _wq_flowListWith :: !FlowSocialListWith
   }
-  deriving Generic
+  deriving (Show, Eq, Generic)
 
 makeLenses ''WithQuery
 instance FromJSON WithQuery where
@@ -153,6 +153,14 @@ instance ToJSON WithQuery where
   toJSON = genericToJSON $ jsonOptions "_wq_"
 instance ToSchema WithQuery where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_wq_")
+
+instance Arbitrary WithQuery where
+  arbitrary = WithQuery <$> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
 
 ------------------------------------------------------------------------
 
