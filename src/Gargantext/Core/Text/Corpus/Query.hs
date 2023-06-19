@@ -21,6 +21,7 @@ import           Gargantext.API.Admin.Orchestrator.Types
 import           Gargantext.Core.Types
 import           Prelude
 import           Text.ParserCombinators.Parsec
+import           Test.QuickCheck
 import qualified Data.Aeson                               as Aeson
 import           Data.BoolExpr                            as BoolExpr
 import           Data.BoolExpr.Parser                     as BoolExpr
@@ -36,6 +37,9 @@ newtype RawQuery = RawQuery { getRawQuery :: T.Text }
                    , Servant.FromHttpApiData, Servant.ToHttpApiData
                    , Aeson.FromJSON, Aeson.ToJSON
                    , Swagger.ToParamSchema, Swagger.ToSchema)
+
+instance Arbitrary RawQuery where
+  arbitrary = RawQuery <$> arbitrary
 
 -- | A limit to the number of results we want to retrieve.
 newtype Limit = Limit { getLimit :: Int }

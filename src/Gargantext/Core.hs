@@ -24,6 +24,7 @@ import Data.Tuple.Extra (swap)
 import GHC.Generics (Generic)
 import Gargantext.Prelude
 import Servant.API
+import Test.QuickCheck
 import qualified Data.Map as Map
 
 ------------------------------------------------------------------------
@@ -80,8 +81,11 @@ instance ToHttpApiData Lang where
   toUrlPiece = pack . show
 instance Hashable Lang
 
+instance Arbitrary Lang where
+  arbitrary = arbitraryBoundedEnum
+
 allLangs :: [Lang]
-allLangs = [minBound ..]
+allLangs = [minBound .. maxBound]
 
 class HasDBid a where
   toDBid   :: a   -> Int

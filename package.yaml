@@ -71,6 +71,8 @@ library:
   - Gargantext.API.Ngrams.Tools
   - Gargantext.API.Ngrams.Types
   - Gargantext.API.Node
+  - Gargantext.API.Node.Corpus.New
+  - Gargantext.API.Node.Corpus.Types
   - Gargantext.API.Node.File
   - Gargantext.API.Node.Share
   - Gargantext.API.Prelude
@@ -536,6 +538,7 @@ tests:
      - patches-map
      - duckling
      - quickcheck-instances
+     - raw-strings-qq
      - servant-job
      - stm
      - tasty

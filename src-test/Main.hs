@@ -22,6 +22,7 @@ import qualified Parsers.Date            as PD
 import qualified Graph.Clustering        as Graph
 import qualified Utils.Crypto            as Crypto
 import qualified Utils.Jobs              as Jobs
+import qualified Offline.JSON            as JSON
 
 import Test.Tasty
 import Test.Tasty.Hspec
@@ -44,6 +45,7 @@ main = do
     , jobsSpec
     , NgramsQuery.tests
     , CorpusQuery.tests
+    , JSON.tests
     ]
 --    Occ.parsersTest
 --    Lang.ngramsExtractionTest FR
