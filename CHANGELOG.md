@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.6.6
+
+* [BACK|FRONT][WARNING] Button to launch API corpus is broken for now
+* [BACK][FEAT] Phylo is working again
+* [FRONT][ERGO][[Graph] Rearrange the graph toolbar (#567)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/567)
+
 ## Version 0.0.6.9.9.6.5
 
 * [BACK|FRONT][FIX] Order 2
