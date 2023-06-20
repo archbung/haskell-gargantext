@@ -43,7 +43,7 @@ import Gargantext.Database.Query.Table.Node (defaultList, getNode)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
-import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
+import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), printDebug, pure, show, cs, (<>), panic, (<*>))
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (Enum, Bounded, minBound, maxBound)
 import Servant
@@ -155,25 +155,19 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
 
 updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
   markStarted 3 jobHandle
-
   corpusId' <- view node_parent_id <$> getNode phyloId
-
-  let corpusId = fromMaybe (panic "") corpusId'
-
-  phy <- flowPhyloAPI (subConfig2config config) corpusId
-
+  let corpusId = fromMaybe (panic "UpdateNodePhylo: no corpusId") corpusId'
+  let config'  = subConfig2config config
+  printDebug "UpdateNodePhylo" config'
+  phy <- flowPhyloAPI config' corpusId
   markProgress 1 jobHandle
-
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
-
   markComplete jobHandle
 
 updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
   markStarted 3 jobHandle
-
   corpusId <- view node_parent_id <$> getNode tId
   lId      <- defaultList $ fromMaybe (panic "[G.A.N.Update] updateNode/UpdateNodeParamsTexts: no defaultList") corpusId
-
   markProgress 1 jobHandle
 
   _ <- case corpusId of
