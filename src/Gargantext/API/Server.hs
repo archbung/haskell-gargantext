@@ -18,7 +18,7 @@ import Control.Lens ((^.))
 import Control.Monad.Except (withExceptT)
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as Aeson
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.Version (showVersion)
 import Servant
 import Servant.Swagger.UI (swaggerSchemaUIServer)
@@ -95,4 +95,4 @@ showAsServantJSONErr (GargNodeError err@NoCorpusFound) = err404 { errBody = Aeso
 showAsServantJSONErr (GargNodeError err@NoUserFound) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargNodeError err@(DoesNotExist {})) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargServerError err) = err
-showAsServantJSONErr a = err500 { errBody = Aeson.encode a }
+showAsServantJSONErr a = err500 { errBody = Aeson.encode $ Aeson.object [ ( "error", Aeson.String $ pack $ show a ) ] }
