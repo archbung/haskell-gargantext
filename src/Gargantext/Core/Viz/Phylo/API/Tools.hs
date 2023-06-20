@@ -91,7 +91,9 @@ flowPhyloAPI config cId = do
   corpus <- corpusIdtoDocuments (timeUnit config) cId
   let phyloWithCliques = toPhyloWithoutLink corpus config
   -- writePhylo phyloWithCliquesFile phyloWithCliques
-  pure $ toPhylo (setConfig config phyloWithCliques)
+  printDebug "PhyloConfig old: " config
+
+  pure $ toPhylo $ setConfig config phyloWithCliques
 
 --------------------------------------------------------------------
 corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer [Document]
@@ -120,7 +122,7 @@ toPhyloDocs patterns time d =
                                       (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
                                       (fromMaybe 1 $ _hd_publication_month d)
                                       (fromMaybe 1 $ _hd_publication_day d) time)
-                                    (termsInText' patterns $ title <> " " <> abstr) Nothing []
+                                    (termsInText' patterns $ title <> " " <> abstr) Nothing [] time
 
 
 
@@ -138,7 +140,7 @@ context2phyloDocument timeUnit context (ngs_terms, ngs_sources) = do
     text'    = maybe [] toText $ Map.lookup contextId ngs_terms
     sources' = maybe [] toText $ Map.lookup contextId ngs_sources
 
-  pure $ Document date date' text' Nothing sources'
+  pure $ Document date date' text' Nothing sources' (Year 3 1 5)
 
 
 -- TODO better default date and log the errors to improve data quality

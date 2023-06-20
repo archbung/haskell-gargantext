@@ -14,7 +14,7 @@ module Gargantext.Core.Viz.Phylo.PhyloTools where
 
 import Control.Lens hiding (Level)
 import Data.List (sort, concat, null, union, (++), tails, sortOn, nub, init, tail, iterate, transpose, partition, tails, nubBy, group, notElem, (!!))
-import Data.Map (Map, elems, fromList, unionWith, keys, member, (!), filterWithKey, fromListWith, empty, restrictKeys)
+import Data.Map (Map, elems, fromList, findWithDefault, unionWith, keys, member, (!), filterWithKey, fromListWith, empty, restrictKeys)
 import Data.Set (Set, disjoint)
 import Data.String (String)
 import Data.Text (Text,unpack)
@@ -313,6 +313,27 @@ ngramsToCooc ngrams coocs =
     in  filterWithKey (\k _ -> elem k pairs) cooc
 
 
+-----------------
+-- | Density | --
+-----------------
+
+
+-- | To build the density of a phylogroup
+-- density is defined in Callon M, Courtial JP, Laville F (1991) Co-word analysis as a tool for describing 
+-- the network of interaction between basic and technological research: The case of polymer chemistry. 
+-- Scientometric 22: 155–205.
+ngramsToDensity :: [Int] -> [Cooc] -> (Map Int Double) -> Double
+ngramsToDensity ngrams coocs rootsCount =
+    let cooc  = foldl (\acc cooc' -> sumCooc acc cooc') empty coocs
+        pairs = listToCombi' ngrams
+        density = map (\(i,j) -> 
+            let nij = findWithDefault 0 (i,j) cooc
+             in (nij * nij) / ((rootsCount ! i) * (rootsCount ! j))) pairs
+    in (sum density) / (fromIntegral $ length ngrams)
+
+
+
+
 ------------------
 -- | Defaults | --
 ------------------
@@ -458,6 +479,9 @@ getPeriodIds phylo = sortOn fst
                    $ keys
                    $ phylo ^. phylo_periods
 
+getLastDate :: Phylo -> Date
+getLastDate phylo = snd $ last' "lastDate" $ getPeriodIds phylo
+
 getLevelParentId :: PhyloGroup -> PhyloGroupId
 getLevelParentId g = fst $ head' "getLevelParentId" $ g ^. phylo_groupScaleParents
 
@@ -495,13 +519,16 @@ getConfig :: Phylo -> PhyloConfig
 getConfig phylo = (phylo ^. phylo_param) ^. phyloParam_config
 
 getLevel :: Phylo -> Double
-getLevel phylo = _phylo_level phylo
+getLevel phylo = (phyloQuality (getConfig phylo)) ^. qua_granularity
 
 getLadder :: Phylo -> [Double]
 getLadder phylo = phylo ^. phylo_seaLadder
 
 getCoocByDate :: Phylo -> Map Date Cooc
 getCoocByDate phylo = coocByDate (phylo ^. phylo_counts)
+
+getRootsCountByDate :: Phylo -> Map Date (Map Int Double)
+getRootsCountByDate phylo = rootsCountByDate (phylo ^. phylo_counts)    
 
 getDocsByDate :: Phylo -> Map Date Double
 getDocsByDate phylo = docsByDate (phylo ^. phylo_counts)

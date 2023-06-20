@@ -135,7 +135,7 @@ data TimeUnit =
       { _day_period :: Int
       , _day_step   :: Int
       , _day_matchingFrame :: Int }
-      deriving (Show,Generic,Eq)
+      deriving (Show,Generic,Eq,NFData)
 
 instance ToSchema TimeUnit where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "")
@@ -355,6 +355,7 @@ data Document = Document
       , text    :: [Ngrams]
       , weight  :: Maybe Double
       , sources :: [Text]
+      , docTime :: TimeUnit
       } deriving (Eq,Show,Generic,NFData)
 
 
@@ -372,6 +373,7 @@ data PhyloFoundations = PhyloFoundations
 data PhyloCounts = PhyloCounts
       { coocByDate    :: !(Map Date Cooc)
       , docsByDate    :: !(Map Date Double)
+      , rootsCountByDate :: !(Map Date (Map Int Double))
       , rootsCount    :: !(Map Int  Double)
       , rootsFreq     :: !(Map Int  Double)
       , lastRootsFreq :: !(Map Int  Double)
@@ -487,8 +489,10 @@ data PhyloGroup =
                  , _phylo_groupSources  :: [Int]
                  , _phylo_groupNgrams   :: [Int]
                  , _phylo_groupCooc     :: !(Cooc)
+                 , _phylo_groupDensity  :: Double
                  , _phylo_groupBranchId :: PhyloBranchId
                  , _phylo_groupMeta     :: Map Text [Double]
+                 , _phylo_groupRootsCount    :: Map Int Double
                  , _phylo_groupScaleParents  :: [Pointer]
                  , _phylo_groupScaleChilds   :: [Pointer]
                  , _phylo_groupPeriodParents :: [Pointer]

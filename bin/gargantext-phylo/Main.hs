@@ -21,7 +21,7 @@ import Control.Concurrent.Async (mapConcurrently)
 import Crypto.Hash.SHA256 (hash)
 import Data.Aeson
 import Data.Either (Either(..), fromRight)
-import Data.List  (concat, nub, isSuffixOf)
+import Data.List  (concat, nub, isSuffixOf,sort,tail)
 import Data.List.Split
 import Data.Maybe (fromMaybe)
 import Data.String (String)
@@ -39,7 +39,7 @@ import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.API.Tools
 import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
 import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
-import Gargantext.Core.Viz.Phylo.PhyloTools  (printIOMsg, printIOComment, setConfig)
+import Gargantext.Core.Viz.Phylo.PhyloTools  (printIOMsg, printIOComment, setConfig, toPeriods, getTimePeriod, getTimeStep)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
@@ -89,7 +89,7 @@ wosToDocs limit patterns time path = do
                                       (fromIntegral $ fromJust $ _hd_publication_year d)
                                       (fromJust $ _hd_publication_month d)
                                       (fromJust $ _hd_publication_day d) time)
-                                    (termsInText patterns $ title <> " " <> abstr) Nothing [])
+                                    (termsInText patterns $ title <> " " <> abstr) Nothing [] time)
         <$> concat
         <$> mapConcurrently (\file ->
               filter (\d -> (isJust $ _hd_publication_year d)
@@ -109,6 +109,7 @@ csvToDocs parser patterns time path =
                                        (termsInText patterns $ (csv_title row) <> " " <> (csv_abstract row))
                                        Nothing
                                        []
+                                       time
                      ) <$> snd <$> either (\err -> panic $ cs $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
     Csv' limit -> Vector.toList
       <$> Vector.take limit
@@ -117,17 +118,34 @@ csvToDocs parser patterns time path =
                                        (termsInText patterns $ (csv'_title row) <> " " <> (csv'_abstract row))
                                        (Just $ csv'_weight row)
                                        (map (T.strip . pack) $ splitOn ";" (unpack $ (csv'_source row)))
+                                       time
                      ) <$> snd <$> Csv.readWeightedCsv path
 
 
 -- To parse a file into a list of Document
-fileToDocs' :: CorpusParser -> FilePath -> TimeUnit -> TermList -> IO [Document]
-fileToDocs' parser path time lst = do
+fileToDocsAdvanced :: CorpusParser -> FilePath -> TimeUnit -> TermList -> IO [Document]
+fileToDocsAdvanced parser path time lst = do
   let patterns = buildPatterns lst
   case parser of
       Wos limit  -> wosToDocs limit  patterns time path
       Csv  _     -> csvToDocs parser patterns time path
       Csv' _     -> csvToDocs parser patterns time path
+
+fileToDocsDefault :: CorpusParser -> FilePath -> [TimeUnit] -> TermList -> IO [Document]
+fileToDocsDefault parser path timeUnits lst = 
+  if length timeUnits > 0
+    then
+      do 
+        let timeUnit = (head' "fileToDocsDefault" timeUnits)
+        docs <- fileToDocsAdvanced parser path timeUnit lst  
+        let periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeUnit) (getTimeStep timeUnit)
+        if (length periods < 3)
+         then fileToDocsDefault parser path (tail timeUnits) lst
+         else pure docs
+    else panic "this corpus is incompatible with the phylomemy reconstruction"
+
+-- on passe à passer la time unit dans la conf envoyé au phyloMaker
+-- dans le phyloMaker si default est true alors dans le setDefault ou pense à utiliser la TimeUnit de la conf 
 
 
 ---------------
@@ -251,7 +269,11 @@ main = do
 
             printIOMsg "Parse the corpus"
             mapList <-  fileToList (listParser config) (listPath config)
-            corpus  <- fileToDocs' (corpusParser config) (corpusPath config) (timeUnit config) mapList
+
+            corpus  <- if (defaultMode config)
+                        then fileToDocsDefault (corpusParser config) (corpusPath config) [Year 3 1 5,Month 3 1 5,Week 4 2 5] mapList
+                        else fileToDocsAdvanced (corpusParser config) (corpusPath config) (timeUnit config)  mapList
+            
             printIOComment (show (length corpus) <> " parsed docs from the corpus")
 
             printIOComment (show (length $ nub $ concat $ map text corpus) <> " Size ngs_coterms")
