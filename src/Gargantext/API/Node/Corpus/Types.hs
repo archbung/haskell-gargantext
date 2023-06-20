@@ -49,21 +49,17 @@ data Datafield = Gargantext
   deriving (Eq, Show, Generic)
 
 instance FromJSON Datafield where
-  parseJSON = withText "Datafield" $ \text ->
-    case text of
-      "Gargantext"
-        -> pure Gargantext
-      "Web"
-        -> pure Web
-      "Files"
-        -> pure Files
-      v -> case T.breakOnEnd " " v of
-          ("External ", dbName)
-            -> External <$> parseJSON (String dbName)
-          _ -> fail $ "Cannot match patterh 'External <db>' for string " <> T.unpack v
+  parseJSON (String "Gargantext") = pure Gargantext
+  parseJSON (String "Web") = pure Web
+  parseJSON (String "Files") = pure Files
+  parseJSON (Object o) = do
+    db <- o .: "External"
+    pure $ External db
+  parseJSON x = withText "Datafield" (\text ->
+    fail $ "Cannot match pattern '<db>' for string " <> T.unpack text) x
 
 instance ToJSON Datafield where
-  toJSON (External db) = toJSON $ "External " <> show db
+  toJSON (External db) = toJSON $ object [ ("External", toJSON db) ]
   toJSON s = toJSON $ show s
 
 instance Arbitrary Datafield where
