@@ -48,6 +48,7 @@ import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
+import qualified Servant.Job.Types as SJ
 
 class HasJoseError e where
   _JoseError :: Prism' e Jose.Error
@@ -120,6 +121,15 @@ data GargError
 makePrisms ''GargError
 
 instance ToJSON GargError where
+  toJSON (GargJobError s) =
+    object [ ("status", toJSON SJ.IsFailure)
+           , ("log", emptyArray)
+           , ("id", String id)
+           , ("error", String $ Text.pack $ show s) ]
+    where
+      id = case s of
+        Jobs.InvalidMacID i -> i
+        _ -> ""
   toJSON err = object [("error", String $ Text.pack $ show err)]
 
 instance Exception GargError
