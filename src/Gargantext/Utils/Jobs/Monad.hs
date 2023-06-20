@@ -113,7 +113,7 @@ findJob jid = do
 data JobError
   = InvalidIDType
   | IDExpired
-  | InvalidMacID T.Text
+  | InvalidMacID
   | UnknownJob
   | JobException SomeException
   deriving Show
@@ -127,7 +127,7 @@ checkJID (SJ.PrivateID tn n t d) = do
   js <- getJobsSettings
   if | tn /= "job" -> return (Left InvalidIDType)
      | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> return (Left IDExpired)
-     | d /= SJ.macID tn (jsSecretKey js) t n -> return (Left $ InvalidMacID $ T.pack d)
+     | d /= SJ.macID tn (jsSecretKey js) t n -> return (Left InvalidMacID)
      | otherwise -> return $ Right (SJ.PrivateID tn n t d)
 
 withJob
