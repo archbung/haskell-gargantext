@@ -16,7 +16,10 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Text.RawString.QQ
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as C8
+
+import Paths_gargantext
 
 jsonRoundtrip :: (Show a, FromJSON a, ToJSON a, Eq a) => a -> Property
 jsonRoundtrip a =
@@ -33,6 +36,9 @@ tests = testGroup "JSON" [
   , testProperty "GraphDataData" (jsonRoundtrip @GraphDataData)
   , testProperty "ObjectData"    (jsonRoundtrip @ObjectData)
   , testProperty "PhyloData"     (jsonRoundtrip @PhyloData)
+  , testProperty "LayerData"     (jsonRoundtrip @LayerData)
+  , testCase "can parse bpa_phylo_test.json" testParseBpaPhylo
+  , testCase "can parse open_science.json" testOpenSciencePhylo
   ]
   ]
 
@@ -46,3 +52,19 @@ testWithQueryFrontend = do
 -- instances, this test would fail, and we will be notified.
 cannedWithQueryPayload :: String
 cannedWithQueryPayload = [r| {"query":"Haskell","node_id":138,"lang":"EN","flowListWith":{"type":"MyListsFirst"},"datafield":"External Arxiv","databases":"Arxiv"} |]
+
+testParseBpaPhylo :: Assertion
+testParseBpaPhylo = do
+  pth      <- getDataFileName "test-data/phylo/bpa_phylo_test.json"
+  jsonBlob <- B.readFile pth
+  case eitherDecodeStrict' @GraphData jsonBlob of
+    Left err    -> error err
+    Right _     -> pure ()
+
+testOpenSciencePhylo :: Assertion
+testOpenSciencePhylo = do
+  pth      <- getDataFileName "test-data/phylo/open_science.json"
+  jsonBlob <- B.readFile pth
+  case eitherDecodeStrict' @PhyloData jsonBlob of
+    Left err    -> error err
+    Right _     -> pure ()

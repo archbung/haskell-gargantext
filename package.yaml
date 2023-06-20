@@ -45,6 +45,8 @@ data-files:
   - ekg-assets/chart_line_add.png
   - ekg-assets/cross.png
   - test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
+  - test-data/phylo/bpa_phylo_test.json
+  - test-data/phylo/open_science.json
 library:
   source-dirs: src
   ghc-options:

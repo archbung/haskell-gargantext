@@ -33,6 +33,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Aeson.TH (deriveJSON)
+import Data.Maybe
 import Data.Monoid
 import Data.Swagger
 import Data.Text    (Text)
@@ -395,7 +396,7 @@ instance ToJSON LayerData where
 
 instance FromJSON LayerData where
   parseJSON = withObject "LayerData" $ \o -> do
-    _ld_nodes <- o .: "nodes"
+    _ld_nodes <- fromMaybe mempty <$> (o .:? "nodes")
     pure $ LayerData{..}
 
 data NodeCommonData =
@@ -447,6 +448,7 @@ data EdgeData
   = GroupToAncestor !GvId !EdgeCommonData !GroupToAncestorData
   | GroupToGroup    !GvId !EdgeCommonData !GroupToGroupData
   | BranchToGroup   !GvId !EdgeCommonData !BranchToGroupData
+  | PeriodToPeriod  !GvId !EdgeCommonData
   deriving (Show, Eq, Generic)
 
 data GroupToAncestorData
@@ -516,13 +518,15 @@ instance FromJSON GvId where
 instance ToJSON EdgeData where
   toJSON = \case
     GroupToAncestor gvid commonData edgeTypeData
-      -> mkEdge "ancestorLink" gvid commonData edgeTypeData
+      -> mkEdge (Just "ancestorLink") gvid commonData edgeTypeData
     GroupToGroup gvid commonData edgeTypeData
-      -> mkEdge "link" gvid commonData edgeTypeData
+      -> mkEdge (Just "link") gvid commonData edgeTypeData
     BranchToGroup gvid commonData edgeTypeData
-      -> mkEdge "branchLink" gvid commonData edgeTypeData
+      -> mkEdge (Just "branchLink") gvid commonData edgeTypeData
+    PeriodToPeriod gvid commonData
+      -> mkEdge Nothing gvid commonData (Object mempty)
 
-mkEdge :: ToJSON a => Text -> GvId -> EdgeCommonData -> a -> Value
+mkEdge :: ToJSON a => Maybe Text -> GvId -> EdgeCommonData -> a -> Value
 mkEdge edgeType gvid commonData edgeTypeData =
   let commonDataJSON   = toJSON commonData
       edgeTypeDataJSON = toJSON edgeTypeData
@@ -537,18 +541,19 @@ mkEdge edgeType gvid commonData edgeTypeData =
 
 instance FromJSON EdgeData where
   parseJSON = withObject "EdgeData" $ \o -> do
-    edgeType  <- o .: "edgeType"
+    edgeType  <- o .:? "edgeType"
     gvid      <- o .: "_gvid"
     _ed_color <- o .: "color"
     _ed_head  <- o .: "head"
     _ed_pos   <- o .: "pos"
     _ed_tail  <- o .: "tail"
     _ed_width <- o .: "width"
-    case (edgeType :: Text) of
-      "ancestorLink" -> GroupToAncestor <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
-      "link"         -> GroupToGroup    <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
-      "branchLink"   -> BranchToGroup   <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
-      _              -> fail $ "EdgeData: unrecognised edgeType for Phylo graph: " <> T.unpack edgeType
+    case (edgeType :: Maybe Text) of
+      Just "ancestorLink" -> GroupToAncestor <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
+      Just "link"         -> GroupToGroup    <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
+      Just "branchLink"   -> BranchToGroup   <$> pure gvid <*> pure EdgeCommonData{..} <*> parseJSON (Object o)
+      Just unknownEdgeType -> fail $ "EdgeData: unrecognised edgeType for Phylo graph: " <> T.unpack unknownEdgeType
+      Nothing             -> pure $ PeriodToPeriod gvid EdgeCommonData{..}
 
 instance ToJSON EdgeCommonData where
   toJSON EdgeCommonData{..} = object
