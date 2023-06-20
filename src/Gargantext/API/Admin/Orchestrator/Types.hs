@@ -6,6 +6,7 @@ module Gargantext.API.Admin.Orchestrator.Types
   where
 
 import Control.Lens hiding (elements)
+import Control.Monad.Reader (MonadReader)
 import Data.Aeson
 import Data.Morpheus.Types
   ( GQLType
@@ -23,7 +24,9 @@ import Test.QuickCheck.Arbitrary
 
 import qualified Gargantext.API.GraphQL.Utils as GQLU
 import Gargantext.Core.Types (TODO(..))
+import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Prelude
+import Gargantext.Prelude.Config (gc_pubmed_api_key)
 
 ------------------------------------------------------------------------
 instance Arbitrary a => Arbitrary (JobStatus 'Safe a) where
@@ -34,24 +37,39 @@ instance Arbitrary a => Arbitrary (JobOutput a) where
 
 -- | Main Types
 -- TODO IsidoreAuth
-data ExternalAPIs = PubMed
+data ExternalAPIs = All
+                  | PubMed { mAPIKey :: Maybe Text }
                   | Arxiv
                   | HAL
                   | IsTex
                   | Isidore
-  deriving (Show, Eq, Generic, Enum, Bounded)
+  deriving (Show, Eq, Generic)
 
 
 -- | Main Instances
 instance FromJSON ExternalAPIs
 instance ToJSON ExternalAPIs
 
-externalAPIs :: [ExternalAPIs]
-externalAPIs = [minBound .. maxBound]
+externalAPIs :: ( MonadReader env m
+                , HasConfig env) => m [ExternalAPIs]
+externalAPIs = do
+  pubmed_api_key <- view $ hasConfig . gc_pubmed_api_key
+
+  pure [ All
+       , PubMed { mAPIKey = Just pubmed_api_key }
+       , Arxiv
+       , HAL
+       , IsTex
+       , Isidore ]
 
 instance Arbitrary ExternalAPIs
   where
-    arbitrary = arbitraryBoundedEnum
+    arbitrary = elements [ All
+                         , PubMed { mAPIKey = Nothing }
+                         , Arxiv
+                         , HAL
+                         , IsTex
+                         , Isidore ]
 
 instance ToSchema ExternalAPIs where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
