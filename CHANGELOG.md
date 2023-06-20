@@ -1,3 +1,10 @@
+## Version 0.0.6.9.9.6.7
+
+* [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
+* [BACK][FIX] PhyloTypes
+* [FRONT][FIX][[Node Doc] Annotation: select/add ngram to map terms doesn&#39;t seems to sync in frontend render (#563)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/563)
+* [FRONT][FIX][[Graph] Rearrange the graph toolbar (#567)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/567)
+
 ## Version 0.0.6.9.9.6.6
 
 * [BACK|FRONT][WARNING] Button to launch API corpus is broken for now
