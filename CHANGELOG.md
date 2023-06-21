@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.6.9
+
+* [FRONT][FIX][Search in the Tree (#506)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/506)
+
 ## Version 0.0.6.9.9.6.8
 
 * [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
