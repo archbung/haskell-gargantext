@@ -153,8 +153,8 @@ tree_flat :: (HasTreeError err, HasNodeError err)
           -> Cmd err [NodeTree]
 tree_flat r nodeTypes q = do
   mainRoot <- findNodes r Private nodeTypes
-  publicRoots <- findNodes r PublicDirect nodeTypes
-  sharedRoots <- findNodes r SharedDirect nodeTypes
+  publicRoots <- findNodes r Public nodeTypes
+  sharedRoots <- findNodes r Shared nodeTypes
   let ret = map toNodeTree (mainRoot <> sharedRoots <> publicRoots)
   case q of
     Just v -> pure $ filter (\(NodeTree {_nt_name}) -> Text.isInfixOf (Text.toLower v) (Text.toLower _nt_name)) ret
