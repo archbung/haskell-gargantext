@@ -87,6 +87,7 @@ data Query m
 data Mutation m
   = Mutation
     { update_user_info       :: GQLUserInfo.UserInfoMArgs -> m Int
+    , update_user_pubmed_api_key :: GQLUser.UserPubmedAPIKeyMArgs -> m Int
     , delete_team_membership :: GQLTeam.TeamDeleteMArgs -> m [Int]
     , update_node_context_category :: GQLCTX.NodeContextCategoryMArgs -> m [Int]
     } deriving (Generic, GQLType)
@@ -128,6 +129,7 @@ rootResolver =
                             , tree                = GQLTree.resolveTree
                             , team                = GQLTeam.resolveTeam }
     , mutationResolver = Mutation { update_user_info       = GQLUserInfo.updateUserInfo
+                                  , update_user_pubmed_api_key = GQLUser.updateUserPubmedAPIKey
                                   , delete_team_membership = GQLTeam.deleteTeamMembership
                                   , update_node_context_category = GQLCTX.updateNodeContextCategory }
     , subscriptionResolver = Undefined }

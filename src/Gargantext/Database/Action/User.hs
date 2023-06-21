@@ -26,7 +26,7 @@ import Gargantext.Prelude
 ------------------------------------------------------------------------
 getUserLightWithId :: HasNodeError err => Int -> Cmd err UserLight
 getUserLightWithId i = do
-  candidates <- head <$> getUsersWithId i
+  candidates <- head <$> getUsersWithId (UserDBId i)
   case candidates of
     Nothing -> nodeError NoUserFound
     Just u  -> pure u
@@ -70,8 +70,8 @@ getUsername :: HasNodeError err
             => User
             -> Cmd err Username
 getUsername (UserName u) = pure u
-getUsername (UserDBId i) = do
-  users <- getUsersWithId i
+getUsername user@(UserDBId _) = do
+  users <- getUsersWithId user
   case head users of
     Just u  -> pure $ userLight_username u
     Nothing -> nodeError $ NodeError "G.D.A.U.getUserName: User not found with that id"
@@ -82,4 +82,3 @@ getUsername UserPublic = pure "UserPublic"
 
 --------------------------------------------------------------------------
 -- getRootId is in Gargantext.Database.Query.Tree.Root
-

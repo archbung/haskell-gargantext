@@ -72,23 +72,27 @@ nodeTable = Table "nodes" (pNode Node { _node_id         = optionalTableField "i
 queryNodeTable :: Query NodeRead
 queryNodeTable = selectTable nodeTable
 ------------------------------------------------------------------------
-type NodeWrite = NodePoly (Maybe (Field SqlInt4)      )
-                          (Maybe (Field SqlText)      )
-                                 (Field SqlInt4)
-                                 (Field SqlInt4)
-                          (Maybe (Field SqlInt4)      )
-                                 (Field SqlText)
-                          (Maybe (Field SqlTimestamptz))
-                                 (Field SqlJsonb)
+type NodeHWrite a = NodePoly (Maybe (Field SqlInt4)      )
+                             (Maybe (Field SqlText)      )
+                             (Field SqlInt4)
+                             (Field SqlInt4)
+                             (Maybe (Field SqlInt4)      )
+                             (Field SqlText)
+                             (Maybe (Field SqlTimestamptz))
+                             (Field a)
 
-type NodeRead = NodePoly (Field SqlInt4        )
-                         (Field SqlText        )
-                         (Field SqlInt4        )
-                         (Field SqlInt4        )
-                         (Field SqlInt4        )
-                         (Field SqlText        )
-                         (Field SqlTimestamptz )
-                         (Field SqlJsonb       )
+type NodeHRead a = NodePoly (Field SqlInt4        )
+                            (Field SqlText        )
+                            (Field SqlInt4        )
+                            (Field SqlInt4        )
+                            (Field SqlInt4        )
+                            (Field SqlText        )
+                            (Field SqlTimestamptz )
+                            (Field a       )
+------------------------------------------------------------------------
+type NodeWrite = NodeHWrite SqlJsonb
+
+type NodeRead = NodeHRead SqlJsonb
 ------------------------------------------------------------------------
 -- | Node(Read|Write)Search is slower than Node(Write|Read) use it
 -- for full text search only

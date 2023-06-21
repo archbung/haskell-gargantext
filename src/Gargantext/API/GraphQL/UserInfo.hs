@@ -48,6 +48,7 @@ import Gargantext.Prelude
 import GHC.Generics (Generic)
 import Gargantext.API.GraphQL.Utils (AuthStatus(Invalid, Valid), authUser)
 import Gargantext.API.Admin.Types (HasSettings)
+import qualified Gargantext.Core.Types.Individu as Individu
 
 data UserInfo = UserInfo
   { ui_id             :: Int
@@ -115,7 +116,7 @@ updateUserInfo
   => UserInfoMArgs -> GqlM' e env err
 updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
   -- lift $ printDebug "[updateUserInfo] ui_id" ui_id
-  users <- lift (getUsersWithNodeHyperdata ui_id)
+  users <- lift (getUsersWithNodeHyperdata (Individu.UserDBId ui_id))
   case users of
     [] -> panic $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
     ((UserLight { .. }, node_u):_) -> do
@@ -166,7 +167,7 @@ dbUsers user_id = do
 --  user <- getUsersWithId user_id
 --  hyperdata <- getUserHyperdata user_id
 --  lift (map toUser <$> zip user hyperdata)
-  lift (map toUser <$> (getUsersWithHyperdata user_id))
+  lift (map toUser <$> getUsersWithHyperdata (Individu.UserDBId user_id))
 
 toUser :: (UserLight, HyperdataUser) -> UserInfo
 toUser (UserLight { .. }, u_hyperdata) =

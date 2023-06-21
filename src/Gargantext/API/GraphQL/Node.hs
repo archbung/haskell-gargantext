@@ -30,7 +30,6 @@ data Corpus = Corpus
   { id           :: Int
   , name         :: Text
   , parent_id    :: Maybe Int
-  , pubmedAPIKey :: Maybe PUBMED.APIKey
   , type_id      :: Int
   } deriving (Show, Generic, GQLType)
 
@@ -116,7 +115,6 @@ toCorpus :: NN.Node Value -> Corpus
 toCorpus N.Node { .. } = Corpus { id = NN.unNodeId _node_id
                                 , name = _node_name
                                 , parent_id = NN.unNodeId <$> _node_parent_id
-                                , pubmedAPIKey = pubmedAPIKeyFromValue _node_hyperdata
                                 , type_id = _node_typename }
 
 pubmedAPIKeyFromValue :: Value -> Maybe PUBMED.APIKey

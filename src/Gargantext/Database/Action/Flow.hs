@@ -112,6 +112,7 @@ import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
+import qualified PUBMED.Types as PUBMED
 --import qualified Prelude
 
 ------------------------------------------------------------------------
@@ -151,14 +152,13 @@ getDataText :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
             -> API.RawQuery
+            -> Maybe PUBMED.APIKey
             -> Maybe API.Limit
             -> m (Either API.GetCorpusError DataText)
-getDataText (ExternalOrigin api) la q li = do
-  cfg  <- view $ hasConfig
-  eRes <- liftBase $ API.get cfg api (_tt_lang la) q li
+getDataText (ExternalOrigin api) la q mPubmedAPIKey li = do
+  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey li
   pure $ DataNew <$> eRes
-
-getDataText (InternalOrigin _) _la q _li = do
+getDataText (InternalOrigin _) _la q _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
                                            (UserName userMaster)
                                            (Left "")
@@ -173,7 +173,7 @@ getDataText_Debug :: FlowCmdM env err m
             -> Maybe API.Limit
             -> m ()
 getDataText_Debug a l q li = do
-  result <- getDataText a l q li
+  result <- getDataText a l q Nothing li
   case result of
     Left  err -> liftBase $ putStrLn $ show err
     Right res -> liftBase $ printDataText res

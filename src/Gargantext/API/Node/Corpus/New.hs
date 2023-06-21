@@ -56,11 +56,12 @@ import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (getNodeWith, updateCorpusPubmedAPIKey)
+import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
+import Gargantext.Database.Query.Table.User (getUserPubmedAPIKey)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
-import Gargantext.Prelude.Config (gc_max_docs_parsers, gc_pubmed_api_key)
+import Gargantext.Prelude.Config (gc_max_docs_parsers)
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
@@ -215,13 +216,6 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       markComplete jobHandle
 
     _ -> do
-      case datafield of
-         Just (External PubMed) -> do
-           _api_key <- view $ hasConfig . gc_pubmed_api_key
-           printDebug "[addToCorpusWithQuery] pubmed api key" _api_key
-           _ <- updateCorpusPubmedAPIKey cid _api_key
-           pure ()
-         _ -> pure ()
       markStarted 3 jobHandle
 
       -- TODO add cid
@@ -230,7 +224,9 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       --      if cid is root   -> create corpus in Private
       -- printDebug "[G.A.N.C.New] getDataText with query" q
       let db = database2origin dbs
-      eTxt <- getDataText db (Multi l) q maybeLimit
+      mPubmedAPIKey <- getUserPubmedAPIKey user
+      -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
+      eTxt <- getDataText db (Multi l) q mPubmedAPIKey maybeLimit
 
       -- printDebug "[G.A.N.C.New] lTxts" lTxts
       case eTxt of

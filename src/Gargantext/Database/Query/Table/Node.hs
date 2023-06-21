@@ -29,7 +29,6 @@ import Data.Text (Text)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Opaleye hiding (FromField)
 import Prelude hiding (null, id, map, sum)
-import qualified PUBMED.Types as PUBMED
 
 import Gargantext.Core
 import Gargantext.Core.Types
@@ -203,7 +202,7 @@ getCorporaWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeCorpus)
 selectNodesWithParentID :: NodeId -> Select NodeRead
 selectNodesWithParentID n = proc () -> do
     row@(Node _ _ _ _ parent_id _ _ _) <- queryNodeTable -< ()
-    restrict -< parent_id .== (pgNodeId n)
+    restrict -< parent_id .== pgNodeId n
     returnA -< row
 
 
@@ -217,7 +216,22 @@ getNodesWithType nt _ = runOpaQuery $ selectNodesWithType nt
                          => NodeType -> Select NodeRead
     selectNodesWithType nt' = proc () -> do
         row@(Node _ _ tn _ _ _ _ _) <- queryNodeTable -< ()
-        restrict -< tn .== (sqlInt4 $ toDBid nt')
+        restrict -< tn .== sqlInt4 (toDBid nt')
+        returnA -< row
+
+getNodeWithType :: (HasNodeError err, JSONB a, HasDBid NodeType)
+                => NodeId
+                -> NodeType
+                -> proxy a
+                -> Cmd err [Node a]
+getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
+  where
+    selectNodeWithType ::  HasDBid NodeType
+                        => NodeId -> NodeType -> Select NodeRead
+    selectNodeWithType (NodeId nId') nt' = proc () -> do
+        row@(Node ti _ tn _ _ _ _ _) <- queryNodeTable -< ()
+        restrict -< ti .== sqlInt4 nId'
+        restrict -< tn .== sqlInt4 (toDBid nt')
         returnA -< row
 
 getNodesIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> Cmd err [NodeId]
@@ -328,31 +342,6 @@ insertNodesWithParent pid ns = insertNodes (set node_parent_id (pgNodeId <$> pid
 
 insertNodesWithParentR :: Maybe ParentId -> [NodeWrite] -> Cmd err [NodeId]
 insertNodesWithParentR pid ns = insertNodesR (set node_parent_id (pgNodeId <$> pid) <$> ns)
-
-getCorpusPubmedAPIKey :: NodeId -> Cmd err (Maybe PUBMED.APIKey)
-getCorpusPubmedAPIKey cId = do
-  res <- runPGSQuery query params
-  pure $ (\(PGS.Only apiKey) -> apiKey) <$> head res
-  where
-    query :: PGS.Query
-    query = [sql|
-                SELECT hyperdata -> 'pubmed_api_key'
-                FROM nodes
-                WHERE id = ?
-            |]
-    params = PGS.Only cId
-
-updateCorpusPubmedAPIKey :: NodeId -> PUBMED.APIKey -> Cmd err Int64
-updateCorpusPubmedAPIKey cId apiKey =
-  execPGSQuery query params
-  where
-    query :: PGS.Query
-    query = [sql|
-                UPDATE nodes
-                SET hyperdata = hyperdata || ?
-                WHERE id = ?
-            |]
-    params = (encode $ object [ "pubmed_api_key" .= apiKey ], cId)
 ------------------------------------------------------------------------
 -- TODO
 -- currently this function removes the child relation
