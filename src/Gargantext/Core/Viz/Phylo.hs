@@ -212,6 +212,7 @@ subConfig2config subConfig = defaultConfig { similarity     = WeightedLogJaccard
                                            , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 1
                                            , timeUnit       = _sc_timeUnit       subConfig
                                            , clique         = _sc_clique         subConfig
+                                           , defaultMode    = _sc_defaultMode    subConfig
                                            , exportFilter   = [ByBranchSize $ _sc_exportFilter   subConfig]
                                            }
 
@@ -230,9 +231,9 @@ defaultConfig =
             , defaultMode    = False
             , findAncestors  = False
             , phyloSynchrony = ByProximityThreshold 0.5 0 AllBranches MergeAllGroups
-            , phyloQuality   = Quality 0.5 1
+            , phyloQuality   = Quality 0.3 1
             , timeUnit       = Year 3 1 5
-            , clique         = MaxClique 5 0.0001 ByThreshold
+            , clique         = Fis 3 1 -- MaxClique 5 0.0001 ByThreshold
             , exportLabel    = [BranchLabel MostEmergentTfIdf 2, GroupLabel MostEmergentInclusive 2]
             , exportSort     = ByHierarchy Desc
             , exportFilter   = [ByBranchSize 3]
