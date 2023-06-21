@@ -32,7 +32,7 @@ import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Graph.API (recomputeGraph)
 import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..))
 import Gargantext.Core.Viz.Graph.Types (Strength)
-import Gargantext.Core.Viz.Phylo (PhyloSubConfig(..), subConfig2config)
+import Gargantext.Core.Viz.Phylo (PhyloSubConfigAPI(..), subConfigAPI2config)
 import Gargantext.Core.Viz.Phylo.API.Tools (flowPhyloAPI)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
@@ -43,7 +43,7 @@ import Gargantext.Database.Query.Table.Node (defaultList, getNode)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
-import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), printDebug, pure, show, cs, (<>), panic, (<*>))
+import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (Enum, Bounded, minBound, maxBound)
 import Servant
@@ -76,7 +76,7 @@ data UpdateNodeParams = UpdateNodeParamsList  { methodList  :: !Method      }
                       | LinkNodeReq           { nodeType    :: !NodeType
                                               , id          :: !NodeId }
 
-                      | UpdateNodePhylo       { config :: !PhyloSubConfig }
+                      | UpdateNodePhylo       { config :: !PhyloSubConfigAPI }
     deriving (Generic)
 
 ----------------------------------------------------------------------
@@ -156,11 +156,18 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
 updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
   markStarted 3 jobHandle
   corpusId' <- view node_parent_id <$> getNode phyloId
-  let corpusId = fromMaybe (panic "UpdateNodePhylo: no corpusId") corpusId'
-  let config'  = subConfig2config config
-  printDebug "UpdateNodePhylo" config'
-  phy <- flowPhyloAPI config' corpusId
-  markProgress 1 jobHandle
+
+  let corpusId = fromMaybe (panic "") corpusId'
+
+  phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
+
+{-
+  logStatus JobLog { _scst_succeeded = Just 2
+                   , _scst_failed    = Just 0
+                   , _scst_remaining = Just 1
+                   , _scst_events    = Just []
+                   }
+-}
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
   markComplete jobHandle
 

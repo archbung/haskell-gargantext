@@ -41,9 +41,9 @@ import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Prelude
 import qualified Data.Text.Lazy as TextLazy
 
-----------------
+---------------------
 -- | PhyloConfig | --
-----------------
+---------------------
 
 data CorpusParser =
       Wos  {_wos_limit  :: Int}
@@ -66,7 +66,7 @@ data SeaElevation =
     | Adaptative
       { _adap_steps :: Double }
     | Evolving
-      { _evol_neighborhood :: Bool }
+      { _evol_neighborhood :: Bool }      
     deriving (Show,Generic,Eq)
 
 instance ToSchema SeaElevation
@@ -78,8 +78,8 @@ data PhyloSimilarity =
     | WeightedLogSim
       { _wls_sensibility     :: Double
       , _wls_minSharedNgrams :: Int }
-    | Hamming
-      { _hmg_sensibility     :: Double
+    | Hamming 
+      { _hmg_sensibility     :: Double 
       , _hmg_minSharedNgrams :: Int}
 
     deriving (Show,Generic,Eq)
@@ -193,47 +193,51 @@ data PhyloConfig =
             } deriving (Show,Generic,Eq)
 
 
-------------------------------------------------------------------------
-data PhyloSubConfig =
-  PhyloSubConfig { _sc_phyloProximity :: Double
-                 , _sc_phyloSynchrony :: Double
-                 , _sc_phyloQuality   :: Double
-                 , _sc_timeUnit       :: TimeUnit
-                 , _sc_clique         :: Cluster
-                 , _sc_exportFilter   :: Double
-                 , _sc_defaultMode    :: Bool
-                 }
-  deriving (Show,Generic,Eq)
+--------------------------------
+-- | SubConfig API & 1Click | --
+--------------------------------
+
+data PhyloSubConfigAPI =
+  PhyloSubConfigAPI { _sc_phyloProximity :: Double
+                    , _sc_phyloSynchrony :: Double
+                    , _sc_phyloQuality   :: Double
+                    , _sc_timeUnit       :: TimeUnit
+                    , _sc_clique         :: Cluster
+                    , _sc_exportFilter   :: Double
+                    } deriving (Show,Generic,Eq)
 
 
-subConfig2config :: PhyloSubConfig -> PhyloConfig
-subConfig2config subConfig = defaultConfig { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 1
+subConfigAPI2config :: PhyloSubConfigAPI -> PhyloConfig
+subConfigAPI2config subConfig = defaultConfig 
+                                           { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 2 
                                            , phyloSynchrony = ByProximityThreshold (_sc_phyloSynchrony subConfig) 0 AllBranches MergeAllGroups
-                                           , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 1
+                                           , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 3
                                            , timeUnit       = _sc_timeUnit       subConfig
                                            , clique         = _sc_clique         subConfig
-                                           , defaultMode    = _sc_defaultMode    subConfig
                                            , exportFilter   = [ByBranchSize $ _sc_exportFilter   subConfig]
                                            }
 
-------------------------------------------------------------------------
+--------------------------
+-- | SubConfig 1Click | --
+--------------------------  
+
 defaultConfig :: PhyloConfig
 defaultConfig =
      PhyloConfig { corpusPath = "corpus.csv" -- useful for commandline only
             , listPath       = "list.csv"   -- useful for commandline only
             , outputPath     = "data/"
-            , corpusParser   = Csv 100000
+            , corpusParser   = Csv 150000
             , listParser     = V4
             , phyloName      = pack "Phylo Name"
             , phyloScale     = 2
-            , similarity     = WeightedLogJaccard 0.5 1
+            , similarity     = WeightedLogJaccard 0.5 2
             , seaElevation   = Constante 0.1 0.1
             , defaultMode    = False
-            , findAncestors  = False
-            , phyloSynchrony = ByProximityThreshold 0.5 0 AllBranches MergeAllGroups
-            , phyloQuality   = Quality 0.3 1
+            , findAncestors  = True
+            , phyloSynchrony = ByProximityThreshold 0.6 0 AllBranches MergeAllGroups
+            , phyloQuality   = Quality 0.5 3
             , timeUnit       = Year 3 1 5
-            , clique         = Fis 3 1 -- MaxClique 5 0.0001 ByThreshold
+            , clique         = Fis 2 3
             , exportLabel    = [BranchLabel MostEmergentTfIdf 2, GroupLabel MostEmergentInclusive 2]
             , exportSort     = ByHierarchy Desc
             , exportFilter   = [ByBranchSize 3]
@@ -241,13 +245,13 @@ defaultConfig =
 
 -- Main Instances
 instance ToSchema PhyloConfig
-instance ToSchema PhyloSubConfig
+instance ToSchema PhyloSubConfigAPI
 
 instance FromJSON PhyloConfig
 instance ToJSON PhyloConfig
 
-instance FromJSON PhyloSubConfig
-instance ToJSON PhyloSubConfig
+instance FromJSON PhyloSubConfigAPI
+instance ToJSON PhyloSubConfigAPI
 
 instance FromJSON CorpusParser
 instance ToJSON CorpusParser
@@ -433,6 +437,7 @@ data Phylo =
 instance ToSchema Phylo where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_phylo_")
 
+
 ----------------
 -- | Period | --
 ----------------
@@ -605,7 +610,7 @@ instance ToSchema PhyloExport where
 ----------------
 
 makeLenses ''PhyloConfig
-makeLenses ''PhyloSubConfig
+makeLenses ''PhyloSubConfigAPI
 makeLenses ''PhyloSimilarity
 makeLenses ''SeaElevation
 makeLenses ''Quality
