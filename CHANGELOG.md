@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.6.8
+
+* [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
+* [BACK][FIX] Phylo (WIP)
+
 ## Version 0.0.6.9.9.6.7
 
 * [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
