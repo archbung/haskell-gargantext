@@ -193,7 +193,7 @@ findSeaLadder phylo = case getSeaElevation phylo of
                ) [] $ keys $ phylo ^. phylo_periods
 
 appendGroups :: (a -> Period -> (Text,Text) -> Scale -> Int -> [Cooc] ->  Map Int Double -> PhyloGroup) -> Scale -> Map (Date,Date) [a] -> Phylo -> Phylo
-appendGroups f lvl m phylo =  trace ("\n" <> "-- | Append " <> show (length $ concat $ elems m) <> " groups to Level " <> show (lvl) <> "\n")
+appendGroups f lvl m phylo =  trace ("\n" <> "-- | Append " <> show (length $ concat $ elems m) <> " groups to scale " <> show (lvl) <> "\n")
     $ over ( phylo_periods
            .  traverse
            . phylo_periodScales
@@ -489,19 +489,29 @@ initPhyloScales lvlMax pId =
     fromList $ map (\lvl -> ((pId,lvl),PhyloScale pId ("","") lvl empty)) [1..lvlMax]
 
 
-setDefault :: PhyloConfig -> TimeUnit -> PhyloConfig
-setDefault conf timeScale = conf { 
-                    phyloScale = 2,
-                    similarity = WeightedLogJaccard 0.5 2,
-                    findAncestors = True,
-                    phyloSynchrony = ByProximityThreshold 0.6 0 SiblingBranches MergeAllGroups,
-                    phyloQuality = Quality 0.5 3,
-                    timeUnit = timeScale,
-                    clique = Fis 3 5,
-                    exportLabel = [BranchLabel MostEmergentTfIdf 2, GroupLabel MostEmergentInclusive 2],
-                    exportSort = ByHierarchy Desc,
-                    exportFilter = [ByBranchSize 3]
-                  }
+
+setDefault :: PhyloConfig -> TimeUnit -> Int -> PhyloConfig
+setDefault conf timeScale nbDocs = defaultConfig 
+                                          { corpusPath   = (corpusPath conf)
+                                          , listPath     = (listPath conf)
+                                          , outputPath   = (outputPath conf)
+                                          , corpusParser = (corpusParser conf)
+                                          , listParser   = (listParser conf)
+                                          , phyloName    = (phyloName conf)
+                                          , defaultMode  = True
+                                          , timeUnit     = timeScale
+                                          , clique       = Fis (toSupport nbDocs) 3} 
+  where
+    --------------------------------------
+    toSupport :: Int -> Support
+    toSupport n 
+      | n < 500  = 1
+      | n < 1000 = 2
+      | n < 2000 = 3
+      | n < 3000 = 4
+      | n < 5000 = 5
+      | otherwise = 6
+    --------------------------------------                                                          
 
 
 --  Init the basic elements of a Phylo
@@ -519,7 +529,7 @@ initPhylo docs conf =
                              (docsToTermFreq docs (foundations ^. foundations_roots))
                              (docsToLastTermFreq (getTimePeriod timeScale) docs (foundations ^. foundations_roots))                             
         params = if (defaultMode conf)
-                 then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale }
+                 then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale (length docs) }
                  else defaultPhyloParam { _phyloParam_config = conf }
         periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
     in trace ("\n" <> "-- | Init a phylo out of " <> show(length docs) <> " docs \n")

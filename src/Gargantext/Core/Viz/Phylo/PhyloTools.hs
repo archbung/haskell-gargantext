@@ -633,7 +633,7 @@ updateLevel level phylo = phylo { _phylo_level = level }
 
 traceToPhylo :: Scale -> Phylo -> Phylo
 traceToPhylo lvl phylo =
-    trace ("\n" <> "-- | End of phylo making at level " <> show (lvl) <> " with "
+    trace ("\n" <> "-- | End of phylo making at scale " <> show (lvl) <> " with "
                 <> show (length $ getGroupsFromScale lvl phylo) <> " groups and "
                 <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale lvl phylo) <> " branches" <> "\n") phylo
 
@@ -697,14 +697,14 @@ toRelatedComponents nodes edges =
 
 traceSynchronyEnd :: Phylo -> Phylo
 traceSynchronyEnd phylo =
-    trace ( "-- | End synchronic clustering at level " <> show (getLastLevel phylo)
+    trace ( "-- | End synchronic clustering at scale " <> show (getLastLevel phylo)
                  <> " with " <> show (length $ getGroupsFromScale (getLastLevel phylo) phylo) <> " groups"
                  <> " and "  <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale (getLastLevel phylo) phylo) <> " branches"
                  <> "\n" ) phylo
 
 traceSynchronyStart :: Phylo -> Phylo
 traceSynchronyStart phylo =
-    trace ( "\n" <> "-- | Start synchronic clustering at level " <> show (getLastLevel phylo)
+    trace ( "\n" <> "-- | Start synchronic clustering at scale " <> show (getLastLevel phylo)
                  <> " with " <> show (length $ getGroupsFromScale (getLastLevel phylo) phylo) <> " groups"
                  <> " and "  <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale (getLastLevel phylo) phylo) <> " branches"
                  <> "\n" ) phylo

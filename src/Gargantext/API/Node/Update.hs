@@ -32,7 +32,7 @@ import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Graph.API (recomputeGraph)
 import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..))
 import Gargantext.Core.Viz.Graph.Types (Strength)
-import Gargantext.Core.Viz.Phylo (PhyloSubConfig(..), subConfig2config)
+import Gargantext.Core.Viz.Phylo (PhyloSubConfigAPI(..), subConfigAPI2config)
 import Gargantext.Core.Viz.Phylo.API.Tools (flowPhyloAPI)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
@@ -76,7 +76,7 @@ data UpdateNodeParams = UpdateNodeParamsList  { methodList  :: !Method      }
                       | LinkNodeReq           { nodeType    :: !NodeType
                                               , id          :: !NodeId }
 
-                      | UpdateNodePhylo       { config :: !PhyloSubConfig }
+                      | UpdateNodePhylo       { config :: !PhyloSubConfigAPI }
     deriving (Generic)
 
 ----------------------------------------------------------------------
@@ -209,7 +209,7 @@ updateNode _userId phyloId (UpdateNodePhylo config) logStatus = do
 
   let corpusId = fromMaybe (panic "") corpusId'
 
-  phy <- flowPhyloAPI (subConfig2config config) corpusId
+  phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
 
   logStatus JobLog { _scst_succeeded = Just 2
                    , _scst_failed    = Just 0
