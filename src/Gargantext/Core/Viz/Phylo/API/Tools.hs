@@ -79,7 +79,7 @@ phylo2dot2json phylo = do
     Shell.callProcess "dot" ["-Txdot_json", "-o", fileToJson, fileDot]
 
     maybeValue <- decodeFileStrict fileToJson
-    print maybeValue
+    -- print maybeValue
 
     case maybeValue of
       Nothing -> panic "[G.C.V.Phylo.API.phylo2dot2json] Error no file"

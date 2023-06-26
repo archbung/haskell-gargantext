@@ -156,10 +156,12 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
 updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
   markStarted 3 jobHandle
   corpusId' <- view node_parent_id <$> getNode phyloId
+  markProgress 1 jobHandle
 
   let corpusId = fromMaybe (panic "") corpusId'
 
   phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
+  markProgress 2 jobHandle
 
 {-
   logStatus JobLog { _scst_succeeded = Just 2
