@@ -1,12 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Gargantext.API.Admin.Orchestrator.Types
   where
 
 import Control.Lens hiding (elements)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson
 import Data.Morpheus.Types
   ( GQLType
@@ -24,9 +23,7 @@ import Test.QuickCheck.Arbitrary
 
 import qualified Gargantext.API.GraphQL.Utils as GQLU
 import Gargantext.Core.Types (TODO(..))
-import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Prelude
-import Gargantext.Prelude.Config (gc_pubmed_api_key)
 
 ------------------------------------------------------------------------
 instance Arbitrary a => Arbitrary (JobStatus 'Safe a) where
@@ -37,39 +34,24 @@ instance Arbitrary a => Arbitrary (JobOutput a) where
 
 -- | Main Types
 -- TODO IsidoreAuth
-data ExternalAPIs = All
-                  | PubMed { mAPIKey :: Maybe Text }
+data ExternalAPIs = PubMed
                   | Arxiv
                   | HAL
                   | IsTex
                   | Isidore
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic, Enum, Bounded)
 
 
 -- | Main Instances
 instance FromJSON ExternalAPIs
 instance ToJSON ExternalAPIs
 
-externalAPIs :: ( MonadReader env m
-                , HasConfig env) => m [ExternalAPIs]
-externalAPIs = do
-  pubmed_api_key <- view $ hasConfig . gc_pubmed_api_key
-
-  pure [ All
-       , PubMed { mAPIKey = Just pubmed_api_key }
-       , Arxiv
-       , HAL
-       , IsTex
-       , Isidore ]
+externalAPIs :: [ExternalAPIs]
+externalAPIs = [minBound .. maxBound]
 
 instance Arbitrary ExternalAPIs
   where
-    arbitrary = elements [ All
-                         , PubMed { mAPIKey = Nothing }
-                         , Arxiv
-                         , HAL
-                         , IsTex
-                         , Isidore ]
+    arbitrary = arbitraryBoundedEnum
 
 instance ToSchema ExternalAPIs where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
@@ -101,7 +83,7 @@ data ScraperEvent = ScraperEvent
   , _scev_level   :: !(Maybe Text)
   , _scev_date    :: !(Maybe Text)
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Eq)
 
 instance Arbitrary ScraperEvent where
   arbitrary = ScraperEvent <$> elements [Nothing, Just "test message"]
@@ -122,9 +104,12 @@ data JobLog = JobLog
   , _scst_remaining :: !(Maybe Int)
   , _scst_events    :: !(Maybe [ScraperEvent])
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Eq)
 
 makeLenses ''JobLog
+
+noJobLog :: JobLog
+noJobLog = JobLog Nothing Nothing Nothing Nothing
 
 instance Arbitrary JobLog where
   arbitrary = JobLog

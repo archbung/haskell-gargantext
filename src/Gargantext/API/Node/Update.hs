@@ -43,8 +43,8 @@ import Gargantext.Database.Query.Table.Node (defaultList, getNode)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
-import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), liftBase, (.), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
-import Gargantext.Utils.Jobs (serveJobsAPI)
+import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
+import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (Enum, Bounded, minBound, maxBound)
 import Servant
 import Test.QuickCheck (elements)
@@ -94,68 +94,39 @@ data Charts = Sources | Authors | Institutes | Ngrams | All
 ------------------------------------------------------------------------
 api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
 api uId nId =
-  serveJobsAPI UpdateNodeJob $ \p log'' ->
-      let
-        log' x = do
-          -- printDebug "updateNode" x
-          liftBase $ log'' x
-      in updateNode uId nId p (liftBase . log')
+  serveJobsAPI UpdateNodeJob $ \jHandle p ->
+    updateNode uId nId p jHandle
 
-updateNode :: (HasSettings env, FlowCmdM env err m)
+updateNode :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
     => UserId
     -> NodeId
     -> UpdateNodeParams
-    -> (JobLog -> m ())
-    -> m JobLog
-updateNode uId nId (UpdateNodeParamsGraph metric partitionMethod bridgeMethod strength nt1 nt2) logStatus = do
+    -> JobHandle m
+    -> m ()
+updateNode uId nId (UpdateNodeParamsGraph metric partitionMethod bridgeMethod strength nt1 nt2) jobHandle = do
 
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+  markStarted 2 jobHandle
   -- printDebug "Computing graph: " method
   _ <- recomputeGraph uId nId partitionMethod bridgeMethod (Just metric) (Just strength) nt1 nt2 True
   -- printDebug "Graph computed: " method
+  markComplete jobHandle
 
-  pure  JobLog { _scst_succeeded = Just 2
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
-
-updateNode _uId nid1 (LinkNodeReq nt nid2) logStatus = do
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+updateNode _uId nid1 (LinkNodeReq nt nid2) jobHandle = do
+  markStarted 2 jobHandle
   _ <- case nt of
     NodeAnnuaire -> pairing nid2 nid1 Nothing -- defaultList
     NodeCorpus   -> pairing nid1 nid2 Nothing -- defaultList
     _            -> panic $ "[G.API.N.Update.updateNode] NodeType not implemented"
                           <> cs (show nt <> " nid1: " <> show nid1 <> " nid2: " <> show nid2)
 
-  pure  JobLog { _scst_succeeded = Just 2
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
+  markComplete jobHandle
 
 -- | `Advanced` to update graphs
-updateNode _uId lId (UpdateNodeParamsList Advanced) logStatus = do
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 2
-                   , _scst_events    = Just []
-                   }
+updateNode _uId lId (UpdateNodeParamsList Advanced) jobHandle = do
+  markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode lId
 
-  logStatus JobLog { _scst_succeeded = Just 2
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+  markProgress 1 jobHandle
 
   _ <- case corpusId of
     Just cId -> do
@@ -165,25 +136,13 @@ updateNode _uId lId (UpdateNodeParamsList Advanced) logStatus = do
       pure ()
     Nothing  -> pure ()
 
-  pure  JobLog { _scst_succeeded = Just 3
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
+  markComplete jobHandle
 
-updateNode _uId lId (UpdateNodeParamsList _mode) logStatus = do
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 2
-                   , _scst_events    = Just []
-                   }
+updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
+  markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode lId
 
-  logStatus JobLog { _scst_succeeded = Just 2
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+  markProgress 1 jobHandle
 
   _ <- case corpusId of
     Just cId -> do
@@ -192,54 +151,31 @@ updateNode _uId lId (UpdateNodeParamsList _mode) logStatus = do
       pure ()
     Nothing  -> pure ()
 
-  pure  JobLog { _scst_succeeded = Just 3
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
+  markComplete jobHandle
 
-updateNode _userId phyloId (UpdateNodePhylo config) logStatus = do
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 2
-                   , _scst_events    = Just []
-                   }
-
+updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
+  markStarted 3 jobHandle
   corpusId' <- view node_parent_id <$> getNode phyloId
 
   let corpusId = fromMaybe (panic "") corpusId'
 
   phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
 
+{-
   logStatus JobLog { _scst_succeeded = Just 2
                    , _scst_failed    = Just 0
                    , _scst_remaining = Just 1
                    , _scst_events    = Just []
                    }
-
+-}
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
+  markComplete jobHandle
 
-  pure  JobLog { _scst_succeeded = Just 3
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
-
-
-updateNode _uId tId (UpdateNodeParamsTexts _mode) logStatus = do
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 2
-                   , _scst_events    = Just []
-                   }
+updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
+  markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode tId
   lId      <- defaultList $ fromMaybe (panic "[G.A.N.Update] updateNode/UpdateNodeParamsTexts: no defaultList") corpusId
-
-  logStatus JobLog { _scst_succeeded = Just 2
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+  markProgress 1 jobHandle
 
   _ <- case corpusId of
     Just cId -> do
@@ -251,18 +187,11 @@ updateNode _uId tId (UpdateNodeParamsTexts _mode) logStatus = do
       pure ()
     Nothing  -> pure ()
 
-  pure  JobLog { _scst_succeeded = Just 3
-               , _scst_failed    = Just 0
-               , _scst_remaining = Just 0
-               , _scst_events    = Just []
-               }
+  markComplete jobHandle
 
 
-
-
-
-updateNode _uId _nId _p logStatus = do
-  simuLogs logStatus 10
+updateNode _uId _nId _p jobHandle = do
+  simuLogs jobHandle 10
 
 ------------------------------------------------------------------------
 -- TODO unPrefix "pn_" FromJSON, ToJSON, ToSchema, adapt frontend.

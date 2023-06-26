@@ -20,7 +20,7 @@ import Data.Swagger
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Gargantext.Core.Methods.Similarities.Accelerate.Conditional (measureConditional)
-import Gargantext.Core.Methods.Similarities.Accelerate.Distributional (logDistributional)
+import Gargantext.Core.Methods.Similarities.Accelerate.Distributional (logDistributional2)
 -- import Gargantext.Core.Text.Metrics.Count (coocOn)
 -- import Gargantext.Core.Viz.Graph.Index
 import Gargantext.Prelude (Ord, Eq, Int, Double, Show, map)
@@ -31,20 +31,24 @@ import Test.QuickCheck.Arbitrary
 import qualified Data.Text as Text 
 
 ------------------------------------------------------------------------
-data Similarity = Conditional | Distributional
+data Similarity = Conditional | Distributional_A | Distributional_B
   deriving (Show, Eq)
 
 measure :: Similarity -> Matrix Int -> Matrix Double
-measure Conditional    x = measureConditional x
-measure Distributional x = logDistributional  x
+measure Conditional      x = measureConditional x
+measure Distributional_A x = logDistributional2 1 x
+measure Distributional_B x = logDistributional2 0 x
 
 ------------------------------------------------------------------------
 withMetric :: GraphMetric -> Similarity
-withMetric Order1 = Conditional
-withMetric Order2 = Distributional
+withMetric Order1   = Conditional
+withMetric Order2_A = Distributional_A
+withMetric _        = Distributional_B
 
 ------------------------------------------------------------------------
-data GraphMetric = Order1 | Order2
+-- Order2 type is for keeping Database json compatibility
+-- it is supposed to be removed in the future
+data GraphMetric = Order1 | Order2 | Order2_A | Order2_B
     deriving (Generic, Eq, Ord, Enum, Bounded, Show)
 
 instance FromJSON  GraphMetric

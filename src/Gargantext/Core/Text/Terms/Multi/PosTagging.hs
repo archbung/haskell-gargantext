@@ -34,10 +34,11 @@ import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Types
 import Gargantext.Prelude
 import Network.HTTP.Simple
+import Network.URI (URI(..))
+import qualified Data.ByteString.Lazy.Char8 as BSL
+import qualified Data.Map as Map
 
 -- import qualified Gargantext.Utils.SpacyNLP as SpacyNLP
-
-
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -76,21 +77,50 @@ filter' xs = filter isNgrams xs
 corenlp' :: ( FromJSON a
             , ConvertibleStrings p ByteString
             )
-          => Lang -> p -> IO (Response a)
-corenlp' lang txt = do
-    let properties = case lang of
-            EN -> "{\"annotators\": \"tokenize,ssplit,pos,ner\", \"outputFormat\": \"json\"}"
-            FR -> "{\"annotators\": \"tokenize,ssplit,pos,lemma,ner\", \"parse.model\":\"edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz\", \"pos.model\":\"edu/stanford/nlp/models/pos-tagger/french/french.tagger\", \"tokenize.language\":\"fr\", \"outputFormat\": \"json\"}"
-            _  -> panic $ pack "not implemented yet"
-    url <- parseRequest $ "POST http://localhost:9000/?properties=" <> properties
-    -- curl -XPOST 'http://localhost:9000/?properties=%7B%22annotators%22:%20%22tokenize,ssplit,pos,ner%22,%20%22outputFormat%22:%20%22json%22%7D' -d 'hello world, hello' | jq .
-    let request = setRequestBodyLBS (cs txt) url
-    httpJSON request
+          => URI -> Lang -> p -> IO (Response a)
+corenlp' uri lang txt = do
+  req <- parseRequest $
+         "POST " <> show (uri { uriQuery = "?properties=" <> (BSL.unpack $ encode $ toJSON $ Map.fromList properties) })
+   -- curl -XPOST 'http://localhost:9000/?properties=%7B%22annotators%22:%20%22tokenize,ssplit,pos,ner%22,%20%22outputFormat%22:%20%22json%22%7D' -d 'hello world, hello' | jq .
+  httpJSON $ setRequestBodyLBS (cs txt) req
+  where
+    properties_ :: [(Text, Text)]
+    properties_ = case lang of
+-- TODO: Add: Aeson.encode $ Aeson.toJSON $ Map.fromList [()] instead of these hardcoded JSON strings
+            EN -> [ ("annotators", "tokenize,ssplit,pos,ner" ) ]
+            FR -> [ ("annotators", "tokenize,ssplit,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  , ("pos.model", "edu/stanford/nlp/models/pos-tagger/models/french.tagger")
+                  , ("tokenize.language", "fr") ]
+            DE -> [ ("annotators", "tokenize,ssplit,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  , ("pos.model", "edu/stanford/nlp/models/pos-tagger/models/german-hgc.tagger")
+                  , ("tokenize.language", "de") ]
+            ES -> [ ("annotators", "tokenize,ssplit,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  , ("pos.model", "edu/stanford/nlp/models/pos-tagger/models/spanish.tagger")
+                  , ("tokenize.language", "es") ]
+            IT -> [ ("annotators", "tokenize,ssplit,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  -- , ("pos.model", "edu/stanford/nlp/models/pos-tagger/french/french.tagger")
+                  , ("tokenize.language", "it") ]
+            PL -> [ ("annotators", "tokenize,ssplit,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  -- , ("pos.model", "edu/stanford/nlp/models/pos-tagger/french/french.tagger")
+                  , ("tokenize.language", "pl") ]
+            ZH -> [ ("annotators", "tokenize,pos,lemma,ner")
+                  -- , ("parse.model", "edu/stanford/nlp/models/lexparser/frenchFactored.ser.gz")
+                  , ("pos.model", "edu/stanford/nlp/models/pos-tagger/models/chinese-distsim.tagger")
+                  , ("tokenize.language", "zh") ]
+            l  -> panic $ pack $ "corenlp for language " <> show l <> " is not implemented yet"
+
+    properties = properties_ <> [ ("outputFormat", "json") ]
 
 
-corenlp :: Lang -> Text -> IO PosSentences
-corenlp lang txt = do
-  response <- corenlp' lang txt
+
+corenlp :: URI -> Lang -> Text -> IO PosSentences
+corenlp uri lang txt = do
+  response <- corenlp' uri lang txt
   pure (getResponseBody response)
 
 -- | parseWith
@@ -101,11 +131,11 @@ corenlp lang txt = do
 -- Named Entity Recognition example
 -- parseWith  _tokenNer     "Hello world of Peter."
 -- [[("``","O"),("Hello","O"),("world","O"),("of","O"),("Peter","PERSON"),(".","O"),("''","O")]]
-tokenWith :: (Token -> t) -> Lang -> Text -> IO [[(Text, t)]]
-tokenWith f lang s = map (map (\t -> (_tokenWord t, f t)))
+tokenWith :: URI -> (Token -> t) -> Lang -> Text -> IO [[(Text, t)]]
+tokenWith uri f lang s = map (map (\t -> (_tokenWord t, f t)))
                   <$> map _sentenceTokens
                   <$> _sentences
-                  <$> corenlp lang s
+                  <$> corenlp uri lang s
 
 ----------------------------------------------------------------------------------
 -- Here connect to the JohnSnow Server as it has been done above with the corenlp'

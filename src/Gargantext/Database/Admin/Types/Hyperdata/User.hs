@@ -31,13 +31,15 @@ import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Database.Admin.Types.Hyperdata.Contact
 import Gargantext.Database.Admin.Types.Node (DocumentId)
 import Gargantext.Prelude
+import qualified PUBMED.Types as PUBMED
 
 -- import Gargantext.Database.Schema.Node -- (Node(..))
 
 data HyperdataUser =
-     HyperdataUser { _hu_private   :: !(Maybe HyperdataPrivate)
-                   , _hu_shared    :: !(Maybe HyperdataContact)
-                   , _hu_public    :: !(Maybe HyperdataPublic)
+     HyperdataUser { _hu_private        :: !(Maybe HyperdataPrivate)
+                   , _hu_shared         :: !(Maybe HyperdataContact)
+                   , _hu_public         :: !(Maybe HyperdataPublic)
+                   , _hu_pubmed_api_key :: !(Maybe PUBMED.APIKey)
                    } deriving (Eq, Show, Generic)
 
 instance GQLType HyperdataUser where
@@ -66,9 +68,10 @@ instance GQLType HyperdataPublic where
 defaultHyperdataUser :: HyperdataUser
 defaultHyperdataUser =
   HyperdataUser
-    { _hu_private = Just defaultHyperdataPrivate
-    , _hu_shared = Just defaultHyperdataContact
-    , _hu_public = Just defaultHyperdataPublic }
+    { _hu_private        = Just defaultHyperdataPrivate
+    , _hu_shared         = Just defaultHyperdataContact
+    , _hu_public         = Just defaultHyperdataPublic
+    , _hu_pubmed_api_key = Nothing }
 
 defaultHyperdataPublic :: HyperdataPublic
 defaultHyperdataPublic = HyperdataPublic "pseudo" [1..10]
@@ -97,7 +100,7 @@ $(deriveJSON (unPrefix "_hpu_") ''HyperdataPublic)
 
 -- | Arbitrary instances
 instance Arbitrary HyperdataUser where
-  arbitrary = HyperdataUser <$> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = HyperdataUser <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance Arbitrary HyperdataPrivate where
   arbitrary = pure defaultHyperdataPrivate
@@ -143,4 +146,3 @@ instance DefaultFromField SqlJsonb HyperdataPrivate   where
 
 instance DefaultFromField SqlJsonb HyperdataPublic   where
   defaultFromField = fromPGSFromField
-

@@ -20,7 +20,7 @@ module Gargantext.API.Ngrams.Types where
 import Codec.Serialise (Serialise())
 import Control.Category ((>>>))
 import Control.DeepSeq (NFData)
-import Control.Lens (makeLenses, makePrisms, Iso', iso, from, (.~), (?=), (#), to, folded, {-withIndex, ifolded,-} view, use, (^.), (^?), (%~), (.~), (%=), at, _Just, Each(..), itraverse_, both, forOf_, (?~))
+import Control.Lens (makeLenses, makePrisms, Iso', iso, from, (.~), (.=), (?=), (#), to, folded, {-withIndex, ifolded,-} view, use, (^.), (^?), (%~), (.~), (%=), at, _Just, Each(..), itraverse_, both, forOf_, (?~), over)
 import Control.Monad.State
 import Data.Aeson hiding ((.=))
 import Data.Aeson.TH (deriveJSON)
@@ -41,6 +41,7 @@ import Database.PostgreSQL.Simple.ToField (ToField, toJSONField, toField)
 import GHC.Generics (Generic)
 import Gargantext.Core.Text (size)
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, TODO)
+import Gargantext.Core.Types.Query (Limit, Offset, MaxSize, MinSize)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixUntagged, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node (ContextId)
 import Gargantext.Database.Prelude (fromField', HasConnectionPool, HasConfig, CmdM')
@@ -179,7 +180,7 @@ data NgramsElement =
      NgramsElement { _ne_ngrams      :: NgramsTerm
                    , _ne_size        :: Int
                    , _ne_list        :: ListType
-                   , _ne_occurrences :: [ContextId]
+                   , _ne_occurrences :: Set ContextId
                    , _ne_root        :: Maybe NgramsTerm
                    , _ne_parent      :: Maybe NgramsTerm
                    , _ne_children    :: MSet  NgramsTerm
@@ -195,7 +196,7 @@ mkNgramsElement :: NgramsTerm
                 -> MSet NgramsTerm
                 -> NgramsElement
 mkNgramsElement ngrams list rp children =
-  NgramsElement ngrams (size (unNgramsTerm ngrams)) list [] (_rp_root <$> rp) (_rp_parent <$> rp) children
+  NgramsElement ngrams (size (unNgramsTerm ngrams)) list mempty (_rp_root <$> rp) (_rp_parent <$> rp) children
 
 newNgramsElement :: Maybe ListType -> NgramsTerm -> NgramsElement
 newNgramsElement mayList ngrams =
@@ -267,6 +268,43 @@ instance Arbitrary NgramsTable where
   arbitrary = pure mockTable
 
 instance ToSchema NgramsTable
+
+------------------------------------------------------------------------
+-- Searching in a Ngram Table
+
+data OrderBy = TermAsc | TermDesc | ScoreAsc | ScoreDesc
+             deriving (Generic, Enum, Bounded, Read, Show)
+
+instance FromHttpApiData OrderBy
+  where
+    parseUrlPiece "TermAsc"   = pure TermAsc
+    parseUrlPiece "TermDesc"  = pure TermDesc
+    parseUrlPiece "ScoreAsc"  = pure ScoreAsc
+    parseUrlPiece "ScoreDesc" = pure ScoreDesc
+    parseUrlPiece _           = Left "Unexpected value of OrderBy"
+
+instance ToHttpApiData OrderBy where
+  toUrlPiece = pack . show
+
+instance ToParamSchema OrderBy
+instance FromJSON  OrderBy
+instance ToJSON    OrderBy
+instance ToSchema  OrderBy
+instance Arbitrary OrderBy
+  where
+    arbitrary = elements [minBound..maxBound]
+
+
+-- | A query on a 'NgramsTable'.
+data NgramsSearchQuery = NgramsSearchQuery
+  { _nsq_limit       :: !Limit
+  , _nsq_offset      :: !(Maybe Offset)
+  , _nsq_listType    :: !(Maybe ListType)
+  , _nsq_minSize     :: !(Maybe MinSize)
+  , _nsq_maxSize     :: !(Maybe MaxSize)
+  , _nsq_orderBy     :: !(Maybe OrderBy)
+  , _nsq_searchQuery :: !(NgramsTerm -> Bool)
+  }
 
 ------------------------------------------------------------------------
 type NgramsTableMap = Map NgramsTerm NgramsRepoElement
@@ -514,8 +552,15 @@ instance Applicable NgramsPatch (Maybe NgramsRepoElement) where
 instance Action NgramsPatch (Maybe NgramsRepoElement) where
   act p = act (p ^. _NgramsPatch)
 
+instance Action (Replace ListType) NgramsRepoElement where
+  -- Rely on the already-defined instance 'Action (Replace a) a'.
+  act replaceP = over nre_list (act replaceP)
+
 newtype NgramsTablePatch = NgramsTablePatch (PatchMap NgramsTerm NgramsPatch)
   deriving (Eq, Show, Generic, ToJSON, FromJSON, Semigroup, Monoid, Validity, Transformable)
+
+mkNgramsTablePatch :: Map NgramsTerm NgramsPatch -> NgramsTablePatch
+mkNgramsTablePatch = NgramsTablePatch . PM.fromMap
 
 instance Serialise NgramsTablePatch
 instance Serialise (PatchMap NgramsTerm NgramsPatch)
@@ -580,7 +625,7 @@ ngramsElementFromRepo
                 , _ne_parent      = p
                 , _ne_children    = c
                 , _ne_ngrams      = ngrams
-                , _ne_occurrences = [] -- panic $ "API.Ngrams.Types._ne_occurrences"
+                , _ne_occurrences = mempty -- panic $ "API.Ngrams.Types._ne_occurrences"
                 {-
                 -- Here we could use 0 if we want to avoid any `panic`.
                 -- It will not happen using getTableNgrams if
@@ -589,34 +634,59 @@ ngramsElementFromRepo
                 -}
                 }
 
-reRootChildren :: NgramsTerm -> ReParent NgramsTerm
+reRootChildren :: NgramsTerm -> NgramsTerm -> State NgramsTableMap ()
 reRootChildren root ngram = do
   nre <- use $ at ngram
   forOf_ (_Just . nre_children . folded) nre $ \child -> do
     at child . _Just . nre_root ?= root
     reRootChildren root child
 
-reParent :: Maybe RootParent -> ReParent NgramsTerm
+reParent :: Maybe RootParent -> NgramsTerm -> State NgramsTableMap ()
 reParent rp child = do
   at child . _Just %= ( (nre_parent .~ (_rp_parent <$> rp))
                       . (nre_root   .~ (_rp_root   <$> rp))
                       )
   reRootChildren (fromMaybe child (rp ^? _Just . rp_root)) child
 
-reParentAddRem :: RootParent -> NgramsTerm -> ReParent AddRem
+reParentAddRem :: RootParent -> NgramsTerm -> AddRem -> State NgramsTableMap ()
 reParentAddRem rp child p =
   reParent (if isRem p then Nothing else Just rp) child
 
-reParentNgramsPatch :: NgramsTerm -> ReParent NgramsPatch
+-- | For each (k,v) of the 'PatchMap', transform the input 'NgramsTableMap'.
+reParentNgramsPatch :: NgramsTerm
+                    -- ^ The 'k' which is the target of the transformation.
+                    -> NgramsPatch
+                    -- ^ The patch to be applied to 'k'.
+                    -> State NgramsTableMap ()
 reParentNgramsPatch parent ngramsPatch = do
   root_of_parent <- use (at parent . _Just . nre_root)
+  children       <- use (at parent . _Just . nre_children)
   let
-    root = fromMaybe parent root_of_parent
-    rp   = RootParent { _rp_root = root, _rp_parent = parent }
+    root     = fromMaybe parent root_of_parent
+    rp       = RootParent { _rp_root = root, _rp_parent = parent }
+
+  -- Apply whichever transformation has being applied to the parent also to its children.
+  -- This is /not/ the same as applying 'patch_children' as in the 'itraverse_' below,
+  -- because that modifies the tree by adding or removing children, and it will be triggered
+  -- only if we have a non-empty set for 'patch_children'.
+  forM_ children $ \childTerm -> do
+    child <- use (at childTerm)
+    case child of
+      Nothing -> pure ()
+      Just c
+        -- We don't need to check if the patch is applicable, because we would be calling
+        -- 'Applicable (Replace ListType) NgramsRepoElement' which is /always/ satisfied
+        -- being 'ListType' a field of 'NgramsRepoElement'.
+        | NgramsPatch{_patch_list} <- ngramsPatch
+        -> at childTerm . _Just .= act _patch_list c
+        | otherwise
+        -> pure () -- ignore the patch and carry on.
+
+  -- Finally, add or remove children according to the patch.
   itraverse_ (reParentAddRem rp) (ngramsPatch ^. patch_children . _PatchMSet . _PatchMap)
   -- TODO FoldableWithIndex/TraversableWithIndex for PatchMap
 
-reParentNgramsTablePatch :: ReParent NgramsTablePatch
+reParentNgramsTablePatch :: NgramsTablePatch -> State NgramsTableMap ()
 reParentNgramsTablePatch p = itraverse_ reParentNgramsPatch (p ^. _NgramsTablePatch. _PatchMap)
   -- TODO FoldableWithIndex/TraversableWithIndex for PatchMap
 
@@ -633,8 +703,6 @@ instance Arbitrary NgramsTablePatch where
 -- Should it be less than an Lens' to preserve PatchMap's abstraction.
 -- ntp_ngrams_patches :: Lens' NgramsTablePatch (Map NgramsTerm NgramsPatch)
 -- ntp_ngrams_patches = _NgramsTablePatch .  undefined
-
-type ReParent a = forall m. MonadState NgramsTableMap m => a -> m ()
 
 ------------------------------------------------------------------------
 type Version = Int

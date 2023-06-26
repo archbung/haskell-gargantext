@@ -13,9 +13,10 @@ Functions to deal with users, database side.
 
 {-# OPTIONS_GHC -fno-warn-orphans        #-}
 
-{-# LANGUAGE TemplateHaskell             #-}
-{-# LANGUAGE FunctionalDependencies      #-}
 {-# LANGUAGE Arrows                      #-}
+{-# LANGUAGE FunctionalDependencies      #-}
+{-# LANGUAGE QuasiQuotes            #-}
+{-# LANGUAGE TemplateHaskell             #-}
 
 module Gargantext.Database.Query.Table.User
   ( insertUsers
@@ -29,6 +30,8 @@ module Gargantext.Database.Query.Table.User
   , updateUserEmail
   , updateUserPassword
   , updateUserForgotPasswordUUID
+  , getUserPubmedAPIKey
+  , updateUserPubmedAPIKey
   , getUser
   , insertNewUsers
   , selectUsersLightWith
@@ -44,22 +47,27 @@ module Gargantext.Database.Query.Table.User
   where
 
 import Control.Arrow (returnA)
-import Control.Lens ((^.))
-import Data.Maybe (fromMaybe)
+import Control.Lens ((^.), (?~))
 import Data.List (find)
+import Data.Maybe (fromMaybe)
+import Data.Proxy
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import qualified Data.UUID as UUID
 import Gargantext.Core.Types.Individu
 import qualified Gargantext.Prelude.Crypto.Auth as Auth
-import Gargantext.Database.Admin.Config (nodeTypeId)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser)
-import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node)
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
+import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
 import Gargantext.Database.Prelude
-import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_user_id, node_typename)
+import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
+import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)
 import Gargantext.Database.Schema.User
 import Gargantext.Prelude
 import Opaleye
+import qualified PUBMED.Types as PUBMED
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
+import Gargantext.Core (HasDBid)
+import Gargantext.Database.Admin.Config (nodeTypeId)
 
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
@@ -86,7 +94,7 @@ updateUserDB us = mkCmd $ \c -> runUpdate_ c (updateUserQuery us)
                                             , user_email = em'
                                             , .. }
                                  )
-      , uWhere      = (\row -> user_username row .== un')
+      , uWhere      = \row -> user_username row .== un'
       , uReturning  = rCount
       }
         where
@@ -139,52 +147,82 @@ selectUsersLightWithForgotPasswordUUID uuid = proc () -> do
       returnA  -< row
 
 ----------------------------------------------------------
-getUsersWithId :: Int -> Cmd err [UserLight]
-getUsersWithId i = map toUserLight <$> runOpaQuery (selectUsersLightWithId i)
+getUsersWithId :: User -> Cmd err [UserLight]
+getUsersWithId (UserDBId i) = map toUserLight <$> runOpaQuery (selectUsersLightWithId i)
   where
     selectUsersLightWithId :: Int -> Select UserRead
     selectUsersLightWithId i' = proc () -> do
-          row      <- queryUserTable -< ()
-          restrict -< user_id row .== sqlInt4 i'
-          returnA  -< row
+      row      <- queryUserTable -< ()
+      restrict -< user_id row .== sqlInt4 i'
+      returnA  -< row
+getUsersWithId (RootId i) = map toUserLight <$> runOpaQuery (selectUsersLightWithId i)
+  where
+    selectUsersLightWithId :: NodeId -> Select UserRead
+    selectUsersLightWithId i' = proc () -> do
+      n <- queryNodeTable -< ()
+      restrict -< n^.node_id .== pgNodeId i'
+      restrict -< n^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
+      row      <- queryUserTable -< ()
+      restrict -< user_id row .== n^.node_user_id
+      returnA  -< row
+getUsersWithId _ = undefined
 
 
 queryUserTable :: Select UserRead
 queryUserTable = selectTable userTable
 
 ----------------------------------------------------------------------
-getUserHyperdata :: Int -> Cmd err [HyperdataUser]
-getUserHyperdata i = do
-  runOpaQuery (selectUserHyperdataWithId i)
+-- | Get hyperdata associated with user node.
+getUserHyperdata :: User -> Cmd err [HyperdataUser]
+getUserHyperdata (RootId uId) = do
+  runOpaQuery (selectUserHyperdataWithId uId)
   where
-    selectUserHyperdataWithId :: Int -> Select (Column SqlJsonb)
+    selectUserHyperdataWithId :: NodeId -> Select (Field SqlJsonb)
     selectUserHyperdataWithId i' = proc () -> do
       row      <- queryNodeTable -< ()
-      restrict -< row^.node_user_id .== (sqlInt4 i')
-      restrict -< row^.node_typename .== (sqlInt4 $ nodeTypeId NodeUser)
+      restrict -< row^.node_id .== pgNodeId i'
       returnA  -< row^.node_hyperdata
+getUserHyperdata (UserDBId uId) = do
+  runOpaQuery (selectUserHyperdataWithId uId)
+  where
+    selectUserHyperdataWithId :: Int -> Select (Field SqlJsonb)
+    selectUserHyperdataWithId i' = proc () -> do
+      row      <- queryNodeTable -< ()
+      restrict -< row^.node_user_id .== sqlInt4 i'
+      restrict -< row^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
+      returnA  -< row^.node_hyperdata
+getUserHyperdata _ = undefined
 
-getUserNodeHyperdata :: Int -> Cmd err [Node HyperdataUser]
-getUserNodeHyperdata i = do
-  runOpaQuery (selectUserHyperdataWithId i)
+
+-- | Same as `getUserHyperdata` but returns a `Node` type.
+getUserNodeHyperdata :: User -> Cmd err [Node HyperdataUser]
+getUserNodeHyperdata (RootId uId) = do
+  runOpaQuery (selectUserHyperdataWithId uId)
+  where
+    selectUserHyperdataWithId :: NodeId -> Select NodeRead
+    selectUserHyperdataWithId i' = proc () -> do
+      row      <- queryNodeTable -< ()
+      restrict -< row^.node_id .== pgNodeId i'
+      returnA  -< row
+getUserNodeHyperdata (UserDBId uId) = do
+  runOpaQuery (selectUserHyperdataWithId uId)
   where
     selectUserHyperdataWithId :: Int -> Select NodeRead
     selectUserHyperdataWithId i' = proc () -> do
       row      <- queryNodeTable -< ()
-      restrict -< row^.node_user_id .== (sqlInt4 i')
-      restrict -< row^.node_typename .== (sqlInt4 $ nodeTypeId NodeUser)
+      restrict -< row^.node_user_id .== sqlInt4 i'
+      restrict -< row^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
       returnA  -< row
+getUserNodeHyperdata _ = undefined
 
-
-
-getUsersWithHyperdata :: Int -> Cmd err [(UserLight, HyperdataUser)]
+getUsersWithHyperdata :: User -> Cmd err [(UserLight, HyperdataUser)]
 getUsersWithHyperdata i = do
   u <- getUsersWithId i
   h <- getUserHyperdata i
   -- printDebug "[getUsersWithHyperdata]" (u,h)
   pure $ zip u h
 
-getUsersWithNodeHyperdata :: Int -> Cmd err [(UserLight, Node HyperdataUser)]
+getUsersWithNodeHyperdata :: User -> Cmd err [(UserLight, Node HyperdataUser)]
 getUsersWithNodeHyperdata i = do
   u <- getUsersWithId i
   h <- getUserNodeHyperdata i
@@ -208,8 +246,8 @@ updateUserPassword (UserLight { userLight_password = GargPassword password, .. }
     updateUserQuery :: Update Int64
     updateUserQuery = Update
       { uTable      = userTable
-      , uUpdateWith = updateEasy (\ (UserDB { .. }) -> UserDB { user_password = sqlStrictText password, .. } )
-      , uWhere      = (\row -> user_id row .== (sqlInt4 userLight_id))
+      , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_password = sqlStrictText password, .. } )
+      , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
       , uReturning  = rCount }
 
 updateUserForgotPasswordUUID :: UserLight -> Cmd err Int64
@@ -219,9 +257,23 @@ updateUserForgotPasswordUUID (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c upd
     updateUserQuery :: Update Int64
     updateUserQuery = Update
       { uTable      = userTable
-      , uUpdateWith = updateEasy (\ (UserDB { .. }) -> UserDB { user_forgot_password_uuid = pass, .. })
-      , uWhere      = (\row -> user_id row .== (sqlInt4 userLight_id))
+      , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_forgot_password_uuid = pass, .. })
+      , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
       , uReturning  = rCount }
+
+getUserPubmedAPIKey :: User -> Cmd err (Maybe PUBMED.APIKey)
+getUserPubmedAPIKey user = do
+  hs <- getUserHyperdata user
+  case hs of
+    [] -> pure Nothing
+    (x:_) -> pure $ _hu_pubmed_api_key x
+
+updateUserPubmedAPIKey :: (HasDBid NodeType, HasNodeError err)
+                        => User -> PUBMED.APIKey -> Cmd err Int64
+updateUserPubmedAPIKey (RootId uId) apiKey = do
+  _ <- updateNodeWithType uId NodeUser (Proxy :: Proxy HyperdataUser) (\h -> h & hu_pubmed_api_key ?~ apiKey)
+  pure 1
+updateUserPubmedAPIKey _ _ = undefined
 ------------------------------------------------------------------
 -- | Select User with some parameters
 -- Not optimized version

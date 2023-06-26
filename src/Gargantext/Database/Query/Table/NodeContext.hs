@@ -33,6 +33,8 @@ module Gargantext.Database.Query.Table.NodeContext
   , getContextsForNgrams
   , ContextForNgrams(..)
   , getContextsForNgramsTerms
+  , getContextNgrams
+  , getContextNgramsMatchingFTS
   , ContextForNgramsTerms(..)
   , insertNodeContext
   , deleteNodeContext
@@ -168,7 +170,18 @@ getContextsForNgramsTerms cId ngramsTerms = do
     query :: PGS.Query
     query = [sql| SELECT t.id, t.hash_id, t.typename, t.user_id, t.parent_id, t.name, t.date, t.hyperdata, t.score, t.category
                 FROM (
-                  SELECT DISTINCT ON (contexts.id) contexts.id AS id, hash_id, typename, user_id, parent_id, name, date, hyperdata, nodes_contexts.score AS score, nodes_contexts.category AS category,context_node_ngrams.doc_count AS doc_count
+                  SELECT DISTINCT ON (contexts.id)
+                       contexts.id AS id,
+                       hash_id,
+                       typename,
+                       user_id,
+                       parent_id,
+                       name,
+                       date,
+                       hyperdata,
+                       nodes_contexts.score AS score,
+                       nodes_contexts.category AS category,
+                       context_node_ngrams.doc_count AS doc_count
                     FROM contexts
                     JOIN context_node_ngrams ON contexts.id = context_node_ngrams.context_id
                     JOIN nodes_contexts ON contexts.id = nodes_contexts.context_id
@@ -177,6 +190,69 @@ getContextsForNgramsTerms cId ngramsTerms = do
                      AND ngrams.terms IN ?) t
                    ORDER BY t.doc_count DESC |]
 
+
+
+-- | Query the `context_node_ngrams` table and return ngrams for given
+-- `context_id` and `list_id`.
+-- WARNING: `context_node_ngrams` can be outdated. This is because it
+-- is expensive to keep all ngrams matching a given context and if
+-- someone adds an ngram, we need to recompute its m2m relation to all
+-- existing documents.
+getContextNgrams :: HasNodeError err
+                 => NodeId
+                 -> NodeId
+                 -> Cmd err [Text]
+getContextNgrams contextId listId = do
+  res <- runPGSQuery query (contextId, listId)
+  pure $ (\(PGS.Only term) -> term) <$> res
+
+  where
+    query :: PGS.Query
+    query = [sql| SELECT ngrams.terms
+                FROM context_node_ngrams
+                JOIN ngrams ON ngrams.id = ngrams_id
+                WHERE context_id = ?
+                AND node_id = ? |]
+
+
+-- | Query the `contexts` table and return ngrams for given context_id
+-- and list_id that match the search tsvector.
+-- NOTE This is poor man's tokenization that is used as a hint for the
+-- frontend highlighter.
+-- NOTE We prefer `plainto_tsquery` over `phraseto_tsquery` as it is
+-- more permissive (i.e. ignores word ordering). See
+-- https://www.peterullrich.com/complete-guide-to-full-text-search-with-postgres-and-ecto
+getContextNgramsMatchingFTS :: HasNodeError err
+                            => NodeId
+                            -> NodeId
+                            -> Cmd err [Text]
+getContextNgramsMatchingFTS contextId listId = do
+  res <- runPGSQuery query (listId, contextId)
+  pure $ (\(PGS.Only term) -> term) <$> res
+
+  where
+    query :: PGS.Query
+    query = [sql| WITH constants AS
+                (SELECT ? AS list_id, ? AS context_id),
+                ngrams_ids AS
+                (SELECT ngrams_id
+                 FROM node_stories
+                 CROSS JOIN constants
+                 WHERE node_id = constants.list_id
+                 UNION SELECT ngrams_id
+                 FROM node_ngrams
+                 CROSS JOIN constants
+                 WHERE node_id = constants.list_id)
+                SELECT DISTINCT ngrams.terms
+                FROM ngrams
+                JOIN ngrams_ids ON ngrams_ids.ngrams_id = ngrams.id
+                CROSS JOIN constants
+                -- JOIN node_ngrams ON node_ngrams.ngrams_id = ngrams.id
+                CROSS JOIN contexts
+                WHERE contexts.id = constants.context_id
+                -- AND node_ngrams.node_id = ?
+                AND (contexts.search @@ plainto_tsquery(ngrams.terms)
+                  OR contexts.search @@ plainto_tsquery('french', ngrams.terms)) |]
 ------------------------------------------------------------------------
 insertNodeContext :: [NodeContext] -> Cmd err Int
 insertNodeContext ns = mkCmd $ \conn -> fromIntegral <$> (runInsert_ conn

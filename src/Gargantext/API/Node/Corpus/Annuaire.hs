@@ -20,18 +20,17 @@ import Data.Swagger
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Servant
-import Servant.Job.Core
-import Servant.Job.Types
 import Servant.Job.Utils (jsonOptions)
 import Web.FormUrlEncoded (FromForm)
 
 import qualified Gargantext.API.Node.Corpus.New.Types as NewTypes
-import Gargantext.API.Admin.Orchestrator.Types hiding (AsyncJobs)
+import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)  -- flowAnnuaire
 import Gargantext.Database.Admin.Types.Node (AnnuaireId)
 import Gargantext.Prelude
+import Gargantext.Utils.Jobs (MonadJobStatus(..))
 
 
 type Api = Summary "New Annuaire endpoint"
@@ -56,9 +55,6 @@ instance ToSchema AnnuaireWithForm where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_wf_")
 
 ------------------------------------------------------------------------
-type AsyncJobs event ctI input output =
-  AsyncJobsAPI' 'Unsafe 'Safe ctI '[JSON] Maybe event input output
-------------------------------------------------------------------------
 
 type AddWithForm = Summary "Add with FormUrlEncoded to annuaire endpoint"
    :> "annuaire"
@@ -69,22 +65,15 @@ type AddWithForm = Summary "Add with FormUrlEncoded to annuaire endpoint"
    :> AsyncJobs JobLog '[FormUrlEncoded] AnnuaireWithForm JobLog
 
 ------------------------------------------------------------------------
-addToAnnuaireWithForm :: FlowCmdM env err m
+addToAnnuaireWithForm :: (FlowCmdM env err m, MonadJobStatus m)
                     => AnnuaireId
                     -> AnnuaireWithForm
-                    -> (JobLog -> m ())
-                    -> m JobLog
-addToAnnuaireWithForm _cid (AnnuaireWithForm { _wf_filetype }) logStatus = do
+                    -> JobHandle m
+                    -> m ()
+addToAnnuaireWithForm _cid (AnnuaireWithForm { _wf_filetype }) jobHandle = do
 
   -- printDebug "ft" _wf_filetype
 
-  logStatus JobLog { _scst_succeeded = Just 1
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
-  pure      JobLog { _scst_succeeded = Just 2
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 0
-                   , _scst_events    = Just []
-                   }
+  markStarted 3 jobHandle
+  markProgress 1 jobHandle
+  markComplete jobHandle

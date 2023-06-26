@@ -11,15 +11,18 @@ Portability : POSIX
 
 module Gargantext.Core.Text.Corpus.API
   ( ExternalAPIs(..)
-  , Query
-  , Limit
+  , Corpus.RawQuery(..)
+  , Corpus.Limit(..)
+  , GetCorpusError(..)
   , get
   , externalAPIs
   ) where
 
 import Conduit
+import Data.Bifunctor
 import Data.Either (Either(..))
 import Data.Maybe
+import qualified Data.Text as T
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
 import Gargantext.Core (Lang(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
@@ -29,28 +32,36 @@ import qualified Gargantext.Core.Text.Corpus.API.Hal     as HAL
 import qualified Gargantext.Core.Text.Corpus.API.Isidore as ISIDORE
 import qualified Gargantext.Core.Text.Corpus.API.Istex   as ISTEX
 import qualified Gargantext.Core.Text.Corpus.API.Pubmed  as PUBMED
+import qualified Gargantext.Core.Text.Corpus.Query as Corpus
+import qualified PUBMED.Types as PUBMED
 import Servant.Client (ClientError)
+
+data GetCorpusError
+  = -- | We couldn't parse the user input query into something meaningful.
+    InvalidInputQuery !Corpus.RawQuery !T.Text
+    -- | The external service returned an error.
+  | ExternalAPIError !ClientError
+  deriving (Show, Eq)
 
 -- | Get External API metadata main function
 get :: ExternalAPIs
     -> Lang
-    -> Query
-    -> Maybe Limit
+    -> Corpus.RawQuery
+    -> Maybe PUBMED.APIKey
+    -> Maybe Corpus.Limit
     -- -> IO [HyperdataDocument]
-    -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get PubMed { mAPIKey = mAPIKey }  _la q limit = PUBMED.get mAPIKey q limit
-  --docs <- PUBMED.get   q default_limit -- EN only by default
-  --pure (Just $ fromIntegral $ length docs, yieldMany docs)
-get Arxiv    la q limit = Arxiv.get la q (fromIntegral <$> limit)
-get HAL      la q limit = HAL.getC  la q limit
-get IsTex    la q limit = do
-  docs <- ISTEX.get la q limit
-  pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
-get Isidore  la q limit = do
-  docs <- ISIDORE.get la (fromIntegral <$> limit) (Just q) Nothing
-  pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
-get _        _  _ _ = undefined
-
--- | Some Sugar for the documentation
-type Query = PUBMED.Query
-type Limit = PUBMED.Limit
+    -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
+get externalAPI la q mPubmedAPIKey limit = do
+  case Corpus.parseQuery q of
+    Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
+    Right corpusQuery -> case externalAPI of
+      PubMed -> first ExternalAPIError <$>
+                  PUBMED.get (fromMaybe "" mPubmedAPIKey) corpusQuery limit
+      --docs <- PUBMED.get   q default_limit -- EN only by default
+      --pure (Just $ fromIntegral $ length docs, yieldMany docs)
+      Arxiv   -> Right <$> Arxiv.get la corpusQuery limit
+      HAL     -> first ExternalAPIError <$> HAL.getC  la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+      IsTex   -> do docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+      Isidore -> do docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
+                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)

@@ -137,8 +137,8 @@ import qualified Prelude
 --     8.333333333333333e-2,             4.6875e-2,                1.0,               0.25,
 --       0.3333333333333333, 5.7692307692307696e-2,                1.0,                1.0]
 --
-distributional :: Matrix Int -> Acc (Matrix Double)
-distributional m' = result
+distributional :: Matrix Int -> Matrix Double
+distributional m' = run $ result
  where
     m = map A.fromIntegral $ use m'
     n = dim m'
@@ -168,16 +168,16 @@ distributional m' = result
 
     result = termDivNan z_1 z_2
 
-logDistributional2 :: Matrix Int -> Matrix Double
-logDistributional2 m = trace ("logDistributional, dim=" `mappend` show n) . run
-                    $ diagNull n
-                    $ matMaxMini
-                    $ logDistributional' n m
+logDistributional2 :: Exp Double -> Matrix Int -> Matrix Double
+logDistributional2 o m = trace ("logDistributional2, dim=" `mappend` show n) . run
+                       $ diagNull n
+                       $ matMaxMini
+                       $ logDistributional' o n m
   where
     n = dim m
 
-logDistributional' :: Int -> Matrix Int -> Acc (Matrix Double)
-logDistributional' n m' = trace ("logDistributional'") result
+logDistributional' :: Exp Double -> Int -> Matrix Int -> Acc (Matrix Double)
+logDistributional' o n m' = trace ("logDistributional'") result
  where
     -- From Matrix Int to Matrix Double, i.e :
     -- m :: Matrix Int -> Matrix Double
@@ -204,7 +204,7 @@ logDistributional' n m' = trace ("logDistributional'") result
     -- m_{i,j} = 0 if n_{i,j} = 0 or i = j, 
     -- m_{i,j} = log(to * n_{i,j} / s_{i,j}) otherwise.
     mi = (.*) (matrixEye n) 
-        (map (lift1 (\x -> cond (x == 0) 0 (log (x * to)))) ((./) m ss))
+        (map (lift1 (\x -> cond (x == 0) 0 (log (o + x * to)))) ((./) m ss))
     -- mi_nnz :: Int
     -- mi_nnz = flip indexArray Z . run $
     --   foldAll (+) 0 $ map (\a -> ifThenElse (abs a < 10^(-6 :: Exp Int)) 0 1) mi
@@ -263,7 +263,7 @@ logDistributional' n m' = trace ("logDistributional'") result
 --
 
 logDistributional :: Matrix Int -> Matrix Double
-logDistributional m' = run $ diagNull n result
+logDistributional m' = run $ diagNull n $ result
  where
     m = map fromIntegral $ use m'
     n = dim m'
@@ -362,9 +362,12 @@ rIJ n m = matMaxMini $ divide a b
 -- * For Tests (to be removed)
 -- | Test perfermance with this matrix
 -- TODO : add this in a benchmark folder
-distriTest :: Int -> Matrix Double
-distriTest n = logDistributional (theMatrixInt n)
-
+{-
+distriTest :: Int -> Bool
+distriTest n = logDistributional m == distributional m
+  where
+    m = theMatrixInt n
+-}
 
 -- * sparse utils
 

@@ -50,7 +50,6 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
 
 import Conduit
 import Control.Lens ((^.), view, _Just, makeLenses, over, traverse)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson.TH (deriveJSON)
 import Data.Conduit.Internal (zipSources)
 import qualified Data.Conduit.List as CList
@@ -65,7 +64,6 @@ import Data.Swagger
 import qualified Data.Text as T
 import Data.Tuple.Extra (first, second)
 import GHC.Generics (Generic)
-import Servant.Client (ClientError)
 import System.FilePath (FilePath)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
@@ -73,11 +71,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit      as C
 
-import Gargantext.API.Admin.Orchestrator.Types (JobLog(..))
 import Gargantext.Core (Lang(..), PosTagAlgo(..))
 -- import Gargantext.Core.Ext.IMT (toSchoolName)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.Flow.Types
+import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.Text
 import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat, FileType, splitOn)
 import Gargantext.Core.Text.List (buildNgramsLists)
@@ -88,6 +86,7 @@ import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Types (POS(NP), TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main
+import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Core.Utils (addTuples)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Action.Flow.List
@@ -110,8 +109,10 @@ import Gargantext.Database.Schema.Node (NodePoly(..), node_id)
 import Gargantext.Database.Types
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)
+import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
+import qualified PUBMED.Types as PUBMED
 --import qualified Prelude
 
 ------------------------------------------------------------------------
@@ -131,13 +132,8 @@ deriveJSON (unPrefix "_do_") ''DataOrigin
 instance ToSchema DataOrigin where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_do_")
 
-allDataOrigins :: ( MonadReader env m
-                  , HasConfig env) => m [DataOrigin]
-allDataOrigins = do
-  ext <- API.externalAPIs
-
-  pure $ map InternalOrigin ext
-      <> map ExternalOrigin ext
+allDataOrigins :: [DataOrigin]
+allDataOrigins = map InternalOrigin API.externalAPIs <> map ExternalOrigin API.externalAPIs
 
 ---------------
 data DataText = DataOld ![NodeId]
@@ -155,29 +151,29 @@ printDataText (DataNew (maybeInt, conduitData)) = do
 getDataText :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
+            -> Maybe PUBMED.APIKey
             -> Maybe API.Limit
-            -> m (Either ClientError DataText)
-getDataText (ExternalOrigin api) la q li = liftBase $ do
-  eRes <- API.get api (_tt_lang la) q li
+            -> m (Either API.GetCorpusError DataText)
+getDataText (ExternalOrigin api) la q mPubmedAPIKey li = do
+  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey li
   pure $ DataNew <$> eRes
-
-getDataText (InternalOrigin _) _la q _li = do
+getDataText (InternalOrigin _) _la q _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
                                            (UserName userMaster)
                                            (Left "")
                                            (Nothing :: Maybe HyperdataCorpus)
-  ids <-  map fst <$> searchDocInDatabase cId (stemIt q)
+  ids <-  map fst <$> searchDocInDatabase cId (stemIt $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
 getDataText_Debug :: FlowCmdM env err m
             => DataOrigin
             -> TermType Lang
-            -> API.Query
+            -> API.RawQuery
             -> Maybe API.Limit
             -> m ()
 getDataText_Debug a l q li = do
-  result <- getDataText a l q li
+  result <- getDataText a l q Nothing li
   case result of
     Left  err -> liftBase $ putStrLn $ show err
     Right res -> liftBase $ printDataText res
@@ -186,13 +182,14 @@ getDataText_Debug a l q li = do
 -------------------------------------------------------------------------------
 flowDataText :: forall env err m.
                 ( FlowCmdM env err m
+                , MonadJobStatus m
                 )
                 => User
                 -> DataText
                 -> TermType Lang
                 -> CorpusId
                 -> Maybe FlowSocialListWith
-                -> (JobLog -> m ())
+                -> JobHandle m
                 -> m CorpusId
 flowDataText u (DataOld ids) tt cid mfslw _ = do
   (_userId, userCorpusId, listId) <- createNodes u (Right [cid]) corpusType
@@ -200,25 +197,25 @@ flowDataText u (DataOld ids) tt cid mfslw _ = do
   flowCorpusUser (_tt_lang tt) u userCorpusId listId corpusType mfslw
   where
     corpusType = (Nothing :: Maybe HyperdataCorpus)
-flowDataText u (DataNew (mLen, txtC)) tt cid mfslw logStatus =
-  flowCorpus u (Right [cid]) tt mfslw (mLen, (transPipe liftBase txtC)) logStatus
+flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle =
+  flowCorpus u (Right [cid]) tt mfslw (mLen, (transPipe liftBase txtC)) jobHandle
 
 ------------------------------------------------------------------------
 -- TODO use proxy
-flowAnnuaire :: (FlowCmdM env err m)
+flowAnnuaire :: (FlowCmdM env err m, MonadJobStatus m)
              => User
              -> Either CorpusName [CorpusId]
              -> (TermType Lang)
              -> FilePath
-             -> (JobLog -> m ())
+             -> JobHandle m
              -> m AnnuaireId
-flowAnnuaire u n l filePath logStatus = do
+flowAnnuaire u n l filePath jobHandle = do
   -- TODO Conduit for file
   docs <- liftBase $ ((readFile_Annuaire filePath) :: IO [HyperdataContact])
-  flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (Just $ fromIntegral $ length docs, yieldMany docs) logStatus
+  flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (Just $ fromIntegral $ length docs, yieldMany docs) jobHandle
 
 ------------------------------------------------------------------------
-flowCorpusFile :: (FlowCmdM env err m)
+flowCorpusFile :: (FlowCmdM env err m, MonadJobStatus m)
            => User
            -> Either CorpusName [CorpusId]
            -> Limit -- Limit the number of docs (for dev purpose)
@@ -227,13 +224,13 @@ flowCorpusFile :: (FlowCmdM env err m)
            -> FileFormat
            -> FilePath
            -> Maybe FlowSocialListWith
-           -> (JobLog -> m ())
+           -> JobHandle m
            -> m CorpusId
-flowCorpusFile u n _l la ft ff fp mfslw logStatus = do
+flowCorpusFile u n _l la ft ff fp mfslw jobHandle = do
   eParsed <- liftBase $ parseFile ft ff fp
   case eParsed of
     Right parsed -> do
-      flowCorpus u n la mfslw (Just $ fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) logStatus
+      flowCorpus u n la mfslw (Just $ fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
       --let docs = splitEvery 500 $ take l parsed
       --flowCorpus u n la mfslw (yieldMany $ map (map toHyperdataDocument) docs) logStatus
     Left e       -> panic $ "Error: " <> T.pack e
@@ -241,13 +238,13 @@ flowCorpusFile u n _l la ft ff fp mfslw logStatus = do
 ------------------------------------------------------------------------
 -- | TODO improve the needed type to create/update a corpus
 -- (For now, Either is enough)
-flowCorpus :: (FlowCmdM env err m, FlowCorpus a)
+flowCorpus :: (FlowCmdM env err m, FlowCorpus a, MonadJobStatus m)
            => User
            -> Either CorpusName [CorpusId]
            -> TermType Lang
            -> Maybe FlowSocialListWith
            -> (Maybe Integer, ConduitT () a m ())
-           -> (JobLog -> m ())
+           -> JobHandle m
            -> m CorpusId
 flowCorpus = flow (Nothing :: Maybe HyperdataCorpus)
 
@@ -256,6 +253,7 @@ flow :: forall env err m a c.
         ( FlowCmdM env err m
         , FlowCorpus a
         , MkCorpus c
+        , MonadJobStatus m
         )
         => Maybe c
         -> User
@@ -263,9 +261,9 @@ flow :: forall env err m a c.
         -> TermType Lang
         -> Maybe FlowSocialListWith
         -> (Maybe Integer, ConduitT () a m ())
-        -> (JobLog -> m ())
+        -> JobHandle m
         -> m CorpusId
-flow c u cn la mfslw (mLength, docsC) logStatus = do
+flow c u cn la mfslw (mLength, docsC) jobHandle = do
   (_userId, userCorpusId, listId) <- createNodes u cn c
   -- TODO if public insertMasterDocs else insertUserDocs
   _ <- runConduit $ zipSources (yieldMany [1..]) docsC
@@ -300,12 +298,23 @@ flow c u cn la mfslw (mLength, docsC) logStatus = do
       let maxIdx = maximum (fst <$> docs)
       case mLength of
         Nothing -> pure ()
-        Just len -> do
-          logStatus JobLog { _scst_succeeded = Just $ fromIntegral $ 1 + maxIdx
-                           , _scst_failed    = Just 0
-                           , _scst_remaining = Just $ fromIntegral $ len - maxIdx
-                           , _scst_events    = Just []
-                           }
+        Just _len -> do
+
+          let succeeded = fromIntegral (1 + maxIdx)
+          -- let remaining = fromIntegral (len - maxIdx)
+          -- Reconstruct the correct update state by using 'markStarted' and the other primitives.
+          -- We do this slightly awkward arithmetic such that when we call 'markProgress' we reduce
+          -- the number of 'remaining' of exactly '1 + maxIdx', and we will end up with a 'JobLog'
+          -- looking like this:
+          -- JobLog
+          -- { _scst_succeeded = Just $ fromIntegral $ 1 + maxIdx
+          -- , _scst_failed    = Just 0
+          -- , _scst_remaining = Just $ fromIntegral $ len - maxIdx
+          -- , _scst_events    = Just []
+          -- }
+          -- markStarted (remaining + succeeded) jobHandle
+          markProgress succeeded jobHandle
+
       pure ids
 
 
@@ -346,6 +355,7 @@ flowCorpusUser :: ( FlowCmdM env err m
                -> Maybe FlowSocialListWith
                -> m CorpusId
 flowCorpusUser l user userCorpusId listId ctype mfslw = do
+  server <- view (nlpServerGet l)
   -- User List Flow
   (masterUserId, _masterRootId, masterCorpusId)
     <- getOrMk_RootWithCorpus (UserName userMaster) (Left "") ctype
@@ -358,7 +368,7 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
            pure ()
          _ -> do
            ngs  <- buildNgramsLists user userCorpusId masterCorpusId mfslw
-                     $ GroupWithPosTag l CoreNLP HashMap.empty
+                   $ GroupWithPosTag l server HashMap.empty
 
          -- printDebug "flowCorpusUser:ngs" ngs
 
@@ -558,10 +568,11 @@ instance ExtractNgramsT HyperdataDocument
                          $ maybe ["Nothing"] (splitOn Authors (doc^. hd_bdd))
                          $ _hd_authors doc
 
+          ncs <- view (nlpServerGet $ lang' ^. tt_lang)
 
           termsWithCounts' <- map (\(t, cnt) -> (enrichedTerms (lang' ^. tt_lang) CoreNLP NP t, cnt))
                               <$> concat
-                              <$> liftBase (extractTerms lang' $ hasText doc)
+                              <$> liftBase (extractTerms ncs lang' $ hasText doc)
 
           pure $ HashMap.fromList
                $  [(SimpleNgrams source, (Map.singleton Sources     1, 1))                    ]

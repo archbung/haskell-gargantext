@@ -40,30 +40,28 @@ module Gargantext.API.Admin.Auth
 import Control.Lens (view, (#))
 import Data.Aeson
 import Data.Swagger (ToSchema(..))
-import Data.Text (Text)
-import Data.Text.Lazy (toStrict)
 import Data.UUID (UUID, fromText, toText)
 import Data.UUID.V4 (nextRandom)
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
-import Gargantext.API.Job (jobLogSuccess)
 import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError)
 import Gargantext.Core.Mail (MailModel(..), mail)
-import Gargantext.Core.Mail.Types (HasMail, mailSettings)
+import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Node (NodeId(..), UserId)
-import Gargantext.Database.Prelude (Cmd', CmdM, HasConnectionPool, HasConfig)
+import Gargantext.Database.Prelude (Cmd', CmdM, CmdCommon)
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree (isDescendantOf, isIn)
 import Gargantext.Database.Query.Tree.Root (getRoot)
+import Gargantext.Database.Action.User.New (guessUserName)
 import Gargantext.Database.Schema.Node (NodePoly(_node_id))
 import Gargantext.Prelude hiding (reverse)
 import Gargantext.Prelude.Crypto.Pass.User (gargPass)
-import Gargantext.Utils.Jobs (serveJobsAPI)
+import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Protolude hiding (to)
 import Servant
 import Servant.Auth.Server
 import qualified Data.Text as Text
@@ -83,26 +81,32 @@ makeTokenForUser uid = do
   either joseError (pure . toStrict . LE.decodeUtf8) e
   -- TODO not sure about the encoding...
 
-checkAuthRequest :: (HasSettings env, HasConnectionPool env, HasJoseError err, HasConfig env, HasMail env)
+checkAuthRequest :: ( HasSettings env, CmdCommon env, HasJoseError err)
                  => Username
                  -> GargPassword
                  -> Cmd' env err CheckAuth
-checkAuthRequest u (GargPassword p) = do
-  candidate <- head <$> getUsersWith u
+checkAuthRequest couldBeEmail (GargPassword p) = do
+  -- Sometimes user put email instead of username
+  -- hence we have to check before
+  let usrname = case guessUserName couldBeEmail of
+        Nothing      -> couldBeEmail -- we are sure this is not an email
+        Just (u,_)   -> u            -- this was an email in fact
+
+  candidate <- head <$> getUsersWith usrname
   case candidate of
     Nothing -> pure InvalidUser
     Just (UserLight { userLight_password = GargPassword h, .. }) ->
       case Auth.checkPassword (Auth.mkPassword p) (Auth.PasswordHash h) of
         Auth.PasswordCheckFail    -> pure InvalidPassword
         Auth.PasswordCheckSuccess -> do
-          muId <- head <$> getRoot (UserName u)
+          muId <- head <$> getRoot (UserName usrname)
           case _node_id <$> muId of
             Nothing  -> pure InvalidUser
             Just uid -> do
               token <- makeTokenForUser uid
               pure $ Valid token uid userLight_id
 
-auth :: (HasSettings env, HasConnectionPool env, HasJoseError err, HasConfig env, HasMail env)
+auth :: (HasSettings env, CmdCommon env, HasJoseError err)
      => AuthRequest -> Cmd' env err AuthResponse
 auth (AuthRequest u p) = do
   checkAuthRequest' <- checkAuthRequest u p
@@ -177,7 +181,7 @@ forgotPassword :: GargServer ForgotPasswordAPI
      -- => ForgotPasswordRequest -> Cmd' env err ForgotPasswordResponse
 forgotPassword = forgotPasswordPost :<|> forgotPasswordGet
 
-forgotPasswordPost :: ( HasConnectionPool env, HasConfig env, HasMail env)
+forgotPasswordPost :: (CmdCommon env)
      => ForgotPasswordRequest -> Cmd' env err ForgotPasswordResponse
 forgotPasswordPost (ForgotPasswordRequest email) = do
   us <- getUsersWithEmail (Text.toLower email)
@@ -189,7 +193,7 @@ forgotPasswordPost (ForgotPasswordRequest email) = do
   -- users' emails
   pure $ ForgotPasswordResponse "ok"
 
-forgotPasswordGet :: (HasSettings env, HasConnectionPool env, HasJoseError err, HasConfig env, HasMail env, HasServerError err)
+forgotPasswordGet :: (HasSettings env, CmdCommon env, HasJoseError err, HasServerError err)
      => Maybe Text -> Cmd' env err ForgotPasswordGet
 forgotPasswordGet Nothing = pure $ ForgotPasswordGet ""
 forgotPasswordGet (Just uuid) = do
@@ -205,7 +209,7 @@ forgotPasswordGet (Just uuid) = do
 
 ---------------------
 
-forgotPasswordGetUser :: (HasSettings env, HasConnectionPool env, HasJoseError err, HasConfig env, HasMail env, HasServerError err)
+forgotPasswordGetUser :: ( HasSettings env, CmdCommon env, HasJoseError err, HasServerError err)
      => UserLight -> Cmd' env err ForgotPasswordGet
 forgotPasswordGetUser (UserLight { .. }) = do
   -- pick some random password
@@ -224,7 +228,7 @@ forgotPasswordGetUser (UserLight { .. }) = do
 
   pure $ ForgotPasswordGet password
 
-forgotUserPassword :: (HasConnectionPool env, HasConfig env, HasMail env)
+forgotUserPassword :: (CmdCommon env)
      => UserLight -> Cmd' env err ()
 forgotUserPassword (UserLight { .. }) = do
   --printDebug "[forgotUserPassword] userLight_id" userLight_id
@@ -249,7 +253,7 @@ forgotUserPassword (UserLight { .. }) = do
 --------------------------
 
 -- Generate a unique (in whole DB) UUID for passwords.
-generateForgotPasswordUUID :: (HasConnectionPool env, HasConfig env, HasMail env)
+generateForgotPasswordUUID :: (CmdCommon env)
   => Cmd' env err UUID
 generateForgotPasswordUUID = do
   uuid <- liftBase $ nextRandom
@@ -268,23 +272,19 @@ type ForgotPasswordAsyncAPI = Summary "Forgot password asnc"
 
 forgotPasswordAsync :: ServerT ForgotPasswordAsyncAPI (GargM Env GargError)
 forgotPasswordAsync =
-  serveJobsAPI ForgotPasswordJob $ \p log' ->
-    forgotPasswordAsync' p (liftBase . log')
+  serveJobsAPI ForgotPasswordJob $ \jHandle p -> forgotPasswordAsync' p jHandle
 
-forgotPasswordAsync' :: (FlowCmdM env err m)
+forgotPasswordAsync' :: (FlowCmdM env err m, MonadJobStatus m)
   => ForgotPasswordAsyncParams
-  -> (JobLog -> m ())
-  -> m JobLog
-forgotPasswordAsync' (ForgotPasswordAsyncParams { email }) logStatus = do
-  let jobLog = JobLog { _scst_succeeded = Just 1
-                      , _scst_failed    = Just 0
-                      , _scst_remaining = Just 1
-                      , _scst_events    = Just []
-                      }
-  logStatus jobLog
+  -> JobHandle m
+  -> m ()
+forgotPasswordAsync' (ForgotPasswordAsyncParams { email }) jobHandle = do
+
+  markStarted 2 jobHandle
+  markProgress 1 jobHandle
 
   -- printDebug "[forgotPasswordAsync'] email" email
 
   _ <- forgotPasswordPost $ ForgotPasswordRequest { _fpReq_email = email }
 
-  pure $ jobLogSuccess jobLog
+  markComplete jobHandle

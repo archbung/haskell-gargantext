@@ -20,6 +20,7 @@ module Gargantext.API.Node.Corpus.New
 
 import Conduit
 import Control.Lens hiding (elements, Empty)
+import Control.Monad
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import qualified Data.ByteString.Base64 as BSB64
@@ -37,14 +38,13 @@ import qualified Data.Text.Encoding as TE
 -- import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 
-import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs, ScraperEvent(..), scst_events)
+import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Job (addEvent, jobLogSuccess, jobLogFailTotal)
 import Gargantext.API.Node.Corpus.New.Types
 import Gargantext.API.Node.Corpus.Searx
 import Gargantext.API.Node.Corpus.Types
 import Gargantext.API.Node.Types
-import Gargantext.Core (Lang(..){-, allLangs-})
+import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
@@ -54,16 +54,19 @@ import Gargantext.Database.Action.Mail (sendMail)
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..), UserId)
+import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
+import Gargantext.Database.Query.Table.User (getUserPubmedAPIKey)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_parsers)
+import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
 import qualified Gargantext.Database.GargDB as GargDB
+
 ------------------------------------------------------------------------
 {-
 data Query = Query { query_query      :: Text
@@ -129,23 +132,20 @@ deriveJSON (unPrefix "") 'ApiInfo
 
 instance ToSchema ApiInfo
 
-info :: FlowCmdM env err m => UserId -> m ApiInfo
-info _u = do
-  ext <- API.externalAPIs
-
-  pure $ ApiInfo ext
+info :: ApiInfo
+info = ApiInfo API.externalAPIs
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 data WithQuery = WithQuery
-  { _wq_query        :: !Text
+  { _wq_query        :: !API.RawQuery
   , _wq_databases    :: !Database
   , _wq_datafield    :: !(Maybe Datafield)
   , _wq_lang         :: !Lang
   , _wq_node_id      :: !Int
   , _wq_flowListWith :: !FlowSocialListWith
   }
-  deriving Generic
+  deriving (Show, Eq, Generic)
 
 makeLenses ''WithQuery
 instance FromJSON WithQuery where
@@ -154,6 +154,14 @@ instance ToJSON WithQuery where
   toJSON = genericToJSON $ jsonOptions "_wq_"
 instance ToSchema WithQuery where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_wq_")
+
+instance Arbitrary WithQuery where
+  arbitrary = WithQuery <$> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
 
 ------------------------------------------------------------------------
 
@@ -180,24 +188,19 @@ type AddWithFile = Summary "Add with MultipartData to corpus endpoint"
 -- TODO WithQuery also has a corpus id
 
 
-addToCorpusWithQuery :: FlowCmdM env err m
+addToCorpusWithQuery :: (FlowCmdM env err m, MonadJobStatus m)
                        => User
                        -> CorpusId
                        -> WithQuery
-                       -> Maybe Integer
-                       -> (JobLog -> m ())
-                       -> m JobLog
+                       -> Maybe API.Limit
+                       -> JobHandle m
+                       -> m ()
 addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_databases = dbs
                                          , _wq_datafield = datafield
                                          , _wq_lang = l
-                                         , _wq_flowListWith = flw }) maybeLimit logStatus = do
+                                         , _wq_flowListWith = flw }) maybeLimit jobHandle = do
   -- TODO ...
-  logStatus JobLog { _scst_succeeded = Just 0
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 3
-                   , _scst_events    = Just []
-                   }
   -- printDebug "[addToCorpusWithQuery] (cid, dbs)" (cid, dbs)
   -- printDebug "[addToCorpusWithQuery] datafield" datafield
   -- printDebug "[addToCorpusWithQuery] flowListWith" flw
@@ -206,58 +209,42 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
     Just Web -> do
       -- printDebug "[addToCorpusWithQuery] processing web request" datafield
 
-      _ <- triggerSearxSearch user cid q l logStatus
+      markStarted 1 jobHandle
 
-      pure JobLog { _scst_succeeded = Just 3
-                  , _scst_failed    = Just 0
-                  , _scst_remaining = Just 0
-                  , _scst_events    = Just []
-                  }
+      _ <- triggerSearxSearch user cid q l jobHandle
+
+      markComplete jobHandle
 
     _ -> do
+      markStarted 3 jobHandle
+
       -- TODO add cid
       -- TODO if cid is folder -> create Corpus
       --      if cid is corpus -> add to corpus
       --      if cid is root   -> create corpus in Private
       -- printDebug "[G.A.N.C.New] getDataText with query" q
-      databaseOrigin <- database2origin dbs
-      eTxts <- mapM (\db -> getDataText db (Multi l) q maybeLimit) [databaseOrigin]
+      let db = database2origin dbs
+      mPubmedAPIKey <- getUserPubmedAPIKey user
+      -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
+      eTxt <- getDataText db (Multi l) q mPubmedAPIKey maybeLimit
 
-      let lTxts = lefts eTxts
       -- printDebug "[G.A.N.C.New] lTxts" lTxts
-      case lTxts of
-        [] -> do
-          let txts = rights eTxts
+      case eTxt of
+        Right txt -> do
           -- TODO Sum lenghts of each txt elements
-          logStatus $ JobLog { _scst_succeeded = Just 2
-                             , _scst_failed    = Just 0
-                             , _scst_remaining = Just $ 1 + length txts
-                             , _scst_events    = Just []
-                             }
 
-          _cids <- mapM (\txt -> do
-                           flowDataText user txt (Multi l) cid (Just flw) logStatus) txts
+          markProgress 1 jobHandle
+
+          void $ flowDataText user txt (Multi l) cid (Just flw) jobHandle
           -- printDebug "corpus id" cids
           -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
           sendMail user
           -- TODO ...
-          pure JobLog { _scst_succeeded = Just 3
-                      , _scst_failed    = Just 0
-                      , _scst_remaining = Just 0
-                      , _scst_events    = Just []
-                      }
+          markComplete jobHandle
 
-        (err:_) -> do
+        Left err -> do
           -- printDebug "Error: " err
-          let jl = addEvent "ERROR" (T.pack $ show err) $
-                JobLog { _scst_succeeded = Just 2
-                       , _scst_failed    = Just 1
-                       , _scst_remaining = Just 0
-                       , _scst_events    = Just []
-                       }
-          logStatus jl
-          pure jl
-
+          markFailed (Just $ T.pack (show err)) jobHandle
 
 type AddWithForm = Summary "Add with FormUrlEncoded to corpus endpoint"
    :> "corpus"
@@ -267,18 +254,16 @@ type AddWithForm = Summary "Add with FormUrlEncoded to corpus endpoint"
    :> "async"
      :> AsyncJobs JobLog '[FormUrlEncoded] NewWithForm JobLog
 
-addToCorpusWithForm :: (FlowCmdM env err m)
+addToCorpusWithForm :: (FlowCmdM env err m, MonadJobStatus m)
                     => User
                     -> CorpusId
                     -> NewWithForm
-                    -> (JobLog -> m ())
-                    -> JobLog
-                    -> m JobLog
-addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) logStatus jobLog = do
+                    -> JobHandle m
+                    -> m ()
+addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) jobHandle = do
   -- printDebug "[addToCorpusWithForm] Parsing corpus: " cid
   -- printDebug "[addToCorpusWithForm] fileType" ft
   -- printDebug "[addToCorpusWithForm] fileFormat" ff
-  logStatus jobLog
   limit' <- view $ hasConfig . gc_max_docs_parsers
   let limit = fromIntegral limit' :: Integer
   let
@@ -287,6 +272,8 @@ addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) logStatus jobLog = d
       CSV       -> Parser.parseFormatC Parser.CsvGargV3
       WOS       -> Parser.parseFormatC Parser.WOS
       PresseRIS -> Parser.parseFormatC Parser.RisPresse
+      Iramuteq  -> Parser.parseFormatC Parser.Iramuteq
+      JSON      -> Parser.parseFormatC Parser.JSON
 
   -- TODO granularity of the logStatus
   let data' = case ff of
@@ -329,28 +316,17 @@ addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) logStatus jobLog = d
                           --(Just $ fromIntegral $ length docs, docsC')
                           (mCount, transPipe liftBase docsC') -- TODO fix number of docs
                           --(map (map toHyperdataDocument) docs)
-                          logStatus
+                          jobHandle
 
       -- printDebug "Extraction finished   : " cid
       -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
       -- TODO uncomment this
       --sendMail user
 
-      logStatus jobLog3
-      pure jobLog3
+      markComplete jobHandle
     Left e -> do
       printDebug "[addToCorpusWithForm] parse error" e
-
-      let evt = ScraperEvent { _scev_message = Just $ T.pack e
-                             , _scev_level = Just "ERROR"
-                             , _scev_date = Nothing }
-
-      logStatus $ over (scst_events . _Just) (\evt' -> evt' <> [evt]) jobLogE
-      pure jobLogE
-    where
-      jobLog2 = jobLogSuccess jobLog
-      jobLog3 = jobLogSuccess jobLog2
-      jobLogE = jobLogFailTotal jobLog
+      markFailed (Just $ T.pack e) jobHandle
 
 {-
 addToCorpusWithFile :: FlowCmdM env err m
@@ -385,20 +361,16 @@ type AddWithFile = Summary "Add with FileUrlEncoded to corpus endpoint"
    :> "async"
      :> AsyncJobs JobLog '[FormUrlEncoded] NewWithFile JobLog
 
-addToCorpusWithFile :: (HasSettings env, FlowCmdM env err m)
+addToCorpusWithFile :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
                     => User
                     -> CorpusId
                     -> NewWithFile
-                    -> (JobLog -> m ())
-                    -> m JobLog
-addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) logStatus = do
+                    -> JobHandle m
+                    -> m ()
+addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) jobHandle = do
 
   printDebug "[addToCorpusWithFile] Uploading file to corpus: " cid
-  logStatus JobLog { _scst_succeeded = Just 0
-                   , _scst_failed    = Just 0
-                   , _scst_remaining = Just 1
-                   , _scst_events    = Just []
-                   }
+  markStarted 1 jobHandle
 
   fPath <- GargDB.writeFile nwf
   printDebug "[addToCorpusWithFile] File saved as: " fPath
@@ -421,8 +393,4 @@ addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) logStatus = do
   printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
   sendMail user
 
-  pure $ JobLog { _scst_succeeded = Just 1
-                , _scst_failed    = Just 0
-                , _scst_remaining = Just 0
-                , _scst_events    = Just []
-                }
+  markComplete jobHandle

@@ -30,10 +30,12 @@ import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Text.Metrics (scored, Scored(..), {-localMetrics, toScored-})
 import Database.PostgreSQL.Simple.ToField (toField, Action{-, ToField-})
-import Gargantext.Core.Types (ListType(..), Limit, NodeType(..), ContextId)
+import Gargantext.Core.Types (ListType(..), NodeType(..), ContextId)
+import Gargantext.Core.Types.Query (Limit(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser{-, getTficfWith-})
 import Gargantext.Database.Admin.Config (userMaster)
+-- import Gargantext.Database.Action.Metrics.NgramsByContext (refreshNgramsMaterialized)
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId)
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Select
@@ -124,7 +126,11 @@ updateNgramsOccurrences' cId maybeListId maybeLimit tabType = do
   let fields = map (\t-> QualifiedIdentifier Nothing t)
              $ map Text.pack ["int4", "int4","text","int4","int4"]
 
-  map (\(Only a) -> a) <$> runPGSQuery queryInsert (Only $ Values fields toInsert)
+  res <- map (\(Only a) -> a) <$> runPGSQuery queryInsert (Only $ Values fields toInsert)
+
+  -- _ <- map (\(Only a) -> a) <$> runPGSQuery [sql|refresh materialized view context_node_ngrams_view;|] ()
+  -- _ <- refreshNgramsMaterialized
+  pure res
 
 
 
@@ -240,6 +246,6 @@ getNgrams lId tabType = do
   pure (lists, maybeSyn)
 
 -- Some useful Tools
-take' :: Maybe Int -> [a] -> [a]
+take' :: Maybe Limit -> [a] -> [a]
 take' Nothing  xs = xs
-take' (Just n) xs = take n xs
+take' (Just n) xs = take (getLimit n) xs

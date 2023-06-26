@@ -28,7 +28,6 @@ import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Job (jobLogSuccess, jobLogFailTotalWithMessage)
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.FrameWrite
@@ -43,7 +42,7 @@ import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node (getChildrenByType, getClosestParentIdByType', getNodeWith)
 import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
-import Gargantext.Utils.Jobs (serveJobsAPI)
+import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Gargantext.Core.Text.Corpus.Parsers.Date (split')
 import Servant
 import Text.Read (readMaybe)
@@ -55,8 +54,8 @@ import qualified Data.Text           as T
 type API = Summary " Documents from Write nodes."
          :> AsyncJobs JobLog '[JSON] Params JobLog
 ------------------------------------------------------------------------
-data Params = Params 
-  { id         :: Int 
+data Params = Params
+  { id         :: Int
   , paragraphs :: Text
   , lang       :: Lang
   , selection  :: FlowSocialListWith
@@ -70,35 +69,28 @@ instance ToSchema Params
 ------------------------------------------------------------------------
 api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
 api uId nId =
-  serveJobsAPI DocumentFromWriteNodeJob $ \p log'' ->
-      let
-        log' x = do
-          liftBase $ log'' x
-      in documentsFromWriteNodes uId nId p (liftBase . log')
+  serveJobsAPI DocumentFromWriteNodeJob $ \jHandle p ->
+    documentsFromWriteNodes uId nId p jHandle
 
-documentsFromWriteNodes :: (HasSettings env, FlowCmdM env err m)
+documentsFromWriteNodes :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
     => UserId
     -> NodeId
     -> Params
-    -> (JobLog -> m ())
-    -> m JobLog
-documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } logStatus = do
-  let jobLog = JobLog { _scst_succeeded = Just 1
-                      , _scst_failed    = Just 0
-                      , _scst_remaining = Just 1
-                      , _scst_events    = Just []
-                      }
-  logStatus jobLog
+    -> JobHandle m
+    -> m ()
+documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle = do
+  markStarted 2 jobHandle
+  markProgress 1 jobHandle
 
   mcId <- getClosestParentIdByType' nId NodeCorpus
   cId <- case mcId of
     Just cId -> pure cId
     Nothing -> do
       let msg = T.pack $ "[G.A.N.DFWN] Node has no corpus parent: " <> show nId
-      logStatus $ jobLogFailTotalWithMessage msg jobLog
+      markFailed (Just msg) jobHandle
       panic msg
 
-  frameWriteIds <- getChildrenByType nId NodeFrameWrite
+  frameWriteIds <- getChildrenByType nId Notes
 
   -- https://write.frame.gargantext.org/<frame_id>/download
   frameWrites <- mapM (\id -> getNodeWith id (Proxy :: Proxy HyperdataFrame)) frameWriteIds
@@ -108,7 +100,7 @@ documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } logStatus
              contents <- getHyperdataFrameContents (node ^. node_hyperdata)
              pure (node, contents)
          ) frameWrites
-  
+
   let paragraphs' = fromMaybe (7 :: Int) $ (readMaybe $ T.unpack paragraphs)
   let parsedE = (\(node, contents)
                   -> hyperdataDocumentFromFrameWrite lang paragraphs' (node, contents)) <$> frameWritesWithContents
@@ -119,9 +111,9 @@ documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } logStatus
                     (Multi lang)
                     cId
                     (Just selection)
-                    logStatus
+                    jobHandle
 
-  pure $ jobLogSuccess jobLog
+  markProgress 1 jobHandle
 
 ------------------------------------------------------------------------
 hyperdataDocumentFromFrameWrite :: Lang -> Int -> (Node HyperdataFrame, T.Text) -> Either T.Text [HyperdataDocument]
@@ -150,7 +142,7 @@ hyperdataDocumentFromFrameWrite lang paragraphSize (node, contents) =
           day' = maybe Defaults.day (\(Date { day }) -> fromIntegral day) date
 --}
           in
-      Right (List.map (\(t, ctxt) ->  HyperdataDocument { _hd_bdd = Just "FrameWrite"
+      Right (List.map (\(t, ctxt) ->  HyperdataDocument { _hd_bdd = Just $ cs $ show Notes
                               , _hd_doi = Nothing
                               , _hd_url = Nothing
                               , _hd_uniqId = Nothing

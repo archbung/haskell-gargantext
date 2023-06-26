@@ -6,7 +6,7 @@ name: gargantext
 #         | | | +-----  Layers * : New versions with API additions
 #         | | | | +---  Layers * : New versions without API breaking changes
 #         | | | | |
-version: '0.0.6.9.5'
+version: '0.0.6.9.9.6.9'
 synopsis: Search, map, share
 description: Please see README.md
 category: Data
@@ -16,7 +16,8 @@ copyright:
     - ! 'Copyright: (c) 2017-Present: see git logs and README'
 license: AGPL-3
 homepage: https://gargantext.org
-ghc-options: -Wall
+ghc-options:
+  - -Wall
 dependencies:
   - extra
   - text
@@ -25,6 +26,7 @@ default-extensions:
   - DeriveGeneric
   - FlexibleContexts
   - FlexibleInstances
+  - GADTs
   - GeneralizedNewtypeDeriving
   - MultiParamTypeClasses
   - NamedFieldPuns
@@ -42,6 +44,9 @@ data-files:
   - ekg-assets/bootstrap-1.4.0.min.css
   - ekg-assets/chart_line_add.png
   - ekg-assets/cross.png
+  - test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
+  - test-data/phylo/bpa_phylo_test.json
+  - test-data/phylo/open_science.json
 library:
   source-dirs: src
   ghc-options:
@@ -52,12 +57,14 @@ library:
   - -Wunused-imports
   - -Werror
   - -freduction-depth=300
+  - -fplugin=Clippy
   exposed-modules:
   - Gargantext
   - Gargantext.API
   - Gargantext.API.Admin.Auth.Types
   - Gargantext.API.Admin.EnvTypes
   - Gargantext.API.Admin.Settings
+  - Gargantext.API.Admin.Orchestrator.Types
   - Gargantext.API.Admin.Types
   - Gargantext.API.Dev
   - Gargantext.API.HashedResponse
@@ -66,18 +73,25 @@ library:
   - Gargantext.API.Ngrams.Tools
   - Gargantext.API.Ngrams.Types
   - Gargantext.API.Node
+  - Gargantext.API.Node.Corpus.New
+  - Gargantext.API.Node.Corpus.Types
   - Gargantext.API.Node.File
   - Gargantext.API.Node.Share
   - Gargantext.API.Prelude
   - Gargantext.Core
+  - Gargantext.Core.NLP
   - Gargantext.Core.Methods.Similarities
   - Gargantext.Core.NodeStory
   - Gargantext.Core.Text
   - Gargantext.Core.Text.Context
   - Gargantext.Core.Text.Corpus.API
+  - Gargantext.Core.Text.Corpus.API.Arxiv
+  - Gargantext.Core.Text.Corpus.API.Pubmed
+  - Gargantext.Core.Text.Corpus.Query
   - Gargantext.Core.Text.Corpus.Parsers
   - Gargantext.Core.Text.Corpus.Parsers.CSV
   - Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
+  - Gargantext.Core.Text.Corpus.Parsers.JSON
   - Gargantext.Core.Text.List.Formats.CSV
   - Gargantext.Core.Text.Metrics
   - Gargantext.Core.Text.Metrics.CharByChar
@@ -88,6 +102,7 @@ library:
   - Gargantext.Core.Text.Terms
   - Gargantext.Core.Text.Terms.Eleve
   - Gargantext.Core.Text.Terms.Mono
+  - Gargantext.Core.Text.Terms.Multi
   - Gargantext.Core.Text.Terms.Multi.Lang.En
   - Gargantext.Core.Text.Terms.Multi.Lang.Fr
   - Gargantext.Core.Text.Terms.Multi.RAKE
@@ -95,6 +110,8 @@ library:
   - Gargantext.Core.Types
   - Gargantext.Core.Types.Individu
   - Gargantext.Core.Types.Main
+  - Gargantext.Core.Types.Query
+  - Gargantext.Core.Types.Phylo
   - Gargantext.Core.Utils
   - Gargantext.Core.Utils.Prefix
   - Gargantext.Core.Viz.Graph
@@ -125,7 +142,7 @@ library:
   - Gargantext.Database.Schema.Ngrams
   - Gargantext.Defaults
   - Gargantext.Utils.Jobs
-  - Gargantext.Utils.Jobs.API
+  - Gargantext.Utils.Jobs.Internal
   - Gargantext.Utils.Jobs.Map
   - Gargantext.Utils.Jobs.Monad
   - Gargantext.Utils.Jobs.Queue
@@ -157,11 +174,13 @@ library:
   - blaze-html
   - blaze-markup
   - blaze-svg
+  - boolexpr
   - bytestring
   - case-insensitive
   - cassava
   - cereal     # (IGraph)
   - cborg
+  - ghc-clippy-plugin
   - conduit
   - conduit-extra
   - containers
@@ -171,6 +190,7 @@ library:
   - crawlerISTEX
   - crawlerIsidore
   - crawlerPubMed
+  - cron
   - cryptohash
   - data-time-segment
   - deepseq
@@ -222,6 +242,7 @@ library:
   - morpheus-graphql-subscriptions
   - mtl
   - natural-transformation
+  - network-uri
   - opaleye
   - pandoc
   - parallel
@@ -242,6 +263,7 @@ library:
   - rake
   - random
   - rdf4h
+  - replace-attoparsec
   - regex-compat
   - regex-tdfa
   - resource-pool
@@ -322,15 +344,16 @@ executables:
     - -fprof-auto
     dependencies:
       - base
+      - cassava
       - containers
+      - full-text-search
       - gargantext
       - gargantext-prelude
-      - vector
-      - cassava
       - ini
       - optparse-generic
+      - postgresql-simple
       - unordered-containers
-      - full-text-search
+      - vector
 
   gargantext-cli:
     main: Main.hs
@@ -383,7 +406,7 @@ executables:
       - split
       - unordered-containers
       - cryptohash
-      - time 
+      - time
 
   gargantext-import:
     main: Main.hs
@@ -413,6 +436,7 @@ executables:
       - gargantext
       - gargantext-prelude
       - base
+      - cron
 
   gargantext-invitations:
     main: Main.hs
@@ -443,6 +467,7 @@ executables:
       - gargantext-prelude
       - base
       - postgresql-simple
+      - cron
 
   gargantext-admin:
     main: Main.hs
@@ -476,7 +501,6 @@ executables:
       - aeson
       - serialise
 
-
 tests:
    garg-test:
      main: Main.hs
@@ -496,30 +520,38 @@ tests:
      - -rtsopts
      - -with-rtsopts=-N
      dependencies:
+     - QuickCheck
+     - aeson
+     - async
      - base
+     - boolexpr
+     - bytestring
+     - conduit
+     - containers
+     - crawlerArxiv
+     - duckling
      - gargantext
      - gargantext-prelude
      - hspec
-     - QuickCheck
-     - quickcheck-instances
-     - time
+     - http-client
+     - http-client-tls
+     - mtl
      - parsec
+     - patches-class
+     - patches-map
      - duckling
-     - text
-     - unordered-containers
-   jobqueue-test:
-     main: Main.hs
-     source-dirs: tests/queue
-     ghc-options:
-     - -threaded
-     - -rtsopts
-     - -with-rtsopts=-N
-     dependencies:
-     - base
-     - gargantext
-     - hspec
-     - async
+     - quickcheck-instances
+     - raw-strings-qq
+     - servant-job
      - stm
+     - tasty
+     - tasty-hspec
+     - tasty-hunit
+     - tasty-quickcheck
+     - text
+     - time
+     - unordered-containers
+     - validity
 #  garg-doctest:
 #    main: Main.hs
 #    source-dirs: src-doctest
@@ -547,4 +579,3 @@ tests:
 #    - OverloadedStrings
 #    - RankNTypes
 #
-

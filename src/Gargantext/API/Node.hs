@@ -47,6 +47,7 @@ import Gargantext.API.Table
 import Gargantext.Core.Types (NodeTableResult)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (Tree, NodeTree)
+import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Core.Viz.Phylo.API (PhyloAPI, phyloAPI)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
@@ -61,7 +62,7 @@ import Gargantext.Database.Query.Table.Node.Update (Update(..), update)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Query.Table.NodeContext (nodeContextsCategory, nodeContextsScore)
 import Gargantext.Database.Query.Table.NodeNode
-import Gargantext.Database.Query.Tree (tree, TreeMode(..))
+import Gargantext.Database.Query.Tree (tree, tree_flat, TreeMode(..))
 import Gargantext.Prelude
 import Servant
 import Test.QuickCheck (elements)
@@ -169,8 +170,8 @@ type PostNodeApi = Summary " PostNode Node with ParentId as {id}"
 
 type ChildrenApi a = Summary " Summary children"
                  :> QueryParam "type"   NodeType
-                 :> QueryParam "offset" Int
-                 :> QueryParam "limit"  Int
+                 :> QueryParam "offset" Offset
+                 :> QueryParam "limit"  Limit
                  -- :> Get '[JSON] [Node a]
                  :> Get '[JSON] (NodeTableResult a)
 
@@ -296,8 +297,8 @@ scoreApi = putScore
 type PairingApi = Summary " Pairing API"
                 :> QueryParam "view"   TabType
                 -- TODO change TabType -> DocType (CorpusId for pairing)
-                :> QueryParam "offset" Int
-                :> QueryParam "limit"  Int
+                :> QueryParam "offset" Offset
+                :> QueryParam "limit"  Limit
                 :> QueryParam "order"  OrderBy
                 :> Get '[JSON] [FacetDoc]
 
@@ -334,6 +335,13 @@ type TreeAPI   = QueryParams "type" NodeType
 treeAPI :: NodeId -> GargServer TreeAPI
 treeAPI id = tree TreeAdvanced id
         :<|> tree TreeFirstLevel id
+
+type TreeFlatAPI = QueryParams "type" NodeType
+                    :> QueryParam "query" Text
+                    :> Get '[JSON] [NodeTree]
+
+treeFlatAPI :: NodeId -> GargServer TreeFlatAPI
+treeFlatAPI = tree_flat
 
 ------------------------------------------------------------------------
 -- | TODO Check if the name is less than 255 char

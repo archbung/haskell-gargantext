@@ -12,6 +12,7 @@ TODO-SECURITY: Critical
 
 
 
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
@@ -43,10 +44,12 @@ import qualified Data.ByteString.Lazy as L
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Types
 -- import Gargantext.API.Ngrams.Types (NgramsRepo, HasRepo(..), RepoEnv(..), r_version, initRepo, renv_var, renv_lock)
+import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Database.Prelude (databaseParameters, hasConfig)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_js_job_timeout, gc_js_id_timeout)
 import qualified Gargantext.Prelude.Mail as Mail
+import qualified Gargantext.Prelude.NLP as NLP
 import qualified Gargantext.Utils.Jobs       as Jobs
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Gargantext.Utils.Jobs.Queue as Jobs
@@ -175,31 +178,35 @@ devJwkFile = "dev.jwk"
 
 newEnv :: PortNumber -> FilePath -> IO Env
 newEnv port file = do
-  manager_env  <- newTlsManager
-  settings'    <- devSettings devJwkFile <&> appPort .~ port -- TODO read from 'file'
+  !manager_env  <- newTlsManager
+  !settings'    <- devSettings devJwkFile <&> appPort .~ port -- TODO read from 'file'
   when (port /= settings' ^. appPort) $
     panic "TODO: conflicting settings of port"
 
-  config_env    <- readConfig file
+  !config_env    <- readConfig file
   prios         <- Jobs.readPrios (file <> ".jobs")
   let prios' = Jobs.applyPrios prios Jobs.defaultPrios
   putStrLn $ "Overrides: " <> show prios
   putStrLn $ "New priorities: " <> show prios'
-  self_url_env  <- parseBaseUrl $ "http://0.0.0.0:" <> show port
-  dbParam       <- databaseParameters file
-  pool          <- newPool dbParam
+  !self_url_env  <- parseBaseUrl $ "http://0.0.0.0:" <> show port
+  dbParam        <- databaseParameters file
+  !pool          <- newPool dbParam
   --nodeStory_env <- readNodeStoryEnv (_gc_repofilepath config_env)
-  nodeStory_env <- readNodeStoryEnv pool
-  scrapers_env  <- newJobEnv defaultSettings manager_env
+  !nodeStory_env <- readNodeStoryEnv pool
+  !scrapers_env  <- newJobEnv defaultSettings manager_env
 
   secret        <- Jobs.genSecret
   let jobs_settings = (Jobs.defaultJobSettings 1 secret)
                         & Jobs.l_jsJobTimeout .~ (fromIntegral $ config_env ^. hasConfig ^. gc_js_job_timeout)
                         & Jobs.l_jsIDTimeout  .~ (fromIntegral $ config_env ^. hasConfig ^. gc_js_id_timeout)
-  jobs_env      <- Jobs.newJobEnv jobs_settings prios' manager_env
-  logger        <- newStderrLoggerSet defaultBufSize
-  config_mail   <- Mail.readConfig file
+  !jobs_env     <- Jobs.newJobEnv jobs_settings prios' manager_env
+  !logger        <- newStderrLoggerSet defaultBufSize
+  !config_mail  <- Mail.readConfig file
+  !nlp_env      <- nlpServerMap <$> NLP.readConfig file
 
+{-  An 'Env' by default doesn't have strict fields, but when constructing one in production
+  we want to force them to WHNF to avoid accumulating unnecessary thunks.
+-}
   pure $ Env
     { _env_settings  = settings'
     , _env_logger    = logger
@@ -211,6 +218,7 @@ newEnv port file = do
     , _env_self_url  = self_url_env
     , _env_config    = config_env
     , _env_mail      = config_mail
+    , _env_nlp       = nlp_env
     }
 
 newPool :: ConnectInfo -> IO (Pool Connection)

@@ -20,7 +20,7 @@ please follow the types.
 
 {-# LANGUAGE PackageImports    #-}
 
-module Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..), clean, parseFile, cleanText, parseFormatC, splitOn)
+module Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..), clean, parseFile, cleanText, parseFormatC, splitOn, etale)
     where
 
 -- import Gargantext.Core.Text.Learn (detectLangDefault)
@@ -42,21 +42,25 @@ import Data.Tuple.Extra (both, first, second)
 import Gargantext.API.Node.Corpus.New.Types (FileFormat(..))
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.CSV (parseHal, parseCsv, parseCsvC)
+import Gargantext.Core.Text.Corpus.Parsers.JSON (parseJSONC)
 import Gargantext.Core.Text.Corpus.Parsers.RIS.Presse (presseEnrich)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Query.Table.Ngrams (NgramsType(..))
 import Gargantext.Prelude
 import System.FilePath (FilePath(), takeExtension)
 import System.IO.Temp (emptySystemTempFile)
+import Gargantext.Core.Text.Corpus.Parsers.FrameWrite (text2titleParagraphs)
 import qualified Data.ByteString       as DB
 import qualified Data.ByteString.Char8 as DBC
 import qualified Data.ByteString.Lazy  as DBL
 import qualified Data.Map              as DM
 import qualified Data.Text             as DT
-import qualified Gargantext.Core.Text.Corpus.Parsers.Date as Date
-import qualified Gargantext.Core.Text.Corpus.Parsers.RIS  as RIS
-import qualified Gargantext.Core.Text.Corpus.Parsers.WOS  as WOS
+import qualified Data.Text as Text
+import qualified Gargantext.Core.Text.Corpus.Parsers.Date      as Date
+import qualified Gargantext.Core.Text.Corpus.Parsers.Iramuteq  as Iramuteq
+import qualified Gargantext.Core.Text.Corpus.Parsers.RIS       as RIS
+import qualified Gargantext.Core.Text.Corpus.Parsers.WOS       as WOS
 import qualified Prelude
-import Gargantext.Database.Query.Table.Ngrams (NgramsType(..))
 ------------------------------------------------------------------------
 
 type ParseError = String
@@ -70,8 +74,14 @@ type ParseError = String
 
 -- | According to the format of Input file,
 -- different parser are available.
-data FileType = WOS | RIS | RisPresse | CsvGargV3 | CsvHal
-  deriving (Show)
+data FileType = WOS
+              | RIS
+              | RisPresse
+              | CsvGargV3
+              | CsvHal
+              | Iramuteq
+              | JSON
+  deriving (Show, Eq)
 
 -- Implemented (ISI Format)
 --                | DOC        -- Not Implemented / import Pandoc
@@ -111,6 +121,25 @@ parseFormatC WOS Plain bs = do
               .| mapC (map $ first WOS.keys)
               .| mapC (map $ both decodeUtf8)
               .| mapMC (toDoc WOS)) ) <$> eDocs
+
+parseFormatC Iramuteq Plain bs = do
+  let eDocs = runParser' Iramuteq bs
+  pure $ (\docs ->
+            ( Just $ fromIntegral $ length docs
+            , yieldMany docs
+              .| mapC (map $ first Iramuteq.keys)
+              .| mapC (map $ both decodeUtf8)
+              .| mapMC ((toDoc Iramuteq) . (map (second (Text.replace "_" " "))))
+            )
+         )
+              <$> eDocs
+
+parseFormatC JSON    Plain bs = do
+  let eParsedC = parseJSONC $ DBL.fromStrict bs
+  case eParsedC of
+    Left err -> pure $ Left err
+    Right (mLen, parsedC) -> pure $ Right (mLen, transPipe (pure . runIdentity) parsedC)
+
 parseFormatC ft ZIP bs = do
   path <- liftBase $ emptySystemTempFile "parsed-zip"
   liftBase $ DB.writeFile path bs
@@ -133,8 +162,18 @@ parseFormatC ft ZIP bs = do
           pure $ Right ( Just totalLength
                        , sequenceConduits contents' >> pure () ) -- .| mapM_C (printDebug "[parseFormatC] doc")
     _ -> pure $ Left $ unpack $ intercalate "\n" $ pack <$> errs
-  
+
 parseFormatC _ _ _ = undefined
+
+
+etale :: [HyperdataDocument] -> [HyperdataDocument]
+etale = concat . (map etale')
+  where
+    etale' :: HyperdataDocument -> [HyperdataDocument]
+    etale' h = map (\t -> h { _hd_abstract = Just t })
+            $ map snd
+            $ text2titleParagraphs 7 (maybe "" identity $ _hd_abstract h)
+
 
 -- parseFormat :: FileType -> DB.ByteString -> IO (Either Prelude.String [HyperdataDocument])
 -- parseFormat CsvGargV3 bs = pure $ parseCsv' $ DBL.fromStrict bs
@@ -177,6 +216,14 @@ parseFile WOS       Plain p = do
   docs <- join $ mapM (toDoc WOS) <$> snd <$> enrichWith WOS       <$> readFileWith WOS p
   pure $ Right docs
 
+parseFile Iramuteq       Plain p = do
+  docs <- join $ mapM ((toDoc Iramuteq) . (map (second (Text.replace "_" " "))))
+              <$> snd
+              <$> enrichWith Iramuteq
+              <$> readFileWith Iramuteq p
+  pure $ Right docs
+
+
 parseFile ff        _ p = do
   docs <- join $ mapM (toDoc ff)  <$> snd <$> enrichWith ff        <$> readFileWith ff  p
   pure $ Right docs
@@ -187,7 +234,7 @@ toDoc ff d = do
       -- let abstract = lookup "abstract" d
       let lang = EN -- maybe EN identity (join $ detectLangDefault <$> (fmap (DT.take 50) abstract))
 
-      let dateToParse = DT.replace " " "" <$> lookup "PY" d  -- <> Just " " <> lookup "publication_date" d 
+      let dateToParse = DT.replace " " "" <$> lookup "PY" d  -- <> Just " " <> lookup "publication_date" d
       -- printDebug "[G.C.T.C.Parsers] dateToParse" dateToParse
       (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit lang dateToParse
 
@@ -217,6 +264,7 @@ enrichWith :: FileType
            ->  (a, [[[(DB.ByteString, DB.ByteString)]]]) -> (a, [[(Text, Text)]])
 enrichWith RisPresse = enrichWith' presseEnrich
 enrichWith WOS       = enrichWith' (map (first WOS.keys))
+enrichWith Iramuteq  = enrichWith' (map (first Iramuteq.keys))
 enrichWith _         = enrichWith' identity
 
 
@@ -241,8 +289,9 @@ readFileWith format path = do
 -- According to the format of the text, choose the right parser.
 -- TODO  withParser :: FileType -> Parser [Document]
 withParser :: FileType -> Parser [[(DB.ByteString, DB.ByteString)]]
-withParser WOS = WOS.parser
-withParser RIS = RIS.parser
+withParser WOS      = WOS.parser
+withParser RIS      = RIS.parser
+withParser Iramuteq = Iramuteq.parser
 --withParser ODT = odtParser
 --withParser XML = xmlParser
 withParser _   = panic "[ERROR] Parser not implemented yet"
@@ -273,9 +322,8 @@ clean txt = DBC.map clean' txt
     clean' ';' = '.'
     clean' c  = c
 
--- 
+--
 
 splitOn :: NgramsType -> Maybe Text -> Text -> [Text]
 splitOn Authors (Just "WOS") = (DT.splitOn "; ")
 splitOn _ _                  = (DT.splitOn ", ")
-

@@ -2,8 +2,7 @@
 # https://vadosware.io/post/zero-to-continuous-integrated-testing-a-haskell-project-with-gitlab/
 #
 #
-image: cgenie/stack-build:lts-18.18-garg
-#image: cgenie/nixos-stack:latest
+image: adinapoli/gargantext:v1
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
@@ -15,49 +14,70 @@ variables:
 
 stages:
   - deps
-  - docs
   - test
+  - docs
+  - cabal
 
 deps:
+  stage: deps
   cache:
     # cache per branch name
     # key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - .stack
       - .stack-root/
       - .stack-work/
       - target
   script:
-    - stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast
+    - echo "Building the project from '$CI_PROJECT_DIR'"
+    - hpack
+    - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast"
 
 docs:
+  stage: docs
   cache:
     # cache per branch name
     # key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - .stack
       - .stack-root/
       - .stack-work/
       - target
   script:
-    - stack build --no-terminal --haddock --no-haddock-deps --fast
+    - hpack
+    - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --fast"
     - cp -R "$(stack path --local-install-root)"/doc ./output
   artifacts:
     paths:
       - ./output
     expire_in: 1 week
+  allow_failure: true
 
 test:
+  stage: test
   cache:
     # cache per branch name
     # key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - .stack
       - .stack-root/
       - .stack-work/
       - target
   script:
-    - stack test --no-terminal --fast
+    - hpack
+    - nix-shell --run "LC_ALL=C.UTF-8 stack test --no-terminal --fast"
 
       # TOOO
+
+cabal:
+  stage: cabal
+  cache:
+    # cache per branch name
+    # key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .stack-root/
+      - .stack-work/
+      - dist-newstyle/
+      - target
+  script:
+    - hpack
+    - nix-shell --run "LC_ALL=C.UTF-8 cabal v2-update 'hackage.haskell.org,2023-04-07T08:35:43Z' && cabal v2-build --dry-run"
+  allow_failure: true
 

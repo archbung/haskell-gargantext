@@ -1,3 +1,295 @@
+## Version 0.0.6.9.9.6.9
+
+* [FRONT][FIX][Search in the Tree (#506)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/506)
+
+## Version 0.0.6.9.9.6.8
+
+* [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
+* [BACK][FIX] Phylo (WIP)
+
+## Version 0.0.6.9.9.6.7
+
+* [FRONT][FIX][Node Corpus / API search (#571)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/571)
+* [BACK][FIX] PhyloTypes
+* [FRONT][FIX][[Node Doc] Annotation: select/add ngram to map terms doesn&#39;t seems to sync in frontend render (#563)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/563)
+* [FRONT][FIX][[Graph] Rearrange the graph toolbar (#567)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/567)
+
+## Version 0.0.6.9.9.6.6
+
+* [BACK|FRONT][WARNING] Button to launch API corpus is broken for now
+* [BACK][FEAT] Phylo is working again
+* [FRONT][ERGO][[Graph] Rearrange the graph toolbar (#567)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/567)
+
+## Version 0.0.6.9.9.6.5
+
+* [BACK|FRONT][FIX] Order 2
+* [FRONT][FIX][[Node Terms] Restore a good display the main table cols display (since adding the &quot;show&quot; column) (#566)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/566
+)
+
+## Version 0.0.6.9.9.6.4
+
+* [BACK][FIX][ngrams children in `node stories` are not in the `ngrams` table (#222)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/222)
+* [BACK][FIX][NodeUser json parse error (#213)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/213)
+* [BACK][FEAT][Gitlab Issue Parser, ZuriHac]
+* [FRONT][FIX][Doc Annotation: the selected term menu selection has disappeared (#562)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/562)
+* [FRONT][FIX][Abstract almost disapear in graph&#39;s doc view when there is too much authors (#555)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/555)
+* [FRONT][FIX][Ngrams Context (#547)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/547)
+
+## Version 0.0.6.9.9.6.3
+
+* [BACK][FIX][Boolean Query Parser (#182)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/182)
+* [BACK][FEAT] Gitlab Issue Parser, Welcome Christian
+
+## Version 0.0.6.9.9.6.2
+
+* [BACK][FIX][Ngrams Status change (#217)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/217)
+* [FRONT][FEAT][Ngrams Context (#547)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/547)
+* [BACK|FRONT][DOC] Renaming NodeFrame(Write|Calc) -> Notes|Calc
+
+## Version 0.0.6.9.9.6.1
+
+* [FRONT][FIX] Default Node List name
+* [FRONT][DESIGN][Design, improve the position of the icons (#554)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/554)
+* [FRONT][DESIGN][Not Found</title>](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/559)
+* [FRONT|BACKEND][FIX][Doc View, ngrams selected: children of grouped terms are not shown (#551)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/551)
+* [BACK][FIX] Removing cron job
+
+## Version 0.0.6.9.9.6
+
+* [RELEASE CANDIDATE]
+* [FRONT][FIX][Doc View, ngrams selected: children of grouped terms are not shown (#551)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/551)
+* Removing cron jobs 
+
+## Version 0.0.6.9.9.5.8
+
+* [BACK/FRONT][FIX] Reverting Notes / NodeWrite and Calc / NodeCalc change
+* [FRONT][DOC][Change waiting message when selecting nodes (#557)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/557)
+
+## Version 0.0.6.9.9.5.7
+
+* [BACK][OPTIM/FIX][[Node terms] Random slowness on loading a page list of terms (#199)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/199)
+* [BACK|FRONT][DOC] NodeFrameWrite -> Notes
+* [FRONT][DOC] Node Functions order
+* [FRONT][DOC] NodeFrameCalc -> Calc only
+
+## Version 0.0.6.9.9.5.6
+
+* [FRONT][FIX][Doc View, ngrams selected: children of grouped terms are not shown (#551)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/551)
+
+## Version 0.0.6.9.9.5.5
+
+* [FRONT][FEAT][Search in the Tree (#506)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/506)
+* [BACK][FIX][NodeUser json parse error (#213)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/213)
+* [BACK][FET][Book functions (WIP)] Used to analyze Rabelais' masterpices
+
+## Version 0.0.6.9.9.5.4
+
+* [BACK][FIX][Ngrams Status change (#217)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/217)
+
+## Version 0.0.6.9.9.5.3
+
+* [BACK][ADM/CI][Docker image with nix (#188)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/188)
+* [FRONT][FEAT/ERGO][[Home instances blocks] Add a log out action and picto in each instance block header (same action that is in the log in/log out modal) (#552)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/552)
+* [FRONT][FIX/REVERT][[Term table] Add term should not be suggested when term is already added (#544)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/544)
+
+## Version 0.0.6.9.9.5.2
+
+* [FRONT][FIX][Doc View, ngrams selected: children of grouped terms are not shown (#551)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/551)
+
+## Version 0.0.6.9.9.5.1
+
+* [BACK][FEAT][fonction to post to either Write or Calc (#205)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/205)
+* [FRONT][FIX][[Term table] Add term should not be suggested when term is already added (#544)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/544)
+* Enabling Isidore API connection for tests
+
+## Version 0.0.6.9.9.5
+
+* [BACK][OPTIM][[Node terms] Random slowness on loading a page list of terms (#199)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/199) Refresh index for textflow, reindex of terms list and schedule job
+* [BACK][FIX][Docker image with nix (#188)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/188)
+* [FRONT][FEAT][improvement Doc table : default state is stars empty, become one star after reading (#541)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/541)
+
+## Version 0.0.6.9.9.4.6
+
+* [BACK][FEAT][Import Corpus Docs as Json (#203)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/203)
+* [BACK][OPTIM][[Node terms] Random slowness on loading a page list of terms (#199)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/199)
+    * Upgrade indications: run gargantext-upgrade gargantext.ini
+
+## Version 0.0.6.9.9.4.5
+
+* [BACK][OPTIM][[Node terms] Random slowness on loading a page list of terms (#199)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/199)
+
+## Version 0.0.6.9.9.4.4
+
+* [FRONT][FIX/WIP][[Term table] Add term should not be suggested when term is already added (#544)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/544)
+* [FRONT][FIX] File Type vs Node Type
+
+## Version 0.0.6.9.9.4.3
+
+* [FRONT][FIX][APi tab not shown (#540)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/540)
+* [BACK][FIX] SearX analysis needs its NodeTexts
+
+## Version 0.0.6.9.9.4.2
+
+* [BACK][FIX][[Node terms] Random slowness on loading a page list of terms (#199)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/199)
+* [FRONT][CLEAN] Removing API that do not fully work (yet)
+* [FRONT][FIX] Chat Link 
+
+## Version 0.0.6.9.9.4.1
+
+* [FRONT][FIX][Doc annotation: space selected as ngrams issue (#458)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/458)
+* [BACK][ADM][API key / user (pubmed) (#201)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/201)
+
+## Version 0.0.6.9.9.4
+
+* [FRONT][FIX][Doc annotation: space selected as ngrams issue (#458)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/458)
+* [BACK][FEAT][API key / user (pubmed) (#201)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/201)
+
+## Version 0.0.6.9.9.3.3
+
+* [FRONT][CSS][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+* [FRONT][FIX][Update chart (#536)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/536)
+
+* [FRONT][FIX][[Node sharing] On adding a user: move the user suggestion block below the input field (rather than above the popin) (#523)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/523)
+
+## Version 0.0.6.9.9.3.2
+
+* [FRONT/BACK][FEAT] Not visible yet but Iramuteq parser added (needs
+  more data to consolidate the format).
+
+## Version 0.0.6.9.9.3.1
+
+* [FRONT][DESIGN][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+
+## Version 0.0.6.9.9.3
+
+* [FRONT][FIX][[Node Terms] The number of terms per page (eg. 10 by default) seems to be ramdomly wrong (#531)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/531)
+
+## Version 0.0.6.9.9.2
+
+* [FRONT][FIX][[Node Terms] Problem with consecutive actions on different term selections (#537)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/537)
+
+## Version 0.0.6.9.9.1
+
+* [BACK][FEAT] New Languages added with Spacy model, test ok (need to group ngrams though)
+
+## Version 0.0.6.9.9
+
+* [BACK][FEAT][Adding New Language NLP tools through gargantext.ini (postagging case) (#184)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/184)
+
+## Version 0.0.6.9.8.7.1
+
+* [BACK][FIX][Job tests fail randomly (#198)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/198)
+* [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509) Pin icon
+
+
+## Version 0.0.6.9.8.7
+
+* [FRONT][FEAT][Pin Tree to a specific Node (#513)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/513)
+* [BACK][FIX][Job tests fail randomly (#198)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/198)
+
+## Version 0.0.6.9.8.6.2
+
+* [BACK][TYPES][query pubmed, arxiv, istex, HAL not working anymore (#193)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/193)
+* [BACK][FIX][Progress Bar (#192)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/192)
+
+## Version 0.0.6.9.8.6.1
+
+* [FRONT][ADM][ Do not use `master` as a revision for `easy-ps.nix`](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/merge_requests/339)
+
+## Version 0.0.6.9.8.6
+
+* [BACK][DOC][Welcome: Door To enter the project (#177)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/177)
+* [BACK][FEAT] Adding more redundancies of Text in FrameWrite parsing (Notes)
+* [BACK][FIX] Clean code for documentation haddock
+* [BACK][FIX][Doc Table: count (#175)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/175)
+* [BACK][FIX][Error WOS import](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/196)
+* [BACK][FIX][List upload does not work any more (#191)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/191)
+* [BACK][FIX][NLP parsing] Removing urls which are untokenable for Spacy
+* [BACK][FIX][query pubmed, arxiv, istex, HAL not working anymore (#193)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/193)
+* [FRONT][DOC][[Graph Toolbar] Add tooltips/legends on buttons (#529)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/529)
+* [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+
+## Version 0.0.6.9.8.5.1
+
+* [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+
+## Version 0.0.6.9.8.5
+
+* [BACK][REFACT][JOBs&#39; API (#185)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/185)
+
+## Version 0.0.6.9.8.4
+
+* [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+* [BACK][FIX][query pubmed, arxiv, istex, HAL not working anymore (#193)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/193)
+* [BACK][FIX] Username could be an email
+
+## Version 0.0.6.9.8.3
+
+* [BACK][REFACT][JOBs&#39; API (#185)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/185)
+* [FRONT][CSS][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+* [BACK][FEAT][Adding New Language NLP tools through gargantext.ini (postagging case) (#184)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/184)
+
+## Version 0.0.6.9.8.2.2
+
+* [FRONT][CSS][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+
+## Version 0.0.6.9.8.2.1
+
+* [BACK][FIX][FrameCalc POST method not allowed any more (#190)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/190) (cherry-pick to testing)
+* [BACK][OPTIM] Quality tested and optimized Order 2 (with recursive clustering)
+
+## Version 0.0.6.9.8.2
+
+* [BACK][OPTIM] Back to Distri Similarity (2)
+
+## Version 0.0.6.9.8.1
+
+* [BACK][FEAT/ADM][Adding New Language NLP tools through gargantext.ini (postagging case) (#184)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/184)
+  * UPGRADE: update your gargantext ini file with the [nlp] section check the gargantext.ini_toModify file as example
+* [BACK][SPACY] NLP server tested with FR lang
+
+## Version 0.0.6.9.8
+
+* [BACK][FRONT][FEAT] Phylo 1 click
+
+## Version 0.0.6.9.7.6
+
+* [BACK][UPGRADE] Igraph bindings
+* [BACK][NIX][Adapt nix configuration of haskell-igraph (#187)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/187)
+* [FRONT][CLEAN] Node Graph, one option only
+
+## Version 0.0.6.9.7.5
+
+* [FRONT][CSS][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+* [FRONT][CSS][FA send button not available (#517)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/517)
+
+## Version 0.0.6.9.7.4
+
+* [FRONT][FIX] Node Settings : Main nodes (Private, Shared, Public) can not be deleted or created.
+
+## Version 0.0.6.9.7.3
+
+* [FRONT][FIX][[hackathon] GraphExplorer fixes (#489)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/489)
+
+## Version 0.0.6.9.7.2
+
+* [FRONT][FEAT][Label Shape in Graph Explorer (#501)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/501)
+* [FRONT][FIX] Spatialization of Graph improved
+
+## Version 0.0.6.9.7.1
+
+* [BACK][FEAT] Phylo in 1 click really merged (backend only for now).
+
+## Version 0.0.6.9.7
+
+* [FRONT][FEAT][Label Shape in Graph Explorer (#501)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/501)
+* [BACK][DOC][Welcome: Door To enter the project (#177)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/177)
+
+## Version 0.0.6.9.6
+
+* [BACK][FEAT] Phylo in 1 click
+* [FRONT][ERGO][](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+
 ## Version 0.0.6.9.5
 
 * [FRONT][DESIGN][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)

@@ -25,7 +25,7 @@ import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core.Methods.Similarities (Similarity(..), measure)
 -- import Gargantext.Core.Methods.Similarities.Conditional (conditional)
 import Gargantext.Core.Statistics
-import Gargantext.Core.Viz.Graph.Bridgeness (bridgeness, Bridgeness(..), Partitions, nodeId2comId, recursiveClustering, recursiveClustering', setNodes2clusterNodes)
+import Gargantext.Core.Viz.Graph.Bridgeness (bridgeness, Bridgeness(..), Partitions, nodeId2comId, {-recursiveClustering,-} recursiveClustering', setNodes2clusterNodes)
 import Gargantext.Core.Viz.Graph.Index (createIndices, toIndex, map2mat, mat2map, Index, MatrixShape(..))
 import Gargantext.Core.Viz.Graph.Tools.IGraph (mkGraphUfromEdges, spinglass, spinglass')
 import Gargantext.Core.Viz.Graph.Tools.Infomap (infomap)
@@ -73,7 +73,6 @@ defaultClustering x = spinglass 1 x
 -------------------------------------------------------------
 type Threshold = Double
 
-
 cooc2graph' :: Ord t => Similarity
                      -> Double
                      -> Map (t, t) Int
@@ -84,14 +83,13 @@ cooc2graph' distance threshold myCooc
     $ measure distance
     $ case distance of
         Conditional    -> map2mat Triangle 0 tiSize
-        Distributional -> map2mat Square   0 tiSize
+        _              -> map2mat Square   0 tiSize
     $ Map.filter (> 1) myCooc'
 
      where
         (ti, _) = createIndices myCooc
         tiSize  = Map.size ti
         myCooc' = toIndex ti myCooc
-
 
 
 -- coocurrences graph computation
@@ -117,35 +115,35 @@ cooc2graphWith' :: Partitions
                 -> Strength
                 -> HashMap (NgramsTerm, NgramsTerm) Int
                 -> IO Graph
-cooc2graphWith' _doPartitions _bridgenessMethod multi similarity@Conditional threshold strength myCooc = do
+cooc2graphWith' _doPartitions _bridgenessMethod multi similarity threshold strength myCooc = do
   let (distanceMap, diag, ti) = doSimilarityMap similarity threshold strength myCooc
   distanceMap `seq` diag `seq` ti `seq` return ()
 
   partitions <- if (Map.size distanceMap > 0)
-      -- then recursiveClustering doPartitions distanceMap
       then recursiveClustering' (spinglass' 1) distanceMap
-      else panic $ Text.unlines [ "[Gargantext.C.V.Graph.Tools] Similarity Matrix is empty"
-                                , "Maybe you should add more Map Terms in your list"
-                                , "Tutorial: TODO"
-                                ]
+      else panic $ Text.intercalate " " [ "I can not compute the graph you request"
+                                        , "because either the quantity of documents"
+                                        , "or the quantity of terms"
+                                        , "are lacking."
+                                        , "Solution: add more either Documents or Map Terms to your analysis."
+                                        , "Follow the available tutorials on the Training EcoSystems."
+                                        , "Ask your co-users of GarganText how to have access to it."
+                                        ]
   length partitions `seq` return ()
 
   let
     !confluence' = BAC.computeConfluences 3 (Map.keys distanceMap) True
-    !bridgeness' = bridgeness (Bridgeness_Recursive partitions 1.0) distanceMap
-{-
-    !bridgeness' = if bridgenessMethod == BridgenessMethod_Basic
-                      then bridgeness (Bridgeness_Basic partitions 1.0) distanceMap
-                      else bridgeness (Bridgeness_Advanced similarity confluence') distanceMap
--}
+    !bridgeness' = bridgeness (Bridgeness_Recursive partitions 1.0 similarity) distanceMap
+
   pure $ data2graph multi ti diag bridgeness' confluence' (setNodes2clusterNodes $ List.concat partitions)
 
-cooc2graphWith' doPartitions bridgenessMethod multi Distributional threshold strength myCooc = do
-  let (distanceMap, diag, ti) = doSimilarityMap Distributional threshold strength myCooc
+{-
+cooc2graphWith' _doPartitions _bridgenessMethod multi similarity@Distributional threshold strength myCooc = do
+  let (distanceMap, diag, ti) = doSimilarityMap similarity threshold strength myCooc
   distanceMap `seq` diag `seq` ti `seq` return ()
 
   partitions <- if (Map.size distanceMap > 0)
-      then recursiveClustering doPartitions distanceMap
+      then recursiveClustering (spinglass 1) distanceMap
       else panic $ Text.unlines [ "[Gargantext.C.V.Graph.Tools] Similarity Matrix is empty"
                                 , "Maybe you should add more Map Terms in your list"
                                 , "Tutorial: TODO"
@@ -154,14 +152,10 @@ cooc2graphWith' doPartitions bridgenessMethod multi Distributional threshold str
 
   let
     !confluence' = BAC.computeConfluences 3 (Map.keys distanceMap) True
-    !bridgeness' = if bridgenessMethod == BridgenessMethod_Basic
-                      then bridgeness (Bridgeness_Basic partitions 10.0) distanceMap
-                      else bridgeness (Bridgeness_Advanced Distributional confluence') distanceMap
+    !bridgeness' = bridgeness (Bridgeness_Basic partitions 1.0) distanceMap
 
   pure $ data2graph multi ti diag bridgeness' confluence' partitions
-
-
-
+-}
 
 
 
@@ -199,10 +193,9 @@ doSimilarityMap Conditional threshold strength myCooc = (distanceMap, toIndex ti
                 $ List.sortOn snd
                 $ Map.toList
                 $ Map.filter (> threshold)
-                -- $ conditional myCooc
                 $ similarities `seq` mat2map similarities
 
-doSimilarityMap Distributional threshold strength myCooc = (distanceMap, toIndex ti diag, ti)
+doSimilarityMap distriType threshold strength myCooc = (distanceMap, toIndex ti diag, ti)
   where
     -- TODO remove below
     (diag, theMatrix) = Map.partitionWithKey (\(x,y) _ -> x == y)
@@ -213,7 +206,7 @@ doSimilarityMap Distributional threshold strength myCooc = (distanceMap, toIndex
     tiSize  = Map.size ti
 
     similarities = (\m -> m `seq` m)
-                 $ (\m -> m `seq` measure Distributional m)
+                 $ (\m -> m `seq` measure distriType m)
                  $ (\m -> m `seq` map2mat Square 0 tiSize m)
                  $ theMatrix `seq` toIndex ti theMatrix
 
@@ -237,7 +230,6 @@ nodeTypeWith (MultiPartite (Partite s1 t1) (Partite _s2 t2)) t =
   if HashSet.member t s1
      then t1
      else t2
-
 
 data2graph :: MultiPartite
            -> Map NgramsTerm Int

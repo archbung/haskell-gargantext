@@ -12,42 +12,44 @@ Portability : POSIX
 module Gargantext.Core.Viz.Phylo.API.Tools
   where
 
-import Data.Proxy
 import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
 import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes)
+import Data.Proxy
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Text (Text, pack)
 import Data.Time.Calendar (fromGregorian, diffGregorianDurationClip, cdMonths, diffDays, showGregorian)
 import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import Gargantext.API.Ngrams.Prelude (getTermList)
-import Gargantext.API.Ngrams.Tools (getRepo)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.API.Node.Corpus.Export (getContextNgrams)
 import Gargantext.API.Prelude (GargNoServer)
-import Gargantext.Core.Text.Context (TermList)
+import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
 import Gargantext.Core.Types (Context)
+-- import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (ListType(MapTerm))
 import Gargantext.Core.Viz.Phylo (TimeUnit(..), Date, Document(..), PhyloConfig(..), Phylo)
 import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
 import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
 import Gargantext.Core.Viz.Phylo.PhyloTools  ({-printIOMsg, printIOComment,-} setConfig)
-import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
+-- import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
+-- import Gargantext.Database.Admin.Config (userMaster)
+-- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataPhylo(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ContextId, PhyloId)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context
-import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
+import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
-import Prelude
+import Prelude hiding (map)
+import System.FilePath ((</>))
+import System.IO.Temp (withTempDirectory)
 import System.Process      as Shell
 import qualified Data.ByteString.Lazy                    as Lazy
-import qualified Data.List as List
 import qualified Data.Map.Strict  as Map
 import qualified Data.Set  as Set
-
 
 --------------------------------------------------------------------
 getPhyloData :: PhyloId -> GargNoServer (Maybe Phylo)
@@ -64,55 +66,65 @@ savePhylo = undefined
 --------------------------------------------------------------------
 phylo2dot2json :: Phylo -> IO Value
 phylo2dot2json phylo = do
+  withTempDirectory "/tmp" "phylo" $ \dirPath -> do
+    let fileFrom = dirPath </> "phyloFrom.dot"
+        fileDot  = dirPath </> "phylo.dot"
+        fileToJson = dirPath </> "output.json"
 
-  let
-    file_from    = "/tmp/fromPhylo.json"
-    file_dot     = "/tmp/tmp.dot"
-    file_to_json = "/tmp/toPhylo.json"
+    dotToFile fileFrom (toPhyloExport phylo)
 
-  _ <- dotToFile file_from (toPhyloExport phylo)
-  _ <- Shell.callProcess "dot" ["-Tdot", "-o", file_dot, file_from]
-  _ <- Shell.callProcess "dot" ["-Txdot_json", "-o", file_to_json, file_dot]
+    -- parsing a file can be done with:
+    -- runParser' (Data.GraphViz.Parsing.parse :: Parse (Data.GraphViz.DotGraph Text)) $ TL.fromStrict f
+    Shell.callProcess "dot" ["-Tdot", "-o", fileDot, fileFrom]
+    Shell.callProcess "dot" ["-Txdot_json", "-o", fileToJson, fileDot]
 
-  maybeValue <- decodeFileStrict file_to_json
-  print maybeValue
-  _ <- Shell.callProcess "/bin/rm" ["-rf", file_from, file_to_json, file_dot]
+    maybeValue <- decodeFileStrict fileToJson
+    print maybeValue
 
-  case maybeValue of
-    Nothing -> panic "[G.C.V.Phylo.API.phylo2dot2json] Error no file"
-    Just v  -> pure v
-
+    case maybeValue of
+      Nothing -> panic "[G.C.V.Phylo.API.phylo2dot2json] Error no file"
+      Just v  -> pure v
 
 
 flowPhyloAPI :: PhyloConfig -> CorpusId -> GargNoServer Phylo
 flowPhyloAPI config cId = do
-  (_, corpus) <- corpusIdtoDocuments (timeUnit config) cId
-  phyloWithCliques <- pure $ toPhyloWithoutLink corpus config
+  corpus <- corpusIdtoDocuments (timeUnit config) cId
+  let phyloWithCliques = toPhyloWithoutLink corpus config
   -- writePhylo phyloWithCliquesFile phyloWithCliques
-  pure $ toPhylo (setConfig config phyloWithCliques)
+  printDebug "PhyloConfig old: " config
+
+  pure $ toPhylo $ setConfig config phyloWithCliques
 
 --------------------------------------------------------------------
-corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer (TermList, [Document])
+corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer [Document]
 corpusIdtoDocuments timeUnit corpusId = do
   docs <- selectDocNodes corpusId
   lId  <- defaultList corpusId
-  repo <- getRepo [lId]
-
-  ngs_terms    <- getContextNgrams corpusId lId MapTerm NgramsTerms repo
-  ngs_sources  <- getContextNgrams corpusId lId MapTerm Sources repo
-
   termList <- getTermList lId MapTerm NgramsTerms
 
-  let docs'= catMaybes
-           $ List.map (\doc
-                        -> context2phyloDocument timeUnit doc (ngs_terms, ngs_sources)
-                      ) docs
+  let patterns = case termList of
+        Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
+        Just termList' -> buildPatterns termList'
+  pure $ map (toPhyloDocs patterns timeUnit) (map _context_hyperdata docs)
 
-  -- printDebug "corpusIdtoDocuments" (Prelude.map date docs')
+termsInText' :: Patterns -> Text -> [Text]
+termsInText' p t = (map fst) $ termsInText p t
 
-  case termList of
-    Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
-    Just termList' -> pure (termList', docs')
+toPhyloDocs :: Patterns -> TimeUnit -> HyperdataDocument -> Document
+toPhyloDocs patterns time d =
+  let title = fromMaybe "" (_hd_title d)
+      abstr = fromMaybe "" (_hd_abstract d)
+                  in Document (toPhyloDate
+                                      (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
+                                      (fromMaybe 1 $ _hd_publication_month d)
+                                      (fromMaybe 1 $ _hd_publication_day d) time)
+                                    (toPhyloDate'
+                                      (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
+                                      (fromMaybe 1 $ _hd_publication_month d)
+                                      (fromMaybe 1 $ _hd_publication_day d) time)
+                                    (termsInText' patterns $ title <> " " <> abstr) Nothing [] time
+
+
 
 context2phyloDocument :: TimeUnit
                       -> Context HyperdataDocument
@@ -131,12 +143,14 @@ context2phyloDocument timeUnit context (ngs_terms, ngs_sources) = do
   pure $ Document date date' text' Nothing sources' (Year 3 1 5)
 
 
+-- TODO better default date and log the errors to improve data quality
 context2date :: Context HyperdataDocument -> TimeUnit -> Maybe (Date, Text)
 context2date context timeUnit = do
   let hyperdata =  _context_hyperdata context
-  year  <- _hd_publication_year  hyperdata
-  month <- _hd_publication_month hyperdata
-  day   <- _hd_publication_day   hyperdata
+  let
+    year  = fromMaybe 1 $ _hd_publication_year  hyperdata
+    month = fromMaybe 1 $ _hd_publication_month hyperdata
+    day   = fromMaybe 1 $ _hd_publication_day   hyperdata
   pure (toPhyloDate year month day timeUnit, toPhyloDate' year month day timeUnit)
 
 
@@ -154,19 +168,15 @@ toDays y m d = fromIntegral
 
 toPhyloDate :: Int -> Int -> Int -> TimeUnit -> Date
 toPhyloDate y m d tu = case tu of
-  Year  _ _ _ -> y
-  Month _ _ _ -> toMonths (Prelude.toInteger y) m d
-  Week  _ _ _ -> div (toDays (Prelude.toInteger y) m d) 7
-  Day   _ _ _ -> toDays (Prelude.toInteger y) m d
-  _           -> panic "[G.C.V.Phylo.API] toPhyloDate"
+  Year  {} -> y
+  Month {} -> toMonths (Prelude.toInteger y) m d
+  Week  {} -> div (toDays (Prelude.toInteger y) m d) 7
+  Day   {} -> toDays (Prelude.toInteger y) m d
+  _        -> panic "[G.C.V.Phylo.API] toPhyloDate"
 
 toPhyloDate' :: Int -> Int -> Int -> TimeUnit -> Text
-toPhyloDate' y m d tu = case tu of
-  Epoch _ _ _ -> pack $ show $ posixSecondsToUTCTime $ fromIntegral y
-  Year  _ _ _ -> pack $ showGregorian $ fromGregorian (toInteger y) m d
-  Month _ _ _ -> pack $ showGregorian $ fromGregorian (toInteger y) m d
-  Week  _ _ _ -> pack $ showGregorian $ fromGregorian (toInteger y) m d
-  Day   _ _ _ -> pack $ showGregorian $ fromGregorian (toInteger y) m d
+toPhyloDate' y _m _d (Epoch {}) = pack $ show $ posixSecondsToUTCTime $ fromIntegral y
+toPhyloDate' y  m  d _          = pack $ showGregorian $ fromGregorian (toInteger y) m d
 
 -- Utils
 
@@ -186,4 +196,4 @@ readPhylo path = do
 
 -- | To read and decode a Json file
 readJson :: FilePath -> IO Lazy.ByteString
-readJson path = Lazy.readFile path
+readJson = Lazy.readFile

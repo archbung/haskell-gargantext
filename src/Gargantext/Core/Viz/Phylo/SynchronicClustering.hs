@@ -135,7 +135,7 @@ groupsToEdges prox sync nbDocs diago groups =
         ByProximityThreshold  thr sens _ strat ->
             filter (\(_,w) -> w >= thr)
           $ toEdges sens
-          $ toPairs strat groups         
+          $ toPairs strat groups
         ByProximityDistribution sens strat -> 
             let diamonds = sortOn snd 
                          $ toEdges sens $ concat
@@ -151,8 +151,8 @@ groupsToEdges prox sync nbDocs diago groups =
                 WeightedLogSim _ _     -> map (\(g,g') -> 
                                                      ((g,g'), weightedLogJaccard' (1 / sens) nbDocs diago
                                                                   (g ^. phylo_groupNgrams) (g' ^. phylo_groupNgrams))) edges
-                
-                _ -> undefined  
+
+                _ -> undefined
 
 toParentId :: PhyloGroup -> PhyloGroupId
 toParentId child = ((child ^. phylo_groupPeriod, child ^. phylo_groupScale + 1), child ^. phylo_groupIndex) 

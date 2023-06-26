@@ -11,29 +11,29 @@ Script to start gargantext with different modes (Dev, Prod, Mock).
 
 -}
 
+{-# LANGUAGE QuasiQuotes          #-}
 {-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE Strict               #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+
 
 module Main where
 
-import Data.Version (showVersion)
+
+import Data.Maybe (fromMaybe)
 import Data.Text (unpack)
-import qualified Paths_gargantext as PG -- cabal magic build module
+import Data.Version (showVersion)
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+import GHC.IO.Exception (IOException)
+import Gargantext.API (startGargantext, Mode(..)) -- , startGargantextMock)
+import Gargantext.API.Admin.EnvTypes (DevEnv)
+import Gargantext.API.Dev (withDevEnv, runCmdDev)
+import Gargantext.Prelude
 import Options.Generic
 import System.Exit (exitSuccess)
+import qualified Paths_gargantext as PG -- cabal magic build module
 
-import Gargantext.Prelude
-import Gargantext.API (startGargantext, Mode(..)) -- , startGargantextMock)
-
---------------------------------------------------------
--- Graph Tests
---import qualified Gargantext.Graph.Utils                    as U
---import qualified Gargantext.Graph.Distances.Conditional    as C
---import qualified Gargantext.Graph.Distances.Distributional as D
---import qualified Gargantext.Graph.Distances.Matrice        as M
---------------------------------------------------------
 
 instance ParseRecord Mode
 instance ParseField  Mode
@@ -59,24 +59,25 @@ main :: IO ()
 main = do
   MyOptions myMode myPort myIniFile myVersion  <- unwrapRecord
           "Gargantext server"
-
+  ---------------------------------------------------------------
   if myVersion then do
     putStrLn $ "Version: " <> showVersion PG.version
     System.Exit.exitSuccess
   else
     return ()
-
+  ---------------------------------------------------------------
   let myPort' = case myPort of
         Just p  -> p
         Nothing -> 8008
 
+      myIniFile' = case myIniFile of
+          Nothing -> panic "[ERROR] gargantext.ini needed"
+          Just i  -> i
+
+  ---------------------------------------------------------------
   let start = case myMode of
         Mock -> panic "[ERROR] Mock mode unsupported"
         _ -> startGargantext myMode myPort' (unpack myIniFile')
-            where
-              myIniFile' = case myIniFile of
-                  Nothing -> panic "[ERROR] gargantext.ini needed"
-                  Just i  -> i
-
   putStrLn $ "Starting with " <> show myMode <> " mode."
   start
+  ---------------------------------------------------------------

@@ -32,6 +32,7 @@ import Prelude hiding (null, id, map, sum)
 
 import Gargantext.Core
 import Gargantext.Core.Types
+import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Hyperdata.Default
 import Gargantext.Database.Prelude
@@ -201,7 +202,7 @@ getCorporaWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeCorpus)
 selectNodesWithParentID :: NodeId -> Select NodeRead
 selectNodesWithParentID n = proc () -> do
     row@(Node _ _ _ _ parent_id _ _ _) <- queryNodeTable -< ()
-    restrict -< parent_id .== (pgNodeId n)
+    restrict -< parent_id .== pgNodeId n
     returnA -< row
 
 
@@ -215,7 +216,22 @@ getNodesWithType nt _ = runOpaQuery $ selectNodesWithType nt
                          => NodeType -> Select NodeRead
     selectNodesWithType nt' = proc () -> do
         row@(Node _ _ tn _ _ _ _ _) <- queryNodeTable -< ()
-        restrict -< tn .== (sqlInt4 $ toDBid nt')
+        restrict -< tn .== sqlInt4 (toDBid nt')
+        returnA -< row
+
+getNodeWithType :: (HasNodeError err, JSONB a, HasDBid NodeType)
+                => NodeId
+                -> NodeType
+                -> proxy a
+                -> Cmd err [Node a]
+getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
+  where
+    selectNodeWithType ::  HasDBid NodeType
+                        => NodeId -> NodeType -> Select NodeRead
+    selectNodeWithType (NodeId nId') nt' = proc () -> do
+        row@(Node ti _ tn _ _ _ _ _) <- queryNodeTable -< ()
+        restrict -< ti .== sqlInt4 nId'
+        restrict -< tn .== sqlInt4 (toDBid nt')
         returnA -< row
 
 getNodesIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> Cmd err [NodeId]
@@ -392,7 +408,7 @@ getOrMkList pId uId =
 -- | TODO remove defaultList
 defaultList :: (HasNodeError err, HasDBid NodeType) => CorpusId -> Cmd err ListId
 defaultList cId =
-  maybe (nodeError NoListFound) (pure . view node_id) . headMay =<< getListsWithParentId cId
+  maybe (nodeError (NoListFound cId)) (pure . view node_id) . headMay =<< getListsWithParentId cId
 
 defaultListMaybe :: (HasNodeError err, HasDBid NodeType) => CorpusId -> Cmd err (Maybe NodeId)
 defaultListMaybe cId = headMay <$> map (view node_id ) <$> getListsWithParentId cId

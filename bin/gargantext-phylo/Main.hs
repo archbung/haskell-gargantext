@@ -278,7 +278,7 @@ main = do
 
             printIOComment (show (length $ nub $ concat $ map text corpus) <> " Size ngs_coterms")
 
-            printIOComment (show (length mapList) <> " Size ngs_terms List Map Ngrams")            
+            printIOComment (show (length mapList) <> " Size ngs_terms List Map Ngrams")
 
             printIOMsg "Reconstruct the phylo"
 

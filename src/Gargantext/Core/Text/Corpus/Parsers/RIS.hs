@@ -16,7 +16,6 @@ citation programs to exchange data.
 
 -}
 
-
 module Gargantext.Core.Text.Corpus.Parsers.RIS (parser, onField, fieldWith, lines) where
 
 import Data.List (lookup)
@@ -26,8 +25,8 @@ import Data.Attoparsec.ByteString.Char8 (isEndOfLine)
 import Data.ByteString (ByteString, intercalate)
 import Gargantext.Prelude hiding (takeWhile, take)
 import qualified Data.List as DL
--------------------------------------------------------------
 
+-------------------------------------------------------------
 parser :: Parser [[(ByteString, ByteString)]]
 parser = do
     n  <- notice "TY  -"

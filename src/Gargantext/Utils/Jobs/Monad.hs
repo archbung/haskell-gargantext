@@ -1,5 +1,30 @@
-{-# LANGUAGE MultiWayIf, FunctionalDependencies, MultiParamTypeClasses #-}
-module Gargantext.Utils.Jobs.Monad where
+{-# LANGUAGE MultiWayIf, FunctionalDependencies, MultiParamTypeClasses, TypeFamilies #-}
+module Gargantext.Utils.Jobs.Monad (
+  -- * Types and classes
+    JobEnv(..)
+  , NumRunners
+  , JobError(..)
+
+  , MonadJob(..)
+
+  -- * Tracking jobs status
+  , MonadJobStatus(..)
+
+  -- * Functions
+  , newJobEnv
+  , defaultJobSettings
+  , genSecret
+  , getJobsSettings
+  , getJobsState
+  , getJobsMap
+  , getJobsQueue
+  , queueJob
+  , findJob
+  , checkJID
+  , withJob
+  , handleIDError
+  , removeJob
+  ) where
 
 import Gargantext.Utils.Jobs.Settings
 import Gargantext.Utils.Jobs.Map
@@ -9,8 +34,11 @@ import Gargantext.Utils.Jobs.State
 import Control.Concurrent.STM
 import Control.Exception
 import Control.Monad.Except
+import Control.Monad.Reader
+import Data.Kind (Type)
 import Data.Map.Strict (Map)
 import Data.Time.Clock
+import qualified Data.Text as T
 import Network.HTTP.Client (Manager)
 import Prelude
 
@@ -48,6 +76,9 @@ genSecret = SJ.generateSecretKey
 class MonadIO m => MonadJob m t w a | m -> t w a where
   getJobEnv :: m (JobEnv t w a)
 
+instance MonadIO m => MonadJob (ReaderT (JobEnv t w a) m) t w a where
+  getJobEnv = ask
+
 getJobsSettings :: MonadJob m t w a => m JobSettings
 getJobsSettings = jeSettings <$> getJobEnv
 
@@ -64,7 +95,7 @@ queueJob
   :: (MonadJob m t w a, Ord t)
   => t
   -> i
-  -> (i -> Logger w -> IO a)
+  -> (SJ.JobID 'SJ.Safe -> i -> Logger w -> IO a)
   -> m (SJ.JobID 'SJ.Safe)
 queueJob jobkind input f = do
   js <- getJobsSettings
@@ -82,7 +113,7 @@ findJob jid = do
 data JobError
   = InvalidIDType
   | IDExpired
-  | InvalidMacID
+  | InvalidMacID T.Text
   | UnknownJob
   | JobException SomeException
   deriving Show
@@ -96,7 +127,7 @@ checkJID (SJ.PrivateID tn n t d) = do
   js <- getJobsSettings
   if | tn /= "job" -> return (Left InvalidIDType)
      | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> return (Left IDExpired)
-     | d /= SJ.macID tn (jsSecretKey js) t n -> return (Left InvalidMacID)
+     | d /= SJ.macID tn (jsSecretKey js) t n -> return (Left $ InvalidMacID $ T.pack d)
      | otherwise -> return $ Right (SJ.PrivateID tn n t d)
 
 withJob
@@ -136,3 +167,47 @@ removeJob queued t jid = do
     when queued $
       deleteQueue t jid q
     deleteJob jid m
+
+--
+-- Tracking jobs status
+--
+
+-- | A monad to query for the status of a particular job /and/ submit updates for in-progress jobs.
+class MonadJobStatus m where
+
+  -- | This is type family for the concrete 'JobHandle' that is associated to
+  -- a job when it starts and it can be used to query for its completion status. Different environment
+  -- can decide how this will look like.
+  type JobHandle      m :: Type
+
+  type JobType        m :: Type
+  type JobOutputType  m :: Type
+  type JobEventType   m :: Type
+
+  -- | Retrevies the latest 'JobEventType' from the underlying monad. It can be
+  -- used to query the latest status for a particular job, given its 'JobHandle' as input.
+  getLatestJobStatus :: JobHandle m -> m (JobEventType m)
+
+  -- | Adds an extra \"tracer\" that logs events to the passed action. Produces
+  -- a new 'JobHandle'.
+  withTracer :: Logger (JobEventType m) -> JobHandle m -> (JobHandle m -> m a) -> m a
+
+  -- Creating events
+
+  -- | Start tracking a new 'JobEventType' with 'n' remaining steps.
+  markStarted :: Int -> JobHandle m -> m ()
+
+  -- | Mark 'n' steps of the job as succeeded, while simultaneously substracting this number
+  -- from the remaining steps.
+  markProgress :: Int -> JobHandle m -> m ()
+
+  -- | Mark 'n' step of the job as failed, while simultaneously substracting this number
+  -- from the remaining steps. Attach an optional error message to the failure.
+  markFailure :: Int -> Maybe T.Text -> JobHandle m -> m ()
+
+  -- | Finish tracking a job by marking all the remaining steps as succeeded.
+  markComplete :: JobHandle m -> m ()
+
+  -- | Finish tracking a job by marking all the remaining steps as failed. Attach an optional
+  -- message to the failure.
+  markFailed :: Maybe T.Text -> JobHandle m -> m ()

@@ -19,11 +19,13 @@ module Gargantext.Core.Viz.Phylo.API
 
 import GHC.Generics (Generic)
 import Data.Aeson
+import Data.Aeson.Types (parseEither)
 import Data.Either
 import Data.Maybe (fromMaybe)
 import Data.Swagger
 import Gargantext.API.Prelude
 import Gargantext.Core.Types (TODO(..))
+import Gargantext.Core.Types.Phylo (GraphData(..))
 import Gargantext.Core.Viz.LegacyPhylo
 import Gargantext.Core.Viz.Phylo (defaultConfig)
 import Gargantext.Core.Viz.Phylo.API.Tools
@@ -41,6 +43,7 @@ import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Web.HttpApiData (readTextData)
 import qualified Data.ByteString as DB
 import qualified Data.ByteString.Lazy as DBL
+import qualified Data.Text as T
 
 ------------------------------------------------------------------------
 type PhyloAPI = Summary "Phylo API"
@@ -68,14 +71,33 @@ instance ToSchema Value where declareNamedSchema _ = declareNamedSchema (Proxy :
 
 ------------------------------------------------------------------------
 
+-- | This type is emitted by the backend and the frontend expects to deserialise it
+-- as a 'PhyloJSON'. see module 'Gargantext.Components.PhyloExplorer.JSON' of the
+-- 'purescript-gargantext' package.
 data PhyloData = PhyloData { pd_corpusId :: NodeId
                            , pd_listId   :: NodeId
-                           , pd_data     :: Value
+                           , pd_data     :: GraphData
                            }
-  deriving (Generic)
+  deriving (Generic, Show, Eq)
 
-instance FromJSON PhyloData
-instance ToJSON PhyloData
+instance ToJSON PhyloData where
+  toJSON PhyloData{..} =
+    object [
+      "pd_corpusId" .= toJSON pd_corpusId
+    , "pd_listId"   .= toJSON pd_listId
+    , "pd_data"     .= toJSON pd_data
+    ]
+
+instance FromJSON PhyloData where
+  parseJSON = withObject "PhyloData" $ \o -> do
+    pd_corpusId <- o .: "pd_corpusId"
+    pd_listId   <- o .: "pd_listId"
+    pd_data     <- o .: "pd_data"
+    pure $ PhyloData{..}
+
+instance Arbitrary PhyloData where
+  arbitrary = PhyloData <$> arbitrary <*> arbitrary <*> arbitrary
+
 instance ToSchema PhyloData
 
 type GetPhylo =  QueryParam "listId"      ListId
@@ -116,12 +138,14 @@ getPhylo phyloId lId _level _minSizeBranch = do
 
 
 
-getPhyloDataJson :: PhyloId -> GargNoServer Value
+getPhyloDataJson :: PhyloId -> GargNoServer GraphData
 getPhyloDataJson phyloId = do
   maybePhyloData <- getPhyloData phyloId
   let phyloData = fromMaybe phyloCleopatre maybePhyloData
   phyloJson <- liftBase $ phylo2dot2json phyloData
-  pure phyloJson
+  case parseEither parseJSON phyloJson of
+    Left err -> panic $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
+    Right gd -> pure gd
 
 
 -- getPhyloDataSVG phId _lId l msb  = do
@@ -138,7 +162,7 @@ getPhyloDataJson phyloId = do
 
 ------------------------------------------------------------------------
 type PostPhylo =  QueryParam "listId" ListId
-               -- :> ReqBody '[JSON] PhyloQueryBuild
+          --     :> ReqBody '[JSON] PhyloQueryBuild
                :> (Post '[JSON] NodeId)
 
 postPhylo :: PhyloId -> UserId -> GargServer PostPhylo
@@ -188,4 +212,3 @@ instance ToParamSchema Metric
 instance ToParamSchema Order
 instance ToParamSchema Sort
 instance ToSchema Order
-

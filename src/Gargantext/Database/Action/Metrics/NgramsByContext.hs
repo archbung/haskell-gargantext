@@ -18,6 +18,7 @@ module Gargantext.Database.Action.Metrics.NgramsByContext
 
 -- import Debug.Trace (trace)
 --import Data.Map.Strict.Patch (PatchMap, Replace, diff)
+-- import Control.Monad (void)
 import Data.HashMap.Strict (HashMap)
 import Data.Map.Strict (Map)
 import Data.Set (Set)
@@ -29,7 +30,7 @@ import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core
 import Gargantext.Data.HashMap.Strict.Utils as HM
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId, MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
-import Gargantext.Database.Prelude (Cmd, runPGSQuery)
+import Gargantext.Database.Prelude (Cmd, runPGSQuery)  -- , execPGSQuery)
 import Gargantext.Database.Schema.Ngrams (ngramsTypeId, NgramsType(..))
 import Gargantext.Prelude
 import qualified Data.HashMap.Strict              as HM
@@ -122,37 +123,59 @@ getOccByNgramsOnlyFast cId lId nt = do
            -> Cmd err [(Text, DPST.PGArray Int)]
       run cId' lId' nt' = runPGSQuery query
                 ( cId'
-                , cId'
                 , lId'
                 , ngramsTypeId nt'
                 )
 
       query :: DPS.Query
       query = [sql|
-              SELECT ng.terms
-                 --  , ng.id
-                     --, round(nng.weight)
-                     , ARRAY(
-                         SELECT DISTINCT context_node_ngrams.context_id
-                         FROM context_node_ngrams
-                         JOIN nodes_contexts
-                           ON context_node_ngrams.context_id = nodes_contexts.context_id
-                         WHERE ng.id = context_node_ngrams.ngrams_id
-                         AND nodes_contexts.node_id = ?
-                         ) AS context_ids
-                 -- , ns.version
-                 -- , nng.ngrams_type
-                 -- , ns.ngrams_type_id
-                FROM ngrams   ng
-                JOIN node_stories       ns ON ng.id = ns.ngrams_id
-                JOIN node_node_ngrams   nng ON ns.node_id   = nng.node2_id
-                WHERE nng.node1_id        = ?
-                      AND nng.node2_id    = ?
-                      AND nng.ngrams_type = ?
-                      AND nng.ngrams_id = ng.id
-                      AND nng.ngrams_type = ns.ngrams_type_id
-                ORDER BY ng.id ASC;
+                WITH cnnv AS
+                ( SELECT DISTINCT context_node_ngrams.context_id,
+                    context_node_ngrams.ngrams_id,
+                    nodes_contexts.node_id
+                  FROM nodes_contexts
+                  JOIN context_node_ngrams ON context_node_ngrams.context_id = nodes_contexts.context_id
+                ),
+                node_context_ids AS
+                  (SELECT context_id, ngrams_id, terms
+                  FROM cnnv
+                  JOIN ngrams ON cnnv.ngrams_id = ngrams.id
+                  WHERE node_id = ?
+                  ),
+                ncids_agg AS
+                  (SELECT ngrams_id, terms, array_agg(DISTINCT context_id) AS agg
+                    FROM node_context_ids
+                    GROUP BY (ngrams_id, terms)),
+                ns AS
+                  (SELECT ngrams_id, terms
+                    FROM node_stories
+                    JOIN ngrams ON ngrams_id = ngrams.id
+                    WHERE node_id = ? AND ngrams_type_id = ?
+                  )
+
+                SELECT ns.terms, CASE WHEN agg IS NULL THEN '{}' ELSE agg END
+                FROM ns
+                LEFT JOIN ncids_agg ON ns.ngrams_id = ncids_agg.ngrams_id
         |]
+      -- query = [sql|
+      --           WITH node_context_ids AS
+      --             (select context_id, ngrams_id
+      --             FROM context_node_ngrams_view
+      --             WHERE node_id = ?
+      --             ), ns AS
+      --           (select ngrams_id FROM node_stories
+      --             WHERE node_id = ? AND ngrams_type_id = ?
+      --           )
+
+      --           SELECT ng.terms,
+      --           ARRAY ( SELECT DISTINCT context_id
+      --                     FROM node_context_ids
+      --                     WHERE ns.ngrams_id = node_context_ids.ngrams_id
+      --                 )
+      --           AS context_ids
+      --           FROM ngrams ng
+      --           JOIN ns ON ng.id = ns.ngrams_id
+      --   |]
 
 
 selectNgramsOccurrencesOnlyByContextUser_withSample :: HasDBid NodeType
@@ -223,12 +246,6 @@ queryNgramsOccurrencesOnlyByContextUser_withSample' = [sql|
       AND nc.category     > 0
       GROUP BY ng.id
   |]
-
-
-
-
-
-
 
 ------------------------------------------------------------------------
 getContextsByNgramsOnlyUser :: HasDBid NodeType
@@ -404,3 +421,16 @@ queryNgramsByContextMaster' = [sql|
   SELECT m.id, m.terms FROM nodesByNgramsMaster m
     RIGHT JOIN contextsByNgramsUser u ON u.id = m.id
   |]
+
+-- | Refreshes the \"context_node_ngrams_view\" materialized view.
+-- This function will be run :
+--  - periodically
+--  - at reindex stage
+--  - at the end of each text flow
+
+-- refreshNgramsMaterialized :: Cmd err ()
+-- refreshNgramsMaterialized = void $ execPGSQuery refreshNgramsMaterializedQuery ()
+--   where
+--     refreshNgramsMaterializedQuery :: DPS.Query
+--     refreshNgramsMaterializedQuery =
+--       [sql| REFRESH MATERIALIZED VIEW CONCURRENTLY context_node_ngrams_view; |]

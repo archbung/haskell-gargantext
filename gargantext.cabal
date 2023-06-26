@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           gargantext
-version:        0.0.6.9.5
+version:        0.0.6.9.9.6.9
 synopsis:       Search, map, share
 description:    Please see README.md
 category:       Data
@@ -25,6 +25,9 @@ data-files:
     ekg-assets/bootstrap-1.4.0.min.css
     ekg-assets/chart_line_add.png
     ekg-assets/cross.png
+    test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
+    test-data/phylo/bpa_phylo_test.json
+    test-data/phylo/open_science.json
 
 library
   exposed-modules:
@@ -33,6 +36,7 @@ library
       Gargantext.API.Admin.Auth.Types
       Gargantext.API.Admin.EnvTypes
       Gargantext.API.Admin.Settings
+      Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Types
       Gargantext.API.Dev
       Gargantext.API.HashedResponse
@@ -41,18 +45,25 @@ library
       Gargantext.API.Ngrams.Tools
       Gargantext.API.Ngrams.Types
       Gargantext.API.Node
+      Gargantext.API.Node.Corpus.New
+      Gargantext.API.Node.Corpus.Types
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
       Gargantext.Core
+      Gargantext.Core.NLP
       Gargantext.Core.Methods.Similarities
       Gargantext.Core.NodeStory
       Gargantext.Core.Text
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
+      Gargantext.Core.Text.Corpus.API.Arxiv
+      Gargantext.Core.Text.Corpus.API.Pubmed
+      Gargantext.Core.Text.Corpus.Query
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
       Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
+      Gargantext.Core.Text.Corpus.Parsers.JSON
       Gargantext.Core.Text.List.Formats.CSV
       Gargantext.Core.Text.Metrics
       Gargantext.Core.Text.Metrics.CharByChar
@@ -63,6 +74,7 @@ library
       Gargantext.Core.Text.Terms
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
+      Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
       Gargantext.Core.Text.Terms.Multi.RAKE
@@ -70,6 +82,8 @@ library
       Gargantext.Core.Types
       Gargantext.Core.Types.Individu
       Gargantext.Core.Types.Main
+      Gargantext.Core.Types.Query
+      Gargantext.Core.Types.Phylo
       Gargantext.Core.Utils
       Gargantext.Core.Utils.Prefix
       Gargantext.Core.Viz.Graph
@@ -100,7 +114,7 @@ library
       Gargantext.Database.Schema.Ngrams
       Gargantext.Defaults
       Gargantext.Utils.Jobs
-      Gargantext.Utils.Jobs.API
+      Gargantext.Utils.Jobs.Internal
       Gargantext.Utils.Jobs.Map
       Gargantext.Utils.Jobs.Monad
       Gargantext.Utils.Jobs.Queue
@@ -113,7 +127,6 @@ library
       Gargantext.API.Admin.FrontEnd
       Gargantext.API.Admin.Orchestrator
       Gargantext.API.Admin.Orchestrator.Scrapy.Schedule
-      Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Utils
       Gargantext.API.Context
       Gargantext.API.Count
@@ -124,6 +137,7 @@ library
       Gargantext.API.GraphQL.AsyncTask
       Gargantext.API.GraphQL.Context
       Gargantext.API.GraphQL.IMT
+      Gargantext.API.GraphQL.NLP
       Gargantext.API.GraphQL.Node
       Gargantext.API.GraphQL.Team
       Gargantext.API.GraphQL.TreeFirstLevel
@@ -140,11 +154,9 @@ library
       Gargantext.API.Node.Corpus.Annuaire
       Gargantext.API.Node.Corpus.Export
       Gargantext.API.Node.Corpus.Export.Types
-      Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.New.File
       Gargantext.API.Node.Corpus.New.Types
       Gargantext.API.Node.Corpus.Searx
-      Gargantext.API.Node.Corpus.Types
       Gargantext.API.Node.Document.Export
       Gargantext.API.Node.Document.Export.Types
       Gargantext.API.Node.DocumentsFromWriteNodes
@@ -179,15 +191,16 @@ library
       Gargantext.Core.NodeStoryFile
       Gargantext.Core.Statistics
       Gargantext.Core.Text.Convert
-      Gargantext.Core.Text.Corpus.API.Arxiv
       Gargantext.Core.Text.Corpus.API.Hal
       Gargantext.Core.Text.Corpus.API.Isidore
       Gargantext.Core.Text.Corpus.API.Istex
-      Gargantext.Core.Text.Corpus.API.Pubmed
+      Gargantext.Core.Text.Corpus.Parsers.Book
       Gargantext.Core.Text.Corpus.Parsers.Date
       Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec
       Gargantext.Core.Text.Corpus.Parsers.FrameWrite
+      Gargantext.Core.Text.Corpus.Parsers.Gitlab
       Gargantext.Core.Text.Corpus.Parsers.GrandDebat
+      Gargantext.Core.Text.Corpus.Parsers.Iramuteq
       Gargantext.Core.Text.Corpus.Parsers.Isidore
       Gargantext.Core.Text.Corpus.Parsers.Json2Csv
       Gargantext.Core.Text.Corpus.Parsers.RIS
@@ -211,20 +224,20 @@ library
       Gargantext.Core.Text.Metrics.FrequentItemSet
       Gargantext.Core.Text.Metrics.SpeGen.IncExc
       Gargantext.Core.Text.Metrics.Utils
-      Gargantext.Core.Text.Samples.CH
       Gargantext.Core.Text.Samples.DE
       Gargantext.Core.Text.Samples.EN
+      Gargantext.Core.Text.Samples.ES
       Gargantext.Core.Text.Samples.FR
-      Gargantext.Core.Text.Samples.SP
+      Gargantext.Core.Text.Samples.PL
+      Gargantext.Core.Text.Samples.ZH
       Gargantext.Core.Text.Terms.Mono.Stem
       Gargantext.Core.Text.Terms.Mono.Stem.En
       Gargantext.Core.Text.Terms.Mono.Token
       Gargantext.Core.Text.Terms.Mono.Token.En
-      Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Group
       Gargantext.Core.Text.Terms.Multi.PosTagging
       Gargantext.Core.Text.Terms.Multi.PosTagging.Types
-      Gargantext.Core.Types.Phylo
+      Gargantext.Core.Text.Upload
       Gargantext.Core.Types.Search
       Gargantext.Core.Utils.DateUtils
       Gargantext.Core.Viz
@@ -339,6 +352,7 @@ library
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -347,7 +361,7 @@ library
       RankNTypes
       RecordWildCards
       StrictData
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fplugin=Clippy
   build-depends:
       HSvm
     , KMP
@@ -372,6 +386,7 @@ library
     , blaze-html
     , blaze-markup
     , blaze-svg
+    , boolexpr
     , bytestring
     , case-insensitive
     , cassava
@@ -386,6 +401,7 @@ library
     , crawlerISTEX
     , crawlerIsidore
     , crawlerPubMed
+    , cron
     , cryptohash
     , data-time-segment
     , deepseq
@@ -405,6 +421,7 @@ library
     , fullstop
     , gargantext-graph >=0.1.0.0
     , gargantext-prelude
+    , ghc-clippy-plugin
     , graphviz
     , hashable
     , haskell-igraph
@@ -438,6 +455,7 @@ library
     , morpheus-graphql-subscriptions
     , mtl
     , natural-transformation
+    , network-uri
     , opaleye
     , pandoc
     , parallel
@@ -460,6 +478,7 @@ library
     , rdf4h
     , regex-compat
     , regex-tdfa
+    , replace-attoparsec
     , resource-pool
     , resourcet
     , safe
@@ -536,6 +555,7 @@ executable gargantext-admin
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -564,6 +584,7 @@ executable gargantext-cbor2json
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -596,6 +617,7 @@ executable gargantext-cli
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -635,6 +657,7 @@ executable gargantext-import
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -664,6 +687,7 @@ executable gargantext-init
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -675,6 +699,7 @@ executable gargantext-init
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
       base
+    , cron
     , extra
     , gargantext
     , gargantext-prelude
@@ -692,6 +717,7 @@ executable gargantext-invitations
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -720,6 +746,7 @@ executable gargantext-phylo
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -762,6 +789,7 @@ executable gargantext-server
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -781,6 +809,7 @@ executable gargantext-server
     , gargantext-prelude
     , ini
     , optparse-generic
+    , postgresql-simple
     , text
     , unordered-containers
     , vector
@@ -797,6 +826,7 @@ executable gargantext-upgrade
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -808,6 +838,7 @@ executable gargantext-upgrade
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
       base
+    , cron
     , extra
     , gargantext
     , gargantext-prelude
@@ -820,6 +851,7 @@ test-suite garg-test
   main-is: Main.hs
   other-modules:
       Core.Text
+      Core.Text.Corpus.Query
       Core.Text.Examples
       Core.Text.Flow
       Core.Utils
@@ -830,10 +862,15 @@ test-suite garg-test
       Ngrams.Lang.Fr
       Ngrams.Lang.Occurrences
       Ngrams.Metrics
+      Ngrams.NLP
+      Ngrams.Query
+      Ngrams.Query.PaginationCorpus
+      Offline.JSON
       Parsers.Date
       Parsers.Types
       Parsers.WOS
       Utils.Crypto
+      Utils.Jobs
       Paths_gargantext
   hs-source-dirs:
       src-test
@@ -842,6 +879,7 @@ test-suite garg-test
       DeriveGeneric
       FlexibleContexts
       FlexibleInstances
+      GADTs
       GeneralizedNewtypeDeriving
       MultiParamTypeClasses
       NamedFieldPuns
@@ -862,46 +900,35 @@ test-suite garg-test
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , aeson
+    , async
     , base
+    , boolexpr
+    , bytestring
+    , conduit
+    , containers
+    , crawlerArxiv
     , duckling
     , extra
     , gargantext
     , gargantext-prelude
     , hspec
+    , http-client
+    , http-client-tls
+    , mtl
     , parsec
+    , patches-class
+    , patches-map
     , quickcheck-instances
+    , raw-strings-qq
+    , servant-job
+    , stm
+    , tasty
+    , tasty-hspec
+    , tasty-hunit
+    , tasty-quickcheck
     , text
     , time
     , unordered-containers
-  default-language: Haskell2010
-
-test-suite jobqueue-test
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Paths_gargantext
-  hs-source-dirs:
-      tests/queue
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GeneralizedNewtypeDeriving
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      async
-    , base
-    , extra
-    , gargantext
-    , hspec
-    , stm
-    , text
+    , validity
   default-language: Haskell2010

@@ -36,10 +36,13 @@ extra-deps:
 - hstatistics-0.3.1
 - HSvm-0.1.1.3.22
 - hsparql-0.3.8
+- ghc-clippy-plugin-0.0.0.1
+- boolexpr-0.2
 
-- git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude.git
-  commit: 791c2a7046a3760f8ae5fabdbd708f61caa63741
-  #- git: https://gitlab.iscpif.fr/cgenie/haskell-gargantext-prelude
+  #- git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude.git
+#  commit: 791c2a7046a3760f8ae5fabdbd708f61caa63741
+- git: https://gitlab.iscpif.fr/cgenie/haskell-gargantext-prelude
+  commit: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e  # e250af8a495191b4bd06c9f465656b87bea7bf7f
 - git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
   commit: 588e104fe7593210956610cab0041fd16584a4ce
   # Data Mining Libs
@@ -64,13 +67,16 @@ extra-deps:
 
   # Databases libs
 - git: https://github.com/garganscript/haskell-opaleye.git
-  commit: 18c4958e076f5f8f82a4e4a3fc9ec659d2bd8766
+  commit: a5693a2010e6d13f51cdc576fa1dc9985e79ee0e
+#- ../haskell-opaleye
+# - git: https://github.com/delanoe/hsparql.git
+#   commit: 2acbbc55ac9bbd4bf1a713c586b8b8e8b82892eb
 - git: https://github.com/robstewart57/rdf4h.git
   commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
 
   # External Data API connectors
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
-  commit: 4ade495751eaf31d3ca1ac8b0ae13d3538c6e18c
+  commit: 234ad423fa682307ff4843ae4acd725dcc6ffc55
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
   commit: a34bb341236d82cf3d488210bc1d8448a98f5808
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
@@ -90,7 +96,7 @@ extra-deps:
   #- git: https://github.com/np/patches-map
 - git: https://github.com/delanoe/patches-map
   commit: 76cae88f367976ff091e661ee69a5c3126b94694
-  #- git: https://gitlab.com/npouillard/patches-class.git  
+  #- git: https://gitlab.com/npouillard/patches-class.git
 #- git: https://gitlab.iscpif.fr/gargantext/patches-class.git
 #  commit: d3e971d4e78d1dfcc853f2fb86bde1995faf22ae
 - git: https://gitlab.iscpif.fr/cgenie/patches-class.git
@@ -101,7 +107,8 @@ extra-deps:
 #- git: https://github.com/alpmestan/haskell-igraph.git
 #  commit: 9f55eb36639c8e0965c8bc539a57738869f33e9a
 - git: https://gitlab.iscpif.fr/gargantext/haskell-igraph.git
-  commit: 03c8885d0166255ed7bf0b624a07610ea68ec02c
+  # 0.10.4-rc1
+  commit: 2a28524134b68421f30f6e97961063018f814a82
 - git: https://gitlab.iscpif.fr/gargantext/haskell-infomap.git
   commit: 6d1d60b952b9b2b272b58fc5539700fd8890ac88
 

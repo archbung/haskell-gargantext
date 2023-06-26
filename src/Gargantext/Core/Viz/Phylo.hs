@@ -204,6 +204,7 @@ data PhyloSubConfigAPI =
                     , _sc_timeUnit       :: TimeUnit
                     , _sc_clique         :: Cluster
                     , _sc_exportFilter   :: Double
+                    , _sc_defaultMode    :: Bool
                     } deriving (Show,Generic,Eq)
 
 
@@ -214,6 +215,7 @@ subConfigAPI2config subConfig = defaultConfig
                                            , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 3
                                            , timeUnit       = _sc_timeUnit       subConfig
                                            , clique         = _sc_clique         subConfig
+                                           , defaultMode    = _sc_defaultMode    subConfig
                                            , exportFilter   = [ByBranchSize $ _sc_exportFilter   subConfig]
                                            }
 

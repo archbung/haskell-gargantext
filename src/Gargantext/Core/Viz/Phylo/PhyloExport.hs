@@ -28,6 +28,7 @@ import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.TemporalMatching (filterDocs, filterDiago, reduceDiagos, toSimilarity, getNextPeriods)
 import Gargantext.Prelude hiding (scale)
 import Prelude (writeFile)
+import Protolude (floor)
 import System.FilePath
 import qualified Data.GraphViz.Attributes.HTML as H
 import qualified Data.Text as Text
@@ -44,18 +45,18 @@ dotToFile filePath dotG = writeFile filePath $ dotToString dotG
 dotToString :: DotGraph DotId  -> [Char]
 dotToString dotG = unpack (printDotGraph dotG)
 
-dynamicToColor :: Double -> H.Attribute
+dynamicToColor :: Int -> H.Attribute
 dynamicToColor d
   | d == 0    = H.BGColor (toColor LightCoral)
   | d == 1    = H.BGColor (toColor Khaki)
   | d == 2    = H.BGColor (toColor SkyBlue)
   | otherwise = H.Color   (toColor Black)
 
-pickLabelColor :: [Double] -> H.Attribute
+pickLabelColor :: [Int] -> H.Attribute
 pickLabelColor lst
   | elem 0 lst = dynamicToColor 0
-  | elem 2 lst = dynamicToColor 2
   | elem 1 lst = dynamicToColor 1
+  | elem 2 lst = dynamicToColor 2
   | otherwise  = dynamicToColor 3
 
 toDotLabel :: Text.Text -> Label
@@ -65,67 +66,78 @@ toAttr :: AttributeName -> Lazy.Text -> CustomAttribute
 toAttr k v = customAttribute k v
 
 metaToAttr :: Map Text.Text [Double] -> [CustomAttribute]
-metaToAttr meta = map (\(k,v) -> toAttr (fromStrict k) $ (pack . unwords) $ map show v) $ toList meta
+metaToAttr meta = map (\(k, v) -> toAttr (fromStrict k) $ (pack . unwords) $ map show v) $ toList meta
 
 groupIdToDotId :: PhyloGroupId -> DotId
-groupIdToDotId (((d,d'),lvl),idx) = (fromStrict . Text.pack) $ ("group" <> (show d) <> (show d') <> (show lvl) <> (show idx))
+groupIdToDotId (((d, d'), lvl), idx) =
+  (fromStrict . Text.pack) $ "group" <> show d <> show d' <> show lvl <> show idx
 
 branchIdToDotId :: PhyloBranchId -> DotId
-branchIdToDotId bId = (fromStrict . Text.pack) $ ("branch" <> show (snd bId))
+branchIdToDotId bId = (fromStrict . Text.pack) $ "branch" <> show (snd bId)
 
 periodIdToDotId :: Period -> DotId
-periodIdToDotId prd = (fromStrict . Text.pack) $ ("period" <> show (fst prd) <> show (snd prd))
+periodIdToDotId prd = (fromStrict . Text.pack) $ "period" <> show (fst prd) <> show (snd prd)
 
 groupToTable :: Vector Ngrams -> PhyloGroup -> H.Label
-groupToTable fdt g = H.Table H.HTable
-                    { H.tableFontAttrs = Just [H.PointSize 14, H.Align H.HLeft]
-                    , H.tableAttrs = [H.Border 0, H.CellBorder 0, H.BGColor (toColor White)]
-                    , H.tableRows = [header]
-                                 <> [H.Cells [H.LabelCell [H.Height 10] $ H.Text [H.Str $ fromStrict ""]]]
-                                 <> ( map ngramsToRow $ splitEvery 4
-                                    $ reverse $ sortOn (snd . snd)
-                                    $ zip (ngramsToText fdt (g ^. phylo_groupNgrams))
-                                    $ zip ((g ^. phylo_groupMeta) ! "dynamics") ((g ^. phylo_groupMeta) ! "inclusion"))}
+groupToTable fdt g =
+  H.Table H.HTable
+  { H.tableFontAttrs = Just [H.PointSize 14, H.Align H.HLeft]
+  , H.tableAttrs = [H.Border 0, H.CellBorder 0, H.BGColor (toColor White)]
+  , H.tableRows = [header]
+                  <> [H.Cells [H.LabelCell [H.Height 10] $ H.Text [H.Str $ fromStrict ""]]]
+                  <> ( map ngramsToRow $ splitEvery 4
+                       $ reverse $ sortOn (snd . snd)
+                       $ zip (ngramsToText fdt (g ^. phylo_groupNgrams))
+                       $ zip ((g ^. phylo_groupMeta) ! "dynamics") ((g ^. phylo_groupMeta) ! "inclusion"))}
     where
-        --------------------------------------
-        ngramsToRow :: [(Ngrams,(Double,Double))] -> H.Row
-        ngramsToRow ns = H.Cells $ map (\(n,(d,_)) ->
-                            H.LabelCell [H.Align H.HLeft,dynamicToColor d] $ H.Text [H.Str $ fromStrict n]) ns
-        --------------------------------------
-        header :: H.Row
-        header =
-            H.Cells [ H.LabelCell [pickLabelColor ((g ^. phylo_groupMeta) ! "dynamics")]
-                    $ H.Text [H.Str $ (((fromStrict . Text.toUpper) $ g ^. phylo_groupLabel)
-                                   <> (fromStrict " ( ")
-                                   <> (pack $ show (fst $ g ^. phylo_groupPeriod))
-                                   <> (fromStrict " , ")
-                                   <> (pack $ show (snd $ g ^. phylo_groupPeriod))
-                                   <> (fromStrict " ) ")
-                                   <> (pack $ show (getGroupId g)))]]
+      --------------------------------------
+      ngramsToRow :: [(Ngrams, (Double, Double))] -> H.Row
+      ngramsToRow ns =
+        H.Cells $ map (\(n, (d, _)) ->
+                          H.LabelCell [ H.Align H.HLeft
+                                      , dynamicToColor $ floor d] $ H.Text [H.Str $ fromStrict n]) ns
+      --------------------------------------
+      header :: H.Row
+      header =
+        H.Cells [ H.LabelCell [pickLabelColor $ floor <$> ((g ^. phylo_groupMeta) ! "dynamics")]
+                  $ H.Text [H.Str $ ((fromStrict . Text.toUpper) $ g ^. phylo_groupLabel)
+                             <> fromStrict " ( "
+                             <> (pack $ show (fst $ g ^. phylo_groupPeriod))
+                             <> fromStrict " , "
+                             <> (pack $ show (snd $ g ^. phylo_groupPeriod))
+                             <> fromStrict " ) "
+                             <> (pack $ show (getGroupId g))]]
         --------------------------------------
 
 branchToDotNode :: PhyloBranch -> Int -> Dot DotId
 branchToDotNode b bId =
     node (branchIdToDotId $ b ^. branch_id)
-         ([FillColor [toWColor CornSilk], FontName "Arial", FontSize 40, Shape Egg, Style [SItem Bold []], Label (toDotLabel $ b ^. branch_label)]
+         ( [ FillColor [toWColor CornSilk]
+           , FontName "Arial"
+           , FontSize 40
+           , Shape Egg
+           , Style [SItem Bold []]
+           , Label (toDotLabel $ b ^. branch_label) ]
          <> (metaToAttr $ b ^. branch_meta)
          <> [ toAttr "nodeType" "branch"
             , toAttr "bId"      (pack $ show bId)
             , toAttr "branchId" (pack $ unwords (map show $ snd $ b ^. branch_id))
-            , toAttr "branch_x" (fromStrict $ Text.pack $ (show $ b ^. branch_x))
-            , toAttr "branch_y" (fromStrict $ Text.pack $ (show $ b ^. branch_y))
+            , toAttr "branch_x" (fromStrict $ Text.pack $ show $ b ^. branch_x)
+            , toAttr "branch_y" (fromStrict $ Text.pack $ show $ b ^. branch_y)
             , toAttr "label"    (pack $ show $ b ^. branch_label)
             ])
 
 periodToDotNode :: (Date,Date) -> (Text.Text,Text.Text) -> Dot DotId
 periodToDotNode prd prd' =
-    node (periodIdToDotId prd)
-         ([Shape BoxShape, FontSize 50, Label (toDotLabel $ Text.pack (show (fst prd) <> " " <> show (snd prd)))]
+    node (periodIdToDotId prd) $
+         [ Shape BoxShape
+         , FontSize 50
+         , Label $ toDotLabel $ Text.pack $ show (fst prd) <> " " <> show (snd prd) ]
          <> [ toAttr "nodeType" "period"
-            , toAttr "strFrom" (fromStrict $ Text.pack $ (show $ fst prd'))
-            , toAttr "strTo"   (fromStrict $ Text.pack $ (show $ snd prd'))
-            , toAttr "from" (fromStrict $ Text.pack $ (show $ fst prd))
-            , toAttr "to"   (fromStrict $ Text.pack $ (show $ snd prd))])
+            , toAttr "strFrom" $ fromStrict $ Text.pack $ show $ fst prd'
+            , toAttr "strTo"   $ fromStrict $ Text.pack $ show $ snd prd'
+            , toAttr "from" $ fromStrict $ Text.pack $ show $ fst prd
+            , toAttr "to"   $ fromStrict $ Text.pack $ show $ snd prd ]
 
 
 groupToDotNode :: Vector Ngrams -> PhyloGroup -> Int -> Dot DotId
@@ -152,7 +164,6 @@ groupToDotNode fdt g bId =
                          , toAttr "frequence" (pack $ show (idxToLabel' ((g ^. phylo_groupMeta) ! "frequence")))
                          , toAttr "seaLvl" (pack $ show ((g ^. phylo_groupMeta) ! "seaLevels"))
                          ])
-
 
 toDotEdge' :: DotId -> DotId -> [Char] -> [Char] -> EdgeType -> Dot DotId
 toDotEdge' source target thr w edgeType = edge source target
@@ -203,29 +214,29 @@ exportToDot :: Phylo -> PhyloExport -> DotGraph DotId
 exportToDot phylo export =
     trace ("\n-- | Convert " <> show(length $ export ^. export_branches) <> " branches and "
          <> show(length $ export ^. export_groups) <> " groups "
-         <> show(length $ nub $ concat $ map (\g -> g ^. phylo_groupNgrams) $ export ^. export_groups) <> " terms to a dot file\n\n"
+         <> show(length $ nub $ concat $ map (^. phylo_groupNgrams) $ export ^. export_groups) <> " terms to a dot file\n\n"
          <> "##########################") $
-    digraph ((Str . fromStrict) $ (phyloName $ getConfig phylo)) $ do
+    digraph ((Str . fromStrict) $ phyloName $ getConfig phylo) $ do
 
         {- 1) init the dot graph -}
-        graphAttrs ( [ Label (toDotLabel $ (phyloName $ getConfig phylo))]
+        graphAttrs ( [ Label (toDotLabel $ phyloName $ getConfig phylo)]
                   <> [ FontSize 30, LabelLoc VTop, NodeSep 1, RankSep [1], Rank SameRank, Splines SplineEdges, Overlap ScaleOverlaps
                      , Ratio FillRatio
                      -- , Ratio AutoRatio
                      , Style [SItem Filled []],Color [toWColor White]]
                   {-- home made attributes -}
-                  <> [(toAttr (fromStrict "phyloFoundations") $ pack $ show (length $ Vector.toList $ getRoots phylo))
-                     ,(toAttr (fromStrict "phyloTerms") $ pack $ show (length $ nub $ concat $ map (\g -> g ^. phylo_groupNgrams) $ export ^. export_groups))
-                     ,(toAttr (fromStrict "phyloDocs") $ pack $ show (sum $ elems $ getDocsByDate phylo))
-                     ,(toAttr (fromStrict "phyloPeriods") $ pack $ show (length $ elems $ phylo ^. phylo_periods))
-                     ,(toAttr (fromStrict "phyloBranches") $ pack $ show (length $ export ^. export_branches))
-                     ,(toAttr (fromStrict "phyloGroups") $ pack $ show (length $ export ^. export_groups))
-                     ,(toAttr (fromStrict "phyloSources") $ pack $ show (Vector.toList $ getSources phylo))
-                     ,(toAttr (fromStrict "phyloTimeScale") $ pack $ getTimeScale phylo)
-                     ,(toAttr (fromStrict "PhyloScale") $ pack $ show (getLevel phylo))
-                     ,(toAttr (fromStrict "phyloQuality") $ pack $ show (phylo ^. phylo_quality))
-                     ,(toAttr (fromStrict "phyloSeaRiseStart") $ pack $ show (getPhyloSeaRiseStart phylo))
-                     ,(toAttr (fromStrict "phyloSeaRiseSteps") $ pack $ show (getPhyloSeaRiseSteps phylo))
+                  <> [ toAttr (fromStrict "phyloFoundations") $ pack $ show (length $ Vector.toList $ getRoots phylo)
+                     , toAttr (fromStrict "phyloTerms") $ pack $ show (length $ nub $ concat $ map (^. phylo_groupNgrams) $ export ^. export_groups)
+                     , toAttr (fromStrict "phyloDocs") $ pack $ show (sum $ elems $ getDocsByDate phylo)
+                     , toAttr (fromStrict "phyloPeriods") $ pack $ show (length $ elems $ phylo ^. phylo_periods)
+                     , toAttr (fromStrict "phyloBranches") $ pack $ show (length $ export ^. export_branches)
+                     , toAttr (fromStrict "phyloGroups") $ pack $ show (length $ export ^. export_groups)
+                     , toAttr (fromStrict "phyloSources") $ pack $ show (Vector.toList $ getSources phylo)
+                     , toAttr (fromStrict "phyloTimeScale") $ pack $ getTimeScale phylo
+                     , toAttr (fromStrict "PhyloScale") $ pack $ show (getLevel phylo)
+                     , toAttr (fromStrict "phyloQuality") $ pack $ show (phylo ^. phylo_quality)
+                     , toAttr (fromStrict "phyloSeaRiseStart") $ pack $ show (getPhyloSeaRiseStart phylo)
+                     , toAttr (fromStrict "phyloSeaRiseSteps") $ pack $ show (getPhyloSeaRiseSteps phylo)
                      -- ,(toAttr (fromStrict "phyloTermsFreq") $ pack $ show (toList $ _phylo_lastTermFreq phylo))
                      ])
 
@@ -377,8 +388,8 @@ processSort sort' elev export = case sort' of
     ByBirthDate o -> sortByBirthDate o export
     ByHierarchy _ -> case elev of
             Constante  s s' ->  export & export_branches .~ (branchToIso' s s' $ sortByHierarchy 0 (export ^. export_branches))
-            Adaptative _ ->  export & export_branches .~ (branchToIso $ sortByHierarchy 0 (export ^. export_branches)) 
-            Evolving   _ ->  export & export_branches .~ (branchToIso $ sortByHierarchy 0 (export ^. export_branches)) 
+            Adaptative _ ->  export & export_branches .~ (branchToIso $ sortByHierarchy 0 (export ^. export_branches))
+            Evolving   _ ->  export & export_branches .~ (branchToIso $ sortByHierarchy 0 (export ^. export_branches))
 
 -----------------
 -- | Metrics | --
@@ -466,7 +477,7 @@ idf n groups = log ((fromIntegral $ length groups) / (fromIntegral $ nk n groups
 
 
 findTfIdf :: [[Int]] -> [(Int,Double)]
-findTfIdf groups = reverse $ sortOn snd $ map (\n -> (n,(tf n groups) * (idf n groups))) $ sort $ nub $ concat groups
+findTfIdf groups = reverse $ sortOn snd $ map (\n -> (n,(tf n groups) * (idf n groups))) $ nub $ concat groups
 
 
 findEmergences :: [PhyloGroup] -> Map Int Double -> [(Int,Double)]
@@ -572,7 +583,7 @@ toDynamics n elders g m =
         isNew :: Bool
         isNew = not $ elem n $ concat $ map _phylo_groupNgrams elders
 
-type FdtId = Int 
+type FdtId = Int
 processDynamics :: [PhyloGroup] -> [PhyloGroup]
 processDynamics groups =
     map (\g ->
@@ -600,7 +611,13 @@ getGroupThr step g =
         breaks = (g ^. phylo_groupMeta) ! "breaks"
      in (last' "export" (take (round $ (last' "export" breaks) + 1) seaLvl)) - step
 
-toAncestor :: Double -> Map Int Double -> PhyloSimilarity -> Double -> [PhyloGroup] -> PhyloGroup -> PhyloGroup
+toAncestor :: Double
+           -> Map Int Double
+           -> PhyloSimilarity
+           -> Double
+           -> [PhyloGroup]
+           -> PhyloGroup
+           -> PhyloGroup
 toAncestor nbDocs diago similarity step candidates ego =
   let curr = ego ^. phylo_groupAncestors
    in ego & phylo_groupAncestors .~ (curr ++ (map (\(g,w) -> (getGroupId g,w))
@@ -609,7 +626,13 @@ toAncestor nbDocs diago similarity step candidates ego =
          $ filter (\g -> g ^. phylo_groupBranchId /= ego ^. phylo_groupBranchId ) candidates))
 
 
-headsToAncestors :: Double -> Map Int Double -> PhyloSimilarity -> Double -> [PhyloGroup] -> [PhyloGroup] -> [PhyloGroup]
+headsToAncestors :: Double
+                 -> Map Int Double
+                 -> PhyloSimilarity
+                 -> Double
+                 -> [PhyloGroup]
+                 -> [PhyloGroup]
+                 -> [PhyloGroup]
 headsToAncestors nbDocs diago similarity step heads acc =
   if (null heads)
     then acc
@@ -656,7 +679,7 @@ toHorizon phylo =
             Adaptative _ -> 0
             Evolving   _ -> 0
        -- in headsToAncestors nbDocs diago Similarity heads groups []
-       in map (\ego -> toAncestor nbDocs diago sim step noHeads ego)
+       in map (toAncestor nbDocs diago sim step noHeads)
         $ headsToAncestors nbDocs diago sim step heads []
       ) periods
     -- | 3) process this task concurrently
@@ -688,17 +711,18 @@ toPhyloExport phylo = exportToDot phylo
                       let seaLvl = (g ^. phylo_groupMeta) ! "seaLevels"
                           breaks = (g ^. phylo_groupMeta) ! "breaks"
                           canonId = take (round $ (last' "export" breaks) + 2) (snd $ g ^. phylo_groupBranchId)
-                       in PhyloBranch (g ^. phylo_groupBranchId)
-                                      canonId
-                                      seaLvl
-                                      0
-                                      (last' "export" (take (round $ (last' "export" breaks) + 1) seaLvl))
-                                      0
-                                      0
-                                      "" empty)
-                  $ map (\gs -> head' "export" gs)
+                       in PhyloBranch { _branch_id = g ^. phylo_groupBranchId
+                                      , _branch_canonId = canonId
+                                      , _branch_seaLevel = seaLvl
+                                      , _branch_x = 0
+                                      , _branch_y = last' "export" $ take (round $ (last' "export" breaks) + 1) seaLvl
+                                      , _branch_w = 0
+                                      , _branch_t = 0
+                                      , _branch_label = ""
+                                      , _branch_meta = empty })
+                  $ map (head' "export")
                   $ groupBy (\g g' -> g ^. phylo_groupBranchId == g' ^. phylo_groupBranchId)
-                  $ sortOn (\g -> g ^. phylo_groupBranchId) groups
+                  $ sortOn (^. phylo_groupBranchId) groups
         --------------------------------------
         groups :: [PhyloGroup]
         groups = traceExportGroups
@@ -728,4 +752,3 @@ traceExportGroups groups = trace ("\n" <> "-- | Export "
     <> show(length groups) <> " groups and "
     <> show(length $ nub $ concat $ map (\g -> g ^. phylo_groupNgrams) groups) <> " terms"
   ) groups
-

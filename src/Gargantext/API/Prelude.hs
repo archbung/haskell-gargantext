@@ -24,6 +24,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception (Exception)
 import Control.Lens (Prism', (#))
 import Control.Lens.TH (makePrisms)
+import Control.Monad (mapM_)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Error.Class (MonadError(..))
@@ -34,6 +35,7 @@ import Data.Typeable
 import Data.Validity
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
+import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Core.Types
@@ -41,10 +43,12 @@ import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node.Error (NodeError(..), HasNodeError(..))
 import Gargantext.Database.Query.Tree
 import Gargantext.Prelude
+import           Gargantext.Utils.Jobs.Monad (MonadJobStatus(..), JobHandle)
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
+import qualified Servant.Job.Types as SJ
 
 class HasJoseError e where
   _JoseError :: Prism' e Jose.Error
@@ -61,6 +65,7 @@ type EnvC env =
   , HasConfig         env
   , HasNodeStoryEnv   env
   , HasMail           env
+  , HasNLPServer      env
   )
 
 type ErrC err =
@@ -116,6 +121,15 @@ data GargError
 makePrisms ''GargError
 
 instance ToJSON GargError where
+  toJSON (GargJobError s) =
+    object [ ("status", toJSON SJ.IsFailure)
+           , ("log", emptyArray)
+           , ("id", String id)
+           , ("error", String $ Text.pack $ show s) ]
+    where
+      id = case s of
+        Jobs.InvalidMacID i -> i
+        _ -> ""
   toJSON err = object [("error", String $ Text.pack $ show err)]
 
 instance Exception GargError
@@ -138,31 +152,13 @@ instance HasJoseError GargError where
 ------------------------------------------------------------------------
 -- | Utils
 -- | Simulate logs
-simuLogs  :: MonadBase IO m
-         => (JobLog -> m ())
-         -> Int
-         -> m JobLog
-simuLogs logStatus t = do
-  _ <- mapM (\n -> simuTask logStatus n t) $ take t [0,1..]
-  pure $ JobLog { _scst_succeeded = Just t
-                , _scst_failed    = Just 0
-                , _scst_remaining = Just 0
-                , _scst_events    = Just []
-                }
-
-simuTask :: MonadBase IO m
-          => (JobLog -> m ())
-          -> Int
-          -> Int
-          -> m ()
-simuTask logStatus cur total = do
-  let m = (10 :: Int) ^ (6 :: Int)
-  liftBase $ threadDelay (m*5)
-
-  let status =  JobLog { _scst_succeeded = Just cur
-                       , _scst_failed    = Just 0
-                       , _scst_remaining = (-) <$> Just total <*> Just cur
-                       , _scst_events    = Just []
-                       }
-  -- printDebug "status" status
-  logStatus status
+simuLogs  :: (MonadBase IO m, MonadJobStatus m) => JobHandle m -> Int -> m ()
+simuLogs jobHandle t = do
+  markStarted t jobHandle
+  mapM_ (const simuTask) $ take t ([0,1..] :: [Int])
+  markComplete jobHandle
+  where
+    simuTask = do
+      let m = (10 :: Int) ^ (6 :: Int)
+      liftBase $ threadDelay (m*5)
+      markProgress 1 jobHandle

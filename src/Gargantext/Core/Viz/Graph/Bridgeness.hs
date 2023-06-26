@@ -115,6 +115,7 @@ data Bridgeness = Bridgeness_Basic { bridgeness_partitions :: [ClusterNode]
                                       }
                 | Bridgeness_Recursive { br_partitions :: [[Set NodeId]]
                                        , br_filter     :: Double
+                                       , br_similarity :: Similarity
                                        }
 
 
@@ -126,8 +127,8 @@ type Confluence = Map (NodeId, NodeId) Double
 bridgeness :: Bridgeness
             -> Map (NodeId, NodeId) Double
             -> Map (NodeId, NodeId) Double
-bridgeness (Bridgeness_Recursive sn f) m =
-  Map.unions $ [linksBetween] <> map (\s -> bridgeness (Bridgeness_Basic (setNodes2clusterNodes s) (pi*f)) m') sn
+bridgeness (Bridgeness_Recursive sn f sim) m =
+  Map.unions $ [linksBetween] <> map (\s -> bridgeness (Bridgeness_Basic (setNodes2clusterNodes s) (if sim == Conditional then pi*f else f)) m') sn
     where
       (linksBetween, m') = Map.partitionWithKey (\(n1,n2) _v -> Map.lookup n1 mapNodeIdClusterId
                                                              /= Map.lookup n2 mapNodeIdClusterId
@@ -139,10 +140,7 @@ bridgeness (Bridgeness_Recursive sn f) m =
 bridgeness (Bridgeness_Advanced sim c) m = Map.fromList
                 $ List.filter (\x -> if sim == Conditional then snd x > 0.2 else snd x > 0.02)
                 $ map (\(ks, (v1,_v2)) -> (ks,v1))
-                -- $ List.take (if sim == Conditional then 2*n else 3*n)
-                -- $ List.sortOn (Down . (snd . snd))
                 $ Map.toList
-                -- $ trace ("bridgeness3 m c" <> show (m,c))
                 $ Map.intersectionWithKey
                       (\k v1 v2 -> trace ("intersectionWithKey " <> (show (k, v1, v2))) (v1, v2)) m c
 

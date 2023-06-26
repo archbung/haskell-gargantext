@@ -1,5 +1,27 @@
 {-# LANGUAGE GADTs #-}
-module Gargantext.Utils.Jobs.Map where
+module Gargantext.Utils.Jobs.Map (
+  -- * Types
+    JobMap(..)
+  , JobEntry(..)
+  , J(..)
+  , QueuedJob(..)
+  , RunningJob(..)
+  , LoggerM
+  , Logger
+
+  -- * Functions
+  , newJobMap
+  , lookupJob
+  , gcThread
+  , addJobEntry
+  , deleteJob
+  , runJob
+  , waitJobDone
+  , runJ
+  , waitJ
+  , pollJ
+  , killJ
+  ) where
 
 import Control.Concurrent
 import Control.Concurrent.Async
@@ -53,9 +75,12 @@ data RunningJob w a = RunningJob
   , rjGetLog :: IO w
   }
 
+-- | Polymorphic logger over any monad @m@.
+type LoggerM m w = w -> m ()
+
 -- | A @'Logger' w@ is a function that can do something with "messages" of type
 --   @w@ in IO.
-type Logger w = w -> IO ()
+type Logger w = LoggerM IO w
 
 newJobMap :: IO (JobMap jid w a)
 newJobMap = JobMap <$> newTVarIO Map.empty
@@ -91,29 +116,31 @@ gcThread js (JobMap mvar) = go
           _      -> False
 
 -- | Make a 'Logger' that 'mappend's monoidal values in a 'TVar'.
+-- /IMPORTANT/: The new value is appended in front. The ordering is important later on
+-- when consuming logs from the API (see for example 'pollJob').
 jobLog :: Semigroup w => TVar w -> Logger w -- w -> IO ()
-jobLog logvar = \w -> atomically $ modifyTVar' logvar (\old_w -> old_w <> w)
+jobLog logvar = \w -> atomically $ modifyTVar' logvar (\old_w -> w <> old_w)
 
 -- | Generating new 'JobEntry's.
 addJobEntry
   :: Ord jid
-  => jid
+  => UTCTime
+  -> jid
   -> a
-  -> (a -> Logger w -> IO r)
+  -> (jid -> a -> Logger w -> IO r)
   -> JobMap jid w r
-  -> IO (JobEntry jid w r)
-addJobEntry jid input f (JobMap mvar) = do
-  now <- getCurrentTime
+  -> STM (JobEntry jid w r)
+addJobEntry now jid input f (JobMap mvar) = do
   let je = JobEntry
         { jID = jid
-        , jTask = QueuedJ (QueuedJob input f)
+        , jTask = QueuedJ (QueuedJob input (f jid))
         , jRegistered = now
         , jTimeoutAfter = Nothing
         , jStarted = Nothing
         , jEnded = Nothing
         }
-  atomically $ modifyTVar' mvar (Map.insert jid je)
-  return je
+  modifyTVar' mvar (Map.insert jid je)
+  pure je
 
 deleteJob :: Ord jid => jid -> JobMap jid w a -> STM ()
 deleteJob jid (JobMap mvar) = modifyTVar' mvar (Map.delete jid)

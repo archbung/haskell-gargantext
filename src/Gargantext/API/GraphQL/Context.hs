@@ -17,11 +17,10 @@ import Data.Time.Format.ISO8601 (iso8601Show)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core.Types.Search (HyperdataRow(..), toHyperdataRow)
-import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
 import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId)
-import Gargantext.Database.Prelude (HasConnectionPool, HasConfig)
-import Gargantext.Database.Query.Table.NodeContext (getNodeContext, getContextsForNgramsTerms, ContextForNgramsTerms(..))
+import Gargantext.Database.Prelude (CmdCommon)
+import Gargantext.Database.Query.Table.NodeContext (getNodeContext, getContextsForNgramsTerms, ContextForNgramsTerms(..), {- getContextNgrams, -} getContextNgramsMatchingFTS)
 import qualified Gargantext.Database.Query.Table.NodeContext as DNC
 import Gargantext.Database.Schema.NodeContext (NodeContext, NodeContextPoly(..))
 import Gargantext.Prelude
@@ -95,6 +94,12 @@ data NodeContextCategoryMArgs = NodeContextCategoryMArgs
   , category   :: Int
   } deriving (Generic, GQLType)
 
+data ContextNgramsArgs
+  = ContextNgramsArgs
+    { context_id  :: Int
+    , list_id     :: Int }
+    deriving (Generic, GQLType)
+
 type GqlM e env = Resolver QUERY e (GargM env GargError)
 type GqlM' e env a = ResolverM e (GargM env GargError) a
 
@@ -102,22 +107,28 @@ type GqlM' e env a = ResolverM e (GargM env GargError) a
 
 -- | Function to resolve context from a query.
 resolveNodeContext
-  :: (HasConnectionPool env, HasConfig env, HasMail env)
+  :: (CmdCommon env)
   => NodeContextArgs -> GqlM e env [NodeContextGQL]
 resolveNodeContext NodeContextArgs { context_id, node_id } =
   dbNodeContext context_id node_id
 
 resolveContextsForNgrams
-  :: (HasConnectionPool env, HasConfig env, HasMail env)
+  :: (CmdCommon env)
   => ContextsForNgramsArgs -> GqlM e env [ContextGQL]
 resolveContextsForNgrams ContextsForNgramsArgs { corpus_id, ngrams_terms } =
   dbContextForNgrams corpus_id ngrams_terms
+
+resolveContextNgrams
+  :: (CmdCommon env)
+  => ContextNgramsArgs -> GqlM e env [Text]
+resolveContextNgrams ContextNgramsArgs { context_id, list_id } =
+  dbContextNgrams context_id list_id
 
 -- DB
 
 -- | Inner function to fetch the node context DB.
 dbNodeContext
-  :: (HasConnectionPool env, HasConfig env, HasMail env)
+  :: (CmdCommon env)
   => Int -> Int -> GqlM e env [NodeContextGQL]
 dbNodeContext context_id node_id = do
   -- lift $ printDebug "[dbUsers]" user_id
@@ -127,13 +138,21 @@ dbNodeContext context_id node_id = do
   c <- lift $ getNodeContext (NodeId context_id) (NodeId node_id)
   pure $ toNodeContextGQL <$> [c]
 
+-- | Returns list of `ContextGQL` for given ngrams in given corpus id.
 dbContextForNgrams
-  :: (HasConnectionPool env, HasConfig env, HasMail env)
+  :: (CmdCommon env)
   => Int -> [Text] -> GqlM e env [ContextGQL]
 dbContextForNgrams node_id ngrams_terms = do
   contextsForNgramsTerms <- lift $ getContextsForNgramsTerms (NodeId node_id) ngrams_terms
   --lift $ printDebug "[dbContextForNgrams] contextsForNgramsTerms" contextsForNgramsTerms
   pure $ toContextGQL <$> contextsForNgramsTerms
+
+-- | Fetch ngrams matching given context in a given list id.
+dbContextNgrams
+  :: (CmdCommon env)
+  => Int -> Int -> GqlM e env [Text]
+dbContextNgrams context_id list_id = do
+  lift $ getContextNgramsMatchingFTS (NodeId context_id) (NodeId list_id)
 
 -- Conversion functions
 
@@ -192,7 +211,7 @@ toHyperdataRowDocumentGQL hyperdata =
                                      }
     HyperdataRowContact { } -> Nothing
 
-updateNodeContextCategory :: (HasConnectionPool env, HasConfig env, HasMail env, HasSettings env) =>
+updateNodeContextCategory :: ( CmdCommon env, HasSettings env) =>
                              NodeContextCategoryMArgs -> GqlM' e env [Int]
 updateNodeContextCategory NodeContextCategoryMArgs { context_id, node_id, category } = do
   _ <- lift $ DNC.updateNodeContextCategory (NodeId context_id) (NodeId node_id) category

@@ -14,6 +14,8 @@ data FileType = CSV
               | CSV_HAL
               | PresseRIS
               | WOS
+              | Iramuteq
+              | JSON
   deriving (Eq, Show, Generic)
 instance ToSchema FileType
 instance Arbitrary FileType where arbitrary = elements [CSV, PresseRIS]
@@ -26,7 +28,9 @@ instance FromHttpApiData FileType where
   parseUrlPiece "CSV_HAL"   = pure CSV_HAL
   parseUrlPiece "PresseRis" = pure PresseRIS
   parseUrlPiece "WOS"       = pure WOS
-  parseUrlPiece _           = pure CSV -- TODO error here
+  parseUrlPiece "Iramuteq"  = pure Iramuteq
+  parseUrlPiece "JSON"      = pure JSON
+  parseUrlPiece s           = panic $ "[G.A.A.Node.Corpus.New] File Type not implemented (yet): " <> s
 instance ToHttpApiData FileType where
   toUrlPiece = pack . show
 

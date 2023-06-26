@@ -2,31 +2,15 @@
 
 module Gargantext.API.Node.Corpus.Searx where
 
-
-
 import Control.Lens (view)
-import qualified Data.Aeson as Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Either (Either(..))
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as T
 import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Tuple.Select (sel1, sel2, sel3)
 import GHC.Generics (Generic)
-import Network.HTTP.Client
-import Network.HTTP.Client.TLS
-
-import qualified Prelude
-import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text)
-import Gargantext.Prelude
-import Gargantext.Prelude.Config
-
-import Gargantext.API.Admin.Orchestrator.Types (JobLog(..))
---import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Job (jobLogSuccess)
-import Gargantext.Core (Lang(..), PosTagAlgo(..))
-import qualified Gargantext.Core.Text.Corpus.API as API
+import Gargantext.Core (Lang(..))
+import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
 import Gargantext.Core.Text.Terms (TermType(..))
@@ -37,18 +21,32 @@ import Gargantext.Database.Action.Flow.List (flowList_DbRepo)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Config (userMaster)
+import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import Gargantext.Database.Admin.Types.Node (CorpusId, ListId)
+import Gargantext.Database.Admin.Types.Node (CorpusId, ListId, NodeType(NodeTexts))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (defaultListMaybe, getOrMkList)
 import Gargantext.Database.Query.Tree.Root (getOrMk_RootWithCorpus)
+import Gargantext.Prelude
+import Gargantext.Prelude.Config
+import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text)
+import qualified Data.Aeson as Aeson
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as T
+import qualified Data.Text as Text
+import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
+import qualified Prelude
 
 langToSearx :: Lang -> Text
-langToSearx EN = "en-US"
-langToSearx FR = "fr-FR"
 langToSearx All = "en-US"
+langToSearx x   = (Text.toLower acronym) <> "-" <> acronym
+  where
+    acronym = (cs $ show x)
 
 data SearxResult = SearxResult
   { _sr_url           :: Text
@@ -120,11 +118,12 @@ insertSearxResponse :: (MonadBase IO m, FlowCmdM env err m)
                     -> m ()
 insertSearxResponse _ _ _ _ (Left _) = pure ()
 insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) = do
+  server <- view (nlpServerGet l)
   -- docs :: [Either Text HyperdataDocument]
   let docs = hyperdataDocumentFromSearxResult l <$> _srs_results
   --printDebug "[triggerSearxSearch] docs" docs
   let docs' = catMaybes $ rightToMaybe <$> docs
-    {- 
+    {-
   Prelude.mapM_ (\(HyperdataDocument { _hd_title, _hd_publication_year, _hd_publication_date }) -> do
       printDebug "[triggerSearxSearch] doc time" $
       "[title] " <> (show _hd_title) <>
@@ -138,31 +137,30 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
   _ <- Doc.add cId ids
   (_masterUserId, _masterRootId, masterCorpusId)
     <- getOrMk_RootWithCorpus (UserName userMaster) (Left "") mCorpus
-  let
-    gp = case l of
-      FR -> GroupWithPosTag l Spacy HashMap.empty
-      _       -> GroupWithPosTag l CoreNLP HashMap.empty
+  let gp = GroupWithPosTag l server HashMap.empty
+    -- gp = case l of
+    --   FR -> GroupWithPosTag l Spacy HashMap.empty
+    --   _       -> GroupWithPosTag l CoreNLP HashMap.empty
   ngs         <- buildNgramsLists user cId masterCorpusId Nothing gp
   _userListId <- flowList_DbRepo listId ngs
 
   pure ()
 
 -- TODO Make an async task out of this?
-triggerSearxSearch :: (MonadBase IO m, FlowCmdM env err m)
+triggerSearxSearch :: (MonadBase IO m, FlowCmdM env err m, MonadJobStatus m)
             => User
             -> CorpusId
-            -> API.Query
+            -> API.RawQuery
             -> Lang
-            -> (JobLog -> m ())
-            -> m JobLog
-triggerSearxSearch user cId q l logStatus = do
+            -> JobHandle m
+            -> m ()
+triggerSearxSearch user cId q l jobHandle = do
+  userId <- getUserId user
+
+  _tId <- insertDefaultNodeIfNotExists NodeTexts cId userId
+
   let numPages = 100
-  let jobLog = JobLog { _scst_succeeded = Just 0
-                      , _scst_failed    = Just 0
-                      , _scst_remaining = Just numPages
-                      , _scst_events    = Just []
-                      }
-  logStatus jobLog
+  markStarted numPages jobHandle
 
   -- printDebug "[triggerSearxSearch] cId" cId
   -- printDebug "[triggerSearxSearch] q" q
@@ -185,19 +183,15 @@ triggerSearxSearch user cId q l logStatus = do
                 res <- liftBase $ fetchSearxPage $ FetchSearxParams { _fsp_language = l
                                                                     , _fsp_manager = manager
                                                                     , _fsp_pageno = page
-                                                                    , _fsp_query = q
+                                                                    , _fsp_query = API.getRawQuery q
                                                                     , _fsp_url = surl }
 
                 insertSearxResponse user cId listId l res
+                markProgress page jobHandle
 
-                logStatus $ JobLog { _scst_succeeded = Just page
-                                   , _scst_failed    = Just 0
-                                   , _scst_remaining = Just (numPages - page)
-                                   , _scst_events    = Just [] }
             ) [1..numPages]
   --printDebug "[triggerSearxSearch] res" res
-
-  pure $ jobLogSuccess jobLog
+  markComplete jobHandle
 
 hyperdataDocumentFromSearxResult :: Lang -> SearxResult -> Either T.Text HyperdataDocument
 hyperdataDocumentFromSearxResult l (SearxResult { _sr_content, _sr_engine, _sr_pubdate, _sr_title }) = do
