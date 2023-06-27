@@ -22,6 +22,7 @@ import Gargantext.Core.Viz.Phylo.PhyloExport (processDynamics)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.TemporalMatching (weightedLogJaccard', filterDiago, reduceDiagos)
 import Gargantext.Prelude
+-- import Debug.Trace (trace)
 import qualified Data.Map as Map
 
 
@@ -175,13 +176,13 @@ reduceGroups prox sync docs diagos branch =
                             $ unionWith (\v1 v2 -> if v1 >= v2
                                                         then v1
                                                         else v2) edgesLeft edgesRight
+                -- 3) reduce the graph a a set of related components                            
+                clusters = toRelatedComponents groups mergedEdges
              in map (\comp -> 
                     --  4) add to each groups their futur level parent group
                     let parentId = toParentId (head' "parentId" comp)
                     in  map (\g -> g & phylo_groupScaleParents %~ (++ [(parentId,1)]) ) comp )
-                -- 3) reduce the graph a a set of related components
-              $ toRelatedComponents groups mergedEdges) periods 
-
+              $ clusters) periods 
 
 chooseClusteringStrategy :: Synchrony -> [[PhyloGroup]] -> [[PhyloGroup]]
 chooseClusteringStrategy sync branches = case sync of

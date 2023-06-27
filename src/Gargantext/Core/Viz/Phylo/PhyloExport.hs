@@ -28,7 +28,6 @@ import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.TemporalMatching (filterDocs, filterDiago, reduceDiagos, toSimilarity, getNextPeriods)
 import Gargantext.Prelude hiding (scale)
 import Prelude (writeFile)
-import Protolude (floor)
 import System.FilePath
 import qualified Data.GraphViz.Attributes.HTML as H
 import qualified Data.Text as Text
@@ -78,37 +77,6 @@ branchIdToDotId bId = (fromStrict . Text.pack) $ "branch" <> show (snd bId)
 periodIdToDotId :: Period -> DotId
 periodIdToDotId prd = (fromStrict . Text.pack) $ "period" <> show (fst prd) <> show (snd prd)
 
-groupToTable :: Vector Ngrams -> PhyloGroup -> H.Label
-groupToTable fdt g =
-  H.Table H.HTable
-  { H.tableFontAttrs = Just [H.PointSize 14, H.Align H.HLeft]
-  , H.tableAttrs = [H.Border 0, H.CellBorder 0, H.BGColor (toColor White)]
-  , H.tableRows = [header]
-                  <> [H.Cells [H.LabelCell [H.Height 10] $ H.Text [H.Str $ fromStrict ""]]]
-                  <> ( map ngramsToRow $ splitEvery 4
-                       $ reverse $ sortOn (snd . snd)
-                       $ zip (ngramsToText fdt (g ^. phylo_groupNgrams))
-                       $ zip ((g ^. phylo_groupMeta) ! "dynamics") ((g ^. phylo_groupMeta) ! "inclusion"))}
-    where
-      --------------------------------------
-      ngramsToRow :: [(Ngrams, (Double, Double))] -> H.Row
-      ngramsToRow ns =
-        H.Cells $ map (\(n, (d, _)) ->
-                          H.LabelCell [ H.Align H.HLeft
-                                      , dynamicToColor $ floor d] $ H.Text [H.Str $ fromStrict n]) ns
-      --------------------------------------
-      header :: H.Row
-      header =
-        H.Cells [ H.LabelCell [pickLabelColor $ floor <$> ((g ^. phylo_groupMeta) ! "dynamics")]
-                  $ H.Text [H.Str $ ((fromStrict . Text.toUpper) $ g ^. phylo_groupLabel)
-                             <> fromStrict " ( "
-                             <> (pack $ show (fst $ g ^. phylo_groupPeriod))
-                             <> fromStrict " , "
-                             <> (pack $ show (snd $ g ^. phylo_groupPeriod))
-                             <> fromStrict " ) "
-                             <> (pack $ show (getGroupId g))]]
-        --------------------------------------
-
 branchToDotNode :: PhyloBranch -> Int -> Dot DotId
 branchToDotNode b bId =
     node (branchIdToDotId $ b ^. branch_id)
@@ -116,8 +84,7 @@ branchToDotNode b bId =
            , FontName "Arial"
            , FontSize 40
            , Shape Egg
-           , Style [SItem Bold []]
-           , Label (toDotLabel $ b ^. branch_label) ]
+           , Style [SItem Bold []] ]
          <> (metaToAttr $ b ^. branch_meta)
          <> [ toAttr "nodeType" "branch"
             , toAttr "bId"      (pack $ show bId)
@@ -143,8 +110,7 @@ periodToDotNode prd prd' =
 groupToDotNode :: Vector Ngrams -> PhyloGroup -> Int -> Dot DotId
 groupToDotNode fdt g bId =
     node (groupIdToDotId $ getGroupId g)
-                     ([FontName "Arial", Shape Square, penWidth 4,  toLabel (groupToTable fdt g)]
-                      <> [ toAttr "nodeType" "group"
+                     ([ toAttr "nodeType" "group"
                          , toAttr "gid" (groupIdToDotId $ getGroupId g)
                          , toAttr "from" (pack $ show (fst $ g ^. phylo_groupPeriod))
                          , toAttr "to"   (pack $ show (snd $ g ^. phylo_groupPeriod))
