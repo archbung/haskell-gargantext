@@ -40,3 +40,7 @@ tmp*repo*json
 data
 
 devops/docker/js-cache
+
+# Cabal stuff (auto-generated via stack2cabal)
+cabal.project
+cabal.project.freeze
