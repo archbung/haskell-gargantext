@@ -71,7 +71,7 @@ extra-deps:
   # 0.10.4-rc1
   commit: 2a28524134b68421f30f6e97961063018f814a82
 - git: https://gitlab.iscpif.fr/gargantext/haskell-infomap.git
-  commit: 6d1d60b952b9b2b272b58fc5539700fd8890ac88
+  commit: 1370fea1939e2378ce344e512d80671ac700e787
   # Accelerate Linear Algebra and specific instances
 - git: https://github.com/alpmestan/accelerate.git
   commit: 640b5af87cea94b61c7737d878e6f7f2fca5c015
