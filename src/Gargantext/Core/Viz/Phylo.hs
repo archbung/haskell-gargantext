@@ -509,7 +509,7 @@ data PhyloGroup =
                  , _phylo_groupPeriodMemoryParents :: [Pointer']
                  , _phylo_groupPeriodMemoryChilds  :: [Pointer']
                  }
-                 deriving (Generic, Show, Eq, NFData)
+                 deriving (Generic, Show, Eq, NFData, Ord)
 
 instance ToSchema PhyloGroup where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_phylo_")
