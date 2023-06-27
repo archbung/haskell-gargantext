@@ -168,13 +168,19 @@ reduceGroups prox sync docs diagos branch =
       $ mapWithKey (\prd groups -> 
             --  2) for each period, transform the groups as a proximity graph filtered by a threshold
             let diago = reduceDiagos $ filterDiago diagos [prd]
-                edges = groupsToEdges prox sync ((sum . elems) $ restrictKeys docs $ periodsToYears [prd]) diago groups
+                edgesLeft  = fromList $ groupsToEdges prox sync ((sum . elems) $ restrictKeys docs $ periodsToYears [prd]) diago groups
+                edgesRight = fromList $  map (\((k1,k2),v) -> ((k2,k1),v)) 
+                           $ groupsToEdges prox sync ((sum . elems) $ restrictKeys docs $ periodsToYears [prd]) diago (reverse groups)
+                mergedEdges = Map.toList 
+                            $ unionWith (\v1 v2 -> if v1 >= v2
+                                                        then v1
+                                                        else v2) edgesLeft edgesRight
              in map (\comp -> 
                     --  4) add to each groups their futur level parent group
                     let parentId = toParentId (head' "parentId" comp)
                     in  map (\g -> g & phylo_groupScaleParents %~ (++ [(parentId,1)]) ) comp )
                 -- 3) reduce the graph a a set of related components
-              $ toRelatedComponents groups edges) periods 
+              $ toRelatedComponents groups mergedEdges) periods 
 
 
 chooseClusteringStrategy :: Synchrony -> [[PhyloGroup]] -> [[PhyloGroup]]
