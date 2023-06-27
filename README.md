@@ -44,7 +44,41 @@ Clone the project.
 git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
 cd haskell-gargantext
 ```
-#### 1. Install Stack
+#### 1. Installation
+
+This project can be built with either Stack or Cabal. For historical
+reasons, we generate a `cabal.project` from the `package.yaml`, and
+we do not commit the former to the repo, to have a single "source of truth".
+However, it's always possible to generate a `cabal.project` thanks
+to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).
+
+#### Install Nix
+
+Gargantext requires [nix](https://github.com/NixOS/nix) to provide
+system dependencies (for example, C libraries), but its use is limited
+to that. In order to install [Nix](https://nixos.org/download.html):
+
+```shell
+sh <(curl -L https://nixos.org/nix/install) --daemon
+```
+
+Verify the installation is complete with
+```shell
+nix-env --version
+nix-env (Nix) 2.11.0
+```
+
+**Important:** Before building the project with either `stack` or
+`cabal` you need to be in the correct Nix shell, which will fetch
+all the required system dependencies. To do so, just type:
+
+```shell
+nix-shell
+```
+
+This will take a bit of time the first time.
+
+#### Build with Stack
 
 Install [Stack (or Haskell Tool Stack)](https://docs.haskellstack.org/en/stable/):
 
@@ -58,46 +92,38 @@ stack --version
 Version 2.9.1
 ```
 
-#### 2. Install Nix
-
-Install [Nix](https://nixos.org/download.html):
-
-```shell
-$ sh <(curl -L https://nixos.org/nix/install) --daemon
-```
-
-Verify the installation is complete with
-```shell
-$ nix-env --version
-nix-env (Nix) 2.11.0
-```
-
-> **NOTE INFO (upgrade/downgrade if needed)**
-> Gargantext works with Nix 2.11.0 (older version than current 2.13.2). To downgrade your Nix version:
-> 
-> `nix-channel --update; nix-env -iA nixpkgs.nixVersions.nix_2_11 nixpkgs.cacert; systemctl daemon-reload; systemctl restart nix-daemon`
-> 
-> Upgrading Nix: https://nixos.org/manual/nix/unstable/installation/upgrading.html
-> 
-> **Then, don't forget to exit Terminal and reload to take into account the version change**
-
-
-#### 3. Build Core Code
-
 NOTE: Default build (with optimizations) requires large amounts of RAM
 (16GB at least). To avoid heavy compilation times and swapping out your
 machine, it is recommended to `stack build` with the `--fast` flag,
 i.e.:
 
-``` sh
-stack --nix build --fast
+```shell
+stack build --fast
 ```
 
-If the build is finishing without error, you are ready to launch
-GarganText! See next step.
+#### Build with Cabal
 
-&nbsp;
+Once you have a valid version of `cabal`, building requires generating
+a valid `cabal.project`. This can be done by installing `stack2cabal`:
 
+```shell
+cabal v2-install stack2cabal-1.0.14
+```
+
+And finally:
+
+```shell
+stack2cabal --no-run-hpack -p '2023-06-25'
+cabal v2-build
+```
+
+#### Keeping the cabal.project updated with stack.yaml
+
+Simply run:
+
+```shell
+./bin/update-cabal-project
+```
 
 ## Initialization <a name="init"></a>
 
@@ -113,7 +139,7 @@ Initialization schema should be loaded automatically (from `devops/postgres/sche
 
 #### 2. Then install:
 ``` sh
-stack --nix install
+stack install
 ```
 
 #### 3. Copy the configuration file:
@@ -147,7 +173,7 @@ From the Backend root folder (haskell-gargantext):
 
 > The start script runs following commands:
 > `docker compose up` to run the Docker for postgresql from devops/docker folder
-> `stack --nix exec gargantext-server -- --ini gargantext.ini --run Prod` to run other services
+> `stack exec gargantext-server -- --ini gargantext.ini --run Prod` to run other services
 
 For frontend development and compilation, see the [Frontend Readme.md](https://gitlab.iscpif.fr/gargantext/purescript-gargantext#dev)
 
@@ -178,14 +204,14 @@ file format. To decode it to JSON and analyze, say, using
 [jq](https://shapeshed.com/jq-json/), use the following command:
 
 ``` sh
-cat repos/repo.cbor.v5 | stack --nix exec gargantext-cbor2json | jq .
+cat repos/repo.cbor.v5 | stack exec gargantext-cbor2json | jq .
 ```
 ### Documentation
 
 To build documentation, run:
 
 ```sh
-stack --nix build --haddock --no-haddock-deps --fast
+stack build --haddock --no-haddock-deps --fast
 ```
 
 (in `.stack-work/dist/x86_64-linux-nix/Cabal-3.2.1.0/doc/html/gargantext`).

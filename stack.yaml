@@ -1,5 +1,4 @@
-resolver:
- url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+resolver: lts-18.28
 flags:
     accelerate:
         debug: false
@@ -7,19 +6,12 @@ extra-package-dbs: []
 skip-ghc-check: true
 packages:
 - .
-  # - 'deps/haskell-igraph'
-  # - 'deps/crawlers/arxiv-api'
-  # - 'deps/haskell-opaleye'
 
 docker:
   enable: false
-  #enable: true
   repo: 'cgenie/stack-build:lts-18.18-garg'
-  #repo: 'cgenie/nixos-stack:latest'
   run-args:
     - '--publish=8008:8008'
-
-skip-ghc-check: true
 
 nix:
   enable: false
@@ -28,21 +20,9 @@ nix:
 
 allow-newer: true
 
-ghc-options:
-  "$everything": -fprint-potential-instances
-#  "$everything": -haddock
-
 extra-deps:
-- hstatistics-0.3.1
-- HSvm-0.1.1.3.22
-- hsparql-0.3.8
-- ghc-clippy-plugin-0.0.0.1
-- boolexpr-0.2
-
-  #- git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude.git
-#  commit: 791c2a7046a3760f8ae5fabdbd708f61caa63741
 - git: https://gitlab.iscpif.fr/cgenie/haskell-gargantext-prelude
-  commit: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e  # e250af8a495191b4bd06c9f465656b87bea7bf7f
+  commit: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e
 - git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
   commit: 588e104fe7593210956610cab0041fd16584a4ce
   # Data Mining Libs
@@ -50,7 +30,6 @@ extra-deps:
   commit: 10a416b9f6c443866b36479c3441ebb3bcdeb7ef
 - git: https://gitlab.iscpif.fr/gargantext/hlcm.git
   commit: 6f0595d2421005837d59151a8b26eee83ebb67b5
-
   # API libs
 - git: https://github.com/haskell-servant/servant.git
   commit: c2af6e775d1d36f2011d43aff230bb502f8fba63
@@ -64,16 +43,11 @@ extra-deps:
     - servant-auth/servant-auth-server/
 - git: https://github.com/alpmestan/ekg-json.git
   commit: fd7e5d7325939103cd87d0dc592faf644160341c
-
   # Databases libs
 - git: https://github.com/garganscript/haskell-opaleye.git
   commit: a5693a2010e6d13f51cdc576fa1dc9985e79ee0e
-#- ../haskell-opaleye
-# - git: https://github.com/delanoe/hsparql.git
-#   commit: 2acbbc55ac9bbd4bf1a713c586b8b8e8b82892eb
 - git: https://github.com/robstewart57/rdf4h.git
   commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
-
   # External Data API connectors
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
   commit: 234ad423fa682307ff4843ae4acd725dcc6ffc55
@@ -85,33 +59,19 @@ extra-deps:
   commit: 3db385e767d2100d8abe900833c6e7de3ac55e1b
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
   commit: 2d7e5753cbbce248b860b571a0e9885415c846f7
-#- git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
-    #commit: a2d78abeaec9315be765b90d5e51a4a50c48e7b8
-#- git: https://gitlab.iscpif.fr/cgenie/arxiv-api.git
-#- arxiv-0.0.3@sha256:02de1114091d11f1f3ab401d104d125ad4301260806feb7f63b3dcefc7db88cf,1588
-
   # NP libs
 - git: https://github.com/alpmestan/servant-job.git
   commit: b4182487cfe479777c11ca19f3c0d47840b376f6
-  #- git: https://github.com/np/patches-map
 - git: https://github.com/delanoe/patches-map
   commit: 76cae88f367976ff091e661ee69a5c3126b94694
-  #- git: https://gitlab.com/npouillard/patches-class.git
-#- git: https://gitlab.iscpif.fr/gargantext/patches-class.git
-#  commit: d3e971d4e78d1dfcc853f2fb86bde1995faf22ae
 - git: https://gitlab.iscpif.fr/cgenie/patches-class.git
   commit: 125c7cb90ab8f0cd6ac4a526dbdf302d10c945e9
-
   # Graph libs
-#- git: https://github.com/kaizhang/haskell-igraph.git
-#- git: https://github.com/alpmestan/haskell-igraph.git
-#  commit: 9f55eb36639c8e0965c8bc539a57738869f33e9a
 - git: https://gitlab.iscpif.fr/gargantext/haskell-igraph.git
   # 0.10.4-rc1
   commit: 2a28524134b68421f30f6e97961063018f814a82
 - git: https://gitlab.iscpif.fr/gargantext/haskell-infomap.git
-  commit: 6d1d60b952b9b2b272b58fc5539700fd8890ac88
-
+  commit: 1370fea1939e2378ce344e512d80671ac700e787
   # Accelerate Linear Algebra and specific instances
 - git: https://github.com/alpmestan/accelerate.git
   commit: 640b5af87cea94b61c7737d878e6f7f2fca5c015
@@ -126,7 +86,6 @@ extra-deps:
     - accelerate-llvm-native/
 - git: https://github.com/rspeer/wikiparsec.git
   commit: 9637a82344bb70f7fa8f02e75db3c081ccd434ce
-
   # Gargantext-graph
 - eigen-3.3.7.0@sha256:7c24a86426b238e02ba0ac2179cc44997518b443a13828ed7a791fe49a6dffa5,82060
 - git: https://github.com/alpmestan/sparse-linear.git
@@ -137,47 +96,42 @@ extra-deps:
   commit: b9fca8beee0f23c17a6b2001ec834d071709e6e7
   subdirs:
     - packages/base
-
-- monad-logger-aeson-0.2.0.0
-# required by monad-logger-aeson
-- context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
-
-- random-1.2.1
-
-      # Others dependencies (using stack resolver)
-- constraints-extras-0.3.1.0@sha256:12016ebb91ad5ed2c82bf7e48c6bd6947d164d33c9dca5ac3965de1bb6c780c0,1777
+  # Others dependencies (using stack resolver)
+- HSvm-0.1.1.3.22
 - KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
+- MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
 - Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
+- boolexpr-0.2
+- constraints-extras-0.3.1.0@sha256:12016ebb91ad5ed2c82bf7e48c6bd6947d164d33c9dca5ac3965de1bb6c780c0,1777
+- context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
 - dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147
 - duckling-0.2.0.0@sha256:84becd4e48ee3676cdd6fe5745a77ee60e365ea730cd759610c8a7738f3eb4a6,60543
+- fast-tagsoup-utf8-only-1.0.5@sha256:9292c8ff275c08b88b6013ccc410182552f180904214a07ad4db932ab462aaa1,1651
 - fclabels-2.0.5@sha256:817006077632bd29e637956154aa33d3c10a59be0791c308cef955eb951b2675,4473
 - full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
 - fullstop-0.1.4@sha256:80a3e382ef53551bb936e7da8b2825621df0ea169af1212debcb0a90010b30c8,2044
+- ghc-clippy-plugin-0.0.0.1
 - hgal-2.0.0.2@sha256:13d58afd0668b9cb881c612eff8488a0e289edd4bbffa893df4beee60cfeb73b,653
+- hsparql-0.3.8
+- hstatistics-0.3.1
 - json-stream-0.4.2.4@sha256:8b7f17d54a6e1e6311756270f8bcf51e91bab4300945400de66118470dcf51b9,4716
 - located-base-0.1.1.1@sha256:7c6395f2b6fbf2d5f76c3514f774423838c0ea94e1c6a5530dd3c94b30c9d1c8,1904
 - logging-effect-1.3.12@sha256:72d168dd09887649ba9501627219b6027cbec2d5541931555b7885b133785ce3,1679
-- MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
+- monad-logger-aeson-0.2.0.0
 - monoid-extras-0.5.1@sha256:438dbfd7b4dce47d8f0ca577f56caf94bd1e21391afa545cad09fe7cf2e5793d,2333
 - rake-0.0.1@sha256:3380f6567fb17505d1095b7f32222c0b631fa04126ad39726c84262da99c08b3,2025
+- random-1.2.1
 - servant-cassava-0.10.1@sha256:07e7b6ca67cf57dcb4a0041a399a25d058844505837c6479e01d62be59d01fdf,1665
+- servant-ekg-0.3.1@sha256:19bd9dc3943983da8e79d6f607614c68faea4054fb889d508c8a2b67b6bdd448,2203
 - servant-flatten-0.2@sha256:276896f7c5cdec5b8f8493f6205fded0cc602d050b58fdb09a6d7c85c3bb0837,1234
 - servant-mock-0.8.7@sha256:64cb3e52bbd51ab6cb25e3f412a99ea712c6c26f1efd117f01a8d1664df49c67,2306
 - servant-xml-1.0.1.4@sha256:6c9f2986ac42e72fe24b794c660763a1966a18d696b34cd4f4ed15165edd4aa0,851
 - stemmer-0.5.2@sha256:823aec56249ec2619f60a2c0d1384b732894dbbbe642856d337ebfe9629a0efd,4082
+- taggy-0.2.1@sha256:7bc55ddba178971dc6052163597f0445a0a2b5b0ca0e84ce651d53d722e3c265,4662
+- taggy-lens-0.1.2@sha256:091ca81d02bd3d7fb493dce0148e1a38f25eb178a1ebd751043a23239e5e3265,3009
+- vector-0.12.3.0@sha256:0ae2c1ba86f0077910be242ec6802cc3d7725fe7b2bea6987201aa3737b239b5,7953
 - xmlbf-0.6.1@sha256:57867fcb39e0514d17b3328ff5de8d241a18482fc89bb742d9ed820a6a2a5187,1540
 - xmlbf-xeno-0.2@sha256:39f70fced6052524c290cf595f114661c721452e65fc3e0953a44e7682a6a6b0,950
-
-# need Vector.uncons
-- vector-0.12.3.0@sha256:0ae2c1ba86f0077910be242ec6802cc3d7725fe7b2bea6987201aa3737b239b5,7953
-
-# needed for wikiparsec
-- fast-tagsoup-utf8-only-1.0.5@sha256:9292c8ff275c08b88b6013ccc410182552f180904214a07ad4db932ab462aaa1,1651
-# wikipedia crawl
-- taggy-lens-0.1.2@sha256:091ca81d02bd3d7fb493dce0148e1a38f25eb178a1ebd751043a23239e5e3265,3009
-- taggy-0.2.1@sha256:7bc55ddba178971dc6052163597f0445a0a2b5b0ca0e84ce651d53d722e3c265,4662
-
-- servant-ekg-0.3.1@sha256:19bd9dc3943983da8e79d6f607614c68faea4054fb889d508c8a2b67b6bdd448,2203
 
 # For the graph clustering
 ghc-options:
