@@ -87,6 +87,7 @@ rec {
     graphviz
     llvm_9
     igraph_0_10_4
+    libpqxx
   ] ++ ( lib.optionals stdenv.isDarwin [
        darwin.apple_sdk.frameworks.Accelerate
        ]);
