@@ -1,6 +1,16 @@
+## Version 0.0.6.9.9.7
+
+* [BACK][FIX] Phylo
+* [BACK][FIX] Nix configuration
+* [FRONT][FIX][[Node Docs] Popin dimensions and scroll improvement (#577)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/577)
+* [FRONT][FIX][[Phylo refresh] In phylo params, add a class active on buttons (#576)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/576)
+* [FRONT][FIX][Add the number of matched results in graph selection (#560)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/560)
+* [FRONT][FIX][[Node Docs] On the refresh dialog set &quot;Both&quot; as default and on documents page remove 2 unused icons (#578)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/578)
+
 ## Version 0.0.6.9.9.6.9
 
 * [FRONT][FIX][Search in the Tree (#506)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/506)
+* [FRONT][FIX][Ngrams Table: click on Child (#565)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/565)
 
 ## Version 0.0.6.9.9.6.8
 
