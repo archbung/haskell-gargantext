@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,7 +28,6 @@ data-files:
     test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
-    .clippy.dhall
 
 library
   exposed-modules:
