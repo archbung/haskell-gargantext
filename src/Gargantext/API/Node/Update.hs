@@ -16,6 +16,7 @@ Portability : POSIX
 module Gargantext.API.Node.Update
       where
 
+import Gargantext.Core.Types.Individu (User(..))
 import Control.Lens (view)
 import Data.Aeson
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -34,6 +35,7 @@ import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..
 import Gargantext.Core.Viz.Graph.Types (Strength)
 import Gargantext.Core.Viz.Phylo (PhyloSubConfigAPI(..), subConfigAPI2config)
 import Gargantext.Core.Viz.Phylo.API.Tools (flowPhyloAPI)
+import Gargantext.Database.Action.Mail (sendMail)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContextScore)
@@ -153,7 +155,7 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
 
   markComplete jobHandle
 
-updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
+updateNode userId phyloId (UpdateNodePhylo config) jobHandle = do
   markStarted 3 jobHandle
   corpusId' <- view node_parent_id <$> getNode phyloId
   markProgress 1 jobHandle
@@ -171,6 +173,7 @@ updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
                    }
 -}
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
+  sendMail (UserDBId userId)
   markComplete jobHandle
 
 updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
