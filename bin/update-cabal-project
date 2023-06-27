@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
 cabal v2-update 'hackage.haskell.org,2023-06-25T00:00:00Z'
-cabal v2-install hpack-0.35.0 --overwrite-policy=always
 cabal v2-install stack2cabal-1.0.14 --overwrite-policy=always
 stack2cabal --no-run-hpack -p '2023-06-25'
