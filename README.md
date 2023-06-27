@@ -103,13 +103,6 @@ stack build --fast
 
 #### Build with Cabal
 
-Gargantext requires `cabal-install >= 3.10.1.0`. If you are using
-[ghcup](https://www.haskell.org/ghcup/) you can simply do:
-
-```shell
-ghcup install cabal 3.10.1.0
-```
-
 Once you have a valid version of `cabal`, building requires generating
 a valid `cabal.project`. This can be done by installing `stack2cabal`:
 
@@ -122,6 +115,14 @@ And finally:
 ```shell
 stack2cabal --no-run-hpack -p '2023-06-25'
 cabal v2-build
+```
+
+#### Keeping the cabal.project updated with stack.yaml
+
+Simply run:
+
+```shell
+./bin/update-cabal-project
 ```
 
 ## Initialization <a name="init"></a>

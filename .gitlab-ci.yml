@@ -62,11 +62,12 @@ test:
       - target
   script:
     - hpack
-    - nix-shell --run "LC_ALL=C.UTF-8 stack test --no-terminal --fast"
+    - nix-shell --run "stack test --no-terminal --fast"
 
       # TOOO
 
 cabal:
+  # FIXME(adinapoli) A temporary hack until we switch to cabal 3.10.1.0 properly
   stage: cabal
   cache:
     # cache per branch name
@@ -78,6 +79,6 @@ cabal:
       - target
   script:
     - hpack
-    - nix-shell --run "LC_ALL=C.UTF-8 cabal v2-update 'hackage.haskell.org,2023-04-07T08:35:43Z' && cabal v2-build --dry-run"
-  allow_failure: true
+    - nix-shell --run "./bin/update-cabal-project && cabal v2-build --dry-run"
+  allow_failure: false
 
