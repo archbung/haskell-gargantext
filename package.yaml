@@ -88,11 +88,11 @@ library:
   - Gargantext.Core.Text.Corpus.API
   - Gargantext.Core.Text.Corpus.API.Arxiv
   - Gargantext.Core.Text.Corpus.API.Pubmed
+  - Gargantext.Core.Text.Corpus.API.OpenAlex
   - Gargantext.Core.Text.Corpus.Query
   - Gargantext.Core.Text.Corpus.Parsers
   - Gargantext.Core.Text.Corpus.Parsers.CSV
   - Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
-  - Gargantext.Core.Text.Corpus.Parsers.JSON
   - Gargantext.Core.Text.List.Formats.CSV
   - Gargantext.Core.Text.Metrics
   - Gargantext.Core.Text.Metrics.CharByChar
@@ -245,6 +245,7 @@ library:
   - natural-transformation
   - network-uri
   - opaleye
+  - openalex
   - pandoc
   - parallel
   - parsec

@@ -19,6 +19,7 @@ import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (DataOrigin(..))
 
 data Database = Empty
+              | OpenAlex
               | PubMed
               | Arxiv
               | HAL
@@ -34,12 +35,13 @@ instance ToSchema Database where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 database2origin :: Database -> DataOrigin
-database2origin Empty   = InternalOrigin Types.IsTex
-database2origin PubMed  = ExternalOrigin Types.PubMed
-database2origin Arxiv   = ExternalOrigin Types.Arxiv
-database2origin HAL     = ExternalOrigin Types.HAL
-database2origin IsTex   = ExternalOrigin Types.IsTex
-database2origin Isidore = ExternalOrigin Types.Isidore
+database2origin Empty    = InternalOrigin Types.IsTex
+database2origin OpenAlex = ExternalOrigin Types.OpenAlex
+database2origin PubMed   = ExternalOrigin Types.PubMed
+database2origin Arxiv    = ExternalOrigin Types.Arxiv
+database2origin HAL      = ExternalOrigin Types.HAL
+database2origin IsTex    = ExternalOrigin Types.IsTex
+database2origin Isidore  = ExternalOrigin Types.Isidore
 
 ------------------------------------------------------------------------
 data Datafield = Gargantext
