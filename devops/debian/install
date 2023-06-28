@@ -39,14 +39,11 @@ sudo apt install postgresql postgresql-server-dev-15
 echo "Installing Nix"
 sh <(curl -L https://nixos.org/nix/install) --daemon
 
-echo "Installing GHCUP"
-curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-
 #######################################################################
 # Get the Sources
 git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
 cd haskell-gargantext
-git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
+git clone https://gitlab.iscpif.fr/gargantext/purescript-gargantext.git
 
 
 
