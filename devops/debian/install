@@ -21,7 +21,7 @@ sudo apt upgrade
 sudo apt install tmux htop
 
 ########################################################################
-sudo sed -i "s/stretch/buster/g" /etc/apt/sources.list
+sudo sed -i "s/bullseye/bookworm/g" /etc/apt/sources.list
 sudo apt update
 sudo apt dist-upgrade
 # sudo reboot #recommended
