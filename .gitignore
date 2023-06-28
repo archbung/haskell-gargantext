@@ -2,9 +2,6 @@
 
 *lock
 
-# Cabal
-*.cabal
-
 # Profiling
 *.prof
 profiling
