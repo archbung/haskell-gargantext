@@ -13,6 +13,7 @@ if [[ $1 == "dev" ]] ;
     echo "DEV install"
     env LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 stack --nix install --no-install-ghc --skip-ghc-check --no-haddock-deps
   else
-    echo "PROD install (with documentation)" 
-    env LANG=C.UTF-8 stack install --haddock --nix --test --no-install-ghc --skip-ghc-check --no-haddock-deps
+    echo "PROD install (with documentation)"
+    nix-shell --run "cabal install"
+    #env LANG=C.UTF-8 stack install --haddock --nix --test --no-install-ghc --skip-ghc-check --no-haddock-deps
 fi
