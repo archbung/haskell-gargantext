@@ -2,7 +2,7 @@
 # https://vadosware.io/post/zero-to-continuous-integrated-testing-a-haskell-project-with-gitlab/
 #
 #
-image: adinapoli/gargantext:v1
+image: adinapoli/gargantext:v2
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
@@ -13,13 +13,13 @@ variables:
   #- apt-get install make xz-utils
 
 stages:
-  - deps
+  - stack
+  - cabal
   - test
   - docs
-  - cabal
 
-deps:
-  stage: deps
+stack:
+  stage: stack
   cache:
     # cache per branch name
     # key: ${CI_COMMIT_REF_SLUG}
@@ -29,7 +29,7 @@ deps:
       - target
   script:
     - echo "Building the project from '$CI_PROJECT_DIR'"
-    - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast"
+    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast --dry-run"
 
 docs:
   stage: docs
@@ -41,7 +41,7 @@ docs:
       - .stack-work/
       - target
   script:
-    - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --fast"
+    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --fast --dry-run"
     - cp -R "$(stack path --local-install-root)"/doc ./output
   artifacts:
     paths:
@@ -49,22 +49,7 @@ docs:
     expire_in: 1 week
   allow_failure: true
 
-test:
-  stage: test
-  cache:
-    # cache per branch name
-    # key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - .stack-root/
-      - .stack-work/
-      - target
-  script:
-    - nix-shell --run "stack test --no-terminal --fast"
-
-      # TOOO
-
 cabal:
-  # FIXME(adinapoli) A temporary hack until we switch to cabal 3.10.1.0 properly
   stage: cabal
   cache:
     # cache per branch name
@@ -75,6 +60,19 @@ cabal:
       - dist-newstyle/
       - target
   script:
-    - nix-shell --run "./bin/update-cabal-project && cabal v2-build --dry-run"
+    - nix-shell --run "./bin/update-cabal-project && cabal v2-build"
   allow_failure: false
+
+test:
+  stage: test
+  cache:
+    # cache per branch name
+    # key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .stack-root/
+      - .stack-work/
+      - dist-newstyle/
+      - target
+  script:
+    - nix-shell --run "cabal v2-test --test-show-details=streaming"
 

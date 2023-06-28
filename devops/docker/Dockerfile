@@ -4,9 +4,16 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG GHC=8.10.7
 ARG STACK=2.7.3
 ARG CABAL=3.10.1.0
-COPY ./shell.nix            /builds/gargantext/shell.nix
-COPY ./nix/pkgs.nix         /builds/gargantext/nix/pkgs.nix
-COPY ./nix/pinned-22.05.nix /builds/gargantext/nix/pinned-22.05.nix
+COPY ./shell.nix                                       /builds/gargantext/shell.nix
+COPY ./nix/pkgs.nix                                    /builds/gargantext/nix/pkgs.nix
+COPY ./nix/pinned-22.05.nix                            /builds/gargantext/nix/pinned-22.05.nix
+COPY ./nix/overlays/Cabal-3.10.1.0.nix                 /builds/gargantext/nix/overlays/Cabal-3.10.1.0.nix
+COPY ./nix/overlays/cabal-install-3.10.1.0.nix         /builds/gargantext/nix/overlays/cabal-install-3.10.1.0.nix
+COPY ./nix/overlays/cabal-install-solver-3.10.1.0.nix  /builds/gargantext/nix/overlays/cabal-install-solver-3.10.1.0.nix
+COPY ./nix/overlays/Cabal-syntax-3.10.1.0.nix          /builds/gargantext/nix/overlays/Cabal-syntax-3.10.1.0.nix
+COPY ./nix/overlays/directory-1.3.7.0.nix              /builds/gargantext/nix/overlays/directory-1.3.7.0.nix
+COPY ./nix/overlays/hackage-security-0.6.2.3.nix       /builds/gargantext/nix/overlays/hackage-security-0.6.2.3.nix
+COPY ./nix/overlays/process-1.6.15.0.nix               /builds/gargantext/nix/overlays/process-1.6.15.0.nix
 
 ENV TZ=Europe/Rome
 RUN apt-get update && \
@@ -61,19 +68,7 @@ ENV PATH=/root/.nix-profile/bin:$PATH
 
 RUN . $HOME/.bashrc && nix-env --version
 
-RUN \
-curl https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup > /usr/bin/ghcup && \
-    chmod +x /usr/bin/ghcup && \
-    ghcup config set gpg-setting GPGLax && \
-    ghcup -v install ghc --force ${GHC} && \
-    ghcup -v install cabal --force ${CABAL} && \
-    ghcup -v install stack --force ${STACK}
-
-ENV PATH=/root/.ghcup/bin:$PATH
 ENV PATH=/root/.local/bin:$PATH
 
-
 RUN cd /builds/gargantext && nix-shell
-RUN ghcup set 8.10.7 && cabal v2-update && cabal v2-install hpack --overwrite-policy=always
-
 WORKDIR "/builds/gargantext/"
