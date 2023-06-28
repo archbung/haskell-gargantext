@@ -29,7 +29,6 @@ deps:
       - target
   script:
     - echo "Building the project from '$CI_PROJECT_DIR'"
-    - hpack
     - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast"
 
 docs:
@@ -42,7 +41,6 @@ docs:
       - .stack-work/
       - target
   script:
-    - hpack
     - nix-shell --run "LC_ALL=C.UTF-8 stack build --no-terminal --haddock --no-haddock-deps --fast"
     - cp -R "$(stack path --local-install-root)"/doc ./output
   artifacts:
@@ -61,7 +59,6 @@ test:
       - .stack-work/
       - target
   script:
-    - hpack
     - nix-shell --run "stack test --no-terminal --fast"
 
       # TOOO
@@ -78,7 +75,6 @@ cabal:
       - dist-newstyle/
       - target
   script:
-    - hpack
     - nix-shell --run "./bin/update-cabal-project && cabal v2-build --dry-run"
   allow_failure: false
 
