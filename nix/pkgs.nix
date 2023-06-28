@@ -3,6 +3,23 @@
 rec {
   inherit pkgs;
   ghc = pkgs.haskell.compiler.ghc8107;
+  haskell1 = pkgs.haskell // {
+      packages = pkgs.haskell.packages // {
+        ghc8107 = pkgs.haskell.packages.ghc8107.override {
+          overrides = self: super: {
+            directory            = self.callPackage ./overlays/directory-1.3.7.0.nix {};
+            process              = self.callPackage ./overlays/process-1.6.15.0.nix {};
+            hackage-security     = self.callPackage ./overlays/hackage-security-0.6.2.3.nix {};
+            Cabal                = self.callPackage ./overlays/Cabal-3.10.1.0.nix {};
+            Cabal-syntax         = self.callPackage ./overlays/Cabal-syntax-3.10.1.0.nix {};
+            cabal-install-solver = self.callPackage ./overlays/cabal-install-solver-3.10.1.0.nix {};
+            cabal-install        = self.callPackage ./overlays/cabal-install-3.10.1.0.nix {};
+          };
+        };
+      };
+  };
+  cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables haskell1.packages.ghc8107.cabal-install;
+
   igraph_0_10_4 = pkgs.igraph.overrideAttrs (finalAttrs: previousAttrs: {
     version = "0.10.4";
 
@@ -60,7 +77,7 @@ rec {
   });
   hsBuildInputs = [
     ghc
-    pkgs.cabal-install
+    cabal_install_3_10_1_0
   ];
   nonhsBuildInputs = with pkgs; [
     bzip2
