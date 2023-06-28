@@ -110,7 +110,8 @@ periodToDotNode prd prd' =
 groupToDotNode :: Vector Ngrams -> PhyloGroup -> Int -> Dot DotId
 groupToDotNode fdt g bId =
     node (groupIdToDotId $ getGroupId g)
-                     ([ toAttr "nodeType" "group"
+                     ([Shape Square]
+                      <> [ toAttr "nodeType" "group"
                          , toAttr "gid" (groupIdToDotId $ getGroupId g)
                          , toAttr "from" (pack $ show (fst $ g ^. phylo_groupPeriod))
                          , toAttr "to"   (pack $ show (snd $ g ^. phylo_groupPeriod))
