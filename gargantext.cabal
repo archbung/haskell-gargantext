@@ -1,5 +1,9 @@
 cabal-version: 1.12
 
+-- This file has been generated from package.yaml by hpack version 0.35.1.
+--
+-- see: https://github.com/sol/hpack
+
 name:           gargantext
 version:        0.0.6.9.9.7
 synopsis:       Search, map, share
@@ -56,11 +60,11 @@ library
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
       Gargantext.Core.Text.Corpus.API.Pubmed
+      Gargantext.Core.Text.Corpus.API.OpenAlex
       Gargantext.Core.Text.Corpus.Query
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
       Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
-      Gargantext.Core.Text.Corpus.Parsers.JSON
       Gargantext.Core.Text.List.Formats.CSV
       Gargantext.Core.Text.Metrics
       Gargantext.Core.Text.Metrics.CharByChar
@@ -199,6 +203,7 @@ library
       Gargantext.Core.Text.Corpus.Parsers.GrandDebat
       Gargantext.Core.Text.Corpus.Parsers.Iramuteq
       Gargantext.Core.Text.Corpus.Parsers.Isidore
+      Gargantext.Core.Text.Corpus.Parsers.JSON
       Gargantext.Core.Text.Corpus.Parsers.Json2Csv
       Gargantext.Core.Text.Corpus.Parsers.RIS
       Gargantext.Core.Text.Corpus.Parsers.RIS.Presse
@@ -454,6 +459,7 @@ library
     , natural-transformation
     , network-uri
     , opaleye
+    , openalex
     , pandoc
     , parallel
     , parsec

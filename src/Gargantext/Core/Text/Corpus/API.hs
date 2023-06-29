@@ -31,6 +31,7 @@ import qualified Gargantext.Core.Text.Corpus.API.Arxiv   as Arxiv
 import qualified Gargantext.Core.Text.Corpus.API.Hal     as HAL
 import qualified Gargantext.Core.Text.Corpus.API.Isidore as ISIDORE
 import qualified Gargantext.Core.Text.Corpus.API.Istex   as ISTEX
+import qualified Gargantext.Core.Text.Corpus.API.OpenAlex as OpenAlex
 import qualified Gargantext.Core.Text.Corpus.API.Pubmed  as PUBMED
 import qualified Gargantext.Core.Text.Corpus.Query as Corpus
 import qualified PUBMED.Types as PUBMED
@@ -55,6 +56,8 @@ get externalAPI la q mPubmedAPIKey limit = do
   case Corpus.parseQuery q of
     Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
     Right corpusQuery -> case externalAPI of
+      OpenAlex -> first ExternalAPIError <$>
+                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q limit
       PubMed -> first ExternalAPIError <$>
                   PUBMED.get (fromMaybe "" mPubmedAPIKey) corpusQuery limit
       --docs <- PUBMED.get   q default_limit -- EN only by default
