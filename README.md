@@ -47,7 +47,7 @@ cd haskell-gargantext
 #### 1. Installation
 
 This project can be built with either Stack or Cabal. For historical
-reasons, we generate a `cabal.project` from the `package.yaml`, and
+reasons, we generate a `cabal.project` from the `stack.yaml`, and
 we do not commit the former to the repo, to have a single "source of truth".
 However, it's always possible to generate a `cabal.project` thanks
 to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).

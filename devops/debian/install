@@ -18,84 +18,40 @@ sudo apt upgrade
 
 # Tmux to avoid disconnections during the installation process
 # Htop for visual monitoring
-sudo apt install tmux htop
+sudo apt install tmux htop git iptables curl
 
 ########################################################################
-sudo sed -i "s/stretch/buster/g" /etc/apt/sources.list
+sudo sed -i "s/bullseye/bookworm/g" /etc/apt/sources.list
 sudo apt update
 sudo apt dist-upgrade
 # sudo reboot #recommended
 ########################################################################
 
 #sudo apt update
-sudo apt install liblzma-dev libpcre3-dev libblas-dev liblapack-dev pkg-config libgsl-dev libbz2-dev postgresql postgresql-server-dev-11 nginx libigraph0-dev libgfortran-9-dev
+sudo apt install postgresql postgresql-server-dev-15
 
-sudo apt install git
 #git config --global user.email "contact@gargantext.org"
 #git config --global user.name "Gargantua"
 
 
 ########################################################################
-echo "Which user?"
-#read USER
-USER="gargantua"
-sudo adduser --disabled-password --gecos "" $USER
 
-########################################################################
-#cd /home
-#sudo mv -if /home/$USER /srv/
-#sudo ln -s /srv/$USER
+echo "Installing Nix"
+sh <(curl -L https://nixos.org/nix/install) --daemon
 
-curl -sSL https://get.haskellstack.org/ | sh
-
-sudo apt install curl
-sudo su $USER
-stack update
-stack upgrade
-
-#git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
-
-#cd haskell-gargantext
-##########
-
-if [[ ! -d "purescript-gargantext" ]]; then
-  ./devops/debian/install-purescript
-fi
-
-#########################################################################
-
-# stack install should be enough but all process is the following steps
-stack setup && stack build && stack install
-
-#########################################################################
-# build deps
+#######################################################################
+# Get the Sources
+git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
+cd haskell-gargantext
+git clone https://gitlab.iscpif.fr/gargantext/purescript-gargantext.git
 
 
-if [[ ! -d "deps" ]]; then
-  mkdir -v deps
-  cd deps
-
-  sudo apt install default-jdk
-  if [[ ! -f "coreNLP.tar.bz2" ]]; then
-    wget https://dl.gargantext.org/coreNLP.tar.bz2
-  fi
-  if [[ ! -d "home" ]]; then
-    tar xvjf coreNLP.tar.bz2
-  fi
-  # CoreNLP needs to be started
-  # ./startServer.sh
-
-  cd ..
-fi
-
-
-# Specific to our servers
 
 #### Configure timezone and locale ###################################
 # todo sync dates
 #echo "###########  LOCALES & TZ #################"
 #echo "Europe/Paris" > /etc/timezone
-#dpkg-reconfigure --frontend=noninteractive tzdata
+#sudo dpkg-reconfigure --frontend=noninteractive tzdata
 ##ENV TZ "Europe/Paris"
 #
 #sed -i -e 's/# en_GB.UTF-8 UTF-8/en_GB.UTF-8 UTF-8/' /etc/locale.gen && \
@@ -109,13 +65,12 @@ fi
 # Database configuration
 # CREATE USER gargantua WITH PASSWORD $(grep DB_PASS gargantext.ini)
 # GRANT ALL PRIVILEGES ON DATABASE gargandbV4 to gargantua
+# sudo su postgres
+# createdb gargandb
 
 #######################################################################
 ## POSTGRESQL DATA (as ROOT)
 #######################################################################
-
-./devops/debian/install-postgres
-
 # configure the database with script in devops/postgres
 # edit gargantext.ini
 
