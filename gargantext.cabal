@@ -29,6 +29,7 @@ data-files:
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
     .clippy.dhall
+
 library
   exposed-modules:
       Gargantext

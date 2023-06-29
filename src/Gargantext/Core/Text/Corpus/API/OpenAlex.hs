@@ -24,7 +24,7 @@ get :: Text
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 get _email q _l = do
-  eRes <- OA.fetchWorksC Nothing $ Just $ Corpus.getRawQuery q
+  eRes <- OA.fetchWorksC Nothing Nothing $ Just $ Corpus.getRawQuery q
   pure $ (\(len, docsC) -> (len, docsC .| takeC 1000 .| mapC toDoc)) <$> eRes
 
 toDoc :: OA.Work -> HyperdataDocument
