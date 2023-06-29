@@ -24,7 +24,7 @@ createdb "${NAME}"
 psql "${NAME}" <  extensions.sql
 
 # if new
-#psql "${NAME}" < schema.sql
+psql "${NAME}" < schema.sql
 
 psql ${NAME} < $2
 
