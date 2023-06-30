@@ -54,9 +54,9 @@ toDoc (OA.Work { .. } ) =
 
         authors :: [OA.Authorship] -> Maybe Text
         authors [] = Nothing
-        authors aus = Just $ T.intercalate ", " (getDisplayName <$> aus)
+        authors aus = Just $ T.intercalate ", " $ catMaybes (getDisplayName <$> aus)
           where
-            getDisplayName :: OA.Authorship -> Text
+            getDisplayName :: OA.Authorship -> Maybe Text
             getDisplayName OA.Authorship { author = OA.DehydratedAuthor { display_name = dn } } = dn
 
         institutes :: [OA.Authorship] -> Maybe Text
