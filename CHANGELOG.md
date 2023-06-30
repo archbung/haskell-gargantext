@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.7.1
+
+* [FRONT][FIX][[Node Docs] On the refresh dialog set &quot;Both&quot; as default and on documents page remove 2 unused icons (#578)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/578)
+* [FRONT][FIX][[Node Phylo] Form render improvements (#581)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/581)
+* [FRONT][FIX][[Home connection] On first user connection, automatically select the current server instance on clicking the Login button (#579)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/579)
+
 ## Version 0.0.6.9.9.7
 
 * [BACK][FIX] Phylo
