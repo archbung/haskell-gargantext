@@ -57,7 +57,7 @@ get externalAPI la q mPubmedAPIKey limit = do
     Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
     Right corpusQuery -> case externalAPI of
       OpenAlex -> first ExternalAPIError <$>
-                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q limit
+                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q la limit
       PubMed -> first ExternalAPIError <$>
                   PUBMED.get (fromMaybe "" mPubmedAPIKey) corpusQuery limit
       --docs <- PUBMED.get   q default_limit -- EN only by default
