@@ -11,6 +11,7 @@ module Gargantext.Core.Text.Corpus.API.OpenAlex where
 
 import Conduit
 import qualified Data.Text as T
+import Gargantext.Core (Lang, toISO639Lang)
 import Gargantext.Core.Text.Corpus.Query as Corpus
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Protolude
@@ -21,11 +22,14 @@ import Servant.Client (ClientError)
 
 get :: Text
     -> Corpus.RawQuery
+    -> Lang
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get _email q _l = do
-  eRes <- OA.fetchWorksC Nothing Nothing $ Just $ Corpus.getRawQuery q
-  pure $ (\(len, docsC) -> (len, docsC .| takeC 1000 .| mapC toDoc)) <$> eRes
+get _email q lang mLimit = do
+  let limit = getLimit $ fromMaybe 10000 mLimit
+  let mFilter = (\l -> "language:" <> l) <$> toISO639Lang lang
+  eRes <- OA.fetchWorksC Nothing mFilter $ Just $ Corpus.getRawQuery q
+  pure $ (\(len, docsC) -> (len, docsC .| takeC limit .| mapC toDoc)) <$> eRes
 
 toDoc :: OA.Work -> HyperdataDocument
 toDoc (OA.Work { .. } ) =

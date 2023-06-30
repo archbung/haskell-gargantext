@@ -80,9 +80,23 @@ instance FromHttpApiData Lang
 instance ToHttpApiData Lang where
   toUrlPiece = pack . show
 instance Hashable Lang
-
 instance Arbitrary Lang where
   arbitrary = arbitraryBoundedEnum
+
+-- | https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+toISO639Lang :: Lang -> Maybe Text
+toISO639Lang All = Nothing
+toISO639Lang DE = Just "de"
+toISO639Lang EL = Just "el"
+toISO639Lang EN = Just "en"
+toISO639Lang ES = Just "es"
+toISO639Lang FR = Just "fr"
+toISO639Lang IT = Just "it"
+toISO639Lang PL = Just "pl"
+toISO639Lang PT = Just "pt"
+toISO639Lang RU = Just "ru"
+toISO639Lang UK = Just "uk"
+toISO639Lang ZH = Just "zh"
 
 allLangs :: [Lang]
 allLangs = [minBound .. maxBound]
