@@ -98,6 +98,11 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
+    tag: d7aeb1144fce77f60d94a159b4c40329cb6d1960
+
+source-repository-package
+    type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
     tag: 234ad423fa682307ff4843ae4acd725dcc6ffc55
 
@@ -143,11 +148,6 @@ source-repository-package
     location: https://github.com/rspeer/wikiparsec.git
     tag: 9637a82344bb70f7fa8f02e75db3c081ccd434ce
 
-source-repository-package
-    type: git
-    location: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-    tag: 0083c02d62441d73f3616409c6453c87302c698f
-    
 allow-older: *
 allow-newer: *
 
