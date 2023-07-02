@@ -163,7 +163,6 @@ library:
   - accelerate-llvm-native
   - accelerate-utility
   - aeson
-  - aeson-lens
   - aeson-pretty
   - array
   - async
