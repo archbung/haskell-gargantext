@@ -7,6 +7,7 @@ image: adinapoli/gargantext:v2
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
   STACK_OPTS: "--system-ghc"
+  CABAL_STORE_DIR: "${CI_PROJECT_DIR}/.cabal"
 
 #before_script:
   #- apt-get update
@@ -59,8 +60,9 @@ cabal:
       - .stack-work/
       - dist-newstyle/
       - target
+      - .cabal/
   script:
-    - nix-shell --run "./bin/update-cabal-project && cabal v2-build"
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build"
   allow_failure: false
 
 test:
@@ -73,6 +75,7 @@ test:
       - .stack-work/
       - dist-newstyle/
       - target
+      - .cabal/
   script:
-    - nix-shell --run "cabal v2-test --test-show-details=streaming"
+    - nix-shell --run "cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming"
 
