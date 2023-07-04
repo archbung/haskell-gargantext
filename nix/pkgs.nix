@@ -13,9 +13,8 @@ rec {
                               sha256 = "0IUpuzjZb1G+gP3q6RnwQbW4mFzc/OZ/7QqZy+57kx0=";
                             })
                           ];
-                });
+                })
            else pkgs.haskell.compiler.ghc8107;
-  });
   haskell1 = pkgs.haskell // {
       packages = pkgs.haskell.packages // {
         ghc8107 = pkgs.haskell.packages.ghc8107.override {
