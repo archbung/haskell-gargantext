@@ -18,6 +18,10 @@ Main authorization of Gargantext are managed in this module
 
 TODO-ACCESS Critical
 
+To see the authors:
+- gource src
+And you have the main viz
+
 -}
 
 {-# LANGUAGE MonoLocalBinds      #-}
