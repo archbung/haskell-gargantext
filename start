@@ -9,8 +9,8 @@ cd devops/docker
 docker compose up -d
 echo "GarganText: docker for postgresql database [OK]"
 cd ../../
-echo "GarganText: gargantext-server with stack and nix..."
-stack --nix exec gargantext-server -- --ini gargantext.ini --run Prod
-echo "GarganText: gargantext-server with stack and nix [OK]"
+echo "GarganText: gargantext-server with Nix and Cabal..."
+nix-shell --run "cabal run gargantext-server -- --ini gargantext.ini --run Prod"
+echo "GarganText: gargantext-server with Nix and Cabal [OK]"
 echo "GarganText: project stopped."
 

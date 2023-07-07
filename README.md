@@ -3,7 +3,7 @@
 &nbsp;
 # Gargantext with Haskell (Backend instance)
 
-![Haskell](https://img.shields.io/badge/Code-Haskell-informational?style=flat&logo=haskell&color=6144b3)&nbsp;&nbsp;![Stack](https://img.shields.io/badge/Tools-Stack-informational?style=flat&logo=&color=6144b3)&nbsp;&nbsp;![GHC](https://img.shields.io/badge/Tools-GHC-informational?style=flat&logo=&color=2E677B)&nbsp;&nbsp;![Nix](https://img.shields.io/badge/Package%20manager-Nix-informational?style=flat&logo=debian&color=6586c8)&nbsp;&nbsp;![Docker](https://img.shields.io/badge/Tools-Docker-informational?style=flat&logo=docker&color=003f8c)
+![Haskell](https://img.shields.io/badge/Code-Haskell-informational?style=flat&logo=haskell&color=6144b3)&nbsp;&nbsp;![Nix](https://img.shields.io/badge/Package%20manager-Nix-informational?style=flat&logo=nixos&color=6586c8)&nbsp;&nbsp;![Cabal](https://img.shields.io/badge/Tools-Cabal-informational?style=flat&logo=cabal&color=567dd9)&nbsp;&nbsp;![Stack](https://img.shields.io/badge/Tools-Stack-informational?style=flat&logo=stack&color=6144b3)&nbsp;&nbsp;![GHC](https://img.shields.io/badge/Tools-GHC-informational?style=flat&logo=&color=2E677B)&nbsp;&nbsp;![Docker](https://img.shields.io/badge/Tools-Docker-informational?style=flat&logo=docker&color=003f8c)
 
 #### Table of Contents
 1. [About the project](#about)
@@ -16,26 +16,16 @@
 
 ## About the project <a name="about"></a>
 
-GarganText is a collaborative web-decentralized-based macro-service
-platform for the exploration of unstructured texts. It combines tools
-from natural language processing, text-data-mining bricks, complex
-networks analysis algorithms and interactive data visualization tools
-to pave the way toward new kinds of interactions with your textual and
-digital corpora.
+GarganText is a collaborative web-decentralized-based macro-service platform for the exploration of unstructured texts. It combines tools from natural language processing, text-data-mining bricks, complex networks analysis algorithms and interactive data visualization tools to pave the way toward new kinds of interactions with your textual and digital corpora.
 
-This software is free (as "Libre" in French) software, developed by the
-CNRS Complex Systems Institute of Paris Île-de-France (ISC-PIF) and its
-partners.
+This software is free (as "Libre" in French) software, developed by the CNRS Complex Systems Institute of Paris Île-de-France (ISC-PIF) and its partners.
 
-GarganText Project: this repo builds the backend for the frontend server built by
-[backend](https://gitlab.iscpif.fr/gargantext/haskell-gargantext).
+GarganText Project: this repo builds the backend for the frontend server built by [backend](https://gitlab.iscpif.fr/gargantext/haskell-gargantext).
 
 
 ## Installation <a name="install"></a>
 
-Disclaimer: since this project is still in development, this document
-remains in progress. Please report and improve this documentation if you
-encounter any issues.
+Disclaimer: since this project is still in development, this document remains in progress. Please report and improve this documentation if you encounter any issues.
 
 #### Prerequisite
 
@@ -46,17 +36,12 @@ cd haskell-gargantext
 ```
 #### 1. Installation
 
-This project can be built with either Stack or Cabal. For historical
-reasons, we generate a `cabal.project` from the `stack.yaml`, and
-we do not commit the former to the repo, to have a single "source of truth".
-However, it's always possible to generate a `cabal.project` thanks
-to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).
+This project can be built with either Stack or Cabal. For historical reasons, we generate a `cabal.project` from the `stack.yaml`, and we do not commit the former to the repo, to have a single "source of truth".
+However, it's always possible to generate a `cabal.project` thanks to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).
 
-#### Install Nix
+#### Install Nix 
 
-Gargantext requires [nix](https://github.com/NixOS/nix) to provide
-system dependencies (for example, C libraries), but its use is limited
-to that. In order to install [Nix](https://nixos.org/download.html):
+Gargantext requires [Nix](https://github.com/NixOS/nix) to provide system dependencies (for example, C libraries), but its use is limited to that. In order to install [Nix](https://nixos.org/download.html):
 
 ```shell
 sh <(curl -L https://nixos.org/nix/install) --daemon
@@ -68,9 +53,7 @@ nix-env --version
 nix-env (Nix) 2.11.0
 ```
 
-**Important:** Before building the project with either `stack` or
-`cabal` you need to be in the correct Nix shell, which will fetch
-all the required system dependencies. To do so, just type:
+**Important:** Before building the project with either `stack` or `cabal` you need to be in the correct Nix shell, which will fetch all the required system dependencies. To do so, just type:
 
 ```shell
 nix-shell
@@ -78,7 +61,9 @@ nix-shell
 
 This will take a bit of time the first time.
 
-#### Build with Stack
+#### Build 
+
+##### Build with Stack (old method)
 
 Install [Stack (or Haskell Tool Stack)](https://docs.haskellstack.org/en/stable/):
 
@@ -92,19 +77,15 @@ stack --version
 Version 2.9.1
 ```
 
-NOTE: Default build (with optimizations) requires large amounts of RAM
-(16GB at least). To avoid heavy compilation times and swapping out your
-machine, it is recommended to `stack build` with the `--fast` flag,
-i.e.:
+NOTE: Default build (with optimizations) requires large amounts of RAM (16GB at least). To avoid heavy compilation times and swapping out your machine, it is recommended to `stack build` with the `--fast` flag, i.e.:
 
 ```shell
 stack build --fast
 ```
 
-#### Build with Cabal
+##### Build with Cabal (recommanded)
 
-Once you have a valid version of `cabal`, building requires generating
-a valid `cabal.project`. This can be done by installing `stack2cabal`:
+Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
 
 ```shell
 cabal v2-install stack2cabal-1.0.14
@@ -137,24 +118,24 @@ docker compose up
 ```
 Initialization schema should be loaded automatically (from `devops/postgres/schema.sql`).
 
-#### 2. Then install:
+##### (Optional) If using stack, then install:
 ``` sh
 stack install
 ```
 
-#### 3. Copy the configuration file:
+#### 2. Copy the configuration file:
 ``` sh
 cp gargantext.ini_toModify gargantext.ini
 ```
 > Do not worry, `.gitignore` avoids adding this file to the repository by mistake, then you can change the passwords in gargantext.ini safely.
 
-#### 4. A user have to be created first as instance:
+#### 3. A user have to be created first as instance:
 ``` sh
 ~/.local/bin/gargantext-init "gargantext.ini"
 ```
 Now, `user1` is created with password `1resu`
 
-#### 5. Clone FRONTEND repository:
+#### 4. Clone FRONTEND repository:
 
 From the Backend root folder (haskell-gargantext):
 
@@ -165,15 +146,17 @@ git clone ssh://git@gitlab.iscpif.fr:20022/gargantext/purescript-gargantext.git
 
 ## Launch & develop GarganText <a name="launch"></a>
 
+>  **Note:** here, the method with Cabal is used as default
+
+
 From the Backend root folder (haskell-gargantext):
 
 ``` shell
 ./start
+# The start script runs following commands:
+# - `docker compose up` to run the Docker for postgresql from devops/docker folder
+# - `cabal run gargantext-server -- --ini gargantext.ini --run Prod` to run other services through `nix-shell`
 ```
-
-> The start script runs following commands:
-> `docker compose up` to run the Docker for postgresql from devops/docker folder
-> `stack exec gargantext-server -- --ini gargantext.ini --run Prod` to run other services
 
 For frontend development and compilation, see the [Frontend Readme.md](https://gitlab.iscpif.fr/gargantext/purescript-gargantext#dev)
 
@@ -199,9 +182,7 @@ stack --docker exec gargantext-cli -- CorpusFromGarg.csv ListFromGarg.csv Ouput.
 
 ### Analyzing the ngrams table repo
 
-We store the repository in directory `repos` in the [CBOR](https://cbor.io/)
-file format. To decode it to JSON and analyze, say, using
-[jq](https://shapeshed.com/jq-json/), use the following command:
+We store the repository in directory `repos` in the [CBOR](https://cbor.io/) file format. To decode it to JSON and analyze, say, using [jq](https://shapeshed.com/jq-json/), use the following command:
 
 ``` sh
 cat repos/repo.cbor.v5 | stack exec gargantext-cbor2json | jq .
@@ -260,8 +241,7 @@ To upgrade PostgreSQL in Docker containers, for example from 11.x to 14.x, simpl
 docker exec -it <container-id> pg_dumpall -U gargantua > 11-db.dump
 ```
 
-Then, shut down the container, replace `image` section in
-`devops/docker/docker-compose.yaml` with `postgres:14`. Also, it is a good practice to create a new volume, say `garg-pgdata14` and bind the new container to it. If you want to keep the same volume, remember about removing it like so:
+Then, shut down the container, replace `image` section in `devops/docker/docker-compose.yaml` with `postgres:14`. Also, it is a good practice to create a new volume, say `garg-pgdata14` and bind the new container to it. If you want to keep the same volume, remember about removing it like so:
 ```sh
 docker-compose rm postgres
 docker volume rm docker_garg-pgdata
@@ -279,8 +259,7 @@ docker exec -i <new-container-id> psql -U gargantua -d gargandbV5 < 11-db.dump
 
 ### Upgrading using 
 
-There is a solution using pgupgrade_cluster but you need to manage the
-clusters version 14 and 13. Hence here is a simple solution to upgrade.
+There is a solution using pgupgrade_cluster but you need to manage the clusters version 14 and 13. Hence here is a simple solution to upgrade.
 
 First save your data:
 ```
@@ -303,8 +282,7 @@ Maybe you need to restore the gargantua password
 ```
 ALTER ROLE gargantua PASSWORD 'yourPasswordIn_gargantext.ini'
 ```
-Maybe you need to change the port to 5433 for database connection in
-your gargantext.ini file.
+Maybe you need to change the port to 5433 for database connection in your gargantext.ini file.
 
 
 
