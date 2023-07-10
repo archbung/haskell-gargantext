@@ -17,7 +17,7 @@ cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-06-24T21:28:46Z
 # Install stack2cabal if it can't be found.
 if ! stack2cabal --help &> /dev/null
 then
-    echo "<the_command> could not be found"
+    echo "stack2cabal could not be found"
     cabal --store-dir=$STORE_DIR v2-install --index-state="2023-06-24T21:28:46Z" stack2cabal-1.0.14 --overwrite-policy=always
 fi
 stack2cabal --no-run-hpack -p '2023-06-24 21:28:46'
