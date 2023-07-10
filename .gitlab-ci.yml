@@ -45,7 +45,7 @@ test:
     paths:
       - dist-newstyle/
       - .cabal/
-    policy: pull
+    policy: pull-push
   script:
     - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'"
 
