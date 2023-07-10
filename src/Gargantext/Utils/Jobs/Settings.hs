@@ -14,6 +14,7 @@ data JobSettings = JobSettings
   , jsIDTimeout  :: Int -- in seconds, how long a job ID is valid
   , jsGcPeriod   :: Int -- in seconds, how long between each GC
   , jsSecretKey  :: SJ.SecretKey
+  , jsDebugLogs  :: Bool -- if 'True', enable debug logs
   }
 
 makeLensesFor [ ("jsJobTimeout", "l_jsJobTimeout")
