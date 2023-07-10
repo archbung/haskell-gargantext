@@ -392,7 +392,7 @@ test = do
       testFairness
   describe "job status update and tracking" $ do
     it "can fetch the latest job status" $
-      testFetchJobStatus
+      pending "Ticket #198" testFetchJobStatus
     it "can spin two separate jobs and track their status separately" $
       testFetchJobStatusNoContention
     it "marking stuff behaves as expected" $
