@@ -44,14 +44,15 @@ tests = testGroup "JSON" [
 
 testWithQueryFrontend :: Assertion
 testWithQueryFrontend = do
-  assertBool "JSON instance will break frontend!"
-    (isRight $ eitherDecode @WithQuery (C8.pack cannedWithQueryPayload))
+  case  eitherDecode @WithQuery (C8.pack cannedWithQueryPayload) of
+   Left err -> fail $ "JSON instance will break frontend!: JSON decoding returned: " <> err
+   Right _ -> pure ()
 
 -- The aim of this type is to catch regressions in the frontend serialisation; this
 -- is what the frontend currently expects, and therefore if we were to change the JSON
 -- instances, this test would fail, and we will be notified.
 cannedWithQueryPayload :: String
-cannedWithQueryPayload = [r| {"query":"Haskell","node_id":138,"lang":"EN","flowListWith":{"type":"MyListsFirst"},"datafield":"External Arxiv","databases":"Arxiv"} |]
+cannedWithQueryPayload = [r| {"query":"Haskell","node_id":138,"lang":"EN","flowListWith":{"type":"MyListsFirst"},"datafield": { "External": "Arxiv"},"databases":"Arxiv"} |]
 
 testParseBpaPhylo :: Assertion
 testParseBpaPhylo = do
