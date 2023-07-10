@@ -53,7 +53,7 @@ newJobsState js prios = do
           (_res, _logs) <- waitJobDone jid rj jmap
           return ()
         _ -> return ()
-  putStrLn $ "Starting " ++ show (jsNumRunners js) ++ " job runners."
+  when (jsDebugLogs js) $ putStrLn $ "Starting " ++ show (jsNumRunners js) ++ " job runners."
   gcAsync <- async $ gcThread js jmap
   runnersAsyncs <- traverse async runners
   return (JobsState jmap q idgen gcAsync runnersAsyncs)

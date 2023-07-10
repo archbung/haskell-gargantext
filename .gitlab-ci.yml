@@ -1,16 +1,13 @@
-# Thanks to:
-# https://vadosware.io/post/zero-to-continuous-integrated-testing-a-haskell-project-with-gitlab/
-#
-#
-image: adinapoli/gargantext:v2
+# Optimising CI speed by using tips from https://blog.nimbleways.com/let-s-make-faster-gitlab-ci-cd-pipelines/
+image: adinapoli/gargantext:v2.1
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
   STACK_OPTS: "--system-ghc"
-
-#before_script:
-  #- apt-get update
-  #- apt-get install make xz-utils
+  CABAL_STORE_DIR: "${CI_PROJECT_DIR}/.cabal"
+  FF_USE_FASTZIP: "true"
+  ARTIFACT_COMPRESSION_LEVEL: "fast"
+  CACHE_COMPRESSION_LEVEL: "fast"
 
 stages:
   - stack
@@ -21,58 +18,55 @@ stages:
 stack:
   stage: stack
   cache:
-    # cache per branch name
-    # key: ${CI_COMMIT_REF_SLUG}
+    key: stack.yaml
     paths:
       - .stack-root/
       - .stack-work/
-      - target
   script:
     - echo "Building the project from '$CI_PROJECT_DIR'"
-    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --only-dependencies --fast --dry-run"
-
-docs:
-  stage: docs
-  cache:
-    # cache per branch name
-    # key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - .stack-root/
-      - .stack-work/
-      - target
-  script:
-    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --fast --dry-run"
-    - cp -R "$(stack path --local-install-root)"/doc ./output
-  artifacts:
-    paths:
-      - ./output
-    expire_in: 1 week
-  allow_failure: true
+    - nix-shell --run "stack build --no-terminal --fast --dry-run"
 
 cabal:
   stage: cabal
   cache:
-    # cache per branch name
-    # key: ${CI_COMMIT_REF_SLUG}
+    key: cabal.project
     paths:
-      - .stack-root/
-      - .stack-work/
       - dist-newstyle/
-      - target
+      - .cabal/
+    policy: pull-push
   script:
-    - nix-shell --run "./bin/update-cabal-project && cabal v2-build"
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O0 -fclear-plugins'"
   allow_failure: false
 
 test:
   stage: test
   cache:
-    # cache per branch name
-    # key: ${CI_COMMIT_REF_SLUG}
+    key: cabal.project
+    paths:
+      - dist-newstyle/
+      - .cabal/
+    policy: pull-push
+  script:
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'"
+
+docs:
+  stage: docs
+  cache:
+    key: stack.yaml
     paths:
       - .stack-root/
       - .stack-work/
-      - dist-newstyle/
-      - target
+    policy: pull
   script:
-    - nix-shell --run "cabal v2-test --test-show-details=streaming"
-
+    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --fast --dry-run"
+    - cp -R "$(stack path --local-install-root)"/doc ./output
+  # FIXME(adinapoli) Currently Gitlab 11.x doesn't support the 'rules' keyword.
+  # rules:
+  # - if: '$CI_MERGE_REQUEST_IID' # Run job on Merge Requests
+  only:
+    - merge_requests
+  artifacts:
+    paths:
+      - ./output
+    expire_in: 1 week
+  allow_failure: true

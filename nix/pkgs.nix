@@ -1,8 +1,20 @@
-{ pkgs ? import ./pinned-22.05.nix {} }:
+{ pkgs       ? import ./pinned-22.05.nix {} }:
 
 rec {
   inherit pkgs;
-  ghc = pkgs.haskell.compiler.ghc8107;
+  # If we are on a Mac, in order to build successfully with cabal we need a bit more work.
+  ghc = if pkgs.stdenv.isDarwin
+           then haskell1.compiler.ghc8107.overrideAttrs (finalAttrs: previousAttrs: {
+                # See https://github.com/NixOS/nixpkgs/pull/149942/files
+                patches = previousAttrs.patches ++ [
+                            # Reverts the linking behavior of GHC to not resolve `-libc++` to `c++`.
+                            (pkgs.fetchpatch {
+                              url = "https://raw.githubusercontent.com/input-output-hk/haskell.nix/613ec38dbd62ab7929178c9c7ffff71df9bb86be/overlays/patches/ghc/ghc-macOS-loadArchive-fix.patch";
+                              sha256 = "0IUpuzjZb1G+gP3q6RnwQbW4mFzc/OZ/7QqZy+57kx0=";
+                            })
+                          ];
+                })
+           else pkgs.haskell.compiler.ghc8107;
   haskell1 = pkgs.haskell // {
       packages = pkgs.haskell.packages // {
         ghc8107 = pkgs.haskell.packages.ghc8107.override {

@@ -68,6 +68,7 @@ defaultJobSettings numRunners k = JobSettings
   , jsIDTimeout  = 30 * 60 -- 30 minutes
   , jsGcPeriod   =  1 * 60 -- 1 minute
   , jsSecretKey  = k
+  , jsDebugLogs  = False
   }
 
 genSecret :: IO SJ.SecretKey
