@@ -17,7 +17,7 @@ stages:
 
 stack:
   stage: stack
-  cache: 
+  cache:
     key: stack.yaml
     paths:
       - .stack-root/
@@ -28,14 +28,14 @@ stack:
 
 cabal:
   stage: cabal
-  cache: 
+  cache:
     key: cabal.project
     paths:
       - dist-newstyle/
       - .cabal/
     policy: pull-push
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build"
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O0 -fclear-plugins'"
   allow_failure: false
 
 test:
@@ -47,7 +47,7 @@ test:
       - .cabal/
     policy: pull
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming"
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'"
 
 docs:
   stage: docs
