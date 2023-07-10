@@ -5,6 +5,25 @@ set -euxo pipefail
 DEFAULT_STORE=$HOME/.cabal
 STORE_DIR="${1:-$DEFAULT_STORE}"
 
-cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-06-25T00:00:00Z'
-cabal --store-dir=$STORE_DIR v2-install stack2cabal-1.0.14 --overwrite-policy=always
-stack2cabal --no-run-hpack -p '2023-06-25'
+# README!
+# Every time you modify the `stack.yaml` and as result the relevant `cabal.project`
+# changes, you have to make sure to update the `expected_cabal_projet_hash` with the
+# `sha256sum` result calculated on the `cabal.project`. This ensures the `cabal.project`
+# stays deterministic so that CI cache can kick in.
+expected_cabal_project_hash="41b2a260acaa6252541612a43ef42789ce61cc544a11249a98fa148c7ffe0cb8"
+
+cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-06-24T21:28:46Z'
+
+# Install stack2cabal if it can't be found.
+if ! stack2cabal --help &> /dev/null
+then
+    echo "<the_command> could not be found"
+    cabal --store-dir=$STORE_DIR v2-install --index-state="2023-06-24T21:28:46Z" stack2cabal-1.0.14 --overwrite-policy=always
+fi
+stack2cabal --no-run-hpack -p '2023-06-24 21:28:46'
+
+actual_cabal_project_hash=$(sha256sum cabal.project | awk '{printf "%s",$1}')
+if [[ $actual_cabal_project_hash != $expected_cabal_project_hash ]]; then
+  echo "ERROR! hash mismatch between expected cabal.project and the one computed by stack2cabal."
+  exit 1
+fi
