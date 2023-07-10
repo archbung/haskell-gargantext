@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.7.2
+
+* [BACK][DOC][[Readme] Test/Reinstall project with cabal and update the readme file (#239)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/239)
+* [FRONT][FIX][[Node Doc] Annotation: select/add ngram to map terms doesn&#39;t seems to sync in frontend render (#563)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/563)
+
 ## Version 0.0.6.9.9.7.1
 
 * [FRONT][FIX][[Node Docs] On the refresh dialog set &quot;Both&quot; as default and on documents page remove 2 unused icons (#578)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/578)
