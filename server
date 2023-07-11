@@ -7,5 +7,4 @@ LOGFILE=$FOLDER"/"$FILE
 
 mkdir -p $FOLDER
 
-# In nix-shell run:
-cabal exec -- gargantext-server --ini gargantext.ini --run Dev +RTS > $LOGFILE 2>&1 & tail -F $LOGFILE
+~/.cabal/bin/gargantext-server --ini gargantext.ini --run Dev +RTS > $LOGFILE 2>&1 & tail -F $LOGFILE
