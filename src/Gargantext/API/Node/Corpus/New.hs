@@ -205,6 +205,11 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
   -- printDebug "[addToCorpusWithQuery] datafield" datafield
   -- printDebug "[addToCorpusWithQuery] flowListWith" flw
 
+  -- TODO
+  -- n <- getNode cid
+  -- let n.wq_lang = l
+  -- saveNode n
+
   case datafield of
     Just Web -> do
       -- printDebug "[addToCorpusWithQuery] processing web request" datafield
@@ -264,6 +269,12 @@ addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) jobHandle = do
   -- printDebug "[addToCorpusWithForm] Parsing corpus: " cid
   -- printDebug "[addToCorpusWithForm] fileType" ft
   -- printDebug "[addToCorpusWithForm] fileFormat" ff
+
+  -- TODO
+  -- n <- getNode cid
+  -- let n.wq_lang = l
+  -- saveNode n
+
   limit' <- view $ hasConfig . gc_max_docs_parsers
   let limit = fromIntegral limit' :: Integer
   let
@@ -368,6 +379,11 @@ addToCorpusWithFile :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
                     -> JobHandle m
                     -> m ()
 addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) jobHandle = do
+
+  -- TODO
+  -- n <- getNode cid
+  -- let n.wq_lang = l
+  -- saveNode n
 
   printDebug "[addToCorpusWithFile] Uploading file to corpus: " cid
   markStarted 1 jobHandle
