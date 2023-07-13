@@ -18,7 +18,9 @@ module Gargantext.Core.Text.Terms.WithList where
 import Data.List (null)
 import Data.Ord
 import Data.Text (Text, concat, unwords)
+import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Prelude
+import Gargantext.Core (Lang(ZH))
 import Gargantext.Core.Text.Context
 import Gargantext.Core.Text.Terms.Mono (monoTextsBySentence)
 import Gargantext.Core.Types (TermsCount)
@@ -27,6 +29,8 @@ import Prelude (error)
 import qualified Data.Algorithms.KMP as KMP
 import qualified Data.IntMap.Strict  as IntMap
 import qualified Data.List           as List
+import qualified Data.Text           as Text
+
 ------------------------------------------------------------------------
 
 data Pattern = Pattern
@@ -63,6 +67,10 @@ replaceTerms rplaceTerms pats terms = go 0
           merge (len1, lab1) (len2, lab2) =
             if len2 < len1 then (len1, lab1) else (len2, lab2)
 
+buildPatternsWith :: Maybe Lang -> [NgramsTerm] -> Patterns
+buildPatternsWith (Just ZH) ts = buildPatterns $ map (\k -> (Text.chunksOf 1  $ unNgramsTerm k, [])) ts
+buildPatternsWith _         ts = buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts
+
 buildPatterns :: TermList -> Patterns
 buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
   where
@@ -78,14 +86,14 @@ buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
 --------------------------------------------------------------------------
 -- Utils
 type MatchedText = Text
-termsInText :: Patterns -> Text -> [(MatchedText, TermsCount)]
-termsInText pats txt = groupWithCounts
+termsInText :: Maybe Lang -> Patterns -> Text -> [(MatchedText, TermsCount)]
+termsInText (Just ZH) pats txt = termsInText Nothing pats (addSpaces txt)
+termsInText _ pats txt = groupWithCounts
                      $ List.concat
                      $ map (map unwords)
                      $ extractTermsWithList pats txt
 
 --------------------------------------------------------------------------
-
 extractTermsWithList :: Patterns -> Text -> Corpus [Text]
 extractTermsWithList pats = map (replaceTerms KeepAll pats) . monoTextsBySentence
 
@@ -96,6 +104,11 @@ extractTermsWithList pats = map (replaceTerms KeepAll pats) . monoTextsBySentenc
 extractTermsWithList' :: Patterns -> Text -> [Text]
 extractTermsWithList' pats = map (concat . map concat . replaceTerms KeepAll pats)
                            . monoTextsBySentence
+
+--------------------------------------------------------------------------
+addSpaces :: Text -> Text
+addSpaces = (Text.intercalate " ") . (Text.chunksOf 1)
+
 
 --------------------------------------------------------------------------
 

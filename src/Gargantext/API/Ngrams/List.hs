@@ -24,6 +24,7 @@ import Data.Set (Set)
 import Data.Text (Text, concat, pack, splitOn)
 import Data.Vector (Vector)
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
+import Gargantext.Core (Lang)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
@@ -34,7 +35,7 @@ import Gargantext.API.Prelude (GargServer, GargM, GargError)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Text.Terms (ExtractedNgrams(..))
-import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatterns, termsInText)
+import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatternsWith, termsInText)
 import Gargantext.Core.Types (TermsCount)
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (saveDocNgramsWith)
@@ -142,7 +143,7 @@ setList l m  = do
   pure True
 
 ------------------------------------------------------------------------
--- | Re-index documents of a corpus with new ngrams (called orphans here)
+-- | Re-index documents of a corpus with ngrams in the list
 reIndexWith :: ( HasNodeStory env err m
                , FlowCmdM     env err m
                )
@@ -153,6 +154,7 @@ reIndexWith :: ( HasNodeStory env err m
             -> m ()
 reIndexWith cId lId nt lts = do
   -- printDebug "(cId,lId,nt,lts)" (cId, lId, nt, lts)
+  -- corpus_node <- getNode cId -- (Proxy :: Proxy HyperdataCorpus)
 
   -- Getting [NgramsTerm]
   ts <- List.concat
@@ -166,24 +168,24 @@ reIndexWith cId lId nt lts = do
   let
     -- fromListWith (<>)
     ngramsByDoc = map (HashMap.fromListWith (Map.unionWith (Map.unionWith (\(_a,b) (_a',b') -> (1,b+b')))))
-                  $ map (map (\((k, cnt), v) -> (SimpleNgrams (text2ngrams k), over (traverse . traverse) (\p -> (p, cnt)) v)))
-                  $ map (docNgrams nt ts) docs
-
-  -- printDebug "ngramsByDoc: " ngramsByDoc
+                $ map (map (\((k, cnt), v) -> (SimpleNgrams (text2ngrams k), over (traverse . traverse) (\p -> (p, cnt)) v)))
+                $ map (docNgrams Nothing {-here lang-} nt ts) docs
 
   -- Saving the indexation in database
   _ <- mapM (saveDocNgramsWith lId) ngramsByDoc
-  -- _ <- refreshNgramsMaterialized
   pure ()
 
-docNgrams :: NgramsType
+
+
+docNgrams :: Maybe Lang
+          -> NgramsType
           -> [NgramsTerm]
           -> Gargantext.Database.Admin.Types.Node.Context HyperdataDocument
           -> [((MatchedText, TermsCount),
                 Map NgramsType (Map NodeId Int))]
-docNgrams nt ts doc =
+docNgrams lang nt ts doc =
   List.zip
-  (termsInText (buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts)
+  (termsInText lang (buildPatternsWith lang ts)
     $ Text.unlines $ catMaybes
     [ doc ^. context_hyperdata . hd_title
     , doc ^. context_hyperdata . hd_abstract

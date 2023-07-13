@@ -205,7 +205,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
   -- printDebug "[addToCorpusWithQuery] datafield" datafield
   -- printDebug "[addToCorpusWithQuery] flowListWith" flw
 
-  -- TODO
+  -- TODO: update Node Corpus with the Lang
   -- n <- getNode cid
   -- let n.wq_lang = l
   -- saveNode n
@@ -270,7 +270,7 @@ addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) jobHandle = do
   -- printDebug "[addToCorpusWithForm] fileType" ft
   -- printDebug "[addToCorpusWithForm] fileFormat" ff
 
-  -- TODO
+  -- TODO: update Node Corpus with the Lang
   -- n <- getNode cid
   -- let n.wq_lang = l
   -- saveNode n
@@ -380,7 +380,7 @@ addToCorpusWithFile :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
                     -> m ()
 addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) jobHandle = do
 
-  -- TODO
+  -- TODO: update Node Corpus with the Lang
   -- n <- getNode cid
   -- let n.wq_lang = l
   -- saveNode n

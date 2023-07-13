@@ -107,8 +107,9 @@ corpusIdtoDocuments timeUnit corpusId = do
         Just termList' -> buildPatterns termList'
   pure $ map (toPhyloDocs patterns timeUnit) (map _context_hyperdata docs)
 
+-- TODO: Add lang to enable Chinese phylomemy
 termsInText' :: Patterns -> Text -> [Text]
-termsInText' p t = (map fst) $ termsInText p t
+termsInText' p t = (map fst) $ termsInText Nothing p t
 
 toPhyloDocs :: Patterns -> TimeUnit -> HyperdataDocument -> Document
 toPhyloDocs patterns time d =

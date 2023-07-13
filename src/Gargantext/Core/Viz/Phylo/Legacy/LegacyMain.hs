@@ -65,7 +65,7 @@ flowPhylo cId = do
     patterns = buildPatterns termList
     -- | To filter the Ngrams of a document based on the termList
     filterTerms :: Patterns -> (Date, Text) -> (Date, [Text])
-    filterTerms patterns' (y,d) = (y, fst <$> termsInText patterns' d)
+    filterTerms patterns' (y,d) = (y, fst <$> termsInText Nothing patterns' d)
 
     docs = map ((\(y,t) -> Document y t) . filterTerms patterns) docs'
 
