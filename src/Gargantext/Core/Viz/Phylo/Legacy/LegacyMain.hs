@@ -10,6 +10,7 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE ViewPatterns      #-}
 
 module Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
@@ -17,8 +18,10 @@ module Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
 
 -- import Data.GraphViz
 -- import qualified Data.ByteString as DB
+import Control.Lens hiding (Level)
 import qualified Data.List as List
 import Data.Maybe
+import Data.Proxy
 import Data.Text (Text)
 import Debug.Trace (trace)
 import GHC.IO (FilePath)
@@ -27,12 +30,13 @@ import Gargantext.API.Ngrams.Types
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Core.Text.Context (TermList)
 import Gargantext.Core.Text.Terms.WithList
-import Gargantext.Database.Query.Table.Node(defaultList)
+import Gargantext.Database.Query.Table.Node(defaultList, getNodeWith)
 import Gargantext.Prelude
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Core.Viz.LegacyPhylo hiding (Svg, Dot)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
+import Gargantext.Database.Schema.Node
 import Gargantext.Database.Query.Table.NodeContext (selectDocs)
 import Gargantext.Core.Types
 import Gargantext.Core (HasDBid)
@@ -52,6 +56,8 @@ flowPhylo :: (FlowCmdM env err m, HasDBid NodeType)
           -> m Phylo
 flowPhylo cId = do
 
+  corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
+  let lang = view (node_hyperdata . to _hc_lang) corpus_node
   list     <- defaultList cId
   termList <- HashMap.toList <$> getTermsWith (Text.words . unNgramsTerm) [list] NgramsTerms (Set.singleton MapTerm)
 
@@ -65,7 +71,7 @@ flowPhylo cId = do
     patterns = buildPatterns termList
     -- | To filter the Ngrams of a document based on the termList
     filterTerms :: Patterns -> (Date, Text) -> (Date, [Text])
-    filterTerms patterns' (y,d) = (y, fst <$> termsInText Nothing patterns' d)
+    filterTerms patterns' (y,d) = (y, fst <$> termsInText lang patterns' d)
 
     docs = map ((\(y,t) -> Document y t) . filterTerms patterns) docs'
 

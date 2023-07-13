@@ -9,9 +9,12 @@ Portability : POSIX
 
 -}
 
+{-# LANGUAGE TypeApplications #-}
+
 module Gargantext.Core.Viz.Phylo.API.Tools
   where
 
+import Control.Lens hiding (Context)
 import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
 import Data.Map.Strict (Map)
 import Data.Proxy
@@ -24,6 +27,7 @@ import Gargantext.API.Ngrams.Prelude (getTermList)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.API.Prelude (GargNoServer)
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
+import Gargantext.Core (Lang)
 import Gargantext.Core.Types (Context)
 -- import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (ListType(MapTerm))
@@ -34,7 +38,10 @@ import Gargantext.Core.Viz.Phylo.PhyloTools  ({-printIOMsg, printIOComment,-} se
 -- import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
 -- import Gargantext.Database.Admin.Config (userMaster)
 -- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataPhylo(..))
+-- import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
+-- import Gargantext.Database.Admin.Config (userMaster)
+-- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataPhylo(..), HyperdataCorpus(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ContextId, PhyloId)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
@@ -101,18 +108,19 @@ corpusIdtoDocuments timeUnit corpusId = do
   docs <- selectDocNodes corpusId
   lId  <- defaultList corpusId
   termList <- getTermList lId MapTerm NgramsTerms
+  corpus_node <- getNodeWith corpusId (Proxy @ HyperdataCorpus)
+  let corpusLang = view (node_hyperdata . to _hc_lang) corpus_node
 
   let patterns = case termList of
         Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
         Just termList' -> buildPatterns termList'
-  pure $ map (toPhyloDocs patterns timeUnit) (map _context_hyperdata docs)
+  pure $ map (toPhyloDocs corpusLang patterns timeUnit) (map _context_hyperdata docs)
 
--- TODO: Add lang to enable Chinese phylomemy
-termsInText' :: Patterns -> Text -> [Text]
-termsInText' p t = (map fst) $ termsInText Nothing p t
+termsInText' :: Lang -> Patterns -> Text -> [Text]
+termsInText' lang p t = (map fst) $ termsInText lang p t
 
-toPhyloDocs :: Patterns -> TimeUnit -> HyperdataDocument -> Document
-toPhyloDocs patterns time d =
+toPhyloDocs :: Lang -> Patterns -> TimeUnit -> HyperdataDocument -> Document
+toPhyloDocs lang patterns time d =
   let title = fromMaybe "" (_hd_title d)
       abstr = fromMaybe "" (_hd_abstract d)
                   in Document (toPhyloDate
@@ -123,7 +131,7 @@ toPhyloDocs patterns time d =
                                       (fromIntegral $ fromMaybe 1 $ _hd_publication_year d)
                                       (fromMaybe 1 $ _hd_publication_month d)
                                       (fromMaybe 1 $ _hd_publication_day d) time)
-                                    (termsInText' patterns $ title <> " " <> abstr) Nothing [] time
+                                    (termsInText' lang patterns $ title <> " " <> abstr) Nothing [] time
 
 
 

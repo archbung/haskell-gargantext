@@ -20,7 +20,7 @@ import Data.Ord
 import Data.Text (Text, concat, unwords)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Prelude
-import Gargantext.Core (Lang(ZH))
+import Gargantext.Core (Lang(ZH), defaultLanguage)
 import Gargantext.Core.Text.Context
 import Gargantext.Core.Text.Terms.Mono (monoTextsBySentence)
 import Gargantext.Core.Types (TermsCount)
@@ -67,9 +67,9 @@ replaceTerms rplaceTerms pats terms = go 0
           merge (len1, lab1) (len2, lab2) =
             if len2 < len1 then (len1, lab1) else (len2, lab2)
 
-buildPatternsWith :: Maybe Lang -> [NgramsTerm] -> Patterns
-buildPatternsWith (Just ZH) ts = buildPatterns $ map (\k -> (Text.chunksOf 1  $ unNgramsTerm k, [])) ts
-buildPatternsWith _         ts = buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts
+buildPatternsWith :: Lang -> [NgramsTerm] -> Patterns
+buildPatternsWith ZH ts = buildPatterns $ map (\k -> (Text.chunksOf 1  $ unNgramsTerm k, [])) ts
+buildPatternsWith _  ts = buildPatterns $ map (\k -> (Text.splitOn " " $ unNgramsTerm k, [])) ts
 
 buildPatterns :: TermList -> Patterns
 buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
@@ -86,8 +86,8 @@ buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
 --------------------------------------------------------------------------
 -- Utils
 type MatchedText = Text
-termsInText :: Maybe Lang -> Patterns -> Text -> [(MatchedText, TermsCount)]
-termsInText (Just ZH) pats txt = termsInText Nothing pats (addSpaces txt)
+termsInText :: Lang -> Patterns -> Text -> [(MatchedText, TermsCount)]
+termsInText ZH pats txt = termsInText defaultLanguage pats (addSpaces txt)
 termsInText _ pats txt = groupWithCounts
                      $ List.concat
                      $ map (map unwords)

@@ -10,6 +10,7 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeOperators     #-}
 
 module Gargantext.API.Ngrams.List
@@ -43,11 +44,11 @@ import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 -- import Gargantext.Database.Action.Metrics.NgramsByContext (refreshNgramsMaterialized)
 import Gargantext.Database.Admin.Types.Hyperdata.Document
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Node (getNode)
+import Gargantext.Database.Query.Table.Node (getNode, getNodeWith)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Ngrams
-import Gargantext.Database.Schema.Node (_node_parent_id)
+import Gargantext.Database.Schema.Node (_node_parent_id, node_hyperdata)
 import Gargantext.Database.Types (Indexed(..))
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
@@ -64,6 +65,7 @@ import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
 import qualified Gargantext.Utils.Servant as GUS
 import qualified Prelude
 import qualified Protolude           as P
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 ------------------------------------------------------------------------
 type GETAPI = Summary "Get List"
             :> "lists"
@@ -154,7 +156,8 @@ reIndexWith :: ( HasNodeStory env err m
             -> m ()
 reIndexWith cId lId nt lts = do
   -- printDebug "(cId,lId,nt,lts)" (cId, lId, nt, lts)
-  -- corpus_node <- getNode cId -- (Proxy :: Proxy HyperdataCorpus)
+  corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
+  let corpusLang = view (node_hyperdata . to _hc_lang) corpus_node
 
   -- Getting [NgramsTerm]
   ts <- List.concat
@@ -169,7 +172,7 @@ reIndexWith cId lId nt lts = do
     -- fromListWith (<>)
     ngramsByDoc = map (HashMap.fromListWith (Map.unionWith (Map.unionWith (\(_a,b) (_a',b') -> (1,b+b')))))
                 $ map (map (\((k, cnt), v) -> (SimpleNgrams (text2ngrams k), over (traverse . traverse) (\p -> (p, cnt)) v)))
-                $ map (docNgrams Nothing {-here lang-} nt ts) docs
+                $ map (docNgrams corpusLang nt ts) docs
 
   -- Saving the indexation in database
   _ <- mapM (saveDocNgramsWith lId) ngramsByDoc
@@ -177,7 +180,7 @@ reIndexWith cId lId nt lts = do
 
 
 
-docNgrams :: Maybe Lang
+docNgrams :: Lang
           -> NgramsType
           -> [NgramsTerm]
           -> Gargantext.Database.Admin.Types.Node.Context HyperdataDocument
