@@ -14,6 +14,7 @@ New corpus means either:
 
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE ViewPatterns       #-}
 
 module Gargantext.API.Node.Corpus.New
       where
@@ -26,7 +27,6 @@ import Data.Aeson.TH (deriveJSON)
 import qualified Data.ByteString.Base64 as BSB64
 import Data.Conduit.Internal (zipSources)
 import Data.Either
-import Data.Maybe (fromMaybe)
 import Data.Swagger
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -43,8 +43,9 @@ import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Node.Corpus.New.Types
 import Gargantext.API.Node.Corpus.Searx
 import Gargantext.API.Node.Corpus.Types
+import Gargantext.API.Node.Corpus.Update (addLanguageToCorpus)
 import Gargantext.API.Node.Types
-import Gargantext.Core (Lang(..))
+import Gargantext.Core (Lang(..), withDefaultLanguage)
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
@@ -205,10 +206,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
   -- printDebug "[addToCorpusWithQuery] datafield" datafield
   -- printDebug "[addToCorpusWithQuery] flowListWith" flw
 
-  -- TODO: update Node Corpus with the Lang
-  -- n <- getNode cid
-  -- let n.wq_lang = l
-  -- saveNode n
+  addLanguageToCorpus cid l
 
   case datafield of
     Just Web -> do
@@ -265,15 +263,12 @@ addToCorpusWithForm :: (FlowCmdM env err m, MonadJobStatus m)
                     -> NewWithForm
                     -> JobHandle m
                     -> m ()
-addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) jobHandle = do
+addToCorpusWithForm user cid (NewWithForm ft ff d (withDefaultLanguage -> l) _n sel) jobHandle = do
   -- printDebug "[addToCorpusWithForm] Parsing corpus: " cid
   -- printDebug "[addToCorpusWithForm] fileType" ft
   -- printDebug "[addToCorpusWithForm] fileFormat" ff
 
-  -- TODO: update Node Corpus with the Lang
-  -- n <- getNode cid
-  -- let n.wq_lang = l
-  -- saveNode n
+  addLanguageToCorpus cid l
 
   limit' <- view $ hasConfig . gc_max_docs_parsers
   let limit = fromIntegral limit' :: Integer
@@ -322,7 +317,7 @@ addToCorpusWithForm user cid (NewWithForm ft ff d l _n sel) jobHandle = do
 
       _cid' <- flowCorpus user
                           (Right [cid])
-                          (Multi $ fromMaybe EN l)
+                          (Multi l)
                           (Just sel)
                           --(Just $ fromIntegral $ length docs, docsC')
                           (mCount, transPipe liftBase docsC') -- TODO fix number of docs
@@ -378,12 +373,9 @@ addToCorpusWithFile :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
                     -> NewWithFile
                     -> JobHandle m
                     -> m ()
-addToCorpusWithFile user cid nwf@(NewWithFile _d _l fName) jobHandle = do
+addToCorpusWithFile user cid nwf@(NewWithFile _d (withDefaultLanguage -> l) fName) jobHandle = do
 
-  -- TODO: update Node Corpus with the Lang
-  -- n <- getNode cid
-  -- let n.wq_lang = l
-  -- saveNode n
+  addLanguageToCorpus cid l
 
   printDebug "[addToCorpusWithFile] Uploading file to corpus: " cid
   markStarted 1 jobHandle

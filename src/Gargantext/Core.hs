@@ -17,6 +17,7 @@ module Gargantext.Core
 import Data.Aeson
 import Data.Either(Either(Left))
 import Data.Hashable (Hashable)
+import Data.Maybe (fromMaybe)
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
 import Data.Text (Text, pack)
@@ -57,6 +58,15 @@ data Lang = All
           | UK
           | ZH
   deriving (Show, Eq, Ord, Enum, Bounded, Generic, GQLType)
+
+-- | Defaults to 'EN' in all those places where a language is mandatory,
+-- but an optional one has been passed.
+withDefaultLanguage :: Maybe Lang -> Lang
+withDefaultLanguage = fromMaybe defaultLanguage
+
+-- | The default 'Lang'.
+defaultLanguage :: Lang
+defaultLanguage = EN
 
 instance ToJSON Lang
 instance FromJSON Lang

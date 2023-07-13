@@ -44,6 +44,7 @@ library
       Gargantext.API.Node
       Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.Types
+      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
