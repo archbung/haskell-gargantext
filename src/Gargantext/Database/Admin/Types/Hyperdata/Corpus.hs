@@ -33,7 +33,7 @@ data HyperdataCorpus =
                   , _hc_pubmed_api_key :: Maybe APIKey
                   -- | The language for the corpus. It defaults to
                   -- 'defaultLanguage' if we don't know which language it is.
-                  , _hc_lang           :: !Lang
+                  , _hc_lang           :: Maybe Lang
                   }
     deriving (Generic)
 
@@ -49,7 +49,7 @@ defaultHyperdataCorpus =
                      (JsonField "Title" "Descr" "Bool query" "Authors")
                    ]
     , _hc_pubmed_api_key = Nothing
-    , _hc_lang = defaultLanguage
+    , _hc_lang = Just defaultLanguage
     }
 
 ------------------------------------------------------------------------

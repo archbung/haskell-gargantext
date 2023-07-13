@@ -23,5 +23,5 @@ addLanguageToCorpus :: (FlowCmdM env err m, MonadJobStatus m)
                     -> m ()
 addLanguageToCorpus cId lang = do
   hyperNode <- getNodeWith cId (Proxy @HyperdataCorpus)
-  let hyperNode' = hyperNode & over node_hyperdata (\corpus -> corpus { _hc_lang = lang })
+  let hyperNode' = hyperNode & over node_hyperdata (\corpus -> corpus { _hc_lang = Just lang })
   void $ updateHyperdata cId hyperNode'

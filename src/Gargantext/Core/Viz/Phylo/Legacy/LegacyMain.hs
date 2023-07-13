@@ -40,6 +40,7 @@ import Gargantext.Database.Schema.Node
 import Gargantext.Database.Query.Table.NodeContext (selectDocs)
 import Gargantext.Core.Types
 import Gargantext.Core (HasDBid)
+import Gargantext.Core (Lang(EN))
 
 -- import Gargantext.Core.Viz.Phylo.LevelMaker (toPhylo)
 -- import Gargantext.Core.Viz.Phylo.Tools
@@ -57,7 +58,7 @@ flowPhylo :: (FlowCmdM env err m, HasDBid NodeType)
 flowPhylo cId = do
 
   corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
-  let lang = view (node_hyperdata . to _hc_lang) corpus_node
+  let lang = fromMaybe EN $ view (node_hyperdata . to _hc_lang) corpus_node
   list     <- defaultList cId
   termList <- HashMap.toList <$> getTermsWith (Text.words . unNgramsTerm) [list] NgramsTerms (Set.singleton MapTerm)
 

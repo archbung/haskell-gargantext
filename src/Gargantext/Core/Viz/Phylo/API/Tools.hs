@@ -27,7 +27,7 @@ import Gargantext.API.Ngrams.Prelude (getTermList)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.API.Prelude (GargNoServer)
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
-import Gargantext.Core (Lang)
+import Gargantext.Core (Lang(EN))
 import Gargantext.Core.Types (Context)
 -- import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (ListType(MapTerm))
@@ -114,7 +114,7 @@ corpusIdtoDocuments timeUnit corpusId = do
   let patterns = case termList of
         Nothing        -> panic "[G.C.V.Phylo.API] no termList found"
         Just termList' -> buildPatterns termList'
-  pure $ map (toPhyloDocs corpusLang patterns timeUnit) (map _context_hyperdata docs)
+  pure $ map (toPhyloDocs (fromMaybe EN corpusLang) patterns timeUnit) (map _context_hyperdata docs)
 
 termsInText' :: Lang -> Patterns -> Text -> [Text]
 termsInText' lang p t = (map fst) $ termsInText lang p t
