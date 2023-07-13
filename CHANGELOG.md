@@ -1,5 +1,10 @@
+## Version 0.0.6.9.9.7.3
+
+* [BACK][FEAT][Adding Chineze to GarganText (#250)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/250)
+
 ## Version 0.0.6.9.9.7.2
 
+* [BACK][FIX] Cabal CI Fix
 * [BACK][DOC][[Readme] Test/Reinstall project with cabal and update the readme file (#239)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/239)
 * [FRONT][FIX][[Node Doc] Annotation: select/add ngram to map terms doesn&#39;t seems to sync in frontend render (#563)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/563)
 
