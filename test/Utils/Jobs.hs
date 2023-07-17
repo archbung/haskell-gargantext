@@ -21,7 +21,8 @@ import Prelude
 import System.IO.Unsafe
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Client (Manager)
-import Test.Hspec hiding (pending)
+import Test.Hspec
+import Test.Hspec.Expectations.Contrib (annotate)
 import qualified Servant.Job.Types as SJ
 import qualified Servant.Job.Core  as SJ
 
@@ -33,6 +34,7 @@ import Gargantext.Utils.Jobs.State
 import Gargantext.API.Prelude
 import Gargantext.API.Admin.EnvTypes as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
+import Control.Concurrent.Async
 
 
 data JobT = A
@@ -57,13 +59,25 @@ jobDuration, initialDelay :: Int
 jobDuration = 100000
 initialDelay = 20000
 
+type Timer = TVar Bool
+
 -- | Use in conjuction with 'registerDelay' to create an 'STM' transaction
 -- that will simulate the duration of a job by waiting the timeout registered
 -- by 'registerDelay' before continuing.
-waitJobSTM :: TVar Bool -> STM ()
-waitJobSTM tv = do
+waitTimerSTM :: Timer -> STM ()
+waitTimerSTM tv = do
   v <- readTVar tv
   check v
+
+-- | Samples the running jobs from the first 'TVar' and write them
+-- in the queue.
+sampleRunningJobs :: Timer -> TVar [String] -> TQueue [String]-> STM ()
+sampleRunningJobs timer runningJs samples = do
+  waitTimerSTM timer
+  runningNow <- readTVar runningJs
+  case runningNow of
+    [] -> pure () -- ignore empty runs, when the system is kickstarting.
+    xs -> writeTQueue samples xs
 
 -- | The aim of this test is to ensure that the \"max runners\" setting is
 -- respected, i.e. we have no more than \"N\" jobs running at the same time.
@@ -76,13 +90,27 @@ testMaxRunners = do
   st :: JobsState JobT [String] () <- newJobsState settings defaultPrios
   now <- getCurrentTime
   runningJs   <- newTVarIO []
+  samples     <- newTQueueIO
   remainingJs <- newTVarIO num_jobs
+
+  -- Not the most elegant solution, but in order to test the \"max runners\"
+  -- parameter we start an asynchronous computation that continuously reads the content
+  -- of 'runningJs' and at the end ensures that this value was
+  -- always <= \"max_runners" (but crucially not 0).
+
+  asyncReader <- async $ forever $ do 
+    samplingFrequency <- registerDelay 100_000
+    atomically $ sampleRunningJobs samplingFrequency runningJs samples
+  
   let duration = 1_000_000
       j num _jHandle _inp _l = do
         durationTimer <- registerDelay duration
+        -- NOTE: We do the modification of the 'runningJs' and the rest
+        -- in two transactions on purpose, to give a chance to the async
+        -- sampler to sample the status of the world.
+        atomically $  modifyTVar runningJs (\xs -> ("Job #" ++ show num) : xs)
         atomically $ do
-          modifyTVar runningJs (\xs -> ("Job #" ++ show num) : xs)
-          waitJobSTM durationTimer
+          waitTimerSTM durationTimer
           modifyTVar runningJs (\xs -> filter (/=("Job #" ++ show num)) xs)
           modifyTVar remainingJs pred
       jobs = [ (A, j n) | n <- [1..num_jobs::Int] ]
@@ -94,16 +122,19 @@ testMaxRunners = do
         x <- readTVar remainingJs
         check (x == 0)
 
+  -- Wait for the jobs to finish, then stop the sampler.
   waitFinished
+  cancel asyncReader
 
-  r1 <- readTVarIO runningJs
-  sort r1 `shouldBe` ["Job #1", "Job #2"]
-  threadDelay jobDuration
-  r2 <- readTVarIO runningJs
-  sort r2 `shouldBe` ["Job #3", "Job #4"]
-  threadDelay jobDuration
-  r3 <- readTVarIO runningJs
-  r3 `shouldBe` []
+  -- Check that we got /some/ samples and for each of them,
+  -- let's check only two runners at max were alive.
+  allSamples <- atomically $ flushTQueue samples
+  length allSamples `shouldSatisfy` (> 0)
+
+  forM_ allSamples $ \runLog ->
+    annotate "predicate to satisfy: (x == [\"Job #1\", \"Job #2\"] || x == [\"Job #3\", \"Job #4\"]" $
+      shouldSatisfy (sort runLog)
+                    (\x -> x == ["Job #1", "Job #2"] || x == ["Job #3", "Job #4"])
 
 testPrios :: IO ()
 testPrios = do
@@ -373,26 +404,20 @@ testMarkProgress = do
                         ]
                         }
 
-pending :: String -> IO () -> IO ()
-pending reason act = act `catch` (\(e :: SomeException) -> do
-  putStrLn $ "PENDING: " <> reason
-  putStrLn (displayException e))
-
-
 test :: Spec
 test = do
   describe "job queue" $ do
     it "respects max runners limit" $
-      pending "Ticket #198" testMaxRunners
+      testMaxRunners
     it "respects priorities" $
       testPrios
     it "can handle exceptions" $
-      pending "Ticket #198" testExceptions
+      testExceptions
     it "fairly picks equal-priority-but-different-kind jobs" $
       testFairness
   describe "job status update and tracking" $ do
     it "can fetch the latest job status" $
-      pending "Ticket #198" testFetchJobStatus
+      testFetchJobStatus
     it "can spin two separate jobs and track their status separately" $
       testFetchJobStatusNoContention
     it "marking stuff behaves as expected" $
