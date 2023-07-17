@@ -23,7 +23,7 @@ import Gargantext.Database.Action.User (getUserId, getUsername)
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runOpaQuery)
+import Gargantext.Database.Prelude (Cmd, runOpaQuery, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.User (queryUserTable, UserPoly(..))
@@ -41,12 +41,12 @@ getRootId u = do
     Nothing -> nodeError $ NodeError "[G.D.Q.T.R.getRootId] No root id"
     Just  r -> pure (_node_id r)
 
-getRoot :: User -> Cmd err [Node HyperdataUser]
+getRoot :: User -> DBCmd err [Node HyperdataUser]
 getRoot = runOpaQuery . selectRoot
 
 getOrMkRoot :: (HasNodeError err)
             => User
-            -> Cmd err (UserId, RootId)
+            -> DBCmd err (UserId, RootId)
 getOrMkRoot user = do
   userId <- getUserId user
 
@@ -91,7 +91,7 @@ getOrMk_RootWithCorpus user cName c = do
 
 mkRoot :: HasNodeError err
        => User
-       -> Cmd err [RootId]
+       -> DBCmd err [RootId]
 mkRoot user = do
 
   -- TODO

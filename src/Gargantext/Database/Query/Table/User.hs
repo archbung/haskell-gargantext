@@ -71,7 +71,7 @@ import Gargantext.Database.Admin.Config (nodeTypeId)
 
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
-insertUsers :: [UserWrite] -> Cmd err Int64
+insertUsers :: [UserWrite] -> DBCmd err Int64
 insertUsers us = mkCmd $ \c -> runInsert_ c insert
   where
     insert = Insert userTable us rCount Nothing
@@ -147,7 +147,7 @@ selectUsersLightWithForgotPasswordUUID uuid = proc () -> do
       returnA  -< row
 
 ----------------------------------------------------------
-getUsersWithId :: User -> Cmd err [UserLight]
+getUsersWithId :: User -> DBCmd err [UserLight]
 getUsersWithId (UserDBId i) = map toUserLight <$> runOpaQuery (selectUsersLightWithId i)
   where
     selectUsersLightWithId :: Int -> Select UserRead
@@ -293,13 +293,13 @@ userLightWithUsername t xs = userWith userLight_username t xs
 userLightWithId :: Int -> [UserLight] -> Maybe UserLight
 userLightWithId t xs = userWith userLight_id t xs
 ----------------------------------------------------------------------
-users :: Cmd err [UserDB]
+users :: DBCmd err [UserDB]
 users = runOpaQuery queryUserTable
 
-usersLight :: Cmd err [UserLight]
+usersLight :: DBCmd err [UserLight]
 usersLight = map toUserLight <$> users
 
-getUser :: Username -> Cmd err (Maybe UserLight)
+getUser :: Username -> DBCmd err (Maybe UserLight)
 getUser u = userLightWithUsername u <$> usersLight
 
 ----------------------------------------------------------------------

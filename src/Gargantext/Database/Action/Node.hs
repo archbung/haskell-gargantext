@@ -41,7 +41,7 @@ mkNodeWithParent :: (HasNodeError err, HasDBid NodeType)
                  -> Maybe ParentId
                  -> UserId
                  -> Name
-                 -> Cmd err [NodeId]
+                 -> DBCmd err [NodeId]
 mkNodeWithParent NodeUser (Just _) _   _    = nodeError UserNoParent
 
 ------------------------------------------------------------------------
@@ -75,7 +75,7 @@ mkNodeWithParent_ConfigureHyperdata :: (HasNodeError err, HasDBid NodeType)
                                     -> Maybe ParentId
                                     -> UserId
                                     -> Name
-                                    -> Cmd err [NodeId]
+                                    -> DBCmd err [NodeId]
 mkNodeWithParent_ConfigureHyperdata Notes (Just i) uId name =
   mkNodeWithParent_ConfigureHyperdata' Notes (Just i) uId name
 
@@ -99,7 +99,7 @@ mkNodeWithParent_ConfigureHyperdata' :: (HasNodeError err, HasDBid NodeType)
                                     -> Maybe ParentId
                                     -> UserId
                                     -> Name
-                                    -> Cmd err [NodeId]
+                                    -> DBCmd err [NodeId]
 mkNodeWithParent_ConfigureHyperdata' nt (Just i) uId name = do
   maybeNodeId <- case nt of
      Notes -> insertNode Notes (Just name)   Nothing i uId

@@ -22,13 +22,13 @@ import Gargantext.Prelude
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, mkCmd)
+import Gargantext.Database.Prelude (Cmd, mkCmd, JSONB, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 
 import Debug.Trace (trace)
 
-updateHyperdata :: HyperdataC a => NodeId -> a -> Cmd err Int64
+updateHyperdata :: HyperdataC a => NodeId -> a -> DBCmd err Int64
 updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
                                     runUpdate_ c (updateHyperdataQuery i h) >>= \res ->
                                     putStrLn "after runUpdate_" >> return res

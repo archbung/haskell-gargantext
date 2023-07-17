@@ -16,7 +16,7 @@ module Gargantext.Database.Action.User
 import Data.Text (Text)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd)
+import Gargantext.Database.Prelude (Cmd, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Table.Node.Error
@@ -40,7 +40,7 @@ getUserLightDB u = do
 ------------------------------------------------------------------------
 getUserId :: HasNodeError err
           => User
-          -> Cmd err UserId
+          -> DBCmd err UserId
 getUserId u = do
   maybeUser <- getUserId' u
   case maybeUser of
@@ -49,7 +49,7 @@ getUserId u = do
 
 getUserId' :: HasNodeError err
           => User
-          -> Cmd err (Maybe UserId)
+          -> DBCmd err (Maybe UserId)
 getUserId' (UserDBId uid) = pure (Just uid)
 getUserId' (RootId   rid) = do
   n <- getNode rid
@@ -68,7 +68,7 @@ getUserId' UserPublic = pure Nothing
 type Username = Text
 getUsername :: HasNodeError err
             => User
-            -> Cmd err Username
+            -> DBCmd err Username
 getUsername (UserName u) = pure u
 getUsername user@(UserDBId _) = do
   users <- getUsersWithId user

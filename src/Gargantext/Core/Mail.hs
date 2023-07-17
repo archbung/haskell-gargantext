@@ -12,6 +12,8 @@ Portability : POSIX
 module Gargantext.Core.Mail where
 
 import Control.Lens (view)
+import Control.Monad.Reader (MonadReader)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.URI.Encode (encodeText)
 import Data.Text (Text, unlines, splitOn)
 import Gargantext.Core.Types.Individu
@@ -19,7 +21,6 @@ import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_url, gc_backend_name)
 import Gargantext.Database.Prelude
--- import Gargantext.Prelude.Config (gc_url)
 import Gargantext.Prelude.Mail (gargMail, GargMail(..))
 import Gargantext.Prelude.Mail.Types (MailConfig)
 import qualified Data.List as List
@@ -30,7 +31,7 @@ isEmail :: Text -> Bool
 isEmail = ((==) 2) . List.length . (splitOn "@")
 
 ------------------------------------------------------------------------
-data SendEmail    = SendEmail Bool
+newtype SendEmail = SendEmail Bool
 
 type EmailAddress  = Text
 type Name          = Text
@@ -45,8 +46,31 @@ data MailModel = Invitation { invitation_user :: NewUser GargPassword }
                             }
                | ForgotPassword { user :: UserLight }
 ------------------------------------------------------------------------
+
+-- | Execute the given input action 'act', sending an email notification
+-- only if 'SendEmail' says so.
+withNotification :: (MonadBaseControl IO m, HasConfig env, MonadReader env m)
+                 => SendEmail
+                 -> MailConfig
+                 -> (notificationBody -> MailModel)
+                -- ^ A function which can build a 'MailModel' out of
+                -- the returned type of the action.
+                 -> m (a, notificationBody)
+                -- ^ The action to run. Returns the value @a@ to return
+                -- upstream alongside anything needed to build a 'MailModel'.
+                 -> m a
+withNotification (SendEmail doSend) cfg mkNotification act = do
+  (r, notificationBody) <- act
+  when doSend $ mail cfg (mkNotification notificationBody)
+  pure r
+
 ------------------------------------------------------------------------
-mail :: (CmdM env err m) => MailConfig -> MailModel -> m ()
+mail :: (MonadBaseControl IO m, MonadReader env m, HasConfig env)
+     => MailConfig
+     -- ^ The configuration for the email
+     -> MailModel
+     -- ^ The notification we want to emit.
+     -> m ()
 mail mailCfg model = do
   cfg <- view hasConfig
   let

@@ -91,7 +91,7 @@ api userInviting nId (ShareTeamParams user') = do
                   pure 0
                 False -> do
                   -- printDebug "[G.A.N.Share.api]" ("Your invitation is sent to: " <> user'')
-                  newUsers [user'']
+                  newUser user''
               pure ()
           pure u
 

@@ -252,7 +252,7 @@ nodeExists :: (HasNodeError err) => NodeId -> Cmd err Bool
 nodeExists nId = (== [PGS.Only True])
   <$> runPGSQuery [sql|SELECT true FROM nodes WHERE id = ? |] (PGS.Only nId)
 
-getNode :: HasNodeError err => NodeId -> Cmd err (Node Value)
+getNode :: HasNodeError err => NodeId -> DBCmd err (Node Value)
 getNode nId = do
   maybeNode <- headMay <$> runOpaQuery (selectNode (pgNodeId nId))
   case maybeNode of
@@ -283,7 +283,7 @@ insertDefaultNodeIfNotExists nt p u = do
     xs -> pure xs
 
 insertNode :: HasDBid NodeType
-           => NodeType -> Maybe Name -> Maybe DefaultHyperdata -> ParentId -> UserId -> Cmd err [NodeId]
+           => NodeType -> Maybe Name -> Maybe DefaultHyperdata -> ParentId -> UserId -> DBCmd err [NodeId]
 insertNode nt n h p u = insertNodesR [nodeW nt n h p u]
 
 nodeW ::  HasDBid NodeType
@@ -313,7 +313,7 @@ node nodeType name hyperData parentId userId =
       typeId = toDBid nodeType
 
                   -------------------------------
-insertNodes :: [NodeWrite] -> Cmd err Int64
+insertNodes :: [NodeWrite] -> DBCmd err Int64
 insertNodes ns = mkCmd $ \conn -> runInsert_ conn $ Insert nodeTable ns rCount Nothing
 
 {-
@@ -333,14 +333,14 @@ insertNodes' ns = mkCmd $ \conn -> runInsert_ conn
               ) ns
 -}
 
-insertNodesR :: [NodeWrite] -> Cmd err [NodeId]
+insertNodesR :: [NodeWrite] -> DBCmd err [NodeId]
 insertNodesR ns = mkCmd $ \conn ->
   runInsert_ conn (Insert nodeTable ns (rReturning (\(Node i _ _ _ _ _ _ _) -> i)) Nothing)
 
-insertNodesWithParent :: Maybe ParentId -> [NodeWrite] -> Cmd err Int64
+insertNodesWithParent :: Maybe ParentId -> [NodeWrite] -> DBCmd err Int64
 insertNodesWithParent pid ns = insertNodes (set node_parent_id (pgNodeId <$> pid) <$> ns)
 
-insertNodesWithParentR :: Maybe ParentId -> [NodeWrite] -> Cmd err [NodeId]
+insertNodesWithParentR :: Maybe ParentId -> [NodeWrite] -> DBCmd err [NodeId]
 insertNodesWithParentR pid ns = insertNodesR (set node_parent_id (pgNodeId <$> pid) <$> ns)
 ------------------------------------------------------------------------
 -- TODO

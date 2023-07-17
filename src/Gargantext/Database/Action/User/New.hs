@@ -8,9 +8,15 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-{-# OPTIONS_GHC -fno-warn-orphans        #-}
-
 module Gargantext.Database.Action.User.New
+  (
+    -- * Creating users
+    newUser
+  , newUsers
+    -- * Helper functions
+  , guessUserName
+    -- * Internal types and functions for testing
+  )
   where
 
 import Control.Lens (view)
@@ -29,6 +35,33 @@ import Gargantext.Prelude.Mail.Types (MailConfig)
 import qualified Data.Text as Text
 
 ------------------------------------------------------------------------
+-- | Creates a new 'User' from the input 'EmailAddress', which needs to
+-- be valid (i.e. a valid username needs to be inferred via 'guessUsername').
+newUser :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
+        => EmailAddress
+        -> m Int64
+newUser emailAddress = do
+  cfg <- view mailSettings
+  nur  <- newUserQuick emailAddress
+  affectedRows <- new_users [nur]
+  withNotification (SendEmail True) cfg Invitation $ pure (affectedRows, nur)
+
+------------------------------------------------------------------------
+-- | A DB-specific action to bulk-create users.
+-- This is an internal function and as such it /doesn't/ send out any email
+-- notification, and thus lives in the 'DbCmd' effect stack. You may want to
+-- use 'newUsers' instead for standard Gargantext code.
+new_users :: HasNodeError err
+          => [NewUser GargPassword]
+          -- ^ A list of users to create.
+          -> DBCmd err Int64
+new_users us = do
+  us' <- liftBase         $ mapM toUserHash us
+  r   <- insertUsers      $ map  toUserWrite us'
+  _   <- mapM getOrMkRoot $ map  (\u -> UserName   (_nu_username u)) us
+  pure r
+
+------------------------------------------------------------------------
 newUsers :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
          => [EmailAddress] -> m Int64
 newUsers us = do
@@ -37,27 +70,14 @@ newUsers us = do
   newUsers' config us'
 
 ------------------------------------------------------------------------
-
-updateUsersPassword :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
-         => [EmailAddress] -> m Int64
-updateUsersPassword us = do
-  us' <- mapM newUserQuick us
-  config <- view $ mailSettings
-  _ <- mapM (\u -> updateUser (SendEmail True) config u) us'
-  pure 1
-
-------------------------------------------------------------------------
-------------------------------------------------------------------------
 newUserQuick :: (MonadRandom m)
              => Text -> m (NewUser GargPassword)
-newUserQuick n = do
+newUserQuick emailAddress = do
   pass <- gargPass
-  let n' = Text.toLower n
-  let u = case guessUserName n of
+  let  username = case guessUserName emailAddress of
         Just  (u', _m) -> u'
         Nothing        -> panic "[G.D.A.U.N.newUserQuick]: Email invalid"
-  pure (NewUser u n' (GargPassword pass))
-------------------------------------------------------------------------
+  pure (NewUser username (Text.toLower emailAddress) (GargPassword pass))
 
 ------------------------------------------------------------------------
 -- | guessUserName
@@ -67,11 +87,8 @@ guessUserName n = case splitOn "@" n of
     [u',m'] -> if m' /= "" then Just (Text.toLower u',m')
                            else Nothing
     _       -> Nothing
-------------------------------------------------------------------------
-newUser' :: HasNodeError err
-        => MailConfig -> NewUser GargPassword -> Cmd err Int64
-newUser' cfg u = newUsers' cfg [u]
 
+------------------------------------------------------------------------
 newUsers' :: HasNodeError err
          => MailConfig -> [NewUser GargPassword] -> Cmd err Int64
 newUsers' cfg us = do
@@ -81,23 +98,33 @@ newUsers' cfg us = do
   _   <- mapM (\u -> mail cfg (Invitation u)) us
   -- printDebug "newUsers'" us
   pure r
+
 ------------------------------------------------------------------------
+-- | Updates a user's password, notifying the user via email, if necessary.
 updateUser :: HasNodeError err
-           => SendEmail -> MailConfig -> NewUser GargPassword -> Cmd err Int64
+            => SendEmail -> MailConfig -> NewUser GargPassword -> Cmd err Int64
 updateUser (SendEmail send) cfg u = do
   u' <- liftBase     $ toUserHash   u
   n  <- updateUserDB $ toUserWrite  u'
-  _  <- case send of
-     True  -> mail cfg (PassUpdate u)
-     False -> pure ()
+  when send $ mail cfg (PassUpdate u)
   pure n
 
 ------------------------------------------------------------------------
-rmUser :: HasNodeError err => User -> Cmd err Int64
-rmUser (UserName un) = deleteUsers [un]
-rmUser _ = nodeError NotImplYet
+_updateUsersPassword :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
+         => [EmailAddress] -> m Int64
+_updateUsersPassword us = do
+  us' <- mapM newUserQuick us
+  config <- view $ mailSettings
+  _ <- mapM (\u -> updateUser (SendEmail True) config u) us'
+  pure 1
 
+------------------------------------------------------------------------
+_rmUser :: HasNodeError err => User -> Cmd err Int64
+_rmUser (UserName un) = deleteUsers [un]
+_rmUser _ = nodeError NotImplYet
+
+------------------------------------------------------------------------
 -- TODO
-rmUsers :: HasNodeError err => [User] -> Cmd err Int64
-rmUsers [] = pure 0
-rmUsers _  = undefined
+_rmUsers :: HasNodeError err => [User] -> Cmd err Int64
+_rmUsers [] = pure 0
+_rmUsers _  = undefined

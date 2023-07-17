@@ -69,19 +69,25 @@ type CmdM'' env err m =
   , MonadError          err m
   , MonadBaseControl IO     m
   , MonadRandom             m
-  --, MonadLogger             m
   )
 
 type CmdM' env err m =
   ( MonadReader     env     m
   , MonadError          err m
   , MonadBaseControl IO     m
-  --, MonadLogger             m
-  -- , MonadRandom             m
+  )
+
+-- | If possible, try to not add more constraints here. When performing
+-- a query/update on the DB, one shouldn't need more than being able to
+-- fetch from the underlying 'env' the connection pool and access the
+-- 'GargConfig' for some sensible defaults to store into the DB.
+type DbCommon env =
+  ( HasConnectionPool env
+  , HasConfig         env
   )
 
 type CmdCommon env =
-  ( HasConnectionPool env
+  ( DbCommon          env
   , HasConfig         env
   , HasMail           env
   , HasNLPServer      env )
@@ -93,8 +99,7 @@ type CmdM env err m =
 
 type CmdRandom env err m =
   ( CmdM'             env err m
-  , HasConnectionPool env
-  , HasConfig         env
+  , DbCommon          env
   , MonadRandom       m
   , HasMail           env
   )
@@ -103,14 +108,21 @@ type Cmd'' env err a = forall m.     CmdM''    env err m => m a
 type Cmd'  env err a = forall m.     CmdM'     env err m => m a
 type Cmd       err a = forall m env. CmdM      env err m => m a
 type CmdR      err a = forall m env. CmdRandom env err m => m a
+type DBCmd     err a = forall m env. DbCmd'    env err m => m a
 
-
+-- | Only the /minimum/ amount of class constraints required
+-- to use the Gargantext Database. It's important, to ease testability,
+-- that these constraints stays as few as possible.
+type DbCmd' env err m = (
+    CmdM' env err m
+  , DbCommon env
+  )
 
 fromInt64ToInt :: Int64 -> Int
 fromInt64ToInt = fromIntegral
 
 -- TODO: ideally there should be very few calls to this functions.
-mkCmd :: (Connection -> IO a) -> Cmd err a
+mkCmd :: (Connection -> IO a) -> DBCmd err a
 mkCmd k = do
   pool <- view connPool
   withResource pool (liftBase . k)
@@ -123,7 +135,7 @@ runCmd env m = runExceptT $ runReaderT m env
 
 runOpaQuery :: Default FromFields fields haskells
             => Select fields
-            -> Cmd err [haskells]
+            -> DBCmd err [haskells]
 runOpaQuery q = mkCmd $ \c -> runSelect c q
 
 runCountOpaQuery :: Select a -> Cmd err Int

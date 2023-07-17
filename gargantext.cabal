@@ -920,6 +920,7 @@ test-suite garg-test
     , parsec
     , patches-class
     , patches-map
+    , postgresql-simple
     , quickcheck-instances
     , raw-strings-qq
     , recover-rtti
@@ -931,6 +932,7 @@ test-suite garg-test
     , tasty-quickcheck
     , text
     , time
+    , tmp-postgres
     , unordered-containers
     , validity
   default-language: Haskell2010
