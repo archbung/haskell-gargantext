@@ -872,7 +872,7 @@ test-suite garg-test
       Utils.Jobs
       Paths_gargantext
   hs-source-dirs:
-      src-test
+      test
   default-extensions:
       DataKinds
       DeriveGeneric

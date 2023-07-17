@@ -505,7 +505,7 @@ executables:
 tests:
    garg-test:
      main: Main.hs
-     source-dirs: src-test
+     source-dirs: test
      default-extensions:
      - DataKinds
      - DeriveGeneric
