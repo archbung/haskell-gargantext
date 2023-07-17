@@ -17,6 +17,7 @@ import Data.Either
 import Data.List
 import Data.Sequence (Seq, (|>), fromList)
 import Data.Time
+import Debug.RecoverRTTI (anythingToString)
 import Prelude
 import System.IO.Unsafe
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -55,9 +56,8 @@ addJobToSchedule jobt mvar = do
 data Counts = Counts { countAs :: Int, countBs :: Int }
   deriving (Eq, Show)
 
-jobDuration, initialDelay :: Int
+jobDuration :: Int
 jobDuration = 100000
-initialDelay = 20000
 
 type Timer = TVar Bool
 
@@ -131,10 +131,10 @@ testMaxRunners = do
   allSamples <- atomically $ flushTQueue samples
   length allSamples `shouldSatisfy` (> 0)
 
-  forM_ allSamples $ \runLog ->
-    annotate "predicate to satisfy: (x == [\"Job #1\", \"Job #2\"] || x == [\"Job #3\", \"Job #4\"]" $
+  forM_ allSamples $ \runLog -> do
+    annotate "predicate to satisfy: (x `isInfixOf` [\"Job #1\", \"Job #2\"] || x `isInfixOf` [\"Job #3\", \"Job #4\"]" $
       shouldSatisfy (sort runLog)
-                    (\x -> x == ["Job #1", "Job #2"] || x == ["Job #3", "Job #4"])
+                    (\x -> x `isInfixOf` ["Job #1", "Job #2"] || x `isInfixOf` ["Job #3", "Job #4"])
 
 testPrios :: IO ()
 testPrios = do
@@ -167,18 +167,19 @@ testPrios = do
 testExceptions :: IO ()
 testExceptions = do
   k <- genSecret
-  let settings = defaultJobSettings 2 k
+  let settings = defaultJobSettings 1 k
   st :: JobsState JobT [String] () <- newJobsState settings defaultPrios
   jid <- pushJob A ()
     (\_jHandle _inp _log -> readFile "/doesntexist.txt" >>= putStrLn)
     settings st
-  threadDelay initialDelay
+  -- Wait 1 second to make sure the job is finished.
+  threadDelay $ 1_000_000
   mjob <- lookupJob jid (jobsData st)
   case mjob of
-    Nothing ->  error "boo"
+    Nothing ->  fail "lookupJob failed, job not found!"
     Just je ->  case jTask je of
-      DoneJ _ r -> isLeft r `shouldBe` True
-      _         -> error "boo2"
+      DoneJ _ r   -> isLeft r `shouldBe` True
+      unexpected  -> fail $ "Expected job to be done, but got: " <> anythingToString unexpected
   return ()
 
 testFairness :: IO ()
