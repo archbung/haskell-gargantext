@@ -12,6 +12,7 @@ commentary with @some markup@.
 
 -}
 {-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module Gargantext.Core.Text.Terms.WithList where
 
@@ -20,7 +21,7 @@ import Data.Ord
 import Data.Text (Text, concat, unwords)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Prelude
-import Gargantext.Core (Lang(ZH), defaultLanguage)
+import Gargantext.Core (Lang(ZH))
 import Gargantext.Core.Text.Context
 import Gargantext.Core.Text.Terms.Mono (monoTextsBySentence)
 import Gargantext.Core.Types (TermsCount)
@@ -86,12 +87,19 @@ buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
 --------------------------------------------------------------------------
 -- Utils
 type MatchedText = Text
+
 termsInText :: Lang -> Patterns -> Text -> [(MatchedText, TermsCount)]
-termsInText ZH pats txt = termsInText defaultLanguage pats (addSpaces txt)
-termsInText _ pats txt = groupWithCounts
-                     $ List.concat
-                     $ map (map unwords)
-                     $ extractTermsWithList pats txt
+termsInText lang pats (manipulateText lang -> txt) =
+  groupWithCounts $ List.concat
+                  $ map (map unwords)
+                  $ extractTermsWithList pats txt
+
+-- | Manipulates the input 'Text' before passing it to 'termsInText'.
+-- In particular, if the language is Chinese (ZH), we add spaces.
+manipulateText :: Lang -> Text -> Text
+manipulateText lang txt = case lang of
+  ZH -> addSpaces txt
+  _  -> txt
 
 --------------------------------------------------------------------------
 extractTermsWithList :: Patterns -> Text -> Corpus [Text]
