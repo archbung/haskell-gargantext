@@ -25,7 +25,7 @@ import Data.Set (Set)
 import Data.Text (Text, concat, pack, splitOn)
 import Data.Vector (Vector)
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
-import Gargantext.Core (Lang(EN))
+import Gargantext.Core (Lang, withDefaultLanguage)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
@@ -157,7 +157,7 @@ reIndexWith :: ( HasNodeStory env err m
 reIndexWith cId lId nt lts = do
   -- printDebug "(cId,lId,nt,lts)" (cId, lId, nt, lts)
   corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
-  let corpusLang = fromMaybe EN $ view (node_hyperdata . to _hc_lang) corpus_node
+  let corpusLang = withDefaultLanguage $ view (node_hyperdata . to _hc_lang) corpus_node
 
   -- Getting [NgramsTerm]
   ts <- List.concat
