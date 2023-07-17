@@ -26,4 +26,6 @@ actual_cabal_project_hash=$(sha256sum cabal.project | awk '{printf "%s",$1}')
 if [[ $actual_cabal_project_hash != $expected_cabal_project_hash ]]; then
   echo "ERROR! hash mismatch between expected cabal.project and the one computed by stack2cabal."
   exit 1
+else
+  echo "cabal.project updated successfully."
 fi
