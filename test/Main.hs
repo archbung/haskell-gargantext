@@ -12,17 +12,15 @@ Portability : POSIX
 import Gargantext.Prelude
 
 import qualified Core.Text.Corpus.Query  as CorpusQuery
-import qualified Core.Utils as Utils
---import qualified Ngrams.Lang.Fr as Fr
---import qualified Ngrams.Lang as Lang
+import qualified Core.Utils              as Utils
+import qualified Database.Operations     as DB
+import qualified Graph.Clustering        as Graph
 import qualified Ngrams.NLP              as NLP
 import qualified Ngrams.Query            as NgramsQuery
+import qualified Offline.JSON            as JSON
 import qualified Parsers.Date            as PD
--- import qualified Graph.Distance          as GD
-import qualified Graph.Clustering        as Graph
 import qualified Utils.Crypto            as Crypto
 import qualified Utils.Jobs              as Jobs
-import qualified Offline.JSON            as JSON
 
 import Test.Tasty
 import Test.Tasty.Hspec
@@ -46,9 +44,5 @@ main = do
     , NgramsQuery.tests
     , CorpusQuery.tests
     , JSON.tests
+    , DB.tests
     ]
---    Occ.parsersTest
---    Lang.ngramsExtractionTest FR
---    Lang.ngramsExtractionTest EN
---    Metrics.main
---    GD.test

@@ -16,6 +16,8 @@ module Gargantext.Database.Action.User.New
     -- * Helper functions
   , guessUserName
     -- * Internal types and functions for testing
+  , new_user
+  , mkNewUser
   )
   where
 
@@ -42,9 +44,20 @@ newUser :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
         -> m Int64
 newUser emailAddress = do
   cfg <- view mailSettings
-  nur  <- newUserQuick emailAddress
-  affectedRows <- new_users [nur]
+  pwd <- gargPass
+  let nur = mkNewUser emailAddress (GargPassword pwd)
+  affectedRows <- new_user nur
   withNotification (SendEmail True) cfg Invitation $ pure (affectedRows, nur)
+
+------------------------------------------------------------------------
+-- | A DB-specific action to create a single user.
+-- This is an internal function and as such it /doesn't/ send out any email
+-- notification, and thus lives in the 'DbCmd' effect stack. You may want to
+-- use 'newUser' instead for standard Gargantext code.
+new_user :: HasNodeError err
+         => NewUser GargPassword
+         -> DBCmd err Int64
+new_user = new_users . (:[])
 
 ------------------------------------------------------------------------
 -- | A DB-specific action to bulk-create users.
@@ -63,21 +76,20 @@ new_users us = do
 
 ------------------------------------------------------------------------
 newUsers :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
-         => [EmailAddress] -> m Int64
+         => [EmailAddress]
+         -> m Int64
 newUsers us = do
-  us' <- mapM newUserQuick us
   config <- view $ mailSettings
+  us' <- mapM (\ea -> mkNewUser ea . GargPassword <$> gargPass) us
   newUsers' config us'
 
 ------------------------------------------------------------------------
-newUserQuick :: (MonadRandom m)
-             => Text -> m (NewUser GargPassword)
-newUserQuick emailAddress = do
-  pass <- gargPass
+mkNewUser :: EmailAddress -> GargPassword -> NewUser GargPassword
+mkNewUser emailAddress pass =
   let  username = case guessUserName emailAddress of
         Just  (u', _m) -> u'
         Nothing        -> panic "[G.D.A.U.N.newUserQuick]: Email invalid"
-  pure (NewUser username (Text.toLower emailAddress) (GargPassword pass))
+  in (NewUser username (Text.toLower emailAddress) pass)
 
 ------------------------------------------------------------------------
 -- | guessUserName
@@ -113,7 +125,7 @@ updateUser (SendEmail send) cfg u = do
 _updateUsersPassword :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
          => [EmailAddress] -> m Int64
 _updateUsersPassword us = do
-  us' <- mapM newUserQuick us
+  us' <- mapM (\ea -> mkNewUser ea . GargPassword <$> gargPass) us
   config <- view $ mailSettings
   _ <- mapM (\u -> updateUser (SendEmail True) config u) us'
   pure 1
