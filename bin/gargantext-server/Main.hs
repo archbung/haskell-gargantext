@@ -21,14 +21,9 @@ Script to start gargantext with different modes (Dev, Prod, Mock).
 module Main where
 
 
-import Data.Maybe (fromMaybe)
 import Data.Text (unpack)
 import Data.Version (showVersion)
-import Database.PostgreSQL.Simple.SqlQQ (sql)
-import GHC.IO.Exception (IOException)
 import Gargantext.API (startGargantext, Mode(..)) -- , startGargantextMock)
-import Gargantext.API.Admin.EnvTypes (DevEnv)
-import Gargantext.API.Dev (withDevEnv, runCmdDev)
 import Gargantext.Prelude
 import Options.Generic
 import System.Exit (exitSuccess)

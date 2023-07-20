@@ -192,10 +192,7 @@ nodeNodeAPI p uId cId nId = withAccess (Proxy :: Proxy (NodeNodeAPI a)) Proxy uI
 ------------------------------------------------------------------------
 -- TODO: make the NodeId type indexed by `a`, then we no longer need the proxy.
 nodeAPI :: forall proxy a.
-       ( JSONB a
-       , FromJSON a
-       , ToJSON a
-       , Hyperdata a
+       ( HyperdataC a
        ) => proxy a
          -> UserId
          -> NodeId
@@ -349,7 +346,7 @@ treeFlatAPI = tree_flat
 rename :: NodeId -> RenameNode -> Cmd err [Int]
 rename nId (RenameNode name') = U.update (U.Rename nId name')
 
-putNode :: forall err a. (HasNodeError err, JSONB a, ToJSON a, Hyperdata a)
+putNode :: forall err a. (HasNodeError err, HyperdataC a)
         => NodeId
         -> a
         -> Cmd err Int

@@ -1,3 +1,5 @@
+{-# LANGUAGE ConstraintKinds #-}
+
 {-|
 Module      : Gargantext.Database.Admin.Types.Hyperdata.Prelude
 Description :
@@ -29,6 +31,7 @@ module Gargantext.Database.Admin.Types.Hyperdata.Prelude
   , module Test.QuickCheck
   , module Test.QuickCheck.Arbitrary
   , Hyperdata
+  , HyperdataC
   , Chart(..)
   )
   where
@@ -46,7 +49,7 @@ import Database.PostgreSQL.Simple.FromField (FromField, fromField)
 import Database.PostgreSQL.Simple.ToField (ToField, toField, toJSONField)
 import GHC.Generics (Generic)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger, wellNamedSchema)
-import Gargantext.Database.Prelude (fromField')
+import Gargantext.Database.Prelude (fromField', JSONB)
 import Gargantext.Prelude
 import Opaleye (DefaultFromField, defaultFromField, Nullable, SqlJsonb, fromPGSFromField)
 import Test.QuickCheck (elements)
@@ -55,6 +58,12 @@ import Test.QuickCheck.Arbitrary hiding (vector)
 ------------------------------------------------------------------------
 -- Only Hyperdata types should be member of this type class.
 class Hyperdata a
+
+type HyperdataC a = ( Hyperdata a
+                    , JSONB a
+                    , ToJSON a
+                    , FromJSON a
+                    , FromField a )
 
 
 data Chart =
