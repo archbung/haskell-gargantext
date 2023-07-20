@@ -16,22 +16,8 @@ Import a corpus binary.
 
 module Main where
 
-import Data.Either (Either(..))
-import Database.PostgreSQL.Simple.SqlQQ (sql)
-import GHC.IO.Exception (IOException)
-import Gargantext.API.Admin.EnvTypes (DevEnv)
-import Gargantext.API.Dev (withDevEnv, runCmdDev)
-import Gargantext.API.Ngrams.Tools (migrateFromDirToDb)
+import Gargantext.API.Dev (withDevEnv)
 import Gargantext.API.Node () -- instances only
-import Gargantext.API.Prelude (GargError)
-import Gargantext.Core (HasDBid(toDBid))
-import Gargantext.Core.Types.Individu (User(..))
-import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
-import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
-import Gargantext.Database.Admin.Trigger.Init
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
-import Gargantext.Database.Admin.Types.Node (NodeType(NodeDocument, NodeContact))
-import Gargantext.Database.Prelude (Cmd'', Cmd, execPGSQuery)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
 import Prelude (getLine)
