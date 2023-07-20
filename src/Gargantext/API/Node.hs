@@ -195,6 +195,7 @@ nodeAPI :: forall proxy a.
        ( JSONB a
        , FromJSON a
        , ToJSON a
+       , Hyperdata a
        ) => proxy a
          -> UserId
          -> NodeId
@@ -348,7 +349,7 @@ treeFlatAPI = tree_flat
 rename :: NodeId -> RenameNode -> Cmd err [Int]
 rename nId (RenameNode name') = U.update (U.Rename nId name')
 
-putNode :: forall err a. (HasNodeError err, JSONB a, ToJSON a)
+putNode :: forall err a. (HasNodeError err, JSONB a, ToJSON a, Hyperdata a)
         => NodeId
         -> a
         -> Cmd err Int

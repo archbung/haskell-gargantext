@@ -20,6 +20,7 @@ import Data.Aeson (encode, ToJSON)
 import Gargantext.Core
 import Gargantext.Prelude
 import Gargantext.Database.Schema.Node
+import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd, mkCmd, JSONB)
 import Gargantext.Database.Query.Table.Node
@@ -27,12 +28,12 @@ import Gargantext.Database.Query.Table.Node.Error
 
 import Debug.Trace (trace)
 
-updateHyperdata :: ToJSON a => NodeId -> a -> Cmd err Int64
+updateHyperdata :: (ToJSON a, Hyperdata a) => NodeId -> a -> Cmd err Int64
 updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
                                     runUpdate_ c (updateHyperdataQuery i h) >>= \res ->
                                     putStrLn "after runUpdate_" >> return res
 
-updateHyperdataQuery :: ToJSON a => NodeId -> a -> Update Int64
+updateHyperdataQuery :: (ToJSON a, Hyperdata a) => NodeId -> a -> Update Int64
 updateHyperdataQuery i h = seq h' $ trace "updateHyperdataQuery: encoded JSON" $ Update
    { uTable      = nodeTable
    , uUpdateWith = updateEasy (\  (Node { .. })
@@ -48,6 +49,7 @@ updateHyperdataQuery i h = seq h' $ trace "updateHyperdataQuery: encoded JSON" $
 updateNodesWithType :: ( HasNodeError err
                        , JSONB a
                        , ToJSON a
+                       , Hyperdata a
                        , HasDBid NodeType
                        ) => NodeType -> proxy a -> (a -> a) -> Cmd err [Int64]
 updateNodesWithType nt p f = do
@@ -57,6 +59,7 @@ updateNodesWithType nt p f = do
 updateNodeWithType :: ( HasNodeError err
                       , JSONB a
                       , ToJSON a
+                      , Hyperdata a
                       , HasDBid NodeType
                       ) => NodeId
                         -> NodeType
@@ -72,6 +75,7 @@ updateNodeWithType nId nt p f = do
 updateNodesWithType_ :: ( HasNodeError err
                         , JSONB a
                         , ToJSON a
+                        , Hyperdata a
                         , HasDBid NodeType
                         ) => NodeType -> a -> Cmd err [Int64]
 updateNodesWithType_ nt h = do
