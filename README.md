@@ -27,13 +27,16 @@ GarganText Project: this repo builds the backend for the frontend server built b
 
 Disclaimer: since this project is still in development, this document remains in progress. Please report and improve this documentation if you encounter any issues.
 
-#### Prerequisite
+#### Prerequisites
 
-Clone the project.
-```shell
-git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
-cd haskell-gargantext
-```
+- Install:
+  - git (https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+  - curl (https://everything.curl.dev/get)
+- Clone the project.
+  ```shell
+  git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
+  cd haskell-gargantext
+  ```
 #### 1. Installation
 
 This project can be built with either Stack or Cabal. For historical reasons, we generate a `cabal.project` from the `stack.yaml`, and we do not commit the former to the repo, to have a single "source of truth".
@@ -50,7 +53,7 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 Verify the installation is complete with
 ```shell
 nix-env --version
-nix-env (Nix) 2.11.0
+nix-env (Nix) 2.16.0
 ```
 
 **Important:** Before building the project with either `stack` or `cabal` you need to be in the correct Nix shell, which will fetch all the required system dependencies. To do so, just type:
@@ -61,9 +64,31 @@ nix-shell
 
 This will take a bit of time the first time.
 
-#### Build 
+#### Build: choose cabal (new) or stack (old)
 
-##### Build with Stack (old method)
+#### With Cabal (recommanded)
+
+First, into `nix-shell`:
+```shell
+cabal update
+cabal install
+```
+
+
+Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
+
+```shell
+cabal v2-install stack2cabal-1.0.14
+```
+
+And finally:
+
+```shell
+stack2cabal --no-run-hpack -p '2023-06-25'
+cabal v2-build
+```
+
+#### With Stack
 
 Install [Stack (or Haskell Tool Stack)](https://docs.haskellstack.org/en/stable/):
 
@@ -83,20 +108,7 @@ NOTE: Default build (with optimizations) requires large amounts of RAM (16GB at 
 stack build --fast
 ```
 
-##### Build with Cabal (recommanded)
 
-Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
-
-```shell
-cabal v2-install stack2cabal-1.0.14
-```
-
-And finally:
-
-```shell
-stack2cabal --no-run-hpack -p '2023-06-25'
-cabal v2-build
-```
 
 #### Keeping the cabal.project updated with stack.yaml
 
