@@ -41,7 +41,7 @@ import Gargantext.Database.Admin.Types.Hyperdata.Folder
 import Gargantext.Database.Admin.Types.Hyperdata.Frame
 import Gargantext.Database.Admin.Types.Hyperdata.List
 import Gargantext.Database.Admin.Types.Hyperdata.Model
-import Gargantext.Database.Admin.Types.Hyperdata.Prelude (Hyperdata)
+import Gargantext.Database.Admin.Types.Hyperdata.Prelude (Hyperdata, HyperdataC)
 import Gargantext.Database.Admin.Types.Hyperdata.Texts
 import Gargantext.Database.Admin.Types.Hyperdata.Phylo
 import Gargantext.Database.Admin.Types.Hyperdata.User

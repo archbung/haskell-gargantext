@@ -15,9 +15,7 @@ Import a corpus binary.
 
 module Main where
 
-import Control.Exception (finally)
 import Data.Either
-import Data.Maybe (Maybe(..))
 import Data.Text (Text)
 import System.Environment (getArgs)
 import qualified Data.Text as Text
@@ -25,7 +23,6 @@ import Text.Read (readMaybe)
 
 import Gargantext.API.Dev (withDevEnv, runCmdGargDev)
 import Gargantext.API.Admin.EnvTypes (DevEnv(..), DevJobHandle(..))
-import Gargantext.API.Admin.Orchestrator.Types (JobLog)
 import Gargantext.API.Node () -- instances
 import Gargantext.API.Prelude (GargError)
 import Gargantext.Core (Lang(..))
@@ -33,9 +30,7 @@ import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Database.Action.Flow (flowCorpusFile, flowAnnuaire, TermType(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
-import Gargantext.Database.Admin.Types.Hyperdata (toHyperdataDocument)
 import Gargantext.Database.Admin.Types.Node (CorpusId)
-import Gargantext.Database.Prelude (Cmd)
 import Gargantext.Prelude
 import Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..))
 import Gargantext.Utils.Jobs (MonadJobStatus, JobHandle)

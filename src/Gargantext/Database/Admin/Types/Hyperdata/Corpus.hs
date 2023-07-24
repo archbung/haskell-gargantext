@@ -35,7 +35,7 @@ data HyperdataCorpus =
                   -- 'defaultLanguage' if we don't know which language it is.
                   , _hc_lang           :: Maybe Lang
                   }
-    deriving (Generic)
+    deriving (Generic, Show)
 
 defaultHyperdataCorpus :: HyperdataCorpus
 defaultHyperdataCorpus =
