@@ -27,6 +27,7 @@ _darcs
 *.pdf
 *.sql
 *.ini
+!test-data/test_config.ini
 
 # Runtime
 
