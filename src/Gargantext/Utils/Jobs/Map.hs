@@ -97,6 +97,7 @@ lookupJob jid (JobMap mvar) = Map.lookup jid <$> readTVarIO mvar
 gcThread :: Ord jid => JobSettings -> JobMap jid w a -> IO ()
 gcThread js (JobMap mvar) = go
   where go = do
+          threadDelay (jsGcPeriod js * 1000000)
           now <- getCurrentTime
           candidateEntries <- Map.filter (expired now) <$> readTVarIO mvar
           forM_ candidateEntries $ \je -> do
@@ -108,7 +109,6 @@ gcThread js (JobMap mvar) = go
             case mrunningjob of
               Nothing -> return ()
               Just a  -> killJ a
-          threadDelay (jsGcPeriod js * 1000000)
           go
 
         expired now jobentry = case jTimeoutAfter jobentry of

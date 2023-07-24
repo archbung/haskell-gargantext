@@ -868,11 +868,12 @@ test-suite garg-test
       Parsers.Date
       Parsers.Types
       Parsers.WOS
+      Utils
       Utils.Crypto
       Utils.Jobs
       Paths_gargantext
   hs-source-dirs:
-      src-test
+      test
   default-extensions:
       DataKinds
       DeriveGeneric
@@ -912,6 +913,7 @@ test-suite garg-test
     , gargantext
     , gargantext-prelude
     , hspec
+    , hspec-expectations >= 0.8.3
     , http-client
     , http-client-tls
     , mtl
@@ -920,6 +922,7 @@ test-suite garg-test
     , patches-map
     , quickcheck-instances
     , raw-strings-qq
+    , recover-rtti
     , servant-job
     , stm
     , tasty
