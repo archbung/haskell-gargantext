@@ -1,3 +1,12 @@
+## Version 0.0.6.9.9.7.4
+
+* [BOTH][BACK] Dev Guidelines
+* [FRONT][FIX][[Node Doc] Annotation: select/add ngram to map terms doesn&#39;t seems to sync in frontend render (#563)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/563)
+* [FRONT][FIX][Wrong date record in &quot;add document&quot; (#561)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/561)
+* [BACK][FIX][Remove package.yaml from the project (#252)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/252)
+* [BACK][FIX][Adding Chineze to GarganText (#250)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/250)
+* [BACK][FIX][Job tests fail randomly (#198)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/198)
+
 ## Version 0.0.6.9.9.7.3
 
 * [BACK][FEAT][Adding Chineze to GarganText (#250)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/250)
