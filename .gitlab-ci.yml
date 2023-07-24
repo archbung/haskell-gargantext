@@ -13,7 +13,6 @@ stages:
   - stack
   - cabal
   - test
-  - docs
 
 stack:
   stage: stack
@@ -49,24 +48,24 @@ test:
   script:
     - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'"
 
-docs:
-  stage: docs
-  cache:
-    key: stack.yaml
-    paths:
-      - .stack-root/
-      - .stack-work/
-    policy: pull
-  script:
-    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --fast --dry-run"
-    - cp -R "$(stack path --local-install-root)"/doc ./output
-  # FIXME(adinapoli) Currently Gitlab 11.x doesn't support the 'rules' keyword.
-  # rules:
-  # - if: '$CI_MERGE_REQUEST_IID' # Run job on Merge Requests
-  only:
-    - merge_requests
-  artifacts:
-    paths:
-      - ./output
-    expire_in: 1 week
-  allow_failure: true
+#docs:
+#  stage: docs
+#  cache:
+#    key: stack.yaml
+#    paths:
+#      - .stack-root/
+#      - .stack-work/
+#    policy: pull
+#  script:
+#    - nix-shell --run "stack build --no-terminal --haddock --no-haddock-deps --fast --dry-run"
+#    - cp -R "$(stack path --local-install-root)"/doc ./output
+#  # FIXME(adinapoli) Currently Gitlab 11.x doesn't support the 'rules' keyword.
+#  # rules:
+#  # - if: '$CI_MERGE_REQUEST_IID' # Run job on Merge Requests
+#  only:
+#    - merge_requests
+#  artifacts:
+#    paths:
+#      - ./output
+#    expire_in: 1 week
+#  allow_failure: true
