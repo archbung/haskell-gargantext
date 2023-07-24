@@ -45,8 +45,28 @@ test:
       - dist-newstyle/
       - .cabal/
     policy: pull-push
+  # The tests needs to run as the 'test' user, because they leverage the
+  # initdb utility from postgres that cannot be run by 'root'.
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'"
+    - |
+      mkdir -p /home/test
+      mkdir -p /root/.config
+      useradd -U test
+      chown -R test:test dist-newstyle/
+      chown -R test:test /root/
+      chown -R test:test $CABAL_STORE_DIR
+      export CABAL=$(nix-shell --run "which cabal")
+      export TEST_NIX_PATH=$(nix-shell --run "echo -n \$PATH")
+      echo $CABAL
+      echo $TEST_NIX_PATH
+      nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR"
+      mkdir -p /root/.cache/cabal/logs
+      chown -R test:test /root/.cache/cabal/logs/
+      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'\""
+      chown -R root:root dist-newstyle/
+      chown -R root:root /root/
+      chown -R root:root $CABAL_STORE_DIR
+      chown -R root:root /root/.cache/cabal/logs/
 
 #docs:
 #  stage: docs
