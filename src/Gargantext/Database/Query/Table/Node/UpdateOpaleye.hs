@@ -22,7 +22,7 @@ import Gargantext.Prelude
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, mkCmd, JSONB, DBCmd)
+import Gargantext.Database.Prelude (Cmd, mkCmd, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 
