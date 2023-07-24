@@ -95,7 +95,7 @@ documentUpload nId doc = do
 
   (theFullDate, (year, month, day)) <- liftBase $ dateSplit EN
                                                         $ Just
-                                                        $ view du_date doc <> "T:0:0:0"
+                                                        $ view du_date doc
 
   let hd = HyperdataDocument { _hd_bdd = Nothing
                              , _hd_doi = Nothing
