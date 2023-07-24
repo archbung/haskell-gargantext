@@ -13,6 +13,8 @@ license:        AGPL-3
 license-file:   LICENSE
 build-type:     Simple
 data-files:
+    devops/postgres/extensions.sql
+    devops/postgres/schema.sql
     ekg-assets/index.html
     ekg-assets/monitor.js
     ekg-assets/monitor.css
@@ -924,12 +926,14 @@ test-suite garg-test
     , parsec
     , patches-class
     , patches-map
+    , postgres-options
     , postgresql-simple
     , quickcheck-instances
     , raw-strings-qq
     , recover-rtti
     , resource-pool
     , servant-job
+    , shelly
     , stm
     , tasty
     , tasty-hspec
