@@ -31,6 +31,7 @@ here we mean that there should be some common driving principles which should ul
 project being developed in a uniform way. In other words, there should be a clear process shared between
 all developers about how to:
 
+- How to code in a collaborative way;
 - Propose and implement new features;
 - Report problems and write good bug reports;
 - Write tests (when, how, why);
@@ -39,6 +40,8 @@ all developers about how to:
 The rest of the document try to answer all those questions.
 
 ## Glossary
+
+- GIT: _Git_ is a distributed version control system
 
 - MR: _Merge Request_; usually called "Pull Request" in the GitHub work, is an
       event that takes place in software development when a contributor/developer
@@ -53,6 +56,20 @@ The rest of the document try to answer all those questions.
 ## Guidelines
 
 The following is a non-exhaustive list of the development guidelines.
+
+### Main working Branches
+
+3 main branches are used in the distributed version control system (Git) of GarganText:
+- _dev_ branch for latest development
+- _testing_ branch for testing by beta tester 
+- _stable_ branch for production only
+
+Accordingly _dev_ commits are then merged into _testing_ then into
+_stable_ if and only if the steps of this guideline are respected.
+
+For development, please add the number of the issue in the branch you
+are working on. For instance if you work on the issue with number #507,
+use the following branch: dev-507-some-keywords-here
 
 ### Keep the issue tracker clean.
 
@@ -214,11 +231,9 @@ Ideally, we could have the following process, divided in 4 phases:
 We have presented a comprehensive overview on the set of best practices we should put in place within
 Gargantext to make sure the project thrives, keeps growing and succeeds.
 
-Reviewed and approved by:
+## Revisions and certification
 
-- Alfredo Di Napoli
-- ???
-
-## Revisions
+- To review and agree with these guidelines, read it eventually improve
+  it and commit a change as signature.
 
 2023-07-10: Initial version of this document
