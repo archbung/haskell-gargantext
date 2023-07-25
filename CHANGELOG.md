@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.7.5
+
+* [BACK][FEAT][DB queries testing coverage (#226)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/226)
+* [BACK][FEAT][Docs Occurence are first at 0, and must be recalculate to have a reliable value (#254)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/254)
+* [FRONT][FIX] Node Corpus settings: removing download button
+
 ## Version 0.0.6.9.9.7.4
 
 * [BOTH][BACK] Dev Guidelines
