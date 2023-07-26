@@ -10,7 +10,7 @@ STORE_DIR="${1:-$DEFAULT_STORE}"
 # changes, you have to make sure to update the `expected_cabal_projet_hash` with the
 # `sha256sum` result calculated on the `cabal.project`. This ensures the `cabal.project`
 # stays deterministic so that CI cache can kick in.
-expected_cabal_project_hash="41b2a260acaa6252541612a43ef42789ce61cc544a11249a98fa148c7ffe0cb8"
+expected_cabal_project_hash="b40b56532ca6afff7504f91306b4846868366ab646671df942f8d8ce6cd012a7"
 
 cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-06-24T21:28:46Z'
 
