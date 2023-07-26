@@ -1,7 +1,11 @@
 cabal-version: 1.12
 
+-- This file has been generated from package.yaml by hpack version 0.35.1.
+--
+-- see: https://github.com/sol/hpack
+
 name:           gargantext
-version: 0.0.6.9.9.7.5
+version:        0.0.6.9.9.7.5
 synopsis:       Search, map, share
 description:    Please see README.md
 category:       Data
@@ -47,7 +51,6 @@ library
       Gargantext.API.Node
       Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.Types
-      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
@@ -59,13 +62,12 @@ library
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
-      Gargantext.Core.Text.Corpus.API.OpenAlex
       Gargantext.Core.Text.Corpus.API.Pubmed
+      Gargantext.Core.Text.Corpus.API.OpenAlex
       Gargantext.Core.Text.Corpus.Query
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
       Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
-      Gargantext.Core.Text.Corpus.Parsers.JSON
       Gargantext.Core.Text.List.Formats.CSV
       Gargantext.Core.Text.Metrics
       Gargantext.Core.Text.Metrics.CharByChar
@@ -111,7 +113,6 @@ library
       Gargantext.Database.Prelude
       Gargantext.Database.Query.Table.NgramsPostag
       Gargantext.Database.Query.Table.Node
-      Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
@@ -160,6 +161,7 @@ library
       Gargantext.API.Node.Corpus.New.File
       Gargantext.API.Node.Corpus.New.Types
       Gargantext.API.Node.Corpus.Searx
+      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.Document.Export
       Gargantext.API.Node.Document.Export.Types
       Gargantext.API.Node.DocumentsFromWriteNodes
@@ -205,9 +207,11 @@ library
       Gargantext.Core.Text.Corpus.Parsers.GrandDebat
       Gargantext.Core.Text.Corpus.Parsers.Iramuteq
       Gargantext.Core.Text.Corpus.Parsers.Isidore
+      Gargantext.Core.Text.Corpus.Parsers.JSON
       Gargantext.Core.Text.Corpus.Parsers.Json2Csv
       Gargantext.Core.Text.Corpus.Parsers.RIS
       Gargantext.Core.Text.Corpus.Parsers.RIS.Presse
+      Gargantext.Core.Text.Corpus.Parsers.Telegram
       Gargantext.Core.Text.Corpus.Parsers.Wikidata
       Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
       Gargantext.Core.Text.Corpus.Parsers.Wikimedia
@@ -313,6 +317,7 @@ library
       Gargantext.Database.Query.Table.Node.Contact
       Gargantext.Database.Query.Table.Node.Document.Add
       Gargantext.Database.Query.Table.Node.Document.Insert
+      Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.Select
       Gargantext.Database.Query.Table.Node.Update
       Gargantext.Database.Query.Table.Node.User
@@ -356,6 +361,7 @@ library
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -440,6 +446,7 @@ library
     , ihaskell
     , ini
     , insert-ordered-containers
+    , iso639
     , jose
     , json-stream
     , lens
@@ -559,6 +566,7 @@ executable gargantext-admin
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -588,6 +596,7 @@ executable gargantext-cbor2json
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -621,6 +630,7 @@ executable gargantext-cli
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -661,6 +671,7 @@ executable gargantext-import
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -691,6 +702,7 @@ executable gargantext-init
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -721,6 +733,7 @@ executable gargantext-invitations
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -750,6 +763,7 @@ executable gargantext-phylo
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -793,6 +807,7 @@ executable gargantext-server
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -830,6 +845,7 @@ executable gargantext-upgrade
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -885,6 +901,7 @@ test-suite garg-test
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NamedFieldPuns
       NoImplicitPrelude
@@ -897,6 +914,7 @@ test-suite garg-test
       FlexibleContexts
       FlexibleInstances
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       MultiParamTypeClasses
       NoImplicitPrelude
       OverloadedStrings
@@ -917,23 +935,15 @@ test-suite garg-test
     , gargantext
     , gargantext-prelude
     , hspec
-    , hspec-expectations >= 0.8.3
     , http-client
     , http-client-tls
-    , monad-control
     , mtl
-    , lens
     , parsec
     , patches-class
     , patches-map
-    , postgres-options
-    , postgresql-simple
     , quickcheck-instances
     , raw-strings-qq
-    , recover-rtti
-    , resource-pool
     , servant-job
-    , shelly
     , stm
     , tasty
     , tasty-hspec
@@ -941,7 +951,6 @@ test-suite garg-test
     , tasty-quickcheck
     , text
     , time
-    , tmp-postgres
     , unordered-containers
     , validity
   default-language: Haskell2010

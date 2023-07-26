@@ -59,6 +59,7 @@ tokenTag2terms (TokenTag ws t _ _) =  Terms ws t
 
 tokenTags :: NLPServerConfig -> Lang -> Text -> IO [[TokenTag]]
 tokenTags (NLPServerConfig { server = CoreNLP, url }) EN txt = tokenTagsWith EN txt $ corenlp url
+tokenTags (NLPServerConfig { server = CoreNLP, url }) FR txt = tokenTagsWith FR txt $ corenlp url
 tokenTags (NLPServerConfig { server = Spacy, url }) l txt = do
   -- printDebug "NLP Debug" txt
   tokenTagsWith l txt $ SpacyNLP.nlp url
@@ -95,4 +96,3 @@ cleanTextForNLP = unifySpaces . removeDigitsWith "-" . removeUrls
 
     removeUrls          = removeUrlsWith "http" . removeUrlsWith "www"
     removeUrlsWith w    = remove (DAT.string w *> many (DAT.notChar ' ') <* many DAT.space)
-

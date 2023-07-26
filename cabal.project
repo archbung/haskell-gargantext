@@ -84,7 +84,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
-    tag: ac1bec2628cd2d6c8357b4af2f853f450c7b6123
+    tag: f7b928dab9eb14ff1a497d5e092c2224c133979e
 
 source-repository-package
     type: git
