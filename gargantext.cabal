@@ -113,6 +113,7 @@ library
       Gargantext.Database.Prelude
       Gargantext.Database.Query.Table.NgramsPostag
       Gargantext.Database.Query.Table.Node
+      Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
@@ -317,7 +318,6 @@ library
       Gargantext.Database.Query.Table.Node.Contact
       Gargantext.Database.Query.Table.Node.Document.Add
       Gargantext.Database.Query.Table.Node.Document.Insert
-      Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.Select
       Gargantext.Database.Query.Table.Node.Update
       Gargantext.Database.Query.Table.Node.User
@@ -935,15 +935,23 @@ test-suite garg-test
     , gargantext
     , gargantext-prelude
     , hspec
+    , hspec-expectations >= 0.8 && < 0.9
     , http-client
     , http-client-tls
+    , lens >= 5.2.2 && < 5.3
+    , monad-control >= 1.0.3 && < 1.1
     , mtl
     , parsec
     , patches-class
     , patches-map
+    , postgres-options >= 0.2 && < 0.3
+    , postgresql-simple >= 0.6.4 && < 0.7
     , quickcheck-instances
     , raw-strings-qq
+    , recover-rtti >= 0.4 && < 0.5
+    , resource-pool >= 0.2.3.2 && < 0.2.4
     , servant-job
+    , shelly >= 1.9 && < 2
     , stm
     , tasty
     , tasty-hspec
@@ -951,6 +959,7 @@ test-suite garg-test
     , tasty-quickcheck
     , text
     , time
+    , tmp-postgres >= 1.34.1 && < 1.35
     , unordered-containers
     , validity
   default-language: Haskell2010
