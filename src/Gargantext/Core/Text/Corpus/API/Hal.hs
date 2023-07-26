@@ -56,7 +56,7 @@ getC la q ml = do
 --    Right (len, docsC) -> pure (len, docsC .| mapMC (toDoc' la))
 
 toDoc' :: Lang -> HAL.Corpus -> IO HyperdataDocument
-toDoc' la h@(HAL.Corpus { .. }) = do
+toDoc' la (HAL.Corpus { .. }) = do
   -- printDebug "[toDoc corpus] h" h
   (utctime, (pub_year, pub_month, pub_day)) <-
         Date.dateSplit la (maybe (Just $ pack $ show Defaults.year) Just _corpus_date)
