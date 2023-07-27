@@ -15,7 +15,7 @@ Be constructive as sharing our code of conduct
 
 ## Chat with us
 
-We are on IRC: #gargantext @ oftc.net
+We are on IRC:  [irc.oftc.net, channel #gargantext](ircs://irc.oftc.net:6697/#gargantext)
 
 You can join via Matrix, just search for: #_oftc_#gargantext:matrix.org
 
