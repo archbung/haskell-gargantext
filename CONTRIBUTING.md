@@ -19,4 +19,4 @@ We are on IRC: #gargantext @ oftc.net
 
 You can join via Matrix, just search for: #_oftc_#gargantext:matrix.org
 
-You can also join via XMPP: #gargantext%irc.oftc.net@irc.jabberfr.org
+You can also join via XMPP: xmpp://#gargantext%irc.oftc.net@irc.jabberfr.org?join
