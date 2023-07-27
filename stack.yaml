@@ -54,13 +54,13 @@ extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
   commit: a34bb341236d82cf3d488210bc1d8448a98f5808
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
-  commit: ac1bec2628cd2d6c8357b4af2f853f450c7b6123
+  commit: 25a1e9558075462a82660987920a698b8863dd63
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git
   commit: 3db385e767d2100d8abe900833c6e7de3ac55e1b
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
   commit: 2d7e5753cbbce248b860b571a0e9885415c846f7
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-  commit: d7aeb1144fce77f60d94a159b4c40329cb6d1960
+  commit: 405768060e7764dfbd0bed07bed426f0707dbc25
   # NP libs
 - git: https://github.com/alpmestan/servant-job.git
   commit: b4182487cfe479777c11ca19f3c0d47840b376f6
