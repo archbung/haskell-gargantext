@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.7.5.1
+
+* [BACK][FIX][[Corpus HAL API] Abstract in both languages FR+EN instead of only 1 language (#244)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/244)
+* [FRONT][FIX] Commenting APIs that are not fully operational yet
+
+
 ## Version 0.0.6.9.9.7.5
 
 * [BACK][FEAT][DB queries testing coverage (#226)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/226)
