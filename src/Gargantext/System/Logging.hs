@@ -1,14 +1,22 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Gargantext.System.Logging where
+module Gargantext.System.Logging (
+    LogLevel(..)
+  , HasLogger(..)
+  , MonadLogger(..)
+  , logM
+  , withLogger
+  , withLoggerHoisted
+  ) where
 
-import Prelude
-import Data.Kind (Type)
-import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Control
+import Data.Kind (Type)
+import Prelude
+import qualified Data.Text as T
 
-data Level =
+data LogLevel =
   -- | Debug messages
   DEBUG
   -- | Information
@@ -32,23 +40,39 @@ data Level =
 -- the details of the logger cropping up everywhere in
 -- the rest of the codebase.
 class HasLogger m where
-  data family Logger m     :: Type
-  type family InitParams m :: Type
-  type family Payload m    :: Type
-  initLogger    :: InitParams m -> (forall m1. MonadIO m1 => m1 (Logger m))
-  destroyLogger :: Logger m     -> (forall m1. MonadIO m1 => m1 ())
-  logMsg        :: Logger m     -> Level -> Payload m -> m ()
+  data family Logger m        :: Type
+  type family LogInitParams m :: Type
+  type family LogPayload m    :: Type
+  initLogger    :: LogInitParams m -> (forall m1. MonadIO m1 => m1 (Logger m))
+  destroyLogger :: Logger m        -> (forall m1. MonadIO m1 => m1 ())
+  logMsg        :: Logger m        -> LogLevel -> LogPayload m -> m ()
+  logTxt        :: Logger m        -> LogLevel -> T.Text -> m ()
+
+-- | Separate typeclass to get hold of a 'Logger' from within a monad.
+-- We keey 'HasLogger' and 'MonadLogger' separate to enforce compositionality,
+-- i.e. we can still give instances to 'HasLogger' for things like 'IO' without
+-- having to force actually acquiring a logger for those monads.
+class HasLogger m => MonadLogger m where
+  getLogger :: m (Logger m)
+
+-- | A variant of 'logTxt' that doesn't require passing an explicit 'Logger'.
+logM :: (Monad m, MonadLogger m) => LogLevel -> T.Text -> m ()
+logM level msg = do
+  logger <- getLogger
+  logTxt logger level msg
 
 -- | exception-safe combinator that creates and destroys a logger.
 -- Think about it like a 'bracket' function from 'Control.Exception'.
 withLogger :: (MonadBaseControl IO m, MonadIO m, HasLogger m)
-           => InitParams m
+           => LogInitParams m
            -> (Logger m -> m a)
            -> m a
 withLogger params = bracket (initLogger params) destroyLogger
 
+-- | Like 'withLogger', but it allows creating a 'Logger' that can run in
+-- a different monad from within an 'IO' action.
 withLoggerHoisted :: (MonadBaseControl IO m, HasLogger m)
-                  => InitParams m
+                  => LogInitParams m
                   -> (Logger m -> IO a)
                   -> IO a
 withLoggerHoisted params act = bracket (initLogger params) destroyLogger act

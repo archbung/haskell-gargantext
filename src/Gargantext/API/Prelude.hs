@@ -89,7 +89,7 @@ type GargServerC env err m =
 
 type GargServerT env err m api = GargServerC env err m => ServerT api m
 
-type GargServer api = forall env err m. HasLogger m => GargServerT env err m api
+type GargServer api = forall env err m. MonadLogger m => GargServerT env err m api
 
 -- This is the concrete monad. It needs to be used as little as possible.
 type GargM env err = ReaderT env (ExceptT err IO)

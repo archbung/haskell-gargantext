@@ -67,6 +67,7 @@ import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
 import qualified Gargantext.Database.GargDB as GargDB
+import Gargantext.System.Logging
 
 ------------------------------------------------------------------------
 {-
@@ -201,16 +202,17 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_datafield = datafield
                                          , _wq_lang = l
                                          , _wq_flowListWith = flw }) maybeLimit jobHandle = do
+
   -- TODO ...
-  -- printDebug "[addToCorpusWithQuery] (cid, dbs)" (cid, dbs)
-  -- printDebug "[addToCorpusWithQuery] datafield" datafield
-  -- printDebug "[addToCorpusWithQuery] flowListWith" flw
+  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] (cid, dbs) " <> show (cid, dbs)
+  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] datafield  " <> show datafield
+  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] flowListWith " <> show flw
 
   addLanguageToCorpus cid l
 
   case datafield of
     Just Web -> do
-      -- printDebug "[addToCorpusWithQuery] processing web request" datafield
+      logM DEBUG $ T.pack $ "[addToCorpusWithQuery] processing web request " <> show datafield
 
       markStarted 1 jobHandle
 
@@ -225,7 +227,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       -- TODO if cid is folder -> create Corpus
       --      if cid is corpus -> add to corpus
       --      if cid is root   -> create corpus in Private
-      -- printDebug "[G.A.N.C.New] getDataText with query" q
+      logM DEBUG $ T.pack $ "[G.A.N.C.New] getDataText with query: " <> show q
       let db = database2origin dbs
       mPubmedAPIKey <- getUserPubmedAPIKey user
       -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey

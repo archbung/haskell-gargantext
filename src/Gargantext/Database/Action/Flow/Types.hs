@@ -38,7 +38,7 @@ type FlowCmdM env err m =
   , HasNodeError err
   , HasInvalidError err
   , HasTreeError err
-  , HasLogger m
+  , MonadLogger m
   )
 
 type FlowCorpus a = ( AddUniqId      a

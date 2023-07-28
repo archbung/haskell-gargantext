@@ -34,6 +34,7 @@ import qualified Servant.Job.Async as SJ
 import qualified Servant.Job.Core
 
 import Data.List ((\\))
+import qualified Data.Text as T
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
 import Gargantext.API.Job
@@ -57,12 +58,15 @@ data Mode = Dev | Mock | Prod
 -- | Given the 'Mode' the server is running in, it returns the list of
 -- allowed levels. For example for production we ignore everything which
 -- has priority lower than "warning".
-modeToLoggingLevels :: Mode -> [Level]
+modeToLoggingLevels :: Mode -> [LogLevel]
 modeToLoggingLevels = \case
    Dev  -> [minBound .. maxBound]
    Mock -> [minBound .. maxBound]
    -- For production, accepts everything but DEBUG.
    Prod -> [minBound .. maxBound] \\ [DEBUG]
+
+instance MonadLogger (GargM Env GargError) where
+  getLogger = asks _env_logger
 
 instance HasLogger (GargM Env GargError) where
   data instance Logger (GargM Env GargError)  =
@@ -70,8 +74,8 @@ instance HasLogger (GargM Env GargError) where
         logger_mode    :: Mode
       , logger_set     :: FL.LoggerSet
       }
-  type instance InitParams (GargM Env GargError) = Mode
-  type instance Payload (GargM Env GargError) = FL.LogStr
+  type instance LogInitParams (GargM Env GargError) = Mode
+  type instance LogPayload (GargM Env GargError)    = FL.LogStr
   initLogger                = \mode -> do
     logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
     pure $ GargLogger mode logger_set
@@ -80,6 +84,7 @@ instance HasLogger (GargM Env GargError) where
     let pfx = "[" <> show lvl <> "] "
     when (lvl `elem` (modeToLoggingLevels mode)) $
       liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
+  logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)
 
 
 data GargJob
