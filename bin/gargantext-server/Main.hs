@@ -16,15 +16,18 @@ Script to start gargantext with different modes (Dev, Prod, Mock).
 {-# LANGUAGE Strict               #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TypeFamilies #-}
 
 
 module Main where
 
 
+import Data.String (String)
 import Data.Text (unpack)
 import Data.Version (showVersion)
 import Gargantext.API (startGargantext, Mode(..)) -- , startGargantextMock)
 import Gargantext.Prelude
+import Gargantext.System.Logging
 import Options.Generic
 import System.Exit (exitSuccess)
 import qualified Paths_gargantext as PG -- cabal magic build module
@@ -49,14 +52,25 @@ data MyOptions w =
 instance ParseRecord (MyOptions Wrapped)
 deriving instance Show (MyOptions Unwrapped)
 
+-- | A plain logger in the IO monad, waiting for more serious logging solutions like
+-- the one described in https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/229
+instance HasLogger IO where
+  data instance Logger IO  = IOLogger
+  type instance InitParams IO = ()
+  type instance Payload IO  = String
+  initLogger                = \() -> pure IOLogger
+  destroyLogger             = \_  -> pure ()
+  logMsg = \IOLogger lvl msg ->
+    let pfx = "[" <> show lvl <> "] "
+    in putStrLn $ pfx <> msg
 
 main :: IO ()
-main = do
+main = withLogger () $ \ioLogger -> do
   MyOptions myMode myPort myIniFile myVersion  <- unwrapRecord
           "Gargantext server"
   ---------------------------------------------------------------
   if myVersion then do
-    putStrLn $ "Version: " <> showVersion PG.version
+    logMsg ioLogger INFO $ "Version: " <> showVersion PG.version
     System.Exit.exitSuccess
   else
     return ()
@@ -73,6 +87,6 @@ main = do
   let start = case myMode of
         Mock -> panic "[ERROR] Mock mode unsupported"
         _ -> startGargantext myMode myPort' (unpack myIniFile')
-  putStrLn $ "Starting with " <> show myMode <> " mode."
+  logMsg ioLogger INFO $ "Starting with " <> show myMode <> " mode."
   start
   ---------------------------------------------------------------

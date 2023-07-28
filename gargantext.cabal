@@ -117,6 +117,7 @@ library
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
+      Gargantext.System.Logging
       Gargantext.Defaults
       Gargantext.Utils.Jobs
       Gargantext.Utils.Jobs.Internal
