@@ -25,7 +25,8 @@ module Main where
 import Data.String (String)
 import Data.Text (unpack)
 import Data.Version (showVersion)
-import Gargantext.API (startGargantext, Mode(..)) -- , startGargantextMock)
+import Gargantext.API (startGargantext) -- , startGargantextMock)
+import Gargantext.API.Admin.EnvTypes
 import Gargantext.Prelude
 import Gargantext.System.Logging
 import Options.Generic

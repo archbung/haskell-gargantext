@@ -30,6 +30,7 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Prelude (CmdM)
 import Gargantext.Database.Query.Table.Node.Document.Insert
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
+import Gargantext.System.Logging
 
 type FlowCmdM env err m =
   ( CmdM     env err m
@@ -37,6 +38,7 @@ type FlowCmdM env err m =
   , HasNodeError err
   , HasInvalidError err
   , HasTreeError err
+  , HasLogger m
   )
 
 type FlowCorpus a = ( AddUniqId      a

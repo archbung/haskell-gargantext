@@ -6,6 +6,7 @@ import Prelude
 import Data.Kind (Type)
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (bracket)
+import Control.Monad.IO.Class
 
 data Level =
   -- | Debug messages
@@ -34,14 +35,20 @@ class HasLogger m where
   data family Logger m     :: Type
   type family InitParams m :: Type
   type family Payload m    :: Type
-  initLogger    :: InitParams m -> m (Logger m)
-  destroyLogger :: Logger m -> m ()
-  logMsg :: Logger m -> Level -> Payload m -> m ()
+  initLogger    :: InitParams m -> (forall m1. MonadIO m1 => m1 (Logger m))
+  destroyLogger :: Logger m     -> (forall m1. MonadIO m1 => m1 ())
+  logMsg        :: Logger m     -> Level -> Payload m -> m ()
 
 -- | exception-safe combinator that creates and destroys a logger.
 -- Think about it like a 'bracket' function from 'Control.Exception'.
-withLogger :: (MonadBaseControl IO m, HasLogger m)
+withLogger :: (MonadBaseControl IO m, MonadIO m, HasLogger m)
            => InitParams m
            -> (Logger m -> m a)
            -> m a
 withLogger params = bracket (initLogger params) destroyLogger
+
+withLoggerHoisted :: (MonadBaseControl IO m, HasLogger m)
+                  => InitParams m
+                  -> (Logger m -> IO a)
+                  -> IO a
+withLoggerHoisted params act = bracket (initLogger params) destroyLogger act
