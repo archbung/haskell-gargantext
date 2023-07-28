@@ -13,6 +13,7 @@ module Gargantext.API.Admin.EnvTypes (
   , env_manager
   , env_self_url
   , menv_firewall
+  , dev_env_logger
 
   , MockEnv(..)
   , DevEnv(..)
@@ -233,9 +234,31 @@ data MockEnv = MockEnv
 
 makeLenses ''MockEnv
 
+instance MonadLogger (GargM DevEnv GargError) where
+  getLogger = asks _dev_env_logger
+
+instance HasLogger (GargM DevEnv GargError) where
+  data instance Logger (GargM DevEnv GargError)  =
+    GargDevLogger {
+        dev_logger_mode    :: Mode
+      , dev_logger_set     :: FL.LoggerSet
+      }
+  type instance LogInitParams (GargM DevEnv GargError) = Mode
+  type instance LogPayload (GargM DevEnv GargError)    = FL.LogStr
+  initLogger                = \mode -> do
+    dev_logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
+    pure $ GargDevLogger mode dev_logger_set
+  destroyLogger             = \GargDevLogger{..}  -> liftIO $ FL.rmLoggerSet dev_logger_set
+  logMsg = \(GargDevLogger mode logger_set) lvl msg -> do
+    let pfx = "[" <> show lvl <> "] "
+    when (lvl `elem` (modeToLoggingLevels mode)) $
+      liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
+  logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)
+
 data DevEnv = DevEnv
   { _dev_env_settings  :: !Settings
   , _dev_env_config    :: !GargConfig
+  , _dev_env_logger    :: !(Logger (GargM DevEnv GargError))
   , _dev_env_pool      :: !(Pool Connection)
   , _dev_env_nodeStory :: !NodeStoryEnv
   , _dev_env_mail      :: !MailConfig
