@@ -17,6 +17,7 @@ module Gargantext.Core
 import Data.Aeson
 import Data.Either(Either(Left))
 import Data.Hashable (Hashable)
+import Data.LanguageCodes qualified as ISO639
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
@@ -45,6 +46,7 @@ import qualified Data.Map as Map
 -- | All languages supported
 -- NOTE: Use international country codes
 -- https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
+-- TODO This should be deprecated in favor of iso-639 library
 data Lang = All
           | DE
           | EL
@@ -92,6 +94,23 @@ instance ToHttpApiData Lang where
 instance Hashable Lang
 instance Arbitrary Lang where
   arbitrary = arbitraryBoundedEnum
+
+toISO639 :: Lang -> Maybe ISO639.ISO639_1
+toISO639 DE = Just ISO639.DE
+toISO639 EL = Just ISO639.EL
+toISO639 EN = Just ISO639.EN
+toISO639 ES = Just ISO639.ES
+toISO639 FR = Just ISO639.FR
+toISO639 IT = Just ISO639.IT
+toISO639 PL = Just ISO639.PL
+toISO639 PT = Just ISO639.PT
+toISO639 RU = Just ISO639.RU
+toISO639 UK = Just ISO639.UK
+toISO639 ZH = Just ISO639.ZH
+toISO639 All = Nothing
+
+toISO639EN :: Lang -> ISO639.ISO639_1
+toISO639EN l = fromMaybe ISO639.EN $ toISO639 l
 
 -- | https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 toISO639Lang :: Lang -> Maybe Text
