@@ -22,11 +22,13 @@ Source: https://en.wikipedia.org/wiki/Part-of-speech_tagging
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
 
-module Gargantext.Core.Text.Terms.Multi.PosTagging
-  where
+module Gargantext.Core.Text.Terms.Multi.PosTagging where
 
+import Control.Exception (catch, throwIO)
 import Data.Aeson
+import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.ByteString.Lazy.Internal (ByteString)
+import Data.Map qualified as Map
 import Data.Set (fromList)
 import Data.Text (Text, splitOn, pack, toLower)
 import Gargantext.Core (Lang(..))
@@ -35,8 +37,6 @@ import Gargantext.Core.Types
 import Gargantext.Prelude
 import Network.HTTP.Simple
 import Network.URI (URI(..))
-import qualified Data.ByteString.Lazy.Char8 as BSL
-import qualified Data.Map as Map
 
 -- import qualified Gargantext.Utils.SpacyNLP as SpacyNLP
 
@@ -82,7 +82,15 @@ corenlp' uri lang txt = do
   req <- parseRequest $
          "POST " <> show (uri { uriQuery = "?properties=" <> (BSL.unpack $ encode $ toJSON $ Map.fromList properties) })
    -- curl -XPOST 'http://localhost:9000/?properties=%7B%22annotators%22:%20%22tokenize,ssplit,pos,ner%22,%20%22outputFormat%22:%20%22json%22%7D' -d 'hello world, hello' | jq .
-  httpJSON $ setRequestBodyLBS (cs txt) req
+  --   printDebug "[corenlp] sending body" $ (cs txt :: ByteString)
+  catch (httpJSON $ setRequestBodyLBS (cs txt) req) $ \e ->
+    case e of
+      JSONParseException _req res _err -> do
+        let body = getResponseBody res
+        printDebug "[corenlp'] request text" (cs txt :: ByteString)
+        printDebug "[corenlp'] response body (error)" body
+        throwIO e
+      JSONConversionException _req _res _err -> throwIO e
   where
     properties_ :: [(Text, Text)]
     properties_ = case lang of

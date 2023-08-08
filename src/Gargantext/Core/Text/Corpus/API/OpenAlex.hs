@@ -26,7 +26,7 @@ get :: Text
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 get _email q lang mLimit = do
-  let limit = getLimit $ fromMaybe 10000 mLimit
+  let limit = getLimit $ fromMaybe 1000 mLimit
   let mFilter = (\l -> "language:" <> l) <$> toISO639Lang lang
   eRes <- OA.fetchWorksC Nothing mFilter $ Just $ Corpus.getRawQuery q
   pure $ (\(len, docsC) -> (len, docsC .| takeC limit .| mapC toDoc)) <$> eRes
