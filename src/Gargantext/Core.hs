@@ -112,6 +112,11 @@ toISO639 All = Nothing
 toISO639EN :: Lang -> ISO639.ISO639_1
 toISO639EN l = fromMaybe ISO639.EN $ toISO639 l
 
+iso639ToText :: ISO639.ISO639_1 -> Text
+iso639ToText la = pack [a, b]
+  where
+    (a, b) = ISO639.toChars la
+
 -- | https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 toISO639Lang :: Lang -> Maybe Text
 toISO639Lang All = Nothing
