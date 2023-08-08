@@ -58,7 +58,7 @@ import Control.Lens (set, view)
 import Control.Lens.Cons
 import Control.Lens.Prism
 import Data.Aeson (toJSON, ToJSON)
-import Data.Char (isAlpha)
+import Data.Char (isAlphaNum)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 -- import Data.ByteString (ByteString)
@@ -233,7 +233,7 @@ instance UniqParameters (Node a)
 
 
 filterText :: Text -> Text
-filterText = DT.toLower . (DT.filter isAlpha)
+filterText = DT.toLower . (DT.filter isAlphaNum)
 
 
 instance (UniqParameters a, ToJSON a, HasDBid NodeType) => AddUniqId (Node a)
