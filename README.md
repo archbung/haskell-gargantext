@@ -166,6 +166,7 @@ From the Backend root folder (haskell-gargantext):
 ``` shell
 ./start
 # The start script runs following commands:
+# - `./bin/install` to update and build the project
 # - `docker compose up` to run the Docker for postgresql from devops/docker folder
 # - `cabal run gargantext-server -- --ini gargantext.ini --run Prod` to run other services through `nix-shell`
 ```
