@@ -37,7 +37,7 @@ Disclaimer: since this project is still in development, this document remains in
   git clone https://gitlab.iscpif.fr/gargantext/haskell-gargantext.git
   cd haskell-gargantext
   ```
-#### 1. Installation
+### Installation
 
 This project can be built with either Stack or Cabal. For historical reasons, we generate a `cabal.project` from the `stack.yaml`, and we do not commit the former to the repo, to have a single "source of truth".
 However, it's always possible to generate a `cabal.project` thanks to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).
@@ -64,7 +64,7 @@ nix-shell
 
 This will take a bit of time the first time.
 
-#### Build: choose cabal (new) or stack (old)
+### Build: choose cabal (new) or stack (old)
 
 #### With Cabal (recommanded)
 
@@ -172,6 +172,22 @@ From the Backend root folder (haskell-gargantext):
 
 For frontend development and compilation, see the [Frontend Readme.md](https://gitlab.iscpif.fr/gargantext/purescript-gargantext#dev)
 
+### Working on libraries
+
+When a devlopment is needed on libraries (for instance, the HAL crawler in https://gitlab.iscpif.fr/gargantext/crawlers):
+
+1. Ongoing devlopment (on local repo):
+   1. In `cabal.project`:
+      - add `../hal` to `packages:`
+      - turn off (temporarily) the `hal` in `source-repository-package` 
+   2. When changes work and tests are OK, commit in repo `hal`
+2. When changes are commited / merged:
+   1. Get the hash id, and edit `stack.yaml` with the **new commit id**
+   2. run `./bin/update-cabal-project`
+      - get an error that sha256 don't match, so update the `./bin/update-cabal-project` with new sha256 hash
+      - run again `./bin/update-cabal-project` (to make sure it's a fixed point now)
+
+> Note: without `stack.yaml` we would have to only fix `cabal.project` -> `source-repository-package` commit id. Sha256 is there to make sure CI reruns the tests.
 
 ## Use Cases <a name="use-cases"></a>
 
