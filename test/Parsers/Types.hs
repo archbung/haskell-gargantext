@@ -25,7 +25,6 @@ import Test.QuickCheck.Instances ()
 import Text.Parsec.Pos
 import Text.Parsec.Error (ParseError, Message(..), newErrorMessage)
 import Data.Time.LocalTime (ZonedTime (..), TimeZone (..), TimeOfDay(..), LocalTime(..))
-import Data.Eq (Eq(..))
 import Data.Either (Either(..))
 
 deriving instance Eq ZonedTime

@@ -105,6 +105,7 @@ library
       Gargantext.Core.Viz.Types
       Gargantext.Database.Action.Flow
       Gargantext.Database.Action.Flow.Types
+      Gargantext.Database.Action.User
       Gargantext.Database.Action.User.New
       Gargantext.Database.Admin.Config
       Gargantext.Database.Admin.Trigger.Init
@@ -117,8 +118,9 @@ library
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
-      Gargantext.System.Logging
+      Gargantext.Database.Schema.User
       Gargantext.Defaults
+      Gargantext.System.Logging
       Gargantext.Utils.Jobs
       Gargantext.Utils.Jobs.Internal
       Gargantext.Utils.Jobs.Map
@@ -281,7 +283,6 @@ library
       Gargantext.Database.Action.Search
       Gargantext.Database.Action.Share
       Gargantext.Database.Action.TSQuery
-      Gargantext.Database.Action.User
       Gargantext.Database.Admin.Access
       Gargantext.Database.Admin.Bashql
       Gargantext.Database.Admin.Trigger.ContextNodeNgrams
@@ -346,7 +347,6 @@ library
       Gargantext.Database.Schema.NodeNodeNgrams2
       Gargantext.Database.Schema.NodesNgramsRepo
       Gargantext.Database.Schema.Prelude
-      Gargantext.Database.Schema.User
       Gargantext.Database.Types
       Gargantext.Utils.Aeson
       Gargantext.Utils.JohnSnowNLP

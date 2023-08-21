@@ -18,7 +18,6 @@ module Parsers.Date where
 import Test.Hspec
 import Test.QuickCheck
 
-import Control.Applicative ((<*>))
 import Data.Either (Either(..))
 import Data.Time (ZonedTime(..))
 import Data.Text (pack, Text)
