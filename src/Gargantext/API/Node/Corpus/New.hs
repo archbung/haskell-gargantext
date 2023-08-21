@@ -21,7 +21,6 @@ module Gargantext.API.Node.Corpus.New
 
 import Conduit
 import Control.Lens hiding (elements, Empty)
-import Control.Monad
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import qualified Data.ByteString.Base64 as BSB64
@@ -204,15 +203,15 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_flowListWith = flw }) maybeLimit jobHandle = do
 
   -- TODO ...
-  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] (cid, dbs) " <> show (cid, dbs)
-  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] datafield  " <> show datafield
-  logM DEBUG $ T.pack $ "[addToCorpusWithQuery] flowListWith " <> show flw
+  $(logLocM) DEBUG $ T.pack $ "(cid, dbs) " <> show (cid, dbs)
+  $(logLocM) DEBUG $ T.pack $ "datafield  " <> show datafield
+  $(logLocM) DEBUG $ T.pack $ "flowListWith " <> show flw
 
   addLanguageToCorpus cid l
 
   case datafield of
     Just Web -> do
-      logM DEBUG $ T.pack $ "[addToCorpusWithQuery] processing web request " <> show datafield
+      $(logLocM) DEBUG $ T.pack $ "processing web request " <> show datafield
 
       markStarted 1 jobHandle
 
@@ -227,7 +226,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       -- TODO if cid is folder -> create Corpus
       --      if cid is corpus -> add to corpus
       --      if cid is root   -> create corpus in Private
-      logM DEBUG $ T.pack $ "[G.A.N.C.New] getDataText with query: " <> show q
+      $(logLocM) DEBUG $ T.pack $ "getDataText with query: " <> show q
       let db = database2origin dbs
       mPubmedAPIKey <- getUserPubmedAPIKey user
       -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
@@ -240,8 +239,8 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
           markProgress 1 jobHandle
 
-          void $ flowDataText user txt (Multi l) cid (Just flw) jobHandle
-          -- printDebug "corpus id" cids
+          corpusId <- flowDataText user txt (Multi l) cid (Just flw) jobHandle
+          $(logLocM) DEBUG $ T.pack $ "corpus id " <> show corpusId
           -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
           sendMail user
           -- TODO ...

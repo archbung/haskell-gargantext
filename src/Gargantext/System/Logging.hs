@@ -1,20 +1,24 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 module Gargantext.System.Logging (
     LogLevel(..)
   , HasLogger(..)
   , MonadLogger(..)
   , logM
+  , logLocM
   , withLogger
   , withLoggerHoisted
   ) where
 
+import Language.Haskell.TH hiding (Type)
 import Control.Exception.Lifted (bracket)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Data.Kind (Type)
 import Prelude
 import qualified Data.Text as T
+import qualified Language.Haskell.TH.Syntax        as TH
 
 data LogLevel =
   -- | Debug messages
@@ -60,6 +64,35 @@ logM :: (Monad m, MonadLogger m) => LogLevel -> T.Text -> m ()
 logM level msg = do
   logger <- getLogger
   logTxt logger level msg
+
+-- | Like 'logM', but it automatically adds the file and line number to
+-- the output log.
+logLocM :: ExpQ
+logLocM = [| \level msg ->
+  let loc = $(getLocTH)
+  in logM level (formatWithLoc loc msg)
+  |]
+
+formatWithLoc :: Loc -> T.Text -> T.Text
+formatWithLoc loc msg = "[" <> locationToText <> "] " <> msg
+  where
+    locationToText :: T.Text
+    locationToText = T.pack $ (loc_filename loc) ++ ':' : (line loc) ++ ':' : (char loc)
+      where
+        line = show . fst . loc_start
+        char = show . snd . loc_start
+
+getLocTH :: ExpQ
+getLocTH = [| $(location >>= liftLoc) |]
+
+liftLoc :: Loc -> Q Exp
+liftLoc (Loc a b c (d1, d2) (e1, e2)) = [|Loc
+    $(TH.lift a)
+    $(TH.lift b)
+    $(TH.lift c)
+    ($(TH.lift d1), $(TH.lift d2))
+    ($(TH.lift e1), $(TH.lift e2))
+    |]
 
 -- | exception-safe combinator that creates and destroys a logger.
 -- Think about it like a 'bracket' function from 'Control.Exception'.
