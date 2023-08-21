@@ -39,6 +39,8 @@ import qualified Shelly as SH
 
 import Paths_gargantext
 
+-- | Keeps a log of usernames we have already generated, so that our
+-- roundtrip tests won't fail.
 uniqueArbitraryNewUser :: S.Set Username -> Gen (NewUser GargPassword)
 uniqueArbitraryNewUser alreadyTakenNames = do
   ur <- ascii_txt `suchThat` (not . flip S.member alreadyTakenNames)
@@ -135,7 +137,7 @@ unitTests :: IO TestEnv -> TestTree
 unitTests getEnv = testGroup "Read/Writes"
   [ testGroup "User creation" [
       testCase     "Simple write" (write01 getEnv)
-    , testProperty "Read/Write roundtrip" $ withMaxSuccess 50 (prop_userCreationRoundtrip getEnv)
+    , testProperty "Read/Write roundtrip" $ prop_userCreationRoundtrip getEnv
     ]
   ]
 

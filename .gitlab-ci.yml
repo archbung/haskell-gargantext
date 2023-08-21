@@ -63,7 +63,7 @@ test:
       nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR"
       mkdir -p /root/.cache/cabal/logs
       chown -R test:test /root/.cache/cabal/logs/
-      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'\""
+      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/
       chown -R root:root /root/
       chown -R root:root $CABAL_STORE_DIR
