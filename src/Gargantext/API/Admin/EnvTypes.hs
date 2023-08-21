@@ -227,6 +227,8 @@ instance Jobs.MonadJobStatus (GargM Env err) where
                                        Just msg -> jobLogFailTotalWithMessage msg latest
                          )
 
+  addMoreSteps steps jh = updateJobProgress jh (jobLogAddMore steps)
+
 data MockEnv = MockEnv
   { _menv_firewall :: !FireWall
   }
@@ -291,6 +293,8 @@ instance Jobs.MonadJobStatus (GargM DevEnv err) where
   markComplete _ = pure ()
 
   markFailed _ _ = pure ()
+
+  addMoreSteps _ _ = pure ()
 
 instance HasConfig DevEnv where
   hasConfig = dev_env_config

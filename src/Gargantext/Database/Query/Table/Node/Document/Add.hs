@@ -39,6 +39,13 @@ add pId ns = runPGSQuery queryAdd (Only $ Values fields inputData)
     fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes
     inputData = prepare pId ns
 
+-- | Adds a single document. Useful for debugging purposes, but
+-- not as efficient as adding documents in bulk via 'add'.
+add_one :: CorpusId -> ContextId -> Cmd err [Only Int]
+add_one pId ctxId = runPGSQuery queryAdd (Only $ Values fields [InputData pId ctxId])
+  where
+    fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes
+
 add_debug :: CorpusId -> [ContextId] -> Cmd err ByteString
 add_debug pId ns = formatPGSQuery queryAdd (Only $ Values fields inputData)
   where

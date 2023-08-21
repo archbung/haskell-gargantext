@@ -212,3 +212,6 @@ class MonadJobStatus m where
   -- | Finish tracking a job by marking all the remaining steps as failed. Attach an optional
   -- message to the failure.
   markFailed :: Maybe T.Text -> JobHandle m -> m ()
+
+  -- | Add 'n' more steps to the running computation, they will be marked as remaining.
+  addMoreSteps :: MonadJobStatus m => Int -> JobHandle m -> m ()

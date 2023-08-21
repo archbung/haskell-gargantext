@@ -236,7 +236,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       case eTxt of
         Right txt -> do
           -- TODO Sum lenghts of each txt elements
-
+          $(logLocM) DEBUG "Processing dataText results"
           markProgress 1 jobHandle
 
           corpusId <- flowDataText user txt (Multi l) cid (Just flw) jobHandle
@@ -248,6 +248,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
         Left err -> do
           -- printDebug "Error: " err
+          $(logLocM) ERROR (T.pack $ show err)
           markFailed (Just $ T.pack (show err)) jobHandle
 
 type AddWithForm = Summary "Add with FormUrlEncoded to corpus endpoint"
