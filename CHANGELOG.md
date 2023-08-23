@@ -1,3 +1,12 @@
+## Version 0.0.6.9.9.7.6
+
+* [BACK][FIX][[ArXiv][TextFlow] Ngrams Table empty (#258)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/258)
+* [BACK][FIX][[Corpus HAL API] Abstract in both languages FR+EN instead of only 1 language (#244)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/244)
+* [FRONT][ERGO][API key pubmed (#593)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/593)
+* [FRONT][FACTO][Tree on the right (#511)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/511)
+* [FRONT][FIX][Single document upload doesn&#39;t work when abstract is empty (#592)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/592)
+* [FRONT][RENDER][[Node Phylo] Form render improvements (#581)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/581)
+
 ## Version 0.0.6.9.9.7.5.1
 
 * [BACK][FIX][[Corpus HAL API] Abstract in both languages FR+EN instead of only 1 language (#244)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/244)
