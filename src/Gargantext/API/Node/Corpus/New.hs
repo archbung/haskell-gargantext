@@ -21,7 +21,6 @@ module Gargantext.API.Node.Corpus.New
 
 import Conduit
 import Control.Lens hiding (elements, Empty)
-import Control.Monad
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import qualified Data.ByteString.Base64 as BSB64
@@ -67,6 +66,7 @@ import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
 import qualified Gargantext.Database.GargDB as GargDB
+import Gargantext.System.Logging
 
 ------------------------------------------------------------------------
 {-
@@ -201,16 +201,17 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_datafield = datafield
                                          , _wq_lang = l
                                          , _wq_flowListWith = flw }) maybeLimit jobHandle = do
+
   -- TODO ...
-  -- printDebug "[addToCorpusWithQuery] (cid, dbs)" (cid, dbs)
-  -- printDebug "[addToCorpusWithQuery] datafield" datafield
-  -- printDebug "[addToCorpusWithQuery] flowListWith" flw
+  $(logLocM) DEBUG $ T.pack $ "(cid, dbs) " <> show (cid, dbs)
+  $(logLocM) DEBUG $ T.pack $ "datafield  " <> show datafield
+  $(logLocM) DEBUG $ T.pack $ "flowListWith " <> show flw
 
   addLanguageToCorpus cid l
 
   case datafield of
     Just Web -> do
-      -- printDebug "[addToCorpusWithQuery] processing web request" datafield
+      $(logLocM) DEBUG $ T.pack $ "processing web request " <> show datafield
 
       markStarted 1 jobHandle
 
@@ -225,7 +226,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       -- TODO if cid is folder -> create Corpus
       --      if cid is corpus -> add to corpus
       --      if cid is root   -> create corpus in Private
-      -- printDebug "[G.A.N.C.New] getDataText with query" q
+      $(logLocM) DEBUG $ T.pack $ "getDataText with query: " <> show q
       let db = database2origin dbs
       mPubmedAPIKey <- getUserPubmedAPIKey user
       -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
@@ -235,11 +236,11 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       case eTxt of
         Right txt -> do
           -- TODO Sum lenghts of each txt elements
-
+          $(logLocM) DEBUG "Processing dataText results"
           markProgress 1 jobHandle
 
-          void $ flowDataText user txt (Multi l) cid (Just flw) jobHandle
-          -- printDebug "corpus id" cids
+          corpusId <- flowDataText user txt (Multi l) cid (Just flw) jobHandle
+          $(logLocM) DEBUG $ T.pack $ "corpus id " <> show corpusId
           -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
           sendMail user
           -- TODO ...
@@ -247,6 +248,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
         Left err -> do
           -- printDebug "Error: " err
+          $(logLocM) ERROR (T.pack $ show err)
           markFailed (Just $ T.pack (show err)) jobHandle
 
 type AddWithForm = Summary "Add with FormUrlEncoded to corpus endpoint"

@@ -29,13 +29,14 @@ Pouillard (who mainly made it).
 {-# LANGUAGE BangPatterns         #-}
 {-# LANGUAGE NumericUnderscores   #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 module Gargantext.API
       where
 
 import Control.Concurrent
 import Control.Exception (catch, finally, SomeException{-, displayException, IOException-})
-import Control.Lens
+import Control.Lens hiding (Level)
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
 import Data.Either
@@ -46,9 +47,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Text.IO (putStrLn)
 import Data.Validity
 import GHC.Base (Applicative)
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth.Types (AuthContext)
-import Gargantext.API.Admin.EnvTypes (Env)
+import Gargantext.API.Admin.EnvTypes (Env, Mode(..))
 import Gargantext.API.Admin.Settings (newEnv)
 import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings)
 import Gargantext.API.EKG
@@ -69,14 +69,12 @@ import Servant
 import System.FilePath
 import qualified Gargantext.Database.Prelude as DB
 import qualified System.Cron.Schedule as Cron
-
-data Mode = Dev | Mock | Prod
-  deriving (Show, Read, Generic)
+import Gargantext.System.Logging
 
 -- | startGargantext takes as parameters port number and Ini file.
 startGargantext :: Mode -> PortNumber -> FilePath -> IO ()
-startGargantext mode port file = do
-  env <- newEnv port file
+startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
+  env <- newEnv logger port file
   runDbCheck env
   portRouteInfo port
   app <- makeApp env

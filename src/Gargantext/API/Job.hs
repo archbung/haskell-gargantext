@@ -31,7 +31,7 @@ addErrorEvent message = addEvent "ERROR" message
 
 jobLogProgress :: Int -> JobLog -> JobLog
 jobLogProgress n jl = over (scst_succeeded . _Just) (+ n) $
-                      over (scst_remaining . _Just) (\x -> x - n) jl
+                      over (scst_remaining . _Just) (\x -> max 0 (x - n)) jl
 
 -- | Mark a job as completely done, by adding the 'remaining' into 'succeeded'.
 -- At the end 'scst_remaining' will be 0, and 'scst_succeeded' will be 'oldvalue + remaining'.
@@ -40,6 +40,9 @@ jobLogComplete jl =
   let remainingNow = fromMaybe 0 (_scst_remaining jl)
   in jl & over scst_succeeded (Just . maybe remainingNow ((+) remainingNow))
         & over scst_remaining (const (Just 0))
+
+jobLogAddMore :: Int -> JobLog -> JobLog
+jobLogAddMore moreSteps jl = jl & over (scst_remaining . _Just) (+ moreSteps)
 
 jobLogFailures :: Int -> JobLog -> JobLog
 jobLogFailures n jl = over (scst_failed . _Just) (+ n) $

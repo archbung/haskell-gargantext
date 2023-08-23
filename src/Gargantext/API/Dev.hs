@@ -29,16 +29,17 @@ import qualified Gargantext.Prelude.Mail as Mail
 import qualified Gargantext.Prelude.NLP as NLP
 import Servant
 import System.IO (FilePath)
+import Gargantext.System.Logging
 
 type IniPath  = FilePath
 -------------------------------------------------------------------
 withDevEnv :: IniPath -> (DevEnv -> IO a) -> IO a
-withDevEnv iniPath k = do
-  env <- newDevEnv
+withDevEnv iniPath k = withLoggerHoisted Dev $ \logger -> do
+  env <- newDevEnv logger
   k env -- `finally` cleanEnv env
 
   where
-    newDevEnv = do
+    newDevEnv logger = do
       cfg     <- readConfig         iniPath
       dbParam <- databaseParameters iniPath
       --nodeStory_env <- readNodeStoryEnv (_gc_repofilepath cfg)
@@ -49,6 +50,7 @@ withDevEnv iniPath k = do
       nlp_config <- NLP.readConfig iniPath
       pure $ DevEnv
         { _dev_env_pool     = pool
+        , _dev_env_logger     = logger
         , _dev_env_nodeStory  = nodeStory_env
         , _dev_env_settings = setts
         , _dev_env_config   = cfg

@@ -37,12 +37,12 @@ import System.Directory
 -- import System.FileLock (tryLockFile, unlockFile, SharedExclusive(Exclusive))
 import System.IO (FilePath, hClose)
 import System.IO.Temp (withTempFile)
-import System.Log.FastLogger
 import qualified Data.ByteString.Lazy as L
 
 
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Types
+import Gargantext.API.Prelude
 -- import Gargantext.API.Ngrams.Types (NgramsRepo, HasRepo(..), RepoEnv(..), r_version, initRepo, renv_var, renv_lock)
 import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Database.Prelude (databaseParameters, hasConfig)
@@ -54,6 +54,7 @@ import qualified Gargantext.Utils.Jobs       as Jobs
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Gargantext.Utils.Jobs.Queue as Jobs
 import qualified Gargantext.Utils.Jobs.Settings as Jobs
+import Gargantext.System.Logging
 
 devSettings :: FilePath -> IO Settings
 devSettings jwkFile = do
@@ -176,8 +177,8 @@ readRepoEnv repoDir = do
 devJwkFile :: FilePath
 devJwkFile = "dev.jwk"
 
-newEnv :: PortNumber -> FilePath -> IO Env
-newEnv port file = do
+newEnv :: Logger (GargM Env GargError) -> PortNumber -> FilePath -> IO Env
+newEnv logger port file = do
   !manager_env  <- newTlsManager
   !settings'    <- devSettings devJwkFile <&> appPort .~ port -- TODO read from 'file'
   when (port /= settings' ^. appPort) $
@@ -200,7 +201,6 @@ newEnv port file = do
                         & Jobs.l_jsJobTimeout .~ (fromIntegral $ config_env ^. hasConfig ^. gc_js_job_timeout)
                         & Jobs.l_jsIDTimeout  .~ (fromIntegral $ config_env ^. hasConfig ^. gc_js_id_timeout)
   !jobs_env     <- Jobs.newJobEnv jobs_settings prios' manager_env
-  !logger        <- newStderrLoggerSet defaultBufSize
   !config_mail  <- Mail.readConfig file
   !nlp_env      <- nlpServerMap <$> NLP.readConfig file
 

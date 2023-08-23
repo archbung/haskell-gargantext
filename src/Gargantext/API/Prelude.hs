@@ -49,6 +49,7 @@ import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
 import qualified Servant.Job.Types as SJ
+import Gargantext.System.Logging
 
 class HasJoseError e where
   _JoseError :: Prism' e Jose.Error
@@ -88,7 +89,7 @@ type GargServerC env err m =
 
 type GargServerT env err m api = GargServerC env err m => ServerT api m
 
-type GargServer api = forall env err m. GargServerT env err m api
+type GargServer api = forall env err m. MonadLogger m => GargServerT env err m api
 
 -- This is the concrete monad. It needs to be used as little as possible.
 type GargM env err = ReaderT env (ExceptT err IO)

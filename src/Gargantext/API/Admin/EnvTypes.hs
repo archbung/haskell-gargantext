@@ -2,15 +2,18 @@
 
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Gargantext.API.Admin.EnvTypes (
     GargJob(..)
   , Env(..)
+  , Mode(..)
   , mkJobHandle
   , env_logger
   , env_manager
   , env_self_url
   , menv_firewall
+  , dev_env_logger
 
   , MockEnv(..)
   , DevEnv(..)
@@ -18,7 +21,7 @@ module Gargantext.API.Admin.EnvTypes (
   , ConcreteJobHandle -- opaque
   ) where
 
-import Control.Lens hiding ((:<))
+import Control.Lens hiding (Level, (:<))
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Pool (Pool)
@@ -29,23 +32,61 @@ import Network.HTTP.Client (Manager)
 import Servant.Client (BaseUrl)
 import Servant.Job.Async (HasJobEnv(..), Job)
 import qualified Servant.Job.Async as SJ
-import System.Log.FastLogger
 import qualified Servant.Job.Core
 
-import Gargantext.API.Admin.Types
+import Data.List ((\\))
+import qualified Data.Text as T
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Admin.Types
 import Gargantext.API.Job
-import Gargantext.API.Prelude (GargM)
-import Gargantext.Core.NodeStory
+import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.NLP (NLPServerMap, HasNLPServer(..))
+import Gargantext.Core.NodeStory
 import Gargantext.Database.Prelude (HasConnectionPool(..), HasConfig(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..))
 import Gargantext.Prelude.Mail.Types (MailConfig)
+import Gargantext.System.Logging
+import qualified System.Log.FastLogger as FL
 
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import Gargantext.Utils.Jobs.Map (LoggerM, J(..), jTask, rjGetLog)
+
+data Mode = Dev | Mock | Prod
+  deriving (Show, Read, Generic)
+
+-- | Given the 'Mode' the server is running in, it returns the list of
+-- allowed levels. For example for production we ignore everything which
+-- has priority lower than "warning".
+modeToLoggingLevels :: Mode -> [LogLevel]
+modeToLoggingLevels = \case
+   Dev  -> [minBound .. maxBound]
+   Mock -> [minBound .. maxBound]
+   -- For production, accepts everything but DEBUG.
+   Prod -> [minBound .. maxBound] \\ [DEBUG]
+
+instance MonadLogger (GargM Env GargError) where
+  getLogger = asks _env_logger
+
+instance HasLogger (GargM Env GargError) where
+  data instance Logger (GargM Env GargError)  =
+    GargLogger {
+        logger_mode    :: Mode
+      , logger_set     :: FL.LoggerSet
+      }
+  type instance LogInitParams (GargM Env GargError) = Mode
+  type instance LogPayload (GargM Env GargError)    = FL.LogStr
+  initLogger                = \mode -> do
+    logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
+    pure $ GargLogger mode logger_set
+  destroyLogger             = \GargLogger{..}  -> liftIO $ FL.rmLoggerSet logger_set
+  logMsg = \(GargLogger mode logger_set) lvl msg -> do
+    let pfx = "[" <> show lvl <> "] "
+    when (lvl `elem` (modeToLoggingLevels mode)) $
+      liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
+  logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)
+
 
 data GargJob
   = TableNgramsJob
@@ -72,7 +113,7 @@ data GargJob
 -- we need to remember to force the fields to WHNF at that point.
 data Env = Env
   { _env_settings  :: ~Settings
-  , _env_logger    :: ~LoggerSet
+  , _env_logger    :: ~(Logger (GargM Env GargError))
   , _env_pool      :: ~(Pool Connection)
   , _env_nodeStory :: ~NodeStoryEnv
   , _env_manager   :: ~Manager
@@ -186,6 +227,8 @@ instance Jobs.MonadJobStatus (GargM Env err) where
                                        Just msg -> jobLogFailTotalWithMessage msg latest
                          )
 
+  addMoreSteps steps jh = updateJobProgress jh (jobLogAddMore steps)
+
 data MockEnv = MockEnv
   { _menv_firewall :: !FireWall
   }
@@ -193,9 +236,31 @@ data MockEnv = MockEnv
 
 makeLenses ''MockEnv
 
+instance MonadLogger (GargM DevEnv GargError) where
+  getLogger = asks _dev_env_logger
+
+instance HasLogger (GargM DevEnv GargError) where
+  data instance Logger (GargM DevEnv GargError)  =
+    GargDevLogger {
+        dev_logger_mode    :: Mode
+      , dev_logger_set     :: FL.LoggerSet
+      }
+  type instance LogInitParams (GargM DevEnv GargError) = Mode
+  type instance LogPayload (GargM DevEnv GargError)    = FL.LogStr
+  initLogger                = \mode -> do
+    dev_logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
+    pure $ GargDevLogger mode dev_logger_set
+  destroyLogger             = \GargDevLogger{..}  -> liftIO $ FL.rmLoggerSet dev_logger_set
+  logMsg = \(GargDevLogger mode logger_set) lvl msg -> do
+    let pfx = "[" <> show lvl <> "] "
+    when (lvl `elem` (modeToLoggingLevels mode)) $
+      liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
+  logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)
+
 data DevEnv = DevEnv
   { _dev_env_settings  :: !Settings
   , _dev_env_config    :: !GargConfig
+  , _dev_env_logger    :: !(Logger (GargM DevEnv GargError))
   , _dev_env_pool      :: !(Pool Connection)
   , _dev_env_nodeStory :: !NodeStoryEnv
   , _dev_env_mail      :: !MailConfig
@@ -228,6 +293,8 @@ instance Jobs.MonadJobStatus (GargM DevEnv err) where
   markComplete _ = pure ()
 
   markFailed _ _ = pure ()
+
+  addMoreSteps _ _ = pure ()
 
 instance HasConfig DevEnv where
   hasConfig = dev_env_config

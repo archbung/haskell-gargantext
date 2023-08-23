@@ -55,9 +55,11 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
 
 import Conduit
 import Control.Lens hiding (elements, Indexed)
+import Control.Monad (void)
 import Data.Aeson.TH (deriveJSON)
 import Data.Conduit.Internal (zipSources)
 import Data.Either
+import Data.Foldable (for_)
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import Data.List (concat)
@@ -69,6 +71,7 @@ import Data.Set (Set)
 import Data.Swagger
 import Data.Tuple.Extra (first, second)
 import GHC.Generics (Generic)
+import GHC.Num (fromInteger)
 import Gargantext.API.Ngrams.Tools (getTermsWith)
 import Gargantext.Core (Lang(..), PosTagAlgo(..))
 import Gargantext.Core (withDefaultLanguage)
@@ -97,7 +100,7 @@ import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContex
 import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
+import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
@@ -113,26 +116,28 @@ import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Database.Types
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)
+import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import System.FilePath (FilePath)
 import qualified Data.Conduit      as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.List as CList
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import qualified Data.Set            as Set
 import qualified Data.Text as T
 import qualified Gargantext.API.Ngrams.Types as NT
 import qualified Gargantext.Core.Text.Corpus.API as API
 import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
-import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
+import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc (add)
 import qualified PUBMED.Types as PUBMED
 
 ------------------------------------------------------------------------
 -- Imports for upgrade function
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Query.Tree (findNodesId)
-import qualified Data.List as List
+
 ------------------------------------------------------------------------
 -- TODO use internal with API name (could be old data)
 data DataOrigin = InternalOrigin { _do_api :: API.ExternalAPIs }
@@ -205,12 +210,15 @@ flowDataText :: forall env err m.
                 -> JobHandle m
                 -> m CorpusId
 flowDataText u (DataOld ids) tt cid mfslw _ = do
+  $(logLocM) DEBUG $ T.pack $ "Found " <> show (length ids) <> " old node IDs"
   (_userId, userCorpusId, listId) <- createNodes u (Right [cid]) corpusType
   _ <- Doc.add userCorpusId ids
   flowCorpusUser (_tt_lang tt) u userCorpusId listId corpusType mfslw
   where
     corpusType = (Nothing :: Maybe HyperdataCorpus)
-flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle =
+flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle = do
+  $(logLocM) DEBUG $ T.pack $ "Found " <> show mLen <> " new documents to process"
+  for_ (mLen <&> fromInteger) (`addMoreSteps` jobHandle)
   flowCorpus u (Right [cid]) tt mfslw (mLen, (transPipe liftBase txtC)) jobHandle
 
 ------------------------------------------------------------------------
@@ -279,58 +287,22 @@ flow :: forall env err m a c.
 flow c u cn la mfslw (mLength, docsC) jobHandle = do
   (_userId, userCorpusId, listId) <- createNodes u cn c
   -- TODO if public insertMasterDocs else insertUserDocs
-  _ <- runConduit $ zipSources (yieldMany [1..]) docsC
+  runConduit $ zipSources (yieldMany [1..]) docsC
                  .| CList.chunksOf 100
-                 .| mapMC insertDocs'
-                 .| mapM_C (\ids' -> do
-                               _ <- Doc.add userCorpusId ids'
-                               pure ())
-                 .| sinkList
+                 .| mapM_C (\docs -> void $ insertDocs' docs >>= Doc.add userCorpusId)
+                 .| sinkNull
 
-  _ <- flowCorpusUser (la ^. tt_lang) u userCorpusId listId c mfslw
-
---  ids <- traverse (\(idx, doc) -> do
---                      id <- insertMasterDocs c la doc
---                      logStatus JobLog { _scst_succeeded = Just $ 1 + idx
---                                       , _scst_failed    = Just 0
---                                       , _scst_remaining = Just $ length docs - idx
---                                       , _scst_events    = Just []
---                                       }
---                      pure id
---                  ) (zip [1..] docs)
-  --printDebug "[flow] calling flowCorpusUser" (0 :: Int)
-  pure userCorpusId
-  --flowCorpusUser (la ^. tt_lang) u cn c ids mfslw
+  $(logLocM) DEBUG "Calling flowCorpusUser"
+  flowCorpusUser (la ^. tt_lang) u userCorpusId listId c mfslw
 
   where
     insertDocs' :: [(Integer, a)] -> m [NodeId]
     insertDocs' [] = pure []
     insertDocs' docs = do
-      -- printDebug "[flow] calling insertDoc, ([idx], mLength) = " (fst <$> docs, mLength)
+      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docs, mLength)
       ids <- insertMasterDocs c la (snd <$> docs)
-      let maxIdx = maximum (fst <$> docs)
-      case mLength of
-        Nothing -> pure ()
-        Just _len -> do
-
-          let succeeded = fromIntegral (1 + maxIdx)
-          -- let remaining = fromIntegral (len - maxIdx)
-          -- Reconstruct the correct update state by using 'markStarted' and the other primitives.
-          -- We do this slightly awkward arithmetic such that when we call 'markProgress' we reduce
-          -- the number of 'remaining' of exactly '1 + maxIdx', and we will end up with a 'JobLog'
-          -- looking like this:
-          -- JobLog
-          -- { _scst_succeeded = Just $ fromIntegral $ 1 + maxIdx
-          -- , _scst_failed    = Just 0
-          -- , _scst_remaining = Just $ fromIntegral $ len - maxIdx
-          -- , _scst_events    = Just []
-          -- }
-          -- markStarted (remaining + succeeded) jobHandle
-          markProgress succeeded jobHandle
-
+      markProgress (length docs) jobHandle
       pure ids
-
-
 
 ------------------------------------------------------------------------
 createNodes :: ( FlowCmdM env err m
