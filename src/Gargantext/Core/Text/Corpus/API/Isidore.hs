@@ -35,13 +35,13 @@ get la l q a = do
   let
     printErr (DecodeFailure e _) = panic e
     printErr e                   = panic (cs $ show e)
-    
+
     toIsidoreDocs :: Reply -> [IsidoreDoc]
     toIsidoreDocs (ReplyOnly r) = [r]
     toIsidoreDocs (Replies  rs) = rs
 
   iDocs <- either printErr _content <$> Isidore.get l q a
-  
+
   hDocs <- mapM (\d -> isidoreToDoc la d) (toIsidoreDocs iDocs)
   pure hDocs
 
@@ -58,7 +58,7 @@ isidoreToDoc l (IsidoreDoc t a d u s as) = do
     author :: Author -> Text
     author (Author fn ln) = (_name fn) <> ", " <> (_name ln)
     author (Authors aus) = Text.intercalate ". " $ map author aus
-    
+
     creator2text :: Creator -> Text
     creator2text (Creator au)   = author au
     creator2text (Creators aus') = Text.intercalate ". " $ map author aus'
@@ -67,9 +67,9 @@ isidoreToDoc l (IsidoreDoc t a d u s as) = do
     langText (LangText _l t1) = t1
     langText (OnlyText t2   ) = t2
     langText (ArrayText ts  ) = Text.intercalate " " $ map langText ts
-    
-  (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit l (maybe (Just $ Text.pack $ show Defaults.year) (Just) d)
-    
+
+  (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit (maybe (Just $ Text.pack $ show Defaults.year) (Just) d)
+
   pure HyperdataDocument
          { _hd_bdd = Just "Isidore"
          , _hd_doi = Nothing
@@ -91,5 +91,3 @@ isidoreToDoc l (IsidoreDoc t a d u s as) = do
          , _hd_publication_second = Nothing
          , _hd_language_iso2 = Just $ (Text.pack . show) l
          }
-
-

@@ -24,7 +24,7 @@ import Data.Either (Either(..))
 import Data.Maybe
 import qualified Data.Text as T
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
-import Gargantext.Core (Lang(..))
+import Gargantext.Core (Lang(..), toISO639)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude
 import qualified Gargantext.Core.Text.Corpus.API.Arxiv   as Arxiv
@@ -57,13 +57,13 @@ get externalAPI la q mPubmedAPIKey limit = do
     Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
     Right corpusQuery -> case externalAPI of
       OpenAlex -> first ExternalAPIError <$>
-                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q la limit
+                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q (toISO639 la) limit
       PubMed -> first ExternalAPIError <$>
                   PUBMED.get (fromMaybe "" mPubmedAPIKey) corpusQuery limit
       --docs <- PUBMED.get   q default_limit -- EN only by default
       --pure (Just $ fromIntegral $ length docs, yieldMany docs)
       Arxiv   -> Right <$> Arxiv.get la corpusQuery limit
-      HAL     -> first ExternalAPIError <$> HAL.getC  la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+      HAL     -> first ExternalAPIError <$> HAL.getC (toISO639 la) (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
       IsTex   -> do docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
                     pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
       Isidore -> do docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing

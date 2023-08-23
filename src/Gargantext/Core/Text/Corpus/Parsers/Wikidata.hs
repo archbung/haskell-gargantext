@@ -1,7 +1,7 @@
 {-|
 Module      : Gargantext.Core.Text.Corpus.Parsers.Wikidata
 <<<<<<< HEAD
-Description : To query Wikidata 
+Description : To query Wikidata
 =======
 Description : To query Wikidata
 >>>>>>> dev-clustering
@@ -68,7 +68,7 @@ wikiPageToDocument m wr = do
       source     = Nothing
       abstract   = Just $ concat $ take m sections
 
-  (date, (year, month, day)) <- dateSplit EN $ head
+  (date, (year, month, day)) <- dateSplit $ head
                     $ catMaybes
                     [ wr ^. wr_yearStart
                     , wr ^. wr_yearEnd
@@ -130,4 +130,3 @@ wikidataQuery n = List.unlines
       ,"     }"
       ,"       LIMIT " <> (cs $ show n)
       ]
-

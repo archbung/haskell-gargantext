@@ -60,7 +60,7 @@ extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
   commit: 2d7e5753cbbce248b860b571a0e9885415c846f7
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-  commit: dab07cb89e8ab8eaaff8619f5e21d944d9c526ab
+  commit: 1cf872fb3bd0e3e44af31247833c4b6bb7d0dca5
   # NP libs
 - git: https://github.com/alpmestan/servant-job.git
   commit: b4182487cfe479777c11ca19f3c0d47840b376f6

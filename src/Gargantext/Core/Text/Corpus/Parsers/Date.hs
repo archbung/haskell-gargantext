@@ -48,10 +48,10 @@ import qualified Data.List         as List
 ------------------------------------------------------------------------
 -- | Parse date to Ints
 -- TODO add hours, minutes and seconds
-dateSplit :: Lang -> Maybe Text -> IO (Maybe UTCTime, (Maybe Year, Maybe Month, Maybe Day))
-dateSplit _ Nothing    = pure (Nothing, (Nothing, Nothing, Nothing))
-dateSplit l (Just txt) = do
-  utcTime <- parse l txt
+dateSplit :: Maybe Text -> IO (Maybe UTCTime, (Maybe Year, Maybe Month, Maybe Day))
+dateSplit Nothing    = pure (Nothing, (Nothing, Nothing, Nothing))
+dateSplit (Just txt) = do
+  utcTime <- parse txt
   let (y, m, d) = split' utcTime
   pure (Just utcTime, (Just y, Just m,Just d))
 
@@ -72,15 +72,15 @@ type Day   = Int
 -- 1900-04-01 19:00:00 UTC
 -- >>> parse EN (pack "April 1 1900")
 -- 1900-04-01 00:00:00 UTC
-parse :: Lang -> Text -> IO UTCTime
-parse lang s = do
+parse :: Text -> IO UTCTime
+parse s = do
   -- printDebug "Date: " s
   let result = dateFlow (DucklingFailure s)
   --printDebug "Date': " dateStr'
   case result of
     DateFlowSuccess ok -> pure ok
     DateFlowFailure    -> (withDebugMode (DebugMode True)
-                                        "[G.C.T.P.T.Date parse]" (lang,s)
+                                        "[G.C.T.P.T.Date parse]" s
                                         $ getCurrentTime)
     _                   -> panic "[G.C.T.C.Parsers.Date] parse: Should not happen"
 
@@ -206,4 +206,3 @@ parseDateWithDuckling lang input options = do
   --pure $ parseAndResolve (rulesFor (locale ctx) (HashSet.fromList [(This Time)])) input ctx
   -- TODO check/test Options False or True
   analyze input contxt options $ HashSet.fromList [(Seal Time)]
-

@@ -82,7 +82,7 @@ toDoc :: Lang -> ISTEX.Document -> IO HyperdataDocument
 toDoc la (ISTEX.Document i t a ab d s) = do
   --printDebug "ISTEX date" d
   (utctime, (pub_year, pub_month, pub_day)) <-
-        Date.dateSplit la (maybe (Just $ pack $ show Defaults.year) (Just . pack . show) d)
+        Date.dateSplit (maybe (Just $ pack $ show Defaults.year) (Just . pack . show) d)
   --printDebug "toDoc Istex" (utctime, (pub_year, pub_month, pub_day))
   pure $ HyperdataDocument { _hd_bdd       = Just "Istex"
                            , _hd_doi       = Just i
