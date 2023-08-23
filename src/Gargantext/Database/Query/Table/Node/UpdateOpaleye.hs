@@ -26,7 +26,7 @@ import Gargantext.Database.Prelude (Cmd, mkCmd, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 
 updateHyperdata :: HyperdataC a => NodeId -> a -> DBCmd err Int64
 updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
@@ -34,7 +34,7 @@ updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
                                     putStrLn "after runUpdate_" >> return res
 
 updateHyperdataQuery :: HyperdataC a => NodeId -> a -> Update Int64
-updateHyperdataQuery i h = seq h' $ trace "updateHyperdataQuery: encoded JSON" $ Update
+updateHyperdataQuery i h = seq h' $ {- trace "updateHyperdataQuery: encoded JSON" $ -} Update
    { uTable      = nodeTable
    , uUpdateWith = updateEasy (\  (Node { .. })
                                 -> Node { _node_hyperdata = h', .. }

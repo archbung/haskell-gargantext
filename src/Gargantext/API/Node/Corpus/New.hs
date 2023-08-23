@@ -58,7 +58,6 @@ import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Database.Query.Table.User (getUserPubmedAPIKey)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_parsers)
@@ -145,6 +144,7 @@ data WithQuery = WithQuery
   , _wq_lang         :: !Lang
   , _wq_node_id      :: !Int
   , _wq_flowListWith :: !FlowSocialListWith
+  , _wq_pubmedAPIKey :: !(Maybe Text)
   }
   deriving (Show, Eq, Generic)
 
@@ -158,6 +158,7 @@ instance ToSchema WithQuery where
 
 instance Arbitrary WithQuery where
   arbitrary = WithQuery <$> arbitrary
+                        <*> arbitrary
                         <*> arbitrary
                         <*> arbitrary
                         <*> arbitrary
@@ -200,8 +201,8 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_databases = dbs
                                          , _wq_datafield = datafield
                                          , _wq_lang = l
-                                         , _wq_flowListWith = flw }) maybeLimit jobHandle = do
-
+                                         , _wq_flowListWith = flw
+                                         , _wq_pubmedAPIKey = mPubmedAPIKey }) maybeLimit jobHandle = do
   -- TODO ...
   $(logLocM) DEBUG $ T.pack $ "(cid, dbs) " <> show (cid, dbs)
   $(logLocM) DEBUG $ T.pack $ "datafield  " <> show datafield
@@ -228,7 +229,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       --      if cid is root   -> create corpus in Private
       $(logLocM) DEBUG $ T.pack $ "getDataText with query: " <> show q
       let db = database2origin dbs
-      mPubmedAPIKey <- getUserPubmedAPIKey user
+      -- mPubmedAPIKey <- getUserPubmedAPIKey user
       -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
       eTxt <- getDataText db (Multi l) q mPubmedAPIKey maybeLimit
 
