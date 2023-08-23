@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.7.6.1
+
+* [BACK][API/DATA] OpenAlex connection
+* [BACK][DOC][README: Add note about libraries devlopment (#260)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/260)
+
 ## Version 0.0.6.9.9.7.6
 
 * [BACK][FIX][[ArXiv][TextFlow] Ngrams Table empty (#258)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/258)
