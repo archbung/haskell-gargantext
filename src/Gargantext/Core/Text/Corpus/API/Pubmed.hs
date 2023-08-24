@@ -86,8 +86,6 @@ convertQuery q = ESearch (interpretQuery q transformAST)
       BConst (Negative (Term term))
         -> [QN "NOT+", QE (TE.encodeUtf8 term)]
 
--- | TODO put default pubmed query in gargantext.ini
--- by default: 10K docs
 get :: Text
     -> Corpus.Query
     -> Maybe Limit
