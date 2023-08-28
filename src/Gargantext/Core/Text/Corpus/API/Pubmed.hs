@@ -45,6 +45,15 @@ import PUBMED.Types (Config(..))
 
 -- | A pubmed query.
 -- See: https://www.ncbi.nlm.nih.gov/books/NBK25499/#chapter4.ESearch
+-- The documentation for PUBMED says:
+-- Values for query keys may also be provided in term if they are preceeded by a
+-- '#' (%23 in the URL). While only one query_key parameter can be provided to ESearch,
+-- any number of query keys can be combined in term. Also, if query keys are provided in term,
+-- they can be combined with OR or NOT in addition to AND.
+-- Example:
+-- esearch.fcgi?db=pubmed&term=%231+AND+asthma&WebEnv=<webenv string>&usehistory=y
+--
+-- Therefore, we can pretty-print our 'Query' back into something that PubMed could understand.
 newtype ESearch = ESearch { _ESearch :: [EscapeItem] }
   deriving stock (Show, Eq)
   deriving newtype (Semigroup, Monoid)
@@ -87,21 +96,14 @@ convertQuery q = ESearch (interpretQuery q transformAST)
         -> [QN "NOT+", QE (TE.encodeUtf8 term)]
 
 get :: Text
-    -> Corpus.Query
+    -> Corpus.RawQuery
     -> Maybe Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 get apiKey q l = do
-  -- The documentation for PUBMED says:
-  -- Values for query keys may also be provided in term if they are preceeded by a
-  -- '#' (%23 in the URL). While only one query_key parameter can be provided to ESearch,
-  -- any number of query keys can be combined in term. Also, if query keys are provided in term,
-  -- they can be combined with OR or NOT in addition to AND.
-  -- Example:
-  -- esearch.fcgi?db=pubmed&term=%231+AND+asthma&WebEnv=<webenv string>&usehistory=y
-  --
-  -- Therefore, we can pretty-print our 'Query' back into something that PubMed could understand.
+  -- NOTE(adinapoli): For now we do not interpret the PUBMED query into something
+  -- more structured, like an 'ESearch' term, but we could, in the future.
   eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = Just apiKey
-                                                     , query   = getESearch $ convertQuery q
+                                                     , query   = getRawQuery q
                                                      , perPage = Just 200
                                                      , mWebEnv = Nothing })
   let takeLimit = case l of

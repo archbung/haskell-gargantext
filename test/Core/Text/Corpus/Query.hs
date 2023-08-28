@@ -226,7 +226,7 @@ testPubMedCovid_01 getPubmedKey = do
   case mb_key of
     Nothing -> pure ()
     Just k  -> withValidQuery "\"Covid\"" $ \query -> do
-      res <- Pubmed.get (_PubmedApiKey k) query (Just 1)
+      res <- Pubmed.get (_PubmedApiKey k) (renderQuery query) (Just 1)
       case res of
         Left err       -> fail (show err)
         Right (_, cnd) -> do
@@ -241,7 +241,7 @@ testPubMedCovid_02 getPubmedKey = do
   case mb_key of
     Nothing -> pure ()
     Just k  -> withValidQuery "\"Covid\" AND \"Alzheimer\"" $ \query -> do
-      res <- Pubmed.get (_PubmedApiKey k) query (Just 1)
+      res <- Pubmed.get (_PubmedApiKey k) (renderQuery query) (Just 1)
       case res of
         Left err       -> fail (show err)
         Right (_, cnd) -> do

@@ -19,14 +19,16 @@ module Gargantext.Core.Text.Corpus.API
   ) where
 
 import Conduit
+import Control.Monad.Except
 import Data.Bifunctor
 import Data.Either (Either(..))
 import Data.Maybe
-import qualified Data.Text as T
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
 import Gargantext.Core (Lang(..), toISO639)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude
+import Servant.Client (ClientError)
+import qualified Data.Text as T
 import qualified Gargantext.Core.Text.Corpus.API.Arxiv   as Arxiv
 import qualified Gargantext.Core.Text.Corpus.API.Hal     as HAL
 import qualified Gargantext.Core.Text.Corpus.API.Isidore as ISIDORE
@@ -35,7 +37,6 @@ import qualified Gargantext.Core.Text.Corpus.API.OpenAlex as OpenAlex
 import qualified Gargantext.Core.Text.Corpus.API.Pubmed  as PUBMED
 import qualified Gargantext.Core.Text.Corpus.Query as Corpus
 import qualified PUBMED.Types as PUBMED
-import Servant.Client (ClientError)
 
 data GetCorpusError
   = -- | We couldn't parse the user input query into something meaningful.
@@ -53,18 +54,23 @@ get :: ExternalAPIs
     -- -> IO [HyperdataDocument]
     -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 get externalAPI la q mPubmedAPIKey limit = do
-  case Corpus.parseQuery q of
-    Left err -> pure $ Left $ InvalidInputQuery q (T.pack err)
-    Right corpusQuery -> case externalAPI of
-      OpenAlex -> first ExternalAPIError <$>
-                    OpenAlex.get (fromMaybe "" Nothing {- email -}) q (toISO639 la) limit
-      PubMed -> first ExternalAPIError <$>
-                  PUBMED.get (fromMaybe "" mPubmedAPIKey) corpusQuery limit
-      --docs <- PUBMED.get   q default_limit -- EN only by default
-      --pure (Just $ fromIntegral $ length docs, yieldMany docs)
-      Arxiv   -> Right <$> Arxiv.get la corpusQuery limit
-      HAL     -> first ExternalAPIError <$> HAL.getC (toISO639 la) (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
-      IsTex   -> do docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
-                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
-      Isidore -> do docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
-                    pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+  -- For PUBMED, HAL, IsTex, Isidore and OpenAlex, we want to send the query as-it.
+  -- For Arxiv we parse the query into a structured boolean query we submit over.
+  case externalAPI of
+      PubMed   ->
+        first ExternalAPIError <$> PUBMED.get (fromMaybe "" mPubmedAPIKey) q limit
+      OpenAlex ->
+        first ExternalAPIError <$> OpenAlex.get (fromMaybe "" Nothing {- email -}) q (toISO639 la) limit
+      Arxiv    -> runExceptT $ do
+        corpusQuery <- ExceptT (pure parse_query)
+        ExceptT $ fmap Right (Arxiv.get la corpusQuery limit)
+      HAL      ->
+        first ExternalAPIError <$> HAL.getC (toISO639 la) (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+      IsTex    -> do
+        docs <- ISTEX.get la (Corpus.getRawQuery q) (Corpus.getLimit <$> limit)
+        pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+      Isidore  -> do
+        docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
+        pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+  where
+    parse_query = first (InvalidInputQuery q . T.pack) $ Corpus.parseQuery q
