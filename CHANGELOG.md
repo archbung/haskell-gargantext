@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.7.6.2
+
+* [BACK][FIX] CI
+* [FRONT][FEAT] Restoring APIs for tests
+
 ## Version 0.0.6.9.9.7.6.1
 
 * [BACK][API/DATA] OpenAlex connection
