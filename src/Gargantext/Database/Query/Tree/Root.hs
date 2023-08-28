@@ -23,7 +23,7 @@ import Gargantext.Database.Action.User (getUserId, getUsername)
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runOpaQuery, DBCmd)
+import Gargantext.Database.Prelude (runOpaQuery, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.User (queryUserTable, UserPoly(..))
@@ -34,7 +34,7 @@ import Opaleye (restrict, (.==), Select)
 import Opaleye.SqlTypes (sqlStrictText, sqlInt4)
 
 
-getRootId :: (HasNodeError err) => User -> Cmd err NodeId
+getRootId :: (HasNodeError err) => User -> DBCmd err NodeId
 getRootId u = do
   maybeRoot <- head <$> getRoot u
   case maybeRoot of
@@ -66,7 +66,7 @@ getOrMk_RootWithCorpus :: (HasNodeError err, MkCorpus a)
                       => User
                       -> Either CorpusName [CorpusId]
                       -> Maybe a
-                      -> Cmd err (UserId, RootId, CorpusId)
+                      -> DBCmd err (UserId, RootId, CorpusId)
 getOrMk_RootWithCorpus user cName c = do
   (userId, rootId) <- getOrMkRoot user
   corpusId'' <- if user == UserName userMaster

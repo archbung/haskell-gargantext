@@ -28,6 +28,7 @@ import Gargantext.Core.Mail
 import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.Flow (getOrMkRoot)
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..), nodeError, NodeError(..))
 import Gargantext.Database.Query.Table.User
@@ -41,13 +42,13 @@ import qualified Data.Text as Text
 -- be valid (i.e. a valid username needs to be inferred via 'guessUsername').
 newUser :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
         => EmailAddress
-        -> m Int64
+        -> m UserId
 newUser emailAddress = do
   cfg <- view mailSettings
   pwd <- gargPass
   let nur = mkNewUser emailAddress (GargPassword pwd)
-  affectedRows <- new_user nur
-  withNotification (SendEmail True) cfg Invitation $ pure (affectedRows, nur)
+  new_user_id <- new_user nur
+  withNotification (SendEmail True) cfg Invitation $ pure (new_user_id, nur)
 
 ------------------------------------------------------------------------
 -- | A DB-specific action to create a single user.
@@ -56,8 +57,12 @@ newUser emailAddress = do
 -- use 'newUser' instead for standard Gargantext code.
 new_user :: HasNodeError err
          => NewUser GargPassword
-         -> DBCmd err Int64
-new_user = new_users . (:[])
+         -> DBCmd err UserId
+new_user rq = do
+  ur <- new_users [rq]
+  case head ur of
+    Nothing   -> nodeError MkNode
+    Just uid  -> pure uid
 
 ------------------------------------------------------------------------
 -- | A DB-specific action to bulk-create users.
@@ -67,17 +72,16 @@ new_user = new_users . (:[])
 new_users :: HasNodeError err
           => [NewUser GargPassword]
           -- ^ A list of users to create.
-          -> DBCmd err Int64
+          -> DBCmd err [UserId]
 new_users us = do
-  us' <- liftBase         $ mapM toUserHash us
-  r   <- insertUsers      $ map  toUserWrite us'
-  _   <- mapM getOrMkRoot $ map  (\u -> UserName   (_nu_username u)) us
-  pure r
+  us'   <- liftBase        $ mapM toUserHash us
+  void  $ insertUsers      $ map  toUserWrite us'
+  mapM (fmap fst . getOrMkRoot) $ map  (\u -> UserName   (_nu_username u)) us
 
 ------------------------------------------------------------------------
 newUsers :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
          => [EmailAddress]
-         -> m Int64
+         -> m [UserId]
 newUsers us = do
   config <- view $ mailSettings
   us' <- mapM (\ea -> mkNewUser ea . GargPassword <$> gargPass) us
@@ -102,14 +106,14 @@ guessUserName n = case splitOn "@" n of
 
 ------------------------------------------------------------------------
 newUsers' :: HasNodeError err
-         => MailConfig -> [NewUser GargPassword] -> Cmd err Int64
+         => MailConfig -> [NewUser GargPassword] -> Cmd err [UserId]
 newUsers' cfg us = do
   us' <- liftBase         $ mapM toUserHash  us
-  r   <- insertUsers      $ map  toUserWrite us'
-  _   <- mapM getOrMkRoot $ map  (\u -> UserName   (_nu_username u)) us
+  void $ insertUsers      $ map  toUserWrite us'
+  urs <- mapM (fmap fst . getOrMkRoot) $ map  (\u -> UserName   (_nu_username u)) us
   _   <- mapM (\u -> mail cfg (Invitation u)) us
   -- printDebug "newUsers'" us
-  pure r
+  pure urs
 
 ------------------------------------------------------------------------
 -- | Updates a user's password, notifying the user via email, if necessary.

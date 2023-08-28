@@ -123,6 +123,7 @@ library
       Gargantext.Database.Query.Table.Node
       Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
+      Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
       Gargantext.Database.Schema.User
@@ -339,7 +340,6 @@ library
       Gargantext.Database.Query.Table.NodesNgramsRepo
       Gargantext.Database.Query.Tree
       Gargantext.Database.Query.Tree.Error
-      Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Schema.Context
       Gargantext.Database.Schema.ContextNodeNgrams
       Gargantext.Database.Schema.ContextNodeNgrams2
@@ -929,7 +929,7 @@ test-suite garg-test
       NoImplicitPrelude
       OverloadedStrings
       RankNTypes
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N1
   build-depends:
       QuickCheck ^>= 2.14.2
     , aeson ^>= 1.5.6.0
