@@ -59,6 +59,7 @@ test:
       export TEST_NIX_PATH=$(nix-shell --run "echo -n \$PATH")
       echo $CABAL
       echo $TEST_NIX_PATH
+      git config --global --add safe.directory '*'
       nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR"
       mkdir -p /root/.cache/cabal/logs
       chown -R test:test /root/.cache/cabal/logs/
