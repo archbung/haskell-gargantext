@@ -37,6 +37,7 @@ module Gargantext.Database.Query.Tree
   , sharedTreeUpdate
   , dbTree
   , updateTree
+  , recursiveParents
   )
   where
 
@@ -389,4 +390,25 @@ isIn cId docId = ( == [Only True])
       WHERE nn.node1_id = ?
         AND nn.node2_id = ?;
   |] (cId, docId)
+
+recursiveParents :: NodeId
+       -> [NodeType]
+       -> Cmd err [DbTreeNode]
+recursiveParents nodeId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
+  <$> runPGSQuery [sql|
+    WITH RECURSIVE recursiveParents AS(
+      SELECT id, typename, parent_id, name
+      FROM public.nodes WHERE id = ?
+    UNION ALL
+        SELECT n.id, n.typename, n.parent_id, n.name
+      FROM public.nodes n 
+      INNER JOIN recursiveParents rp ON n.id = rp.parent_id
+      WHERE n.typename IN ?
+    ) SELECT * FROM recursiveParents;
+    |] (nodeId, In typename)
+  where
+    typename = map nodeTypeId ns
+    ns = case nodeTypes of
+      [] -> allNodeTypes
+      _  -> nodeTypes
 -----------------------------------------------------
