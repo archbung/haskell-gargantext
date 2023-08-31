@@ -228,6 +228,7 @@ instance MonadJobStatus MyDummyMonad where
   markFailure steps mb_msg jh = MyDummyMonad (markFailure steps mb_msg jh)
   markComplete jh             = MyDummyMonad (markComplete jh)
   markFailed mb_msg jh        = MyDummyMonad (markFailed mb_msg jh)
+  addMoreSteps steps jh       = MyDummyMonad (addMoreSteps steps jh)
 
 runMyDummyMonad :: Env -> MyDummyMonad a -> IO a
 runMyDummyMonad env m = do

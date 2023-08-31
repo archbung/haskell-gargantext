@@ -4,7 +4,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
-module Database.Operations where
+module Database.Operations (
+   tests
+  ) where
 
 import Control.Exception hiding (assert)
 import Control.Lens hiding (elements)
@@ -14,7 +16,9 @@ import Control.Monad.Trans.Control
 import Data.IORef
 import Data.Pool hiding (withResource)
 import Data.String
+import Database.PostgreSQL.Simple
 import Gargantext.Core.Types.Individu
+import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node.Error
@@ -23,9 +27,8 @@ import Gargantext.Prelude.Config
 import Prelude
 import Shelly hiding (FilePath, run)
 import Test.QuickCheck.Monadic
-import Test.Tasty
+import Test.Hspec
 import Test.Tasty.HUnit hiding (assert)
-import Test.Tasty.Hspec
 import Test.Tasty.QuickCheck
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
@@ -36,8 +39,6 @@ import qualified Database.Postgres.Temp as Tmp
 import qualified Shelly as SH
 
 import Paths_gargantext
-import Database.PostgreSQL.Simple
-import Gargantext.Database.Action.User
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -101,9 +102,6 @@ fakeIniPath = getDataFileName "test-data/test_config.ini"
 gargDBSchema :: IO FilePath
 gargDBSchema = getDataFileName "devops/postgres/schema.sql"
 
-gargDBExtensionsSchema :: IO FilePath
-gargDBExtensionsSchema = getDataFileName "devops/postgres/extensions.sql"
-
 teardown :: TestEnv -> IO ()
 teardown TestEnv{..} = do
   destroyAllResources $ _DBHandle test_db
@@ -141,18 +139,16 @@ setup = do
       ugen <- emptyCounter
       pure $ TestEnv (DBHandle pool db) gargConfig ugen
 
-tests :: TestTree
-tests = withResource setup teardown $
-  \getEnv -> testGroup "Database" [unitTests getEnv]
+withTestDB :: (TestEnv -> IO ()) -> IO ()
+withTestDB = bracket setup teardown
 
-unitTests :: IO TestEnv -> TestTree
-unitTests getEnv = testGroup "Read/Writes"
-  [ testGroup "User creation" [
-      testCase     "Simple write/read" (writeRead01 getEnv)
-    , testCase     "Simple duplicate"  (mkUserDup getEnv)
-    , testProperty "Read/Write roundtrip" $ prop_userCreationRoundtrip getEnv
-    ]
-  ]
+tests :: Spec
+tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
+  describe "Read/Writes" $
+    describe "User creation" $ do
+      it "Simple write/read" writeRead01
+      it "Simple duplicate"  mkUserDup
+      it "Read/Write roundtrip" prop_userCreationRoundtrip
 
 data ExpectedActual a =
     Expected a
@@ -165,9 +161,8 @@ instance Eq a => Eq (ExpectedActual a) where
   _ == _ = False
 
 
-writeRead01 :: IO TestEnv -> Assertion
-writeRead01 getEnv = do
-  env <- getEnv
+writeRead01 :: TestEnv -> Assertion
+writeRead01 env = do
   flip runReaderT env $ runTestMonad $ do
     let nur1 = mkNewUser "alfredo@well-typed.com" (GargPassword "my_secret")
     let nur2 = mkNewUser "paul@acme.com" (GargPassword "my_secret")
@@ -184,9 +179,8 @@ writeRead01 getEnv = do
     liftBase $ uid1' `shouldBe` 1
     liftBase $ uid2' `shouldBe` 2
 
-mkUserDup :: IO TestEnv -> Assertion
-mkUserDup getEnv = do
-  env <- getEnv
+mkUserDup :: TestEnv -> Assertion
+mkUserDup env = do
   let x = flip runReaderT env $ runTestMonad $ do
             -- This should fail, because user 'alfredo' exists already.
             let nur = mkNewUser "alfredo@well-typed.com" (GargPassword "my_secret")
@@ -205,9 +199,8 @@ mkUserDup getEnv = do
 runEnv :: TestEnv -> TestMonad a -> PropertyM IO a
 runEnv env act = run (flip runReaderT env $ runTestMonad act)
 
-prop_userCreationRoundtrip :: IO TestEnv -> Property
-prop_userCreationRoundtrip getEnv = monadicIO $ do
-  env  <- run getEnv
+prop_userCreationRoundtrip :: TestEnv -> Property
+prop_userCreationRoundtrip env = monadicIO $ do
   nextAvailableCounter <- run (nextCounter $ test_usernameGen env)
   nur  <- pick (uniqueArbitraryNewUser nextAvailableCounter)
   uid <- runEnv env (new_user nur)

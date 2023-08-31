@@ -1,4 +1,8 @@
 active-repositories: hackage.haskell.org:merge
+
+allow-newer: servant-swagger:hspec
+           , servant-swagger:hspec-core
+
 constraints: any.Cabal ==3.2.1.0,
              any.Diff ==0.4.1,
              any.Glob ==0.10.2,
@@ -274,9 +278,9 @@ constraints: any.Cabal ==3.2.1.0,
              any.hslua-module-system ==0.2.2.1,
              any.hslua-module-text ==0.3.0.1,
              any.hsparql ==0.3.8,
-             any.hspec ==2.7.10,
-             any.hspec-core ==2.7.10,
-             any.hspec-discover ==2.7.10,
+             any.hspec ==2.11.1,
+             any.hspec-core ==2.11.1,
+             any.hspec-discover ==2.11.1,
              any.hspec-expectations ==0.8.3,
              any.hstatistics ==0.3.1,
              any.html-entities ==1.1.4.5,
@@ -556,7 +560,7 @@ constraints: any.Cabal ==3.2.1.0,
              any.tasty ==1.4.2.1,
              tasty +clock +unix,
              any.tasty-bench ==0.2.5,
-             any.tasty-hspec ==1.1.6,
+             any.tasty-hspec ==1.2.0.3,
              any.tasty-hunit ==0.10.0.3,
              any.tasty-quickcheck ==0.10.2,
              any.tasty-smallcheck ==0.8.2,

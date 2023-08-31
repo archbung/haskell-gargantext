@@ -1,6 +1,6 @@
-{-|
+{--|
 Module      : Main.hs
-Description : Main for Gargantext Tests
+Description : Main for Gargantext Tasty Tests
 Copyright   : (c) CNRS, 2017-Present
 License     : AGPL + CECILL v3
 Maintainer  : team@gargantext.org
@@ -8,6 +8,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+module Main where
 
 import Gargantext.Prelude
 
@@ -44,5 +45,4 @@ main = do
     , NgramsQuery.tests
     , CorpusQuery.tests
     , JSON.tests
-    , DB.tests
     ]
