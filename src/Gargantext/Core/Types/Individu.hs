@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-|
 Module      : Gargantext.Core.Types.Individu
 Description : Short description
@@ -15,11 +17,11 @@ Individu defintions
 module Gargantext.Core.Types.Individu
   where
 
-import Data.Aeson
 import Control.Monad.IO.Class (MonadIO)
-import GHC.Generics (Generic)
+import Data.Aeson
 import Data.Swagger
 import Data.Text (Text, pack, reverse)
+import GHC.Generics (Generic)
 import Gargantext.Database.Admin.Types.Node (NodeId, UserId)
 import Gargantext.Prelude hiding (reverse)
 import qualified Gargantext.Prelude.Crypto.Auth as Auth
@@ -68,8 +70,15 @@ toUserHash :: MonadIO m
          =>    NewUser GargPassword
          -> m (NewUser HashPassword)
 toUserHash (NewUser u m (GargPassword p)) = do
-  h <- Auth.createPasswordHash p
+  salt <- Auth.newSalt
+  let h = Auth.hashPasswordWithSalt params salt (Auth.mkPassword p)
   pure $ NewUser u m h
+  where
+#if TEST_CRYPTO
+    params = Auth.defaultParams { Auth.argon2MemoryCost = 4096 }
+#else
+    params = Auth.defaultParams
+#endif
 
 -- TODO remove
 arbitraryUsersHash :: MonadIO m
