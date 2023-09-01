@@ -68,11 +68,6 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude.git
-    tag: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e
-
-source-repository-package
-    type: git
     location: https://gitlab.iscpif.fr/cgenie/patches-class.git
     tag: 125c7cb90ab8f0cd6ac4a526dbdf302d10c945e9
 
@@ -110,6 +105,11 @@ source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
     tag: 588e104fe7593210956610cab0041fd16584a4ce
+
+source-repository-package
+    type: git
+    location: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
+    tag: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e
 
 source-repository-package
     type: git
