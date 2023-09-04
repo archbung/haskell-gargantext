@@ -288,33 +288,36 @@ flow :: forall env err m a c.
 flow c u cn la mfslw (mLength, docsC) jobHandle = do
   (_userId, userCorpusId, listId) <- createNodes u cn c
   -- TODO if public insertMasterDocs else insertUserDocs
-  runConduit $ zipSources (yieldMany [1..]) docsC
+  nlpServer <- view $ nlpServerGet (_tt_lang la)
+  runConduit $ zipSources (yieldMany ([1..] :: [Int])) docsC
                  .| CList.chunksOf 100
-                 .| mapM_C (\docs -> void $ insertDocs' docs >>= Doc.add userCorpusId)
+                 .| mapM_C (addDocumentsWithProgress nlpServer userCorpusId)
                  .| sinkNull
 
   $(logLocM) DEBUG "Calling flowCorpusUser"
   flowCorpusUser (la ^. tt_lang) u userCorpusId listId c mfslw
 
   where
-    insertDocs' :: [(Integer, a)] -> m [NodeId]
-    insertDocs' [] = pure []
-    insertDocs' docs = do
-      ncs <- view $ nlpServerGet (_tt_lang la)
-      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docs, mLength)
-      ids <- insertMasterDocs ncs c la (snd <$> docs)
+    addDocumentsWithProgress :: NLPServerConfig -> CorpusId -> [(Int, a)] -> m ()
+    addDocumentsWithProgress nlpServer userCorpusId docsChunk = do
+      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docsChunk, mLength)
+      docs <- addDocumentsToHyperCorpus nlpServer c la userCorpusId (map snd docsChunk)
       markProgress (length docs) jobHandle
-      pure ids
+
 
 -- | Given a list of corpus documents and a 'NodeId' identifying the 'CorpusId', adds
 -- the given documents to the corpus. Returns the Ids of the inserted documents.
-addDocumentsToHyperCorpus :: (DbCmd' env err m, HasNodeError err)
-                          => NLPServerConfig
-                          -> Maybe HyperdataCorpus
-                          -> TermType Lang
-                          -> CorpusId
-                          -> [HyperdataDocument]
-                          -> m [DocId]
+addDocumentsToHyperCorpus :: ( DbCmd' env err m
+                             , HasNodeError err
+                             , FlowCorpus document
+                             , MkCorpus corpus
+                             )
+                             => NLPServerConfig
+                             -> Maybe corpus
+                             -> TermType Lang
+                             -> CorpusId
+                             -> [document]
+                             -> m [DocId]
 addDocumentsToHyperCorpus ncs mb_hyper la corpusId docs = do
   ids <- insertMasterDocs ncs mb_hyper la docs
   void $ Doc.add corpusId ids
