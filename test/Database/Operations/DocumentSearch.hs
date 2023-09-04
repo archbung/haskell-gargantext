@@ -27,7 +27,7 @@ import Gargantext.Database.Admin.Config (userMaster)
 
 exampleDocument_01 :: HyperdataDocument
 exampleDocument_01 = either error id $ parseEither parseJSON $ [aesonQQ|
-  { "doi":"sdfds"
+  { "doi":"01"
   , "publication_day":6
   , "language_iso2":"EN"
   , "publication_minute":0
@@ -48,7 +48,7 @@ exampleDocument_01 = either error id $ parseEither parseJSON $ [aesonQQ|
 
 exampleDocument_02 :: HyperdataDocument
 exampleDocument_02 = either error id $ parseEither parseJSON $ [aesonQQ|
-  { "doi":"sdfds"
+  { "doi":"02"
   , "publication_day":6
   , "language_iso2":"EN"
   , "publication_minute":0
@@ -65,6 +65,24 @@ exampleDocument_02 = either error id $ parseEither parseJSON $ [aesonQQ|
   , "title":"PyPlasm: computational geometry made easy"
   , "publication_hour":0
   }
+|]
+
+exampleDocument_03 :: HyperdataDocument
+exampleDocument_03 = either error id $ parseEither parseJSON $ [aesonQQ|
+{
+    "bdd": "Arxiv"
+  , "doi": ""
+  , "url": "http://arxiv.org/pdf/1405.3072v2"
+  , "title": "Haskell for OCaml programmers"
+  , "source": ""
+  , "uniqId": "1405.3072v2"
+  , "authors": "Raphael Poss"
+  , "abstract": "  This introduction to Haskell is written to optimize learning by programmers who already know OCaml. "
+  , "institutes": ""
+  , "language_iso2": "EN"
+  , "publication_date": "2014-05-13T09:10:32Z"
+  , "publication_year": 2014
+}
 |]
 
 nlpServerConfig :: NLPServerConfig
@@ -85,8 +103,8 @@ corpusAddDocuments env = do
                                      (Just $ _node_hyperdata $ corpus)
                                      (Multi EN)
                                      corpusId
-                                     [exampleDocument_01, exampleDocument_02]
-    liftIO $ length ids `shouldBe` 2
+                                     [exampleDocument_01, exampleDocument_02, exampleDocument_03]
+    liftIO $ length ids `shouldBe` 3
 
 stemmingTest :: TestEnv -> Assertion
 stemmingTest _env = do
@@ -97,7 +115,7 @@ corpusSearch01 :: TestEnv -> Assertion
 corpusSearch01 env = do
   flip runReaderT env $ runTestMonad $ do
 
-    parentId <- getRootId (UserName "gargantua")
+    parentId <- getRootId (UserName userMaster)
     [corpus] <- getCorporaWithParentId parentId
 
     results1 <- searchInCorpus (_node_id corpus) False ["mineral"] Nothing Nothing Nothing
@@ -105,3 +123,16 @@ corpusSearch01 env = do
 
     liftIO $ length results1 `shouldBe` 1
     liftIO $ length results2 `shouldBe` 1
+
+-- | Check that we support more complex queries
+corpusSearch02 :: TestEnv -> Assertion
+corpusSearch02 env = do
+  flip runReaderT env $ runTestMonad $ do
+
+    parentId <- getRootId (UserName userMaster)
+    [corpus] <- getCorporaWithParentId parentId
+
+    results1 <- searchInCorpus (_node_id corpus) False ["Raphael"] Nothing Nothing Nothing
+
+    liftIO $ do
+      length results1 `shouldBe` 1

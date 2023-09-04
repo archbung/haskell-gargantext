@@ -44,8 +44,8 @@ extra-deps:
 - git: https://github.com/alpmestan/ekg-json.git
   commit: fd7e5d7325939103cd87d0dc592faf644160341c
   # Databases libs
-- git: https://github.com/garganscript/haskell-opaleye.git
-  commit: a5693a2010e6d13f51cdc576fa1dc9985e79ee0e
+- git: https://github.com/adinapoli/haskell-opaleye.git
+  commit: e9a29582ac66198dd2c2fdc3f8c8a4b1e6fbe004
 - git: https://github.com/robstewart57/rdf4h.git
   commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
   # External Data API connectors

@@ -4,7 +4,6 @@
 
 module Database.Operations.Types where
 
-import Control.Concurrent.Async
 import Control.Exception
 import Control.Lens
 import Control.Monad.Except

@@ -127,6 +127,7 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
     describe "Corpus search" $ do
       it "Can stem query terms" stemmingTest
       it "Can perform a simple search inside documents" corpusSearch01
+      it "Can perform search by author in documents" corpusSearch02
 
 data ExpectedActual a =
     Expected a

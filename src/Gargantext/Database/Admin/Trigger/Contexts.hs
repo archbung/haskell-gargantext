@@ -38,10 +38,10 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
         RETURNS trigger AS $$
         begin
           IF new.typename = ? AND new.hyperdata @> '{"language_iso2":"EN"}' THEN
-            new.search := to_tsvector( 'english' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
 
           ELSIF new.typename = ? AND new.hyperdata @> '{"language_iso2":"FR"}' THEN
-            new.search := to_tsvector( 'french' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
 
           ELSIF new.typename = ? THEN
             new.search := to_tsvector( 'french' , (new.hyperdata ->> 'prenom')
@@ -49,7 +49,7 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
                                          || ' ' || (new.hyperdata ->> 'fonction')
                                      );
           ELSE
-            new.search := to_tsvector( 'english' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
           END IF;
           return new;
         end

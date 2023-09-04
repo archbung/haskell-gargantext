@@ -28,13 +28,15 @@ import Gargantext.Core.Types.Search
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Database.Action.Flow.Pairing (isPairedWith)
 import Gargantext.Database.Action.Search
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Node hiding (DEBUG)
 import Gargantext.Database.Query.Facet
 import Gargantext.Prelude
+import Gargantext.System.Logging
 import Gargantext.Utils.Aeson (defaultTaggedObject)
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
+import qualified Data.Text as T
 
 -----------------------------------------------------------------------
 -- TODO-ACCESS: CanSearch? or is it part of CanGetNode
@@ -48,7 +50,8 @@ type API results = Summary "Search endpoint"
 -----------------------------------------------------------------------
 -- | Api search function
 api :: NodeId -> GargServer (API SearchResult)
-api nId (SearchQuery q SearchDoc) o l order =
+api nId (SearchQuery q SearchDoc) o l order = do
+  $(logLocM) DEBUG $ T.pack "New search started with query = " <> T.pack (show q)
   SearchResult <$> SearchResultDoc
                <$> map (toRow nId)
                <$> searchInCorpus nId False q o l order

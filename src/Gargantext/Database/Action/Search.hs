@@ -61,7 +61,7 @@ searchDocInDatabase p t = runOpaQuery (queryDocInDatabase p t)
     queryDocInDatabase :: ParentId -> Text -> O.Select (Column SqlInt4, Column SqlJsonb)
     queryDocInDatabase _p q = proc () -> do
         row <- queryNodeSearchTable -< ()
-        restrict -< (_ns_search row)    @@ (sqlTSQuery (unpack q))
+        restrict -< (_ns_search row)    @@ (sqlToTSQuery (unpack q))
         restrict -< (_ns_typename row) .== (sqlInt4 $ toDBid NodeDocument)
         returnA  -< (_ns_id row, _ns_hyperdata row)
 
@@ -175,7 +175,7 @@ queryInCorpus cId t q = proc () -> do
                  else matchMaybe (view nc_category <$> nc) $ \case
                         Nothing -> toFields False
                         Just c' -> c' .>= sqlInt4 1
-  restrict -< (c ^. cs_search)           @@ sqlTSQuery (unpack q)
+  restrict -< (c ^. cs_search)           @@ sqlToTSQuery (unpack q)
   restrict -< (c ^. cs_typename )       .== sqlInt4 (toDBid NodeDocument)
   returnA  -< FacetDoc { facetDoc_id         = c^.cs_id
                        , facetDoc_created    = c^.cs_date
@@ -231,7 +231,7 @@ selectContactViaDoc cId aId query = proc () -> do
   (contact, annuaire, _, corpus, doc) <- queryContactViaDoc -< ()
   restrict -< matchMaybe (view cs_search <$> doc) $ \case
     Nothing -> toFields False
-    Just s  -> s @@ sqlTSQuery (unpack query)
+    Just s  -> s @@ sqlToTSQuery (unpack query)
   restrict -< (view cs_typename <$> doc)          .=== justFields (sqlInt4 (toDBid NodeDocument))
   restrict -< (view nc_node_id <$> corpus)        .=== justFields (pgNodeId cId)
   restrict -< (view nc_node_id <$> annuaire)      .=== justFields (pgNodeId aId)
