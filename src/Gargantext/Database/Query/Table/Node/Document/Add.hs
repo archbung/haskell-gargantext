@@ -28,12 +28,12 @@ import Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import GHC.Generics (Generic)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, formatPGSQuery)
+import Gargantext.Database.Prelude (Cmd, runPGSQuery, formatPGSQuery, DBCmd)
 import Gargantext.Prelude
 
 ---------------------------------------------------------------------------
 
-add :: CorpusId -> [ContextId] -> Cmd err [Only Int]
+add :: CorpusId -> [ContextId] -> DBCmd err [Only Int]
 add pId ns = runPGSQuery queryAdd (Only $ Values fields inputData)
   where
     fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes

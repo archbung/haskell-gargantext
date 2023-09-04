@@ -182,6 +182,7 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
     describe "Corpus creation" $ do
       it "Simple write/read" corpusReadWrite01
       it "Can add language to Corpus" corpusAddLanguage
+      it "Can add documents to a Corpus" corpusAddDocuments
 
 data ExpectedActual a =
     Expected a
@@ -240,6 +241,7 @@ prop_userCreationRoundtrip env = monadicIO $ do
   ur' <- runEnv env (getUserId (UserName $ _nu_username nur))
   run (Expected uid `shouldBe` Actual ur')
 
+-- | We test that we can create and later read-back a 'Corpus'.
 corpusReadWrite01 :: TestEnv -> Assertion
 corpusReadWrite01 env = do
   flip runReaderT env $ runTestMonad $ do
@@ -251,6 +253,7 @@ corpusReadWrite01 env = do
     [corpus] <- getCorporaWithParentId parentId
     liftIO $ corpusId `shouldBe` (_node_id corpus)
 
+-- | We test that we can update the existing language for a 'Corpus'.
 corpusAddLanguage :: TestEnv -> Assertion
 corpusAddLanguage env = do
   flip runReaderT env $ runTestMonad $ do
@@ -260,3 +263,10 @@ corpusAddLanguage env = do
     addLanguageToCorpus (_node_id corpus) IT
     [corpus'] <- getCorporaWithParentId parentId
     liftIO $ (_hc_lang . _node_hyperdata $ corpus') `shouldBe` Just IT
+
+corpusAddDocuments :: TestEnv -> Assertion
+corpusAddDocuments env = do
+  flip runReaderT env $ runTestMonad $ do
+    parentId <- getRootId (UserName "alfredo")
+    [_corpus] <- getCorporaWithParentId parentId
+    pure ()

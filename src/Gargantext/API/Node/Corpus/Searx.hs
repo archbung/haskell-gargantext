@@ -16,7 +16,7 @@ import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(.
 import Gargantext.Core.Text.Terms (TermType(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)
-import Gargantext.Database.Action.Flow (insertMasterDocs) --, DataText(..))
+import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus) --, DataText(..))
 import Gargantext.Database.Action.Flow.List (flowList_DbRepo)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.User (getUserId)
@@ -33,13 +33,12 @@ import Gargantext.Prelude.Config
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
-import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text)
+import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text, void)
 import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Text as T
 import qualified Data.Text as Text
 import qualified Gargantext.Core.Text.Corpus.API as API
-import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
 import qualified Prelude
 
 langToSearx :: Lang -> Text
@@ -133,8 +132,7 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
     -}
   --_ <- flowDataText user (DataNew [docs']) (Multi l) cId Nothing logStatus
   let mCorpus = Nothing :: Maybe HyperdataCorpus
-  ids <- insertMasterDocs mCorpus (Multi l) docs'
-  _ <- Doc.add cId ids
+  void $ addDocumentsToHyperCorpus server mCorpus (Multi l) cId docs'
   (_masterUserId, _masterRootId, masterCorpusId)
     <- getOrMk_RootWithCorpus (UserName userMaster) (Left "") mCorpus
   let gp = GroupWithPosTag l server HashMap.empty

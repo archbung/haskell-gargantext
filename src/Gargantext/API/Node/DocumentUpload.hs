@@ -20,14 +20,13 @@ import Gargantext.Core.Text.Corpus.Parsers.Date (dateSplit)
 import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Core.Text.Terms (TermType(..))
-import Gargantext.Database.Action.Flow (insertMasterDocs)
+import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc  (add)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType')
 import Gargantext.Prelude
-import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus(..))
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Gargantext.Core.NLP (nlpServerGet)
 
 
 data DocumentUpload = DocumentUpload
@@ -117,6 +116,6 @@ documentUpload nId doc = do
                              , _hd_publication_second = Nothing
                              , _hd_language_iso2 = Just $ view du_language doc }
 
-  docIds <- insertMasterDocs (Nothing :: Maybe HyperdataCorpus) (Multi EN) [hd]
-  _ <- Doc.add cId docIds
-  pure docIds
+  let lang = EN
+  ncs <- view $ nlpServerGet lang
+  addDocumentsToHyperCorpus ncs Nothing (Multi lang) cId [hd]

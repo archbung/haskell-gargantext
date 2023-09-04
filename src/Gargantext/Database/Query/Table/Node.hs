@@ -399,7 +399,7 @@ instance MkCorpus HyperdataAnnuaire
 getOrMkList :: (HasNodeError err, HasDBid NodeType)
             => ParentId
             -> UserId
-            -> Cmd err ListId
+            -> DBCmd err ListId
 getOrMkList pId uId =
   maybe (mkList' pId uId) (pure . view node_id) . headMay =<< getListsWithParentId pId
     where
@@ -413,5 +413,5 @@ defaultList cId =
 defaultListMaybe :: (HasNodeError err, HasDBid NodeType) => CorpusId -> Cmd err (Maybe NodeId)
 defaultListMaybe cId = headMay <$> map (view node_id ) <$> getListsWithParentId cId
 
-getListsWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataList]
+getListsWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataList]
 getListsWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeList)

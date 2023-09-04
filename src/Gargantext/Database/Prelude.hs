@@ -151,7 +151,7 @@ formatPGSQuery q a = mkCmd $ \conn -> PGS.formatQuery conn q a
 runPGSQuery' :: (PGS.ToRow a, PGS.FromRow b) => PGS.Query -> a -> Cmd err [b]
 runPGSQuery' q a = mkCmd $ \conn -> PGS.query conn q a
 
-runPGSQuery :: ( CmdM env err m
+runPGSQuery :: ( DbCmd' env err m
                , PGS.FromRow r, PGS.ToRow q
                )
                => PGS.Query -> q -> m [r]
