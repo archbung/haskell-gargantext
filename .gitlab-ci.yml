@@ -77,6 +77,11 @@ test:
       mkdir -p /root/.cache/cabal/logs
       chown -R test:test /root/.cache/cabal/logs/
       chown -R test:test /root/.cache/cabal/packages/hackage.haskell.org/
+
+      #Spawn the CoreNLP
+      apt-get install docker
+      docker run -p 127.0.0.1:9000:9000/tcp -dt -v /var/run/docker.sock:/var/run/docker.sock cgenie/corenlp-garg:4.5.4
+
       nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/
       chown -R root:root /root/
