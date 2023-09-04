@@ -117,6 +117,7 @@ library
       Gargantext.Database.Admin.Config
       Gargantext.Database.Admin.Trigger.Init
       Gargantext.Database.Admin.Types.Hyperdata
+      Gargantext.Database.Admin.Types.Hyperdata.Corpus
       Gargantext.Database.Admin.Types.Node
       Gargantext.Database.Prelude
       Gargantext.Database.Query.Table.NgramsPostag
@@ -126,6 +127,7 @@ library
       Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
+      Gargantext.Database.Schema.Node
       Gargantext.Database.Schema.User
       Gargantext.Defaults
       Gargantext.System.Logging
@@ -298,7 +300,6 @@ library
       Gargantext.Database.Admin.Trigger.NodesContexts
       Gargantext.Database.Admin.Types.Hyperdata.Any
       Gargantext.Database.Admin.Types.Hyperdata.Contact
-      Gargantext.Database.Admin.Types.Hyperdata.Corpus
       Gargantext.Database.Admin.Types.Hyperdata.CorpusField
       Gargantext.Database.Admin.Types.Hyperdata.Dashboard
       Gargantext.Database.Admin.Types.Hyperdata.Default
@@ -344,7 +345,6 @@ library
       Gargantext.Database.Schema.ContextNodeNgrams
       Gargantext.Database.Schema.ContextNodeNgrams2
       Gargantext.Database.Schema.NgramsPostag
-      Gargantext.Database.Schema.Node
       Gargantext.Database.Schema.Node_NodeNgramsNodeNgrams
       Gargantext.Database.Schema.NodeContext
       Gargantext.Database.Schema.NodeContext_NodeContext

@@ -20,16 +20,17 @@ import Database.PostgreSQL.Simple
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude
+import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId)
 import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Query.Tree.Root (getRootId)
+import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Prelude
 import Shelly hiding (FilePath, run)
-import Test.QuickCheck.Monadic
-import Test.Hspec
-import Test.Tasty.HUnit hiding (assert)
-import Test.Tasty.QuickCheck
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -39,6 +40,10 @@ import qualified Database.Postgres.Temp as Tmp
 import qualified Shelly as SH
 
 import Paths_gargantext
+import Test.Hspec
+import Test.QuickCheck.Monadic
+import Test.Tasty.HUnit hiding (assert)
+import Test.Tasty.QuickCheck
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -80,6 +85,8 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            , MonadReader TestEnv, MonadError IOException
            , MonadBase IO
            , MonadBaseControl IO
+           , MonadFail
+           , MonadIO
            )
 
 data DBHandle = DBHandle {
@@ -144,11 +151,13 @@ withTestDB = bracket setup teardown
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
-  describe "Read/Writes" $
+  describe "Read/Writes" $ do
     describe "User creation" $ do
       it "Simple write/read" writeRead01
       it "Simple duplicate"  mkUserDup
       it "Read/Write roundtrip" prop_userCreationRoundtrip
+    describe "Corpus creation" $ do
+      it "Simple write/read" corpusReadWrite01
 
 data ExpectedActual a =
     Expected a
@@ -206,3 +215,14 @@ prop_userCreationRoundtrip env = monadicIO $ do
   uid <- runEnv env (new_user nur)
   ur' <- runEnv env (getUserId (UserName $ _nu_username nur))
   run (Expected uid `shouldBe` Actual ur')
+
+corpusReadWrite01 :: TestEnv -> Assertion
+corpusReadWrite01 env = do
+  flip runReaderT env $ runTestMonad $ do
+    uid      <- getUserId (UserName "alfredo")
+    parentId <- getRootId (UserName "alfredo")
+    [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
+    liftIO $ corpusId `shouldBe` NodeId 409
+    -- Retrieve the corpus by Id
+    [corpusId'] <- getCorporaWithParentId parentId
+    liftIO $ corpusId `shouldBe` (_node_id corpusId')
