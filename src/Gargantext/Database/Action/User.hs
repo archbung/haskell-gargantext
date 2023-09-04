@@ -28,7 +28,7 @@ getUserLightWithId :: HasNodeError err => UserId -> DBCmd err UserLight
 getUserLightWithId i = do
   candidates <- head <$> getUsersWithId (UserDBId i)
   case candidates of
-    Nothing -> nodeError NoUserFound
+    Nothing -> nodeError (NoUserFound (UserDBId i))
     Just u  -> pure u
 
 getUserLightDB :: HasNodeError err => User -> DBCmd err UserLight
@@ -44,7 +44,7 @@ getUserId :: HasNodeError err
 getUserId u = do
   maybeUser <- getUserId' u
   case maybeUser of
-    Nothing -> nodeError NoUserFound
+    Nothing -> nodeError (NoUserFound u)
     Just u'  -> pure u'
 
 getUserId' :: HasNodeError err

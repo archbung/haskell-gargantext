@@ -10,22 +10,19 @@ module Database.Operations (
   ) where
 
 import Control.Exception hiding (assert)
-import Control.Lens hiding (elements)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.Trans.Control
-import Data.IORef
 import Data.Pool hiding (withResource)
 import Data.String
 import Database.PostgreSQL.Simple
+import Gargantext.API.Node.Corpus.Update
+import Gargantext.Core
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId)
-import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
@@ -40,18 +37,13 @@ import qualified Database.PostgreSQL.Simple.Options as Client
 import qualified Database.Postgres.Temp as Tmp
 import qualified Shelly as SH
 
+import Database.Operations.Types
+import Database.Operations.DocumentSearch
 import Paths_gargantext
 import Test.Hspec
 import Test.QuickCheck.Monadic
 import Test.Tasty.HUnit hiding (assert)
 import Test.Tasty.QuickCheck
-import Gargantext.API.Node.Corpus.Update
-import Gargantext.Core
-import Gargantext.Utils.Jobs
-import qualified Gargantext.API.Admin.EnvTypes as EnvTypes
-import Gargantext.API.Admin.EnvTypes
-import Gargantext.API.Prelude
-import Gargantext.API.Admin.Orchestrator.Types
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -69,62 +61,6 @@ dbUser, dbPassword, dbName :: String
 dbUser = "gargantua"
 dbPassword = "gargantua_test"
 dbName = "gargandb_test"
-
-newtype Counter = Counter { _Counter :: IORef Int }
-  deriving Eq
-
-instance Show Counter where
-  show (Counter _) = "Counter"
-
-emptyCounter :: IO Counter
-emptyCounter = Counter <$> newIORef 0
-
-nextCounter :: Counter -> IO Int
-nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
-
-data TestEnv = TestEnv {
-    test_db          :: !DBHandle
-  , test_config      :: !GargConfig
-  , test_usernameGen :: !Counter
-  }
-
-newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
-  deriving ( Functor, Applicative, Monad
-           , MonadReader TestEnv, MonadError IOException
-           , MonadBase IO
-           , MonadBaseControl IO
-           , MonadFail
-           , MonadIO
-           )
-
-instance MonadJobStatus TestMonad where
-  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle GargError
-  type JobType        TestMonad = GargJob
-  type JobOutputType  TestMonad = JobLog
-  type JobEventType   TestMonad = JobLog
-
-  getLatestJobStatus _  = TestMonad (pure noJobLog)
-  withTracer _ jh n     = n jh
-  markStarted _ _       = TestMonad $ pure ()
-  markProgress _ _      = TestMonad $ pure ()
-  markFailure _ _ _     = TestMonad $ pure ()
-  markComplete _        = TestMonad $ pure ()
-  markFailed _ _        = TestMonad $ pure ()
-  addMoreSteps _ _      = TestMonad $ pure ()
-
-data DBHandle = DBHandle {
-    _DBHandle :: Pool PG.Connection
-  , _DBTmp    :: Tmp.DB
-  }
-
-instance HasNodeError IOException where
-  _NodeError = prism' (userError . show) (const Nothing)
-
-instance HasConnectionPool TestEnv where
-  connPool = to (_DBHandle . test_db)
-
-instance HasConfig TestEnv where
-  hasConfig = to test_config
 
 fakeIniPath :: IO FilePath
 fakeIniPath = getDataFileName "test-data/test_config.ini"
@@ -263,10 +199,3 @@ corpusAddLanguage env = do
     addLanguageToCorpus (_node_id corpus) IT
     [corpus'] <- getCorporaWithParentId parentId
     liftIO $ (_hc_lang . _node_hyperdata $ corpus') `shouldBe` Just IT
-
-corpusAddDocuments :: TestEnv -> Assertion
-corpusAddDocuments env = do
-  flip runReaderT env $ runTestMonad $ do
-    parentId <- getRootId (UserName "alfredo")
-    [_corpus] <- getCorporaWithParentId parentId
-    pure ()

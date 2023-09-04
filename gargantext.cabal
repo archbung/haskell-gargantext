@@ -119,6 +119,7 @@ library
       Gargantext.Database.Admin.Trigger.Init
       Gargantext.Database.Admin.Types.Hyperdata
       Gargantext.Database.Admin.Types.Hyperdata.Corpus
+      Gargantext.Database.Admin.Types.Hyperdata.Document
       Gargantext.Database.Admin.Types.Node
       Gargantext.Database.Prelude
       Gargantext.Database.Query.Table.NgramsPostag
@@ -303,7 +304,6 @@ library
       Gargantext.Database.Admin.Types.Hyperdata.CorpusField
       Gargantext.Database.Admin.Types.Hyperdata.Dashboard
       Gargantext.Database.Admin.Types.Hyperdata.Default
-      Gargantext.Database.Admin.Types.Hyperdata.Document
       Gargantext.Database.Admin.Types.Hyperdata.File
       Gargantext.Database.Admin.Types.Hyperdata.Folder
       Gargantext.Database.Admin.Types.Hyperdata.Frame
@@ -884,6 +884,8 @@ test-suite garg-test-tasty
       Core.Text.Flow
       Core.Utils
       Database.Operations
+      Database.Operations.DocumentSearch
+      Database.Operations.Types
       Graph.Clustering
       Graph.Distance
       Ngrams.Lang
@@ -952,6 +954,7 @@ test-suite garg-test-tasty
     , lens >= 5.2.2 && < 5.3
     , monad-control >= 1.0.3 && < 1.1
     , mtl ^>= 2.2.2
+    , network-uri
     , parsec ^>= 3.1.14.0
     , patches-class ^>= 0.1.0.1
     , patches-map ^>= 0.1.0.1
@@ -981,6 +984,8 @@ test-suite garg-test-hspec
   main-is: hspec/Main.hs
   other-modules:
       Database.Operations
+      Database.Operations.DocumentSearch
+      Database.Operations.Types
       Paths_gargantext
   hs-source-dirs:
       test
@@ -1032,6 +1037,7 @@ test-suite garg-test-hspec
     , lens >= 5.2.2 && < 5.3
     , monad-control >= 1.0.3 && < 1.1
     , mtl ^>= 2.2.2
+    , network-uri
     , parsec ^>= 3.1.14.0
     , patches-class ^>= 0.1.0.1
     , patches-map ^>= 0.1.0.1

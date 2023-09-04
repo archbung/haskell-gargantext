@@ -14,17 +14,19 @@ import Control.Lens (Prism', (#), (^?))
 import Control.Monad.Except (MonadError(..))
 import Data.Aeson
 import Data.Text (Text, pack)
+import qualified Data.Text as T
 
 import Prelude hiding (null, id, map, sum)
 
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
 import Gargantext.Prelude hiding (sum, head)
+import Gargantext.Core.Types.Individu
 
 ------------------------------------------------------------------------
 data NodeError = NoListFound { listId :: ListId }
                | NoRootFound
                | NoCorpusFound
-               | NoUserFound
+               | NoUserFound User
                | MkNode
                | UserNoParent
                | HasParent
@@ -41,7 +43,7 @@ instance Show NodeError
     show (NoListFound {})   = "No list   found"
     show NoRootFound   = "No Root   found"
     show NoCorpusFound = "No Corpus found"
-    show NoUserFound   = "No user   found"
+    show (NoUserFound ur) = "User(" <> T.unpack (renderUser ur) <> ") not found"
 
     show MkNode        = "Cannot make node"
     show NegativeId    = "Node with negative Id"

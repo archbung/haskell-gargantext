@@ -83,7 +83,7 @@ showAsServantErr :: GargError -> ServerError
 showAsServantErr (GargNodeError err@(NoListFound {})) = err404 { errBody = BL8.pack $ show err }
 showAsServantErr (GargNodeError err@NoRootFound) = err404 { errBody = BL8.pack $ show err }
 showAsServantErr (GargNodeError err@NoCorpusFound) = err404 { errBody = BL8.pack $ show err }
-showAsServantErr (GargNodeError err@NoUserFound) = err404 { errBody = BL8.pack $ show err }
+showAsServantErr (GargNodeError err@NoUserFound{}) = err404 { errBody = BL8.pack $ show err }
 showAsServantErr (GargNodeError err@(DoesNotExist {})) = err404 { errBody = BL8.pack $ show err }
 showAsServantErr (GargServerError err) = err
 showAsServantErr a = err500 { errBody = BL8.pack $ show a }
@@ -92,7 +92,7 @@ showAsServantJSONErr :: GargError -> ServerError
 showAsServantJSONErr (GargNodeError err@(NoListFound {})) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargNodeError err@NoRootFound) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargNodeError err@NoCorpusFound) = err404 { errBody = Aeson.encode err }
-showAsServantJSONErr (GargNodeError err@NoUserFound) = err404 { errBody = Aeson.encode err }
+showAsServantJSONErr (GargNodeError err@NoUserFound{}) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargNodeError err@(DoesNotExist {})) = err404 { errBody = Aeson.encode err }
 showAsServantJSONErr (GargServerError err) = err
 showAsServantJSONErr a = err500 { errBody = Aeson.encode a }
