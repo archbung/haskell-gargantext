@@ -171,7 +171,7 @@ getClosestParentIdByType' nId nType = do
 getChildrenByType :: HasDBid NodeType
                   => NodeId
                   -> NodeType
-                  -> Cmd err [NodeId]
+                  -> DBCmd err [NodeId]
 getChildrenByType nId nType = do
   result <- runPGSQuery query (PGS.Only nId)
   children_lst <- mapM (\(id, _) -> getChildrenByType id nType) result
@@ -275,7 +275,7 @@ insertDefaultNode :: HasDBid NodeType
 insertDefaultNode nt p u = insertNode nt Nothing Nothing p u
 
 insertDefaultNodeIfNotExists :: HasDBid NodeType
-                             => NodeType -> ParentId -> UserId -> Cmd err [NodeId]
+                             => NodeType -> ParentId -> UserId -> DBCmd err [NodeId]
 insertDefaultNodeIfNotExists nt p u = do
   children <- getChildrenByType p nt
   case children of
@@ -406,7 +406,7 @@ getOrMkList pId uId =
       mkList' pId' uId' = maybe (nodeError MkNode) pure . headMay =<< insertDefaultNode NodeList pId' uId'
 
 -- | TODO remove defaultList
-defaultList :: (HasNodeError err, HasDBid NodeType) => CorpusId -> Cmd err ListId
+defaultList :: (HasNodeError err, HasDBid NodeType) => CorpusId -> DBCmd err ListId
 defaultList cId =
   maybe (nodeError (NoListFound cId)) (pure . view node_id) . headMay =<< getListsWithParentId cId
 

@@ -86,6 +86,7 @@ library
       Gargantext.Core.Text.Terms
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
+      Gargantext.Core.Text.Terms.Mono.Stem.En
       Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
@@ -113,6 +114,7 @@ library
       Gargantext.Core.Viz.Types
       Gargantext.Database.Action.Flow
       Gargantext.Database.Action.Flow.Types
+      Gargantext.Database.Action.Search
       Gargantext.Database.Action.User
       Gargantext.Database.Action.User.New
       Gargantext.Database.Admin.Config
@@ -253,7 +255,6 @@ library
       Gargantext.Core.Text.Samples.PL
       Gargantext.Core.Text.Samples.ZH
       Gargantext.Core.Text.Terms.Mono.Stem
-      Gargantext.Core.Text.Terms.Mono.Stem.En
       Gargantext.Core.Text.Terms.Mono.Token
       Gargantext.Core.Text.Terms.Mono.Token.En
       Gargantext.Core.Text.Terms.Multi.Group
@@ -291,7 +292,6 @@ library
       Gargantext.Database.Action.Metrics.NgramsByContext
       Gargantext.Database.Action.Metrics.TFICF
       Gargantext.Database.Action.Node
-      Gargantext.Database.Action.Search
       Gargantext.Database.Action.Share
       Gargantext.Database.Action.TSQuery
       Gargantext.Database.Admin.Access

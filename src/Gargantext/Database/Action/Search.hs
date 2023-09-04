@@ -11,7 +11,13 @@ Portability : POSIX
 {-# LANGUAGE Arrows            #-}
 {-# LANGUAGE LambdaCase         #-}
 
-module Gargantext.Database.Action.Search where
+module Gargantext.Database.Action.Search (
+    searchInCorpus
+  , searchInCorpusWithContacts
+  , searchCountInCorpus
+  , searchInCorpusWithNgrams
+  , searchDocInDatabase
+  ) where
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
@@ -25,7 +31,7 @@ import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
-import Gargantext.Database.Prelude (Cmd, runOpaQuery, runCountOpaQuery)
+import Gargantext.Database.Prelude (runOpaQuery, runCountOpaQuery, DBCmd)
 import Gargantext.Database.Query.Facet
 import Gargantext.Database.Query.Filter
 import Gargantext.Database.Query.Table.Node
@@ -48,7 +54,7 @@ import qualified Opaleye as O hiding (Order)
 searchDocInDatabase :: HasDBid NodeType
                     => ParentId
                     -> Text
-                    -> Cmd err [(NodeId, HyperdataDocument)]
+                    -> DBCmd err [(NodeId, HyperdataDocument)]
 searchDocInDatabase p t = runOpaQuery (queryDocInDatabase p t)
   where
     -- | Global search query where ParentId is Master Node Corpus Id
@@ -71,7 +77,7 @@ searchInCorpusWithNgrams :: HasDBid NodeType
                -> Maybe Offset
                -> Maybe Limit
                -> Maybe OrderBy
-               -> Cmd err [FacetDoc]
+               -> DBCmd err [FacetDoc]
 searchInCorpusWithNgrams _cId _lId _t _ngt _q _o _l _order = undefined
 
 -- | Compute TF-IDF for all 'ngramIds' in given 'CorpusId'. In this
@@ -79,11 +85,11 @@ searchInCorpusWithNgrams _cId _lId _t _ngt _q _o _l _order = undefined
 -- ratio of "number of times our terms appear in given document" and
 -- "number of all terms in document" and return a sorted list of
 -- document ids
-tfidfAll :: (HasDBid NodeType, HasNodeError err) => CorpusId -> [Int] -> Cmd err [Int]
-tfidfAll cId ngramIds = do
+_tfidfAll :: (HasDBid NodeType, HasNodeError err) => CorpusId -> [Int] -> DBCmd err [Int]
+_tfidfAll cId ngramIds = do
   let ngramIdsSet = Set.fromList ngramIds
   lId <- defaultList cId
-  docsWithNgrams <- runOpaQuery (queryListWithNgrams lId ngramIds) :: Cmd err [(Int, Int, Int)]
+  docsWithNgrams <- runOpaQuery (_queryListWithNgrams lId ngramIds) :: DBCmd err [(Int, Int, Int)]
   -- NOTE The query returned docs with ANY ngramIds. We need to further
   -- restrict to ALL ngramIds.
   let docsNgramsM =
@@ -111,8 +117,8 @@ tfidfAll cId ngramIds = do
 
 -- | Query for searching the 'context_node_ngrams' table so that we
 -- find docs with ANY given 'ngramIds'.
-queryListWithNgrams :: ListId -> [Int] -> Select (Column SqlInt4, Column SqlInt4, Column SqlInt4)
-queryListWithNgrams lId ngramIds = proc () -> do
+_queryListWithNgrams :: ListId -> [Int] -> Select (Column SqlInt4, Column SqlInt4, Column SqlInt4)
+_queryListWithNgrams lId ngramIds = proc () -> do
   row <- queryContextNodeNgramsTable -< ()
   restrict -< (_cnng_node_id row) .== (pgNodeId lId)
   restrict -< in_ (sqlInt4 <$> ngramIds) (_cnng_ngrams_id row)
@@ -137,7 +143,7 @@ searchInCorpus :: HasDBid NodeType
                -> Maybe Offset
                -> Maybe Limit
                -> Maybe OrderBy
-               -> Cmd err [FacetDoc]
+               -> DBCmd err [FacetDoc]
 searchInCorpus cId t q o l order = runOpaQuery
                                  $ filterWith o l order
                                  $ queryInCorpus cId t
@@ -148,7 +154,7 @@ searchCountInCorpus :: HasDBid NodeType
                     => CorpusId
                     -> IsTrash
                     -> [Text]
-                    -> Cmd err Int
+                    -> DBCmd err Int
 searchCountInCorpus cId t q = runCountOpaQuery
                             $ queryInCorpus cId t
                             $ intercalate " | "
@@ -189,7 +195,7 @@ searchInCorpusWithContacts
   -> Maybe Offset
   -> Maybe Limit
   -> Maybe OrderBy
-  -> Cmd err [FacetPaired Int UTCTime HyperdataContact Int]
+  -> DBCmd err [FacetPaired Int UTCTime HyperdataContact Int]
 searchInCorpusWithContacts cId aId q o l _order =
   runOpaQuery $ limit'   l
               $ offset'  o

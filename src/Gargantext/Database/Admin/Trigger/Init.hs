@@ -20,16 +20,17 @@ import Data.Text (Text)
 import Gargantext.Database.Admin.Trigger.ContextNodeNgrams (triggerCountInsert, triggerCountInsert2)
 import Gargantext.Database.Admin.Trigger.Contexts (triggerSearchUpdate, triggerUpdateHash)
 import Gargantext.Database.Admin.Trigger.NodesContexts ({-triggerDeleteCount,-} triggerInsertCount, triggerUpdateAdd, triggerUpdateDel, MasterListId) -- , triggerCoocInsert)
-import Gargantext.Database.Prelude (Cmd)
+-- , triggerCoocInsert)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Prelude
 
 ------------------------------------------------------------------------
-initFirstTriggers :: Text -> Cmd err [Int64]
+initFirstTriggers :: Text -> DBCmd err [Int64]
 initFirstTriggers secret = do
   t0  <- triggerUpdateHash secret
   pure [t0]
 
-initLastTriggers :: MasterListId -> Cmd err [Int64]
+initLastTriggers :: MasterListId -> DBCmd err [Int64]
 initLastTriggers lId = do
   t0  <- triggerSearchUpdate
   t1 <- triggerCountInsert

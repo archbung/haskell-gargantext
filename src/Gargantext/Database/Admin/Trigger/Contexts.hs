@@ -20,12 +20,13 @@ import Data.Text (Text)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core (HasDBid(..))
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
-import Gargantext.Database.Prelude (Cmd, execPGSQuery)
+-- (ListId, CorpusId, NodeId)
+import Gargantext.Database.Prelude (execPGSQuery, DBCmd)
 import Gargantext.Prelude
 import qualified Database.PostgreSQL.Simple as DPS
 
 
-triggerSearchUpdate :: HasDBid NodeType => Cmd err Int64
+triggerSearchUpdate :: HasDBid NodeType => DBCmd err Int64
 triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
                                          , toDBid NodeDocument
                                          , toDBid NodeContact
@@ -69,7 +70,7 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
 
 type Secret = Text
 
-triggerUpdateHash :: HasDBid NodeType => Secret -> Cmd err Int64
+triggerUpdateHash :: HasDBid NodeType => Secret -> DBCmd err Int64
 triggerUpdateHash secret = execPGSQuery query ( toDBid NodeDocument
                                               , toDBid NodeContact
                                               , secret

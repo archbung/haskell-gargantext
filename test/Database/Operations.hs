@@ -22,7 +22,7 @@ import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId)
+import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId, getOrMkList)
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
@@ -44,6 +44,9 @@ import Test.Hspec
 import Test.QuickCheck.Monadic
 import Test.Tasty.HUnit hiding (assert)
 import Test.Tasty.QuickCheck
+import Gargantext.Database.Admin.Trigger.Init
+import Gargantext.Database.Action.Flow
+import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -110,6 +113,8 @@ withTestDB = bracket setup teardown
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
+  describe "Prelude" $ do
+    it "setup DB triggers" setupEnvironment
   describe "Read/Writes" $ do
     describe "User creation" $ do
       it "Simple write/read" writeRead01
@@ -119,6 +124,9 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Simple write/read" corpusReadWrite01
       it "Can add language to Corpus" corpusAddLanguage
       it "Can add documents to a Corpus" corpusAddDocuments
+    describe "Corpus search" $ do
+      it "Can stem query terms" stemmingTest
+      it "Can perform a simple search inside documents" corpusSearch01
 
 data ExpectedActual a =
     Expected a
@@ -130,6 +138,16 @@ instance Eq a => Eq (ExpectedActual a) where
   (Actual a)   == (Expected b) = a == b
   _ == _ = False
 
+setupEnvironment :: TestEnv -> IO ()
+setupEnvironment env = flip runReaderT env $ runTestMonad $ do
+  void $ initFirstTriggers "secret_key"
+  void $ new_user $ mkNewUser (userMaster <> "@cnrs.com") (GargPassword "secret_key")
+  (masterUserId, _masterRootId, masterCorpusId)
+              <- getOrMk_RootWithCorpus (UserName userMaster)
+                                        (Left corpusMasterName)
+                                        (Nothing :: Maybe HyperdataCorpus)
+  masterListId <- getOrMkList masterCorpusId masterUserId
+  void $ initLastTriggers masterListId
 
 writeRead01 :: TestEnv -> Assertion
 writeRead01 env = do
@@ -140,14 +158,14 @@ writeRead01 env = do
     uid1 <- new_user nur1
     uid2 <- new_user nur2
 
-    liftBase $ uid1 `shouldBe` 1
-    liftBase $ uid2 `shouldBe` 2
+    liftBase $ uid1 `shouldBe` 2
+    liftBase $ uid2 `shouldBe` 3
 
     -- Getting the users by username returns the expected IDs
     uid1' <- getUserId (UserName "alfredo")
     uid2' <- getUserId (UserName "paul")
-    liftBase $ uid1' `shouldBe` 1
-    liftBase $ uid2' `shouldBe` 2
+    liftBase $ uid1' `shouldBe` 2
+    liftBase $ uid2' `shouldBe` 3
 
 mkUserDup :: TestEnv -> Assertion
 mkUserDup env = do
@@ -184,7 +202,7 @@ corpusReadWrite01 env = do
     uid      <- getUserId (UserName "alfredo")
     parentId <- getRootId (UserName "alfredo")
     [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
-    liftIO $ corpusId `shouldBe` NodeId 409
+    liftIO $ corpusId `shouldBe` NodeId 416
     -- Retrieve the corpus by Id
     [corpus] <- getCorporaWithParentId parentId
     liftIO $ corpusId `shouldBe` (_node_id corpus)

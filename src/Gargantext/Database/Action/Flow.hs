@@ -324,7 +324,7 @@ addDocumentsToHyperCorpus ncs mb_hyper la corpusId docs = do
   pure ids
 
 ------------------------------------------------------------------------
-createNodes :: ( FlowCmdM env err m
+createNodes :: ( DbCmd' env err m, HasNodeError err
                , MkCorpus c
                )
             => User
