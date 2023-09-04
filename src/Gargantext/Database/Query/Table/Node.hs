@@ -260,7 +260,7 @@ getNode nId = do
     Just  r -> pure r
 
 getNodeWith :: (HasNodeError err, JSONB a)
-            => NodeId -> proxy a -> Cmd err (Node a)
+            => NodeId -> proxy a -> DBCmd err (Node a)
 getNodeWith nId _ = do
   maybeNode <- headMay <$> runOpaQuery (selectNode (pgNodeId nId))
   case maybeNode of

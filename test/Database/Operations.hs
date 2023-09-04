@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Database.Operations (
    tests
@@ -44,6 +45,13 @@ import Test.Hspec
 import Test.QuickCheck.Monadic
 import Test.Tasty.HUnit hiding (assert)
 import Test.Tasty.QuickCheck
+import Gargantext.API.Node.Corpus.Update
+import Gargantext.Core
+import Gargantext.Utils.Jobs
+import qualified Gargantext.API.Admin.EnvTypes as EnvTypes
+import Gargantext.API.Admin.EnvTypes
+import Gargantext.API.Prelude
+import Gargantext.API.Admin.Orchestrator.Types
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -88,6 +96,21 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            , MonadFail
            , MonadIO
            )
+
+instance MonadJobStatus TestMonad where
+  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle GargError
+  type JobType        TestMonad = GargJob
+  type JobOutputType  TestMonad = JobLog
+  type JobEventType   TestMonad = JobLog
+
+  getLatestJobStatus _  = TestMonad (pure noJobLog)
+  withTracer _ jh n     = n jh
+  markStarted _ _       = TestMonad $ pure ()
+  markProgress _ _      = TestMonad $ pure ()
+  markFailure _ _ _     = TestMonad $ pure ()
+  markComplete _        = TestMonad $ pure ()
+  markFailed _ _        = TestMonad $ pure ()
+  addMoreSteps _ _      = TestMonad $ pure ()
 
 data DBHandle = DBHandle {
     _DBHandle :: Pool PG.Connection
@@ -158,6 +181,7 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Read/Write roundtrip" prop_userCreationRoundtrip
     describe "Corpus creation" $ do
       it "Simple write/read" corpusReadWrite01
+      it "Can add language to Corpus" corpusAddLanguage
 
 data ExpectedActual a =
     Expected a
@@ -224,5 +248,15 @@ corpusReadWrite01 env = do
     [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
     liftIO $ corpusId `shouldBe` NodeId 409
     -- Retrieve the corpus by Id
-    [corpusId'] <- getCorporaWithParentId parentId
-    liftIO $ corpusId `shouldBe` (_node_id corpusId')
+    [corpus] <- getCorporaWithParentId parentId
+    liftIO $ corpusId `shouldBe` (_node_id corpus)
+
+corpusAddLanguage :: TestEnv -> Assertion
+corpusAddLanguage env = do
+  flip runReaderT env $ runTestMonad $ do
+    parentId <- getRootId (UserName "alfredo")
+    [corpus] <- getCorporaWithParentId parentId
+    liftIO $ (_hc_lang . _node_hyperdata $ corpus) `shouldBe` Just EN -- defaults to English
+    addLanguageToCorpus (_node_id corpus) IT
+    [corpus'] <- getCorporaWithParentId parentId
+    liftIO $ (_hc_lang . _node_hyperdata $ corpus') `shouldBe` Just IT

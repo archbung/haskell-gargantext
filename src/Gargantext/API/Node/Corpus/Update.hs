@@ -7,17 +7,18 @@ import Control.Lens
 import Control.Monad
 import Data.Proxy
 import Gargantext.Core
-import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs
 
 -- | Updates the 'HyperdataCorpus' with the input 'Lang'.
-addLanguageToCorpus :: (FlowCmdM env err m, MonadJobStatus m)
+addLanguageToCorpus :: (HasNodeError err, DbCmd' env err m, MonadJobStatus m)
                     => CorpusId
                     -> Lang
                     -> m ()

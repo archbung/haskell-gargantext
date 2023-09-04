@@ -58,6 +58,7 @@ library
       Gargantext.API.Node
       Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.Types
+      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
@@ -175,7 +176,6 @@ library
       Gargantext.API.Node.Corpus.New.File
       Gargantext.API.Node.Corpus.New.Types
       Gargantext.API.Node.Corpus.Searx
-      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.Document.Export
       Gargantext.API.Node.Document.Export.Types
       Gargantext.API.Node.DocumentsFromWriteNodes
