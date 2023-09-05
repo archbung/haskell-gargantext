@@ -391,6 +391,7 @@ isIn cId docId = ( == [Only True])
         AND nn.node2_id = ?;
   |] (cId, docId)
 
+-- Recursive parents function to construct a breadcrumb
 recursiveParents :: NodeId
        -> [NodeType]
        -> Cmd err [DbTreeNode]
