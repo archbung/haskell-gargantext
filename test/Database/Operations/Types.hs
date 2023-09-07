@@ -4,6 +4,7 @@
 
 module Database.Operations.Types where
 
+import Control.Concurrent.Async
 import Control.Exception
 import Control.Lens
 import Control.Monad.Except
@@ -36,9 +37,9 @@ nextCounter :: Counter -> IO Int
 nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
 
 data TestEnv = TestEnv {
-    test_db          :: !DBHandle
-  , test_config      :: !GargConfig
-  , test_usernameGen :: !Counter
+    test_db                  :: !DBHandle
+  , test_config              :: !GargConfig
+  , test_usernameGen         :: !Counter
   }
 
 newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }

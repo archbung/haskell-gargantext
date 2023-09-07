@@ -4,6 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG GHC=8.10.7
 ARG STACK=2.7.3
 ARG CABAL=3.10.1.0
+ARG CORE
 COPY ./shell.nix                                       /builds/gargantext/shell.nix
 COPY ./nix/pkgs.nix                                    /builds/gargantext/nix/pkgs.nix
 COPY ./nix/pinned-22.05.nix                            /builds/gargantext/nix/pinned-22.05.nix
@@ -14,6 +15,8 @@ COPY ./nix/overlays/Cabal-syntax-3.10.1.0.nix          /builds/gargantext/nix/ov
 COPY ./nix/overlays/directory-1.3.7.0.nix              /builds/gargantext/nix/overlays/directory-1.3.7.0.nix
 COPY ./nix/overlays/hackage-security-0.6.2.3.nix       /builds/gargantext/nix/overlays/hackage-security-0.6.2.3.nix
 COPY ./nix/overlays/process-1.6.15.0.nix               /builds/gargantext/nix/overlays/process-1.6.15.0.nix
+COPY ./devops/coreNLP/build.sh                         /builds/gargantext/devops/coreNLP/build.sh
+COPY ./devops/coreNLP/startServer.sh                   /builds/gargantext/devops/coreNLP/startServer.sh
 
 ENV TZ=Europe/Rome
 RUN apt-get update && \
@@ -43,7 +46,9 @@ RUN apt-get update && \
       wget \
       vim \
       xz-utils \
-      zlib1g-dev && \
+      zlib1g-dev \
+      openjdk-18-jdk \
+      unzip && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     mkdir -m 0755 /nix && groupadd -r nixbld && chown root /nix && \
     for n in $(seq 1 10); do useradd -c "Nix build user $n" -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(command -v nologin)" "nixbld$n"; done
@@ -51,6 +56,8 @@ RUN apt-get update && \
 RUN gpg --batch --keyserver keys.openpgp.org     --recv-keys 7D1E8AFD1D4A16D71FADA2F2CCC85C0E40C06A8C && \
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys FE5AB6C91FEA597C3B31180B73EDE9E8CFBAEF01
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN cd /builds/gargantext/devops/coreNLP; ./build.sh; rm -rf *.zip
 
 RUN set -o pipefail && \
     bash <(curl -L https://releases.nixos.org/nix/nix-2.15.0/install) --no-daemon && \

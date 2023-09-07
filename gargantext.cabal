@@ -960,6 +960,7 @@ test-suite garg-test-tasty
     , patches-map ^>= 0.1.0.1
     , postgres-options >= 0.2 && < 0.3
     , postgresql-simple >= 0.6.4 && < 0.7
+    , process ^>= 1.6.13.2
     , quickcheck-instances ^>= 0.3.25.2
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
@@ -1043,6 +1044,7 @@ test-suite garg-test-hspec
     , patches-map ^>= 0.1.0.1
     , postgres-options >= 0.2 && < 0.3
     , postgresql-simple >= 0.6.4 && < 0.7
+    , process ^>= 1.6.13.2
     , quickcheck-instances ^>= 0.3.25.2
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5

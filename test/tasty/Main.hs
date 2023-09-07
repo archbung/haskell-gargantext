@@ -14,7 +14,6 @@ import Gargantext.Prelude
 
 import qualified Core.Text.Corpus.Query  as CorpusQuery
 import qualified Core.Utils              as Utils
-import qualified Database.Operations     as DB
 import qualified Graph.Clustering        as Graph
 import qualified Ngrams.NLP              as NLP
 import qualified Ngrams.Query            as NgramsQuery
