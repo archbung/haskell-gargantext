@@ -79,7 +79,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
-    tag: eb130c71fa17adaceed6ff66beefbccb13df51ba
+    tag: 2d7e5753cbbce248b860b571a0e9885415c846f7
 
 source-repository-package
     type: git

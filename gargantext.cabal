@@ -910,16 +910,6 @@ test-suite garg-test
       RankNTypes
       RecordWildCards
       StrictData
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck ^>= 2.14.2

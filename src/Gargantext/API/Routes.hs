@@ -10,10 +10,10 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
 
 module Gargantext.API.Routes
       where
