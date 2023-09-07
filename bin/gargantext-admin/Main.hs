@@ -18,6 +18,7 @@ module Main where
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
 import Gargantext.API.Prelude (GargError)
 import Gargantext.Database.Action.User.New (newUsers)
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd'')
 import Gargantext.Prelude
 import System.Environment (getArgs)
@@ -28,6 +29,6 @@ main = do
   (iniPath:mails) <- getArgs
 
   withDevEnv iniPath $ \env -> do
-    x <- runCmdDev env ((newUsers $ map cs mails) :: Cmd'' DevEnv GargError Int64)
+    x <- runCmdDev env ((newUsers $ map cs mails) :: Cmd'' DevEnv GargError [UserId])
     putStrLn $ show x
   pure ()

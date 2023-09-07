@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.7.6.3
+
+* [BACK][TESTS] Make a start on benchmarking, add more tests
+
 ## Version 0.0.6.9.9.7.6.2
 
 * [BACK][FIX] CI

@@ -72,7 +72,7 @@ import Gargantext.Database.Admin.Config (nodeTypeId)
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
 insertUsers :: [UserWrite] -> DBCmd err Int64
-insertUsers us = mkCmd $ \c -> runInsert_ c insert
+insertUsers us = mkCmd $ \c -> runInsert c insert
   where
     insert = Insert userTable us rCount Nothing
 

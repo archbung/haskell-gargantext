@@ -1,48 +1,78 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TupleSections        #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
-module Database.Operations where
+module Database.Operations (
+   tests
+  ) where
 
-import Control.Exception
-import Control.Lens
+import Control.Exception hiding (assert)
+import Control.Lens hiding (elements)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
+import Data.IORef
 import Data.Pool hiding (withResource)
 import Data.String
+import Database.PostgreSQL.Simple
 import Gargantext.Core.Types.Individu
+import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Prelude
-import Shelly hiding (FilePath)
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.Hspec
+import Shelly hiding (FilePath, run)
+import Test.QuickCheck.Monadic
+import Test.Hspec
+import Test.Tasty.HUnit hiding (assert)
+import Test.Tasty.QuickCheck
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Database.PostgreSQL.Simple as PG
 import qualified Database.PostgreSQL.Simple.Options as Client
 import qualified Database.Postgres.Temp as Tmp
+import qualified Shelly as SH
 
 import Paths_gargantext
 
+-- | Keeps a log of usernames we have already generated, so that our
+-- roundtrip tests won't fail.
+uniqueArbitraryNewUser :: Int -> Gen (NewUser GargPassword)
+uniqueArbitraryNewUser currentIx = do
+  ur <- (`mappend` (T.pack (show currentIx) <> "-")) <$> ascii_txt
+  let email = ur <> "@foo.com"
+  NewUser <$> pure ur <*> pure email <*> elements arbitraryPassword
+  where
+   ascii_txt :: Gen T.Text
+   ascii_txt = fmap (T.pack . getPrintableString) arbitrary
 
 -- | Test DB settings.
 dbUser, dbPassword, dbName :: String
 dbUser = "gargantua"
 dbPassword = "gargantua_test"
-dbName = "gargandbV5"
+dbName = "gargandb_test"
 
+newtype Counter = Counter { _Counter :: IORef Int }
+  deriving Eq
+
+instance Show Counter where
+  show (Counter _) = "Counter"
+
+emptyCounter :: IO Counter
+emptyCounter = Counter <$> newIORef 0
+
+nextCounter :: Counter -> IO Int
+nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
 
 data TestEnv = TestEnv {
-    test_db     :: !DBHandle
-  , test_config :: !GargConfig
+    test_db          :: !DBHandle
+  , test_config      :: !GargConfig
+  , test_usernameGen :: !Counter
   }
 
 newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
@@ -52,7 +82,7 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            , MonadBaseControl IO
            )
 
-data DBHandle = DBHandle { 
+data DBHandle = DBHandle {
     _DBHandle :: Pool PG.Connection
   , _DBTmp    :: Tmp.DB
   }
@@ -72,9 +102,6 @@ fakeIniPath = getDataFileName "test-data/test_config.ini"
 gargDBSchema :: IO FilePath
 gargDBSchema = getDataFileName "devops/postgres/schema.sql"
 
-gargDBExtensionsSchema :: IO FilePath
-gargDBExtensionsSchema = getDataFileName "devops/postgres/extensions.sql"
-
 teardown :: TestEnv -> IO ()
 teardown TestEnv{..} = do
   destroyAllResources $ _DBHandle test_db
@@ -87,7 +114,7 @@ bootstrapDB tmpDB pool _cfg = Pool.withResource pool $ \conn -> do
   schemaPath <- gargDBSchema
   let connString = Tmp.toConnectionString tmpDB
   (res,ec) <- shelly $ silently $ escaping False $ do
-    result <- run "psql" ["-d", "\"" <> TE.decodeUtf8 connString <> "\"", "<", fromString schemaPath]
+    result <- SH.run "psql" ["-d", "\"" <> TE.decodeUtf8 connString <> "\"", "<", fromString schemaPath]
     (result,) <$> lastExitCode
   unless (ec == 0) $ throwIO (userError $ show ec <> ": " <> T.unpack res)
 
@@ -107,26 +134,75 @@ setup = do
     Right db -> do
       gargConfig <- fakeIniPath >>= readConfig
       pool <- createPool (PG.connectPostgreSQL (Tmp.toConnectionString db))
-                         (PG.close)
-                         2
-                         60
-                         2
+                         (PG.close) 2 60 2
       bootstrapDB db pool gargConfig
-      pure $ TestEnv (DBHandle pool db) gargConfig
+      ugen <- emptyCounter
+      pure $ TestEnv (DBHandle pool db) gargConfig ugen
 
-tests :: TestTree
-tests = withResource setup teardown $
-  \getEnv -> testGroup "Database" [unitTests getEnv]
+withTestDB :: (TestEnv -> IO ()) -> IO ()
+withTestDB = bracket setup teardown
 
-unitTests :: IO TestEnv -> TestTree
-unitTests getEnv = testGroup "Read/Writes"
-  [ testCase "Simple write" (write01 getEnv)
-  ]
+tests :: Spec
+tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
+  describe "Read/Writes" $
+    describe "User creation" $ do
+      it "Simple write/read" writeRead01
+      it "Simple duplicate"  mkUserDup
+      it "Read/Write roundtrip" prop_userCreationRoundtrip
 
-write01 :: IO TestEnv -> Assertion
-write01 getEnv = do
-  env <- getEnv
+data ExpectedActual a =
+    Expected a
+  | Actual a
+  deriving Show
+
+instance Eq a => Eq (ExpectedActual a) where
+  (Expected a) == (Actual b)   = a == b
+  (Actual a)   == (Expected b) = a == b
+  _ == _ = False
+
+
+writeRead01 :: TestEnv -> Assertion
+writeRead01 env = do
   flip runReaderT env $ runTestMonad $ do
-    let nur = mkNewUser "alfredo@well-typed.com" (GargPassword "my_secret")
-    x <- new_user nur
-    liftBase $ x `shouldBe` 1
+    let nur1 = mkNewUser "alfredo@well-typed.com" (GargPassword "my_secret")
+    let nur2 = mkNewUser "paul@acme.com" (GargPassword "my_secret")
+
+    uid1 <- new_user nur1
+    uid2 <- new_user nur2
+
+    liftBase $ uid1 `shouldBe` 1
+    liftBase $ uid2 `shouldBe` 2
+
+    -- Getting the users by username returns the expected IDs
+    uid1' <- getUserId (UserName "alfredo")
+    uid2' <- getUserId (UserName "paul")
+    liftBase $ uid1' `shouldBe` 1
+    liftBase $ uid2' `shouldBe` 2
+
+mkUserDup :: TestEnv -> Assertion
+mkUserDup env = do
+  let x = flip runReaderT env $ runTestMonad $ do
+            -- This should fail, because user 'alfredo' exists already.
+            let nur = mkNewUser "alfredo@well-typed.com" (GargPassword "my_secret")
+            new_user nur
+  --
+  -- SqlError {sqlState = "23505", sqlExecStatus = FatalError
+  --          , sqlErrorMsg = "duplicate key value violates unique constraint \"auth_user_username_idx1\""
+  --          , sqlErrorDetail = "Key (username)=(alfredo) already exists.", sqlErrorHint = ""
+  --          }
+  --
+  -- Postgres increments the underlying SERIAL for the user even if the request fails, see
+  -- https://stackoverflow.com/questions/37204749/serial-in-postgres-is-being-increased-even-though-i-added-on-conflict-do-nothing
+  -- This means that the next available ID is '3'.
+  x `shouldThrow` (\SqlError{..} -> sqlErrorDetail == "Key (username)=(alfredo) already exists.")
+
+runEnv :: TestEnv -> TestMonad a -> PropertyM IO a
+runEnv env act = run (flip runReaderT env $ runTestMonad act)
+
+prop_userCreationRoundtrip :: TestEnv -> Property
+prop_userCreationRoundtrip env = monadicIO $ do
+  nextAvailableCounter <- run (nextCounter $ test_usernameGen env)
+  nur  <- pick (uniqueArbitraryNewUser nextAvailableCounter)
+  uid <- runEnv env (new_user nur)
+  ur' <- runEnv env (getUserId (UserName $ _nu_username nur))
+  run (Expected uid `shouldBe` Actual ur')

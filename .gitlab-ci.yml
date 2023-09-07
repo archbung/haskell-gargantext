@@ -12,6 +12,7 @@ variables:
 stages:
   - stack
   - cabal
+  - bench
   - test
 
 stack:
@@ -34,7 +35,19 @@ cabal:
       - .cabal/
     policy: pull-push
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O0 -fclear-plugins'"
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O2 -fclear-plugins'"
+  allow_failure: false
+
+bench:
+  stage: bench
+  cache:
+    key: cabal.project
+    paths:
+      - dist-newstyle/
+      - .cabal/
+    policy: pull-push
+  script:
+    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --ghc-options='-O2 -fclear-plugins'"
   allow_failure: false
 
 test:
@@ -63,11 +76,13 @@ test:
       nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR"
       mkdir -p /root/.cache/cabal/logs
       chown -R test:test /root/.cache/cabal/logs/
-      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --ghc-options='-O0 -fclear-plugins'\""
+      chown -R test:test /root/.cache/cabal/packages/hackage.haskell.org/
+      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext && $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/
       chown -R root:root /root/
       chown -R root:root $CABAL_STORE_DIR
       chown -R root:root /root/.cache/cabal/logs/
+      chown -R root:root /root/.cache/cabal/packages/hackage.haskell.org/
 
 #docs:
 #  stage: docs

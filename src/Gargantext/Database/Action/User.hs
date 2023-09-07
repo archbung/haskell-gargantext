@@ -16,7 +16,7 @@ module Gargantext.Database.Action.User
 import Data.Text (Text)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, DBCmd)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Table.Node.Error
@@ -24,14 +24,14 @@ import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 
 ------------------------------------------------------------------------
-getUserLightWithId :: HasNodeError err => Int -> Cmd err UserLight
+getUserLightWithId :: HasNodeError err => UserId -> DBCmd err UserLight
 getUserLightWithId i = do
   candidates <- head <$> getUsersWithId (UserDBId i)
   case candidates of
     Nothing -> nodeError NoUserFound
     Just u  -> pure u
 
-getUserLightDB :: HasNodeError err => User -> Cmd err UserLight
+getUserLightDB :: HasNodeError err => User -> DBCmd err UserLight
 getUserLightDB u = do
   userId <- getUserId u
   userLight <- getUserLightWithId userId

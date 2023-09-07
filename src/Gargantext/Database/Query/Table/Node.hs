@@ -195,7 +195,7 @@ getDocumentsWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeDocument
 getListsModelWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataModel]
 getListsModelWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeModel)
 
-getCorporaWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataCorpus]
+getCorporaWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataCorpus]
 getCorporaWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeCorpus)
 
 ------------------------------------------------------------------------
@@ -271,7 +271,7 @@ getNodeWith nId _ = do
 ------------------------------------------------------------------------
 -- | Sugar to insert Node with NodeType in Database
 insertDefaultNode :: HasDBid NodeType
-                  => NodeType -> ParentId -> UserId -> Cmd err [NodeId]
+                  => NodeType -> ParentId -> UserId -> DBCmd err [NodeId]
 insertDefaultNode nt p u = insertNode nt Nothing Nothing p u
 
 insertDefaultNodeIfNotExists :: HasDBid NodeType
@@ -382,7 +382,7 @@ data CorpusType = CorpusDocument | CorpusContact
 
 class MkCorpus a
   where
-    mk :: HasDBid NodeType => Maybe Name -> Maybe a -> ParentId -> UserId -> Cmd err [NodeId]
+    mk :: HasDBid NodeType => Maybe Name -> Maybe a -> ParentId -> UserId -> DBCmd err [NodeId]
 
 instance MkCorpus HyperdataCorpus
   where
