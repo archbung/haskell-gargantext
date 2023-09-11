@@ -37,6 +37,7 @@ data NodeError = NoListFound { listId :: ListId }
                | DoesNotExist NodeId
                | NeedsConfiguration
                | NodeError Text
+               | QueryNoParse Text
 
 instance Show NodeError
   where
@@ -55,6 +56,7 @@ instance Show NodeError
     show (DoesNotExist n)   = "Node does not exist (" <> show n <> ")"
     show NeedsConfiguration = "Needs configuration"
     show (NodeError e)      = "NodeError: " <> cs e
+    show (QueryNoParse err) = "QueryNoParse: " <> T.unpack err
 
 instance ToJSON NodeError where
   toJSON (NoListFound { listId = NodeId listId }) =

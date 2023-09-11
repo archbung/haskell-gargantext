@@ -36,6 +36,7 @@ import Data.Maybe
 import Data.Swagger
 import Data.Text (Text())
 import GHC.Generics (Generic)
+import Prelude
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
@@ -43,15 +44,16 @@ import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Gargantext.API.HashedResponse
 import Gargantext.API.Ngrams.Types (TabType(..))
 import Gargantext.API.Prelude (GargServer)
+import Gargantext.Core.Text.Corpus.Query (RawQuery, parseQuery)
 import Gargantext.Core.Types (TableResult(..))
 import Gargantext.Core.Types.Query (Offset, Limit)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Action.Learn (FavOrTrash(..), moreLike)
 import Gargantext.Database.Action.Search
-import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
-import Gargantext.Database.Query.Facet (FacetDoc , runViewDocuments, runCountDocuments, OrderBy(..), runViewAuthorsDoc)
+import Gargantext.Database.Admin.Types.Node hiding (ERROR, DEBUG)
 import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Query.Facet (FacetDoc , runViewDocuments, runCountDocuments, OrderBy(..), runViewAuthorsDoc)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Prelude
 
 ------------------------------------------------------------------------
@@ -77,7 +79,7 @@ data TableQuery = TableQuery
   , tq_limit        :: Limit
   , tq_orderBy      :: OrderBy
   , tq_view         :: TabType
-  , tq_query        :: Text
+  , tq_query        :: RawQuery
   } deriving (Generic)
 
 type FacetTableResult = TableResult FacetDoc
@@ -116,13 +118,13 @@ getTableApi cId tabType mLimit mOffset mOrderBy mQuery mYear = do
   t <- getTable cId tabType mOffset mLimit mOrderBy mQuery mYear
   pure $ constructHashedResponse t
 
-postTableApi :: HasNodeError err
-             => NodeId -> TableQuery -> Cmd err FacetTableResult
-postTableApi cId (TableQuery o l order ft "") = getTable cId (Just ft) (Just o) (Just l) (Just order) Nothing Nothing
-postTableApi cId (TableQuery o l order ft q) = case ft of
-      Docs  -> searchInCorpus' cId False [q] (Just o) (Just l) (Just order)
-      Trash -> searchInCorpus' cId True [q] (Just o) (Just l) (Just order)
-      x     -> panic $ "not implemented in tableApi " <> (cs $ show x)
+postTableApi :: HasNodeError err => NodeId -> TableQuery -> Cmd err FacetTableResult
+postTableApi cId tq = case tq of
+ TableQuery o l order ft "" -> getTable cId (Just ft) (Just o) (Just l) (Just order) Nothing Nothing
+ TableQuery o l order ft q  -> case ft of
+   Docs  -> searchInCorpus' cId False q (Just o) (Just l) (Just order)
+   Trash -> searchInCorpus' cId True  q (Just o) (Just l) (Just order)
+   x     -> panic $ "not implemented in tableApi " <> (cs $ show x)
 
 getTableHashApi :: HasNodeError err
                 => NodeId -> Maybe TabType -> Cmd err Text
@@ -132,15 +134,21 @@ getTableHashApi cId tabType = do
 
 searchInCorpus' :: CorpusId
                 -> Bool
-                -> [Text]
+                -> RawQuery
                 -> Maybe Offset
                 -> Maybe Limit
                 -> Maybe OrderBy
                 -> Cmd err FacetTableResult
 searchInCorpus' cId t q o l order = do
-  docs          <- searchInCorpus cId t q o l order
-  countAllDocs  <- searchCountInCorpus cId t q
-  pure $ TableResult { tr_docs = docs, tr_count = countAllDocs }
+  case parseQuery q of
+    -- FIXME(adn) The error handling needs to be monomorphic over GargErr.
+    Left _noParseErr -> do
+      -- - $(logLocM) ERROR $ "Invalid input query " <> (getRawQuery q) <> " , error = " <> (T.pack noParseErr)
+      pure $ TableResult 0 []
+    Right boolQuery -> do
+      docs          <- searchInCorpus cId t boolQuery o l order
+      countAllDocs  <- searchCountInCorpus cId t boolQuery
+      pure $ TableResult { tr_docs = docs, tr_count = countAllDocs }
 
 
 getTable :: HasNodeError err

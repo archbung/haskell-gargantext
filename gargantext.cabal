@@ -124,6 +124,7 @@ library
       Gargantext.Database.Admin.Types.Hyperdata.Document
       Gargantext.Database.Admin.Types.Node
       Gargantext.Database.Prelude
+      Gargantext.Database.Query.Facet
       Gargantext.Database.Query.Table.NgramsPostag
       Gargantext.Database.Query.Table.Node
       Gargantext.Database.Query.Table.Node.Error
@@ -316,7 +317,6 @@ library
       Gargantext.Database.Admin.Types.Metrics
       Gargantext.Database.GargDB
       Gargantext.Database.Query
-      Gargantext.Database.Query.Facet
       Gargantext.Database.Query.Facet.Types
       Gargantext.Database.Query.Filter
       Gargantext.Database.Query.Join

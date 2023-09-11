@@ -17,12 +17,13 @@ Count API part of Gargantext.
 module Gargantext.API.Search
       where
 
-import Data.Aeson hiding (defaultTaggedObject)
 -- import Data.List (concat)
+import Data.Aeson hiding (defaultTaggedObject)
 import Data.Swagger hiding (fieldLabelModifier, Contact)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Gargantext.API.Prelude (GargServer)
+import Gargantext.Core.Text.Corpus.Query (RawQuery (..), parseQuery)
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Core.Types.Search
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
@@ -37,6 +38,7 @@ import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 import qualified Data.Text as T
+import Data.Either
 
 -----------------------------------------------------------------------
 -- TODO-ACCESS: CanSearch? or is it part of CanGetNode
@@ -50,23 +52,28 @@ type API results = Summary "Search endpoint"
 -----------------------------------------------------------------------
 -- | Api search function
 api :: NodeId -> GargServer (API SearchResult)
-api nId (SearchQuery q SearchDoc) o l order = do
-  $(logLocM) DEBUG $ T.pack "New search started with query = " <> T.pack (show q)
-  SearchResult <$> SearchResultDoc
-               <$> map (toRow nId)
-               <$> searchInCorpus nId False q o l order
-               -- <$> searchInCorpus nId False (concat q) o l order
-api nId (SearchQuery q SearchContact) o l order = do
-  -- printDebug "isPairedWith" nId
-  aIds <- isPairedWith nId NodeAnnuaire
-  -- TODO if paired with several corpus
-  case head aIds of
-    Nothing  -> pure $ SearchResult
-              $ SearchNoResult "[G.A.Search] pair corpus with an Annuaire"
-    Just aId -> SearchResult
-            <$> SearchResultContact
-            <$> map (toRow aId)
-            <$> searchInCorpusWithContacts nId aId q o l order
+api nId (SearchQuery rawQuery SearchDoc) o l order = do
+  case parseQuery rawQuery of
+    Left  err -> pure $ SearchResult $ SearchNoResult (T.pack err)
+    Right q   -> do
+      $(logLocM) DEBUG $ T.pack "New search started with query = " <> (getRawQuery rawQuery)
+      SearchResult <$> SearchResultDoc
+                   <$> map (toRow nId)
+                   <$> searchInCorpus nId False q o l order
+api nId (SearchQuery rawQuery SearchContact) o l order = do
+  case parseQuery rawQuery of
+    Left  err -> pure $ SearchResult $ SearchNoResult (T.pack err)
+    Right q   -> do
+      -- printDebug "isPairedWith" nId
+      aIds <- isPairedWith nId NodeAnnuaire
+      -- TODO if paired with several corpus
+      case head aIds of
+        Nothing  -> pure $ SearchResult
+                  $ SearchNoResult "[G.A.Search] pair corpus with an Annuaire"
+        Just aId -> SearchResult
+                <$> SearchResultContact
+                <$> map (toRow aId)
+                <$> searchInCorpusWithContacts nId aId q o l order
 api _nId (SearchQuery _q SearchDocWithNgrams) _o _l _order = undefined
 
 -----------------------------------------------------------------------
@@ -85,7 +92,7 @@ instance Arbitrary SearchType where
 
 -----------------------------------------------------------------------
 data SearchQuery =
-  SearchQuery { query    :: ![Text]
+  SearchQuery { query    :: !RawQuery
               , expected :: !SearchType
               }
     deriving (Generic)
@@ -100,7 +107,7 @@ instance ToSchema SearchQuery
 -}
 
 instance Arbitrary SearchQuery where
-  arbitrary = elements [SearchQuery ["electrodes"] SearchDoc]
+  arbitrary = elements [SearchQuery (RawQuery "electrodes") SearchDoc]
   -- arbitrary = elements [SearchQuery "electrodes" 1 ] --SearchDoc]
 -----------------------------------------------------------------------
 data SearchResult =

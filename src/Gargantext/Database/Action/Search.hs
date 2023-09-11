@@ -21,34 +21,67 @@ module Gargantext.Database.Action.Search (
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
 import Data.Maybe
-import qualified Data.Set as Set
-import Data.Text (Text, unpack, intercalate)
+import Data.Profunctor.Product (p4)
+import Data.Text (Text, unpack)
 import Data.Time (UTCTime)
 import Gargantext.Core
+import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
 import Gargantext.Database.Prelude (runOpaQuery, runCountOpaQuery, DBCmd)
 import Gargantext.Database.Query.Facet
 import Gargantext.Database.Query.Filter
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Table.Context
 import Gargantext.Database.Query.Table.ContextNodeNgrams (queryContextNodeNgramsTable)
+import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Table.NodeContext
 import Gargantext.Database.Query.Table.NodeContext_NodeContext
+import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.ContextNodeNgrams (ContextNodeNgramsPoly(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Database.Schema.Context
 import Gargantext.Prelude
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Opaleye hiding (Order)
-import Data.Profunctor.Product (p4)
+import qualified Data.List as List
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import qualified Gargantext.Core.Text.Corpus.Query as API
 import qualified Opaleye as O hiding (Order)
+import Data.BoolExpr
+import qualified Data.Text as T
+
+--
+-- Interpreting a query into a Postgres' TSQuery
+--
+
+queryToTsSearch :: API.Query -> Field SqlTSQuery
+queryToTsSearch q = sqlToTSQuery $ T.unpack $ (API.interpretQuery q transformAST)
+  where
+    transformAST :: BoolExpr Term -> T.Text
+    transformAST ast = case ast of
+      BAnd sub1 sub2
+        -> " (" <> transformAST sub1 <> " & " <> transformAST sub2 <> ") "
+      BOr sub1 sub2
+        -> " (" <> transformAST sub1 <> " | " <> transformAST sub2 <> ") "
+      BNot (BConst (Negative term))
+        -> transformAST (BConst (Positive term)) -- double negation
+      BNot sub
+        -> "!" <> transformAST sub
+      -- BTrue cannot happen is the query parser doesn't support parsing 'TRUE' alone.
+      BTrue
+        -> T.empty
+      -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
+      BFalse
+        -> T.empty
+      BConst (Positive (Term term))
+        -> T.intercalate " & " $ T.words term
+      -- We can handle negatives via `ANDNOT` with itself.
+      BConst (Negative (Term term))
+        -> "!" <> term
+
 
 ------------------------------------------------------------------------
 searchDocInDatabase :: HasDBid NodeType
@@ -139,7 +172,7 @@ _queryListWithNgrams lId ngramIds = proc () -> do
 searchInCorpus :: HasDBid NodeType
                => CorpusId
                -> IsTrash
-               -> [Text]
+               -> API.Query
                -> Maybe Offset
                -> Maybe Limit
                -> Maybe OrderBy
@@ -147,23 +180,21 @@ searchInCorpus :: HasDBid NodeType
 searchInCorpus cId t q o l order = runOpaQuery
                                  $ filterWith o l order
                                  $ queryInCorpus cId t
-                                 $ intercalate " | "
-                                 $ map stemIt q
+                                 $ API.mapQuery (Term . stemIt . getTerm) q
 
 searchCountInCorpus :: HasDBid NodeType
                     => CorpusId
                     -> IsTrash
-                    -> [Text]
+                    -> API.Query
                     -> DBCmd err Int
 searchCountInCorpus cId t q = runCountOpaQuery
                             $ queryInCorpus cId t
-                            $ intercalate " | "
-                            $ map stemIt q
+                            $ API.mapQuery (Term . stemIt . getTerm) q
 
 queryInCorpus :: HasDBid NodeType
               => CorpusId
               -> IsTrash
-              -> Text
+              -> API.Query
               -> O.Select FacetDocRead
 queryInCorpus cId t q = proc () -> do
   c <- queryContextSearchTable -< ()
@@ -175,7 +206,7 @@ queryInCorpus cId t q = proc () -> do
                  else matchMaybe (view nc_category <$> nc) $ \case
                         Nothing -> toFields False
                         Just c' -> c' .>= sqlInt4 1
-  restrict -< (c ^. cs_search)           @@ sqlToTSQuery (unpack q)
+  restrict -< (c ^. cs_search)           @@ queryToTsSearch q
   restrict -< (c ^. cs_typename )       .== sqlInt4 (toDBid NodeDocument)
   returnA  -< FacetDoc { facetDoc_id         = c^.cs_id
                        , facetDoc_created    = c^.cs_date
@@ -191,7 +222,7 @@ searchInCorpusWithContacts
   :: HasDBid NodeType
   => CorpusId
   -> AnnuaireId
-  -> [Text]
+  -> API.Query
   -> Maybe Offset
   -> Maybe Limit
   -> Maybe OrderBy
@@ -201,13 +232,12 @@ searchInCorpusWithContacts cId aId q o l _order =
               $ offset'  o
               $ orderBy (desc _fp_score)
               $ selectGroup cId aId
-              $ intercalate " | "
-              $ map stemIt q
+              $ API.mapQuery (Term . stemIt . getTerm) q
 
 selectGroup :: HasDBid NodeType
             => CorpusId
             -> AnnuaireId
-            -> Text
+            -> API.Query
             -> Select FacetPairedRead
 selectGroup cId aId q = proc () -> do
   (a, b, c, d) <- aggregate (p4 (groupBy, groupBy, groupBy, O.sum))
@@ -219,7 +249,7 @@ selectContactViaDoc
   :: HasDBid NodeType
   => CorpusId
   -> AnnuaireId
-  -> Text
+  -> API.Query
   -> SelectArr ()
                ( Field SqlInt4
                , Field SqlTimestamptz
@@ -231,7 +261,7 @@ selectContactViaDoc cId aId query = proc () -> do
   (contact, annuaire, _, corpus, doc) <- queryContactViaDoc -< ()
   restrict -< matchMaybe (view cs_search <$> doc) $ \case
     Nothing -> toFields False
-    Just s  -> s @@ sqlToTSQuery (unpack query)
+    Just s  -> s @@ queryToTsSearch query
   restrict -< (view cs_typename <$> doc)          .=== justFields (sqlInt4 (toDBid NodeDocument))
   restrict -< (view nc_node_id <$> corpus)        .=== justFields (pgNodeId cId)
   restrict -< (view nc_node_id <$> annuaire)      .=== justFields (pgNodeId aId)

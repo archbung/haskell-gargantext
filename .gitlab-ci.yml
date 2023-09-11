@@ -78,9 +78,10 @@ test:
       chown -R test:test /root/.cache/cabal/logs/
       chown -R test:test /root/.cache/cabal/packages/hackage.haskell.org/
 
-      ls /builds/gargantext/devops/coreNLP/stanford-corenlp-current
-      cp -R /builds/gargantext/devops/coreNLP/stanford-corenlp-current /build/gargantext/haskell-gargantext/devops/coreNLP/
-      chown -R test:test /build/gargantext/haskell-gargantext/devops/coreNLP/stanford-corenlp-current
+      # This is not optimal because it downloads the coreNLP binary every time
+      # and it's not resistant in case of network outages.
+      cd /builds/gargantext/haskell-gargantext/devops/coreNLP; ./build.sh
+      cd /builds/gargantext/haskell-gargantext
 
       nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext; $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/

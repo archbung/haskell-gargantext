@@ -23,6 +23,9 @@ import Test.Hspec.Expectations
 import Test.Tasty.HUnit
 import Gargantext.Core.Text.Terms.Mono.Stem.En
 import Gargantext.Database.Admin.Config (userMaster)
+import qualified Data.Text as T
+import qualified Gargantext.Core.Text.Corpus.Query as API
+import Gargantext.Database.Query.Facet
 
 
 exampleDocument_01 :: HyperdataDocument
@@ -48,14 +51,13 @@ exampleDocument_01 = either error id $ parseEither parseJSON $ [aesonQQ|
 
 exampleDocument_02 :: HyperdataDocument
 exampleDocument_02 = either error id $ parseEither parseJSON $ [aesonQQ|
-  { "doi":"02"
+  { "doi":""
+  , "uniqId": "1405.3072v3"
+  , "bdd": "Arxiv"
   , "publication_day":6
   , "language_iso2":"EN"
-  , "publication_minute":0
-  , "publication_month":7
-  , "language_iso3":"eng"
   , "publication_second":0
-  , "authors":"Ajeje Brazorf and Manuel Agnelli"
+  , "authors":"Ajeje Brazorf, Manuel Agnelli"
   , "publication_year":2012
   , "publication_date":"2012-07-06 00:00:00+00:00"
   , "language_name":"English"
@@ -76,11 +78,28 @@ exampleDocument_03 = either error id $ parseEither parseJSON $ [aesonQQ|
   , "title": "Haskell for OCaml programmers"
   , "source": ""
   , "uniqId": "1405.3072v2"
-  , "authors": "Raphael Poss"
+  , "authors": "Raphael Poss, Herbert Ballerina"
   , "abstract": "  This introduction to Haskell is written to optimize learning by programmers who already know OCaml. "
   , "institutes": ""
   , "language_iso2": "EN"
   , "publication_date": "2014-05-13T09:10:32Z"
+  , "publication_year": 2014
+}
+|]
+
+exampleDocument_04 :: HyperdataDocument
+exampleDocument_04 = either error id $ parseEither parseJSON $ [aesonQQ|
+{
+    "bdd": "Arxiv"
+  , "doi": ""
+  , "url": "http://arxiv.org/pdf/1407.5670v1"
+  , "title": "Rust for functional programmers"
+  , "source": ""
+  , "uniqId": "1407.5670v1"
+  , "authors": "Raphael Poss"
+  , "abstract": "  This article provides an introduction to Rust , a systems language by Mozilla , to programmers already familiar with Haskell , OCaml or other functional languages. " , "institutes": ""
+  , "language_iso2": "EN"
+  , "publication_date": "2014-07-21T21:20:31Z"
   , "publication_year": 2014
 }
 |]
@@ -103,13 +122,16 @@ corpusAddDocuments env = do
                                      (Just $ _node_hyperdata $ corpus)
                                      (Multi EN)
                                      corpusId
-                                     [exampleDocument_01, exampleDocument_02, exampleDocument_03]
-    liftIO $ length ids `shouldBe` 3
+                                     [exampleDocument_01, exampleDocument_02, exampleDocument_03, exampleDocument_04]
+    liftIO $ length ids `shouldBe` 4
 
 stemmingTest :: TestEnv -> Assertion
 stemmingTest _env = do
   stemIt "Ajeje"    `shouldBe` "Ajeje"
   stemIt "PyPlasm:" `shouldBe` "PyPlasm:"
+
+mkQ :: T.Text -> API.Query
+mkQ txt = either (\e -> error $ "(query) = " <> T.unpack txt <> ": " <> e) id . API.parseQuery . API.RawQuery $ txt
 
 corpusSearch01 :: TestEnv -> Assertion
 corpusSearch01 env = do
@@ -118,8 +140,8 @@ corpusSearch01 env = do
     parentId <- getRootId (UserName userMaster)
     [corpus] <- getCorporaWithParentId parentId
 
-    results1 <- searchInCorpus (_node_id corpus) False ["mineral"] Nothing Nothing Nothing
-    results2 <- searchInCorpus (_node_id corpus) False ["computational"] Nothing Nothing Nothing
+    results1 <- searchInCorpus (_node_id corpus) False (mkQ "mineral") Nothing Nothing Nothing
+    results2 <- searchInCorpus (_node_id corpus) False (mkQ "computational") Nothing Nothing Nothing
 
     liftIO $ length results1 `shouldBe` 1
     liftIO $ length results2 `shouldBe` 1
@@ -132,7 +154,26 @@ corpusSearch02 env = do
     parentId <- getRootId (UserName userMaster)
     [corpus] <- getCorporaWithParentId parentId
 
-    results1 <- searchInCorpus (_node_id corpus) False ["Raphael"] Nothing Nothing Nothing
+    results1 <- searchInCorpus (_node_id corpus) False (mkQ "Raphael") Nothing Nothing Nothing
+    results2 <- searchInCorpus (_node_id corpus) False (mkQ "Raphael Poss") Nothing Nothing Nothing
+
+    liftIO $ do
+      length results1 `shouldBe` 2 -- Haskell & Rust
+      map facetDoc_title results2 `shouldBe` ["Haskell for OCaml programmers", "Rust for functional programmers"]
+
+-- | Check that we support more complex queries via the bool API
+corpusSearch03 :: TestEnv -> Assertion
+corpusSearch03 env = do
+  flip runReaderT env $ runTestMonad $ do
+
+    parentId <- getRootId (UserName userMaster)
+    [corpus] <- getCorporaWithParentId parentId
+
+    results1 <- searchInCorpus (_node_id corpus) False (mkQ "\"Manuel Agnelli\"") Nothing Nothing Nothing
+    results2 <- searchInCorpus (_node_id corpus) False (mkQ "Raphael AND -Rust") Nothing Nothing Nothing
+    results3 <- searchInCorpus (_node_id corpus) False (mkQ "(Raphael AND (NOT Rust)) OR PyPlasm") Nothing Nothing Nothing
 
     liftIO $ do
       length results1 `shouldBe` 1
+      map facetDoc_title results2 `shouldBe` ["Haskell for OCaml programmers"]
+      map facetDoc_title results3 `shouldBe` ["PyPlasm: computational geometry made easy", "Haskell for OCaml programmers"]
