@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.7.6.4
+
+* [FRONT][FIX][Ngrams Table: click on terms status (#594)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/594)
+
 ## Version 0.0.6.9.9.7.6.3
 
 * [BACK][TESTS] Make a start on benchmarking, add more tests
