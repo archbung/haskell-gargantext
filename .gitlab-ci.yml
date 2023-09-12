@@ -1,10 +1,11 @@
 # Optimising CI speed by using tips from https://blog.nimbleways.com/let-s-make-faster-gitlab-ci-cd-pipelines/
-image: adinapoli/gargantext:v2.2.2
+image: adinapoli/gargantext:v2.3
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
   STACK_OPTS: "--system-ghc"
   CABAL_STORE_DIR: "${CI_PROJECT_DIR}/.cabal"
+  CORENLP: "4.5.4"
   FF_USE_FASTZIP: "true"
   ARTIFACT_COMPRESSION_LEVEL: "fast"
   CACHE_COMPRESSION_LEVEL: "fast"
@@ -78,10 +79,8 @@ test:
       chown -R test:test /root/.cache/cabal/logs/
       chown -R test:test /root/.cache/cabal/packages/hackage.haskell.org/
 
-      # This is not optimal because it downloads the coreNLP binary every time
-      # and it's not resistant in case of network outages.
-      cd /builds/gargantext/haskell-gargantext/devops/coreNLP; ./build.sh
-      cd /builds/gargantext/haskell-gargantext
+      mkdir -p /builds/gargantext/haskell-gargantext/devops/coreNLP/stanford-corenlp-current
+      cp -R /root/devops/coreNLP/stanford-corenlp-${CORENLP}/* /builds/gargantext/haskell-gargantext/devops/coreNLP/stanford-corenlp-current/
 
       nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext; $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/

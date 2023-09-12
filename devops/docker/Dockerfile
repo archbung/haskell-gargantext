@@ -18,7 +18,8 @@ COPY ./nix/overlays/Cabal-syntax-3.10.1.0.nix          /builds/gargantext/nix/ov
 COPY ./nix/overlays/directory-1.3.7.0.nix              /builds/gargantext/nix/overlays/directory-1.3.7.0.nix
 COPY ./nix/overlays/hackage-security-0.6.2.3.nix       /builds/gargantext/nix/overlays/hackage-security-0.6.2.3.nix
 COPY ./nix/overlays/process-1.6.15.0.nix               /builds/gargantext/nix/overlays/process-1.6.15.0.nix
-COPY ./devops/coreNLP/stanford-corenlp-${CORENLP}/     /builds/gargantext/devops/coreNLP/stanford-corenlp-current/
+COPY ./devops/coreNLP/build.sh                         /root/devops/coreNLP/build.sh
+COPY ./devops/coreNLP/startServer.sh                   /root/devops/coreNLP/startServer.sh
 
 ENV TZ=Europe/Rome
 RUN apt-get update && \
@@ -58,6 +59,8 @@ RUN apt-get update && \
 RUN gpg --batch --keyserver keys.openpgp.org     --recv-keys 7D1E8AFD1D4A16D71FADA2F2CCC85C0E40C06A8C && \
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys FE5AB6C91FEA597C3B31180B73EDE9E8CFBAEF01
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN cd /root/devops/coreNLP; ./build.sh
 
 RUN set -o pipefail && \
     bash <(curl -L https://releases.nixos.org/nix/nix-2.15.0/install) --no-daemon && \
