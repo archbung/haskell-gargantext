@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  corenlp:
+    image: 'cgenie/corenlp-garg:4.5.4'
+    ports:
+      - 9000:9000

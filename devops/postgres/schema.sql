@@ -272,7 +272,7 @@ CREATE INDEX        ON public.contexts USING btree (user_id, typename, parent_id
 CREATE INDEX        ON public.contexts USING btree (id, typename, date ASC);
 CREATE INDEX        ON public.contexts USING btree (id, typename, date DESC);
 CREATE INDEX        ON public.contexts USING btree (typename, id);
-CREATE UNIQUE INDEX IF NOT EXISTS ON public.contexts USING btree (hash_id);
+CREATE UNIQUE INDEX ON public.contexts USING btree (hash_id);
 
 CREATE INDEX ON public.nodescontexts_nodescontexts USING btree (nodescontexts1, nodescontexts2);
 -- CREATE UNIQUE INDEX ON public.nodes USING btree (((hyperdata ->> 'uniqId'::text)));

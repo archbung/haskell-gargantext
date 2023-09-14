@@ -6,6 +6,7 @@ module Gargantext.Core.Text.Corpus.Query (
   , Limit(..)
   , getQuery
   , parseQuery
+  , mapQuery
   , renderQuery
   , interpretQuery
   , ExternalAPIs(..)
@@ -93,3 +94,6 @@ parseQuery (RawQuery txt) = bimap show (Query . BoolExpr.boolTreeToCNF) $
 
 renderQuery :: Query -> RawQuery
 renderQuery (Query cnf) = RawQuery . T.pack $ BoolExpr.boolExprPrinter (showsPrec 0) (BoolExpr.fromCNF cnf) ""
+
+mapQuery :: (Term -> Term) -> Query -> Query
+mapQuery f = Query . fmap f . getQuery

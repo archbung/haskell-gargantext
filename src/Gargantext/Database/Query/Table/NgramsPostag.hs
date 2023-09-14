@@ -24,7 +24,7 @@ import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Gargantext.Core
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, runPGSQuery_)
+import Gargantext.Database.Prelude (Cmd, runPGSQuery, runPGSQuery_, DBCmd)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Database.Query.Table.Ngrams
@@ -65,7 +65,7 @@ toInsert (NgramsPostag l a p form lem) =
   , view ngramsSize  lem
   )
 
-insertNgramsPostag :: [NgramsPostag] -> Cmd err (HashMap Text NgramsId)
+insertNgramsPostag :: [NgramsPostag] -> DBCmd err (HashMap Text NgramsId)
 insertNgramsPostag xs =
   if List.null xs
      then pure HashMap.empty
@@ -86,7 +86,7 @@ insertNgramsPostag xs =
        pure $ HashMap.union ns' nps'
 
 
-insertNgramsPostag' :: [NgramsPostagInsert] -> Cmd err [Indexed Text Int]
+insertNgramsPostag' :: [NgramsPostagInsert] -> DBCmd err [Indexed Text Int]
 insertNgramsPostag' ns = runPGSQuery queryInsertNgramsPostag (PGS.Only $ Values fields ns)
   where
 

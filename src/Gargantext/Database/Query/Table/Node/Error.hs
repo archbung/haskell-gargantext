@@ -14,17 +14,19 @@ import Control.Lens (Prism', (#), (^?))
 import Control.Monad.Except (MonadError(..))
 import Data.Aeson
 import Data.Text (Text, pack)
+import qualified Data.Text as T
 
 import Prelude hiding (null, id, map, sum)
 
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
 import Gargantext.Prelude hiding (sum, head)
+import Gargantext.Core.Types.Individu
 
 ------------------------------------------------------------------------
 data NodeError = NoListFound { listId :: ListId }
                | NoRootFound
                | NoCorpusFound
-               | NoUserFound
+               | NoUserFound User
                | MkNode
                | UserNoParent
                | HasParent
@@ -35,13 +37,14 @@ data NodeError = NoListFound { listId :: ListId }
                | DoesNotExist NodeId
                | NeedsConfiguration
                | NodeError Text
+               | QueryNoParse Text
 
 instance Show NodeError
   where
     show (NoListFound {})   = "No list   found"
     show NoRootFound   = "No Root   found"
     show NoCorpusFound = "No Corpus found"
-    show NoUserFound   = "No user   found"
+    show (NoUserFound ur) = "User(" <> T.unpack (renderUser ur) <> ") not found"
 
     show MkNode        = "Cannot make node"
     show NegativeId    = "Node with negative Id"
@@ -53,6 +56,7 @@ instance Show NodeError
     show (DoesNotExist n)   = "Node does not exist (" <> show n <> ")"
     show NeedsConfiguration = "Needs configuration"
     show (NodeError e)      = "NodeError: " <> cs e
+    show (QueryNoParse err) = "QueryNoParse: " <> T.unpack err
 
 instance ToJSON NodeError where
   toJSON (NoListFound { listId = NodeId listId }) =

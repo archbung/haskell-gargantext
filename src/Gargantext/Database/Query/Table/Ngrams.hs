@@ -28,7 +28,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (runOpaQuery, Cmd, formatPGSQuery, runPGSQuery)
+import Gargantext.Database.Prelude (runOpaQuery, Cmd, formatPGSQuery, runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Join (leftJoin3)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.NodeNgrams (queryNodeNgramsTable)
@@ -73,14 +73,14 @@ _dbGetNgramsDb = runOpaQuery queryNgramsTable
 
 
 -- TODO-ACCESS: access must not be checked here but when insertNgrams is called.
-insertNgrams :: [Ngrams] -> Cmd err (HashMap Text NgramsId)
+insertNgrams :: [Ngrams] -> DBCmd err (HashMap Text NgramsId)
 insertNgrams ns =
   if List.null ns
      then pure HashMap.empty
      else HashMap.fromList <$> map (\(Indexed i t) -> (t, i)) <$> (insertNgrams' ns)
 
 -- TODO-ACCESS: access must not be checked here but when insertNgrams' is called.
-insertNgrams' :: [Ngrams] -> Cmd err [Indexed Int Text]
+insertNgrams' :: [Ngrams] -> DBCmd err [Indexed Int Text]
 insertNgrams' ns = runPGSQuery queryInsertNgrams (PGS.Only $ Values fields ns)
   where
     fields = map (\t -> QualifiedIdentifier Nothing t) ["text", "int4"]

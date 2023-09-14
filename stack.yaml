@@ -44,8 +44,8 @@ extra-deps:
 - git: https://github.com/alpmestan/ekg-json.git
   commit: fd7e5d7325939103cd87d0dc592faf644160341c
   # Databases libs
-- git: https://github.com/garganscript/haskell-opaleye.git
-  commit: a5693a2010e6d13f51cdc576fa1dc9985e79ee0e
+- git: https://github.com/adinapoli/haskell-opaleye.git
+  commit: e9a29582ac66198dd2c2fdc3f8c8a4b1e6fbe004
 - git: https://github.com/robstewart57/rdf4h.git
   commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
   # External Data API connectors
@@ -98,12 +98,14 @@ extra-deps:
   commit: b9fca8beee0f23c17a6b2001ec834d071709e6e7
   subdirs:
     - packages/base
+  # Temporary fork of boolexpr
+- git: https://github.com/adinapoli/boolexpr.git
+  commit: 91928b5d7f9342e9865dde0d94862792d2b88779
   # Others dependencies (using stack resolver)
 - HSvm-0.1.1.3.22
 - KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
 - MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
 - Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
-- boolexpr-0.2
 - constraints-extras-0.3.1.0@sha256:12016ebb91ad5ed2c82bf7e48c6bd6947d164d33c9dca5ac3965de1bb6c780c0,1777
 - context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
 - dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147

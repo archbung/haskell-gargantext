@@ -17,7 +17,7 @@ import Data.Map.Strict (Map)
 import Data.HashMap.Strict (HashMap)
 import Gargantext.Core.Types (TermsCount)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.ContextNodeNgrams
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Types
@@ -35,7 +35,7 @@ data DocumentIdWithNgrams a b =
 
 insertDocNgrams :: ListId
                 -> HashMap (Indexed NgramsId Ngrams) (Map NgramsType (Map DocId (Int, TermsCount)))
-                -> Cmd err Int
+                -> DBCmd err Int
 insertDocNgrams lId m = do
   -- printDebug "[insertDocNgrams] ns" ns
   insertContextNodeNgrams ns

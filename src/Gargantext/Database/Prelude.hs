@@ -138,7 +138,7 @@ runOpaQuery :: Default FromFields fields haskells
             -> DBCmd err [haskells]
 runOpaQuery q = mkCmd $ \c -> runSelect c q
 
-runCountOpaQuery :: Select a -> Cmd err Int
+runCountOpaQuery :: Select a -> DBCmd err Int
 runCountOpaQuery q = do
   counts <- mkCmd $ \c -> runSelect c $ countRows q
   -- countRows is guaranteed to return a list with exactly one row so DL.head is safe here
@@ -151,7 +151,7 @@ formatPGSQuery q a = mkCmd $ \conn -> PGS.formatQuery conn q a
 runPGSQuery' :: (PGS.ToRow a, PGS.FromRow b) => PGS.Query -> a -> Cmd err [b]
 runPGSQuery' q a = mkCmd $ \conn -> PGS.query conn q a
 
-runPGSQuery :: ( CmdM env err m
+runPGSQuery :: ( DbCmd' env err m
                , PGS.FromRow r, PGS.ToRow q
                )
                => PGS.Query -> q -> m [r]
@@ -189,7 +189,7 @@ runPGSQuery_ q = mkCmd $ \conn -> catch (PGS.query_ conn q) printError
       hPutStrLn stderr (fromQuery q)
       throw (SomeException e)
 
-execPGSQuery :: PGS.ToRow a => PGS.Query -> a -> Cmd err Int64
+execPGSQuery :: PGS.ToRow a => PGS.Query -> a -> DBCmd err Int64
 execPGSQuery q a = mkCmd $ \conn -> PGS.execute conn q a
 
 ------------------------------------------------------------------------

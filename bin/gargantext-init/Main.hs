@@ -25,7 +25,7 @@ import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Trigger.Init (initFirstTriggers, initLastTriggers)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, )
+import Gargantext.Database.Prelude (Cmd, DBCmd)
 import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.User (insertNewUsers, )
 import Gargantext.Prelude
@@ -73,7 +73,7 @@ main = do
       pure (masterUserId, masterRootId, masterCorpusId, masterListId)
 
   withDevEnv iniPath $ \env -> do
-    _ <- runCmdDev env (initFirstTriggers secret :: Cmd GargError [Int64])
+    _ <- runCmdDev env (initFirstTriggers secret :: DBCmd GargError [Int64])
     _ <- runCmdDev env createUsers
     x <- runCmdDev env initMaster
     _ <- runCmdDev env mkRoots

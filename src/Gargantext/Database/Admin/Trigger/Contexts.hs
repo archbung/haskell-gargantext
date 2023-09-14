@@ -20,12 +20,13 @@ import Data.Text (Text)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core (HasDBid(..))
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
-import Gargantext.Database.Prelude (Cmd, execPGSQuery)
+-- (ListId, CorpusId, NodeId)
+import Gargantext.Database.Prelude (execPGSQuery, DBCmd)
 import Gargantext.Prelude
 import qualified Database.PostgreSQL.Simple as DPS
 
 
-triggerSearchUpdate :: HasDBid NodeType => Cmd err Int64
+triggerSearchUpdate :: HasDBid NodeType => DBCmd err Int64
 triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
                                          , toDBid NodeDocument
                                          , toDBid NodeContact
@@ -37,10 +38,10 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
         RETURNS trigger AS $$
         begin
           IF new.typename = ? AND new.hyperdata @> '{"language_iso2":"EN"}' THEN
-            new.search := to_tsvector( 'english' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
 
           ELSIF new.typename = ? AND new.hyperdata @> '{"language_iso2":"FR"}' THEN
-            new.search := to_tsvector( 'french' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
 
           ELSIF new.typename = ? THEN
             new.search := to_tsvector( 'french' , (new.hyperdata ->> 'prenom')
@@ -48,7 +49,7 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
                                          || ' ' || (new.hyperdata ->> 'fonction')
                                      );
           ELSE
-            new.search := to_tsvector( 'english' , (new.hyperdata ->> 'title') || ' ' || (new.hyperdata ->> 'abstract'));
+            new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
           END IF;
           return new;
         end
@@ -69,7 +70,7 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
 
 type Secret = Text
 
-triggerUpdateHash :: HasDBid NodeType => Secret -> Cmd err Int64
+triggerUpdateHash :: HasDBid NodeType => Secret -> DBCmd err Int64
 triggerUpdateHash secret = execPGSQuery query ( toDBid NodeDocument
                                               , toDBid NodeContact
                                               , secret

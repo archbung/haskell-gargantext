@@ -11,51 +11,90 @@ Portability : POSIX
 {-# LANGUAGE Arrows            #-}
 {-# LANGUAGE LambdaCase         #-}
 
-module Gargantext.Database.Action.Search where
+module Gargantext.Database.Action.Search (
+    searchInCorpus
+  , searchInCorpusWithContacts
+  , searchCountInCorpus
+  , searchInCorpusWithNgrams
+  , searchDocInDatabase
+  ) where
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
 import Data.Maybe
-import qualified Data.Set as Set
-import Data.Text (Text, unpack, intercalate)
+import Data.Profunctor.Product (p4)
+import Data.Text (Text, unpack)
 import Data.Time (UTCTime)
 import Gargantext.Core
+import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
-import Gargantext.Database.Prelude (Cmd, runOpaQuery, runCountOpaQuery)
+import Gargantext.Database.Prelude (runOpaQuery, runCountOpaQuery, DBCmd)
 import Gargantext.Database.Query.Facet
 import Gargantext.Database.Query.Filter
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Table.Context
 import Gargantext.Database.Query.Table.ContextNodeNgrams (queryContextNodeNgramsTable)
+import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Table.NodeContext
 import Gargantext.Database.Query.Table.NodeContext_NodeContext
+import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.ContextNodeNgrams (ContextNodeNgramsPoly(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Database.Schema.Context
 import Gargantext.Prelude
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Opaleye hiding (Order)
-import Data.Profunctor.Product (p4)
+import qualified Data.List as List
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import qualified Gargantext.Core.Text.Corpus.Query as API
 import qualified Opaleye as O hiding (Order)
+import Data.BoolExpr
+import qualified Data.Text as T
+
+--
+-- Interpreting a query into a Postgres' TSQuery
+--
+
+queryToTsSearch :: API.Query -> Field SqlTSQuery
+queryToTsSearch q = sqlToTSQuery $ T.unpack $ (API.interpretQuery q transformAST)
+  where
+    transformAST :: BoolExpr Term -> T.Text
+    transformAST ast = case ast of
+      BAnd sub1 sub2
+        -> " (" <> transformAST sub1 <> " & " <> transformAST sub2 <> ") "
+      BOr sub1 sub2
+        -> " (" <> transformAST sub1 <> " | " <> transformAST sub2 <> ") "
+      BNot (BConst (Negative term))
+        -> transformAST (BConst (Positive term)) -- double negation
+      BNot sub
+        -> "!" <> transformAST sub
+      -- BTrue cannot happen is the query parser doesn't support parsing 'TRUE' alone.
+      BTrue
+        -> T.empty
+      -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
+      BFalse
+        -> T.empty
+      BConst (Positive (Term term))
+        -> T.intercalate " & " $ T.words term
+      -- We can handle negatives via `ANDNOT` with itself.
+      BConst (Negative (Term term))
+        -> "!" <> term
+
 
 ------------------------------------------------------------------------
 searchDocInDatabase :: HasDBid NodeType
                     => ParentId
                     -> Text
-                    -> Cmd err [(NodeId, HyperdataDocument)]
+                    -> DBCmd err [(NodeId, HyperdataDocument)]
 searchDocInDatabase p t = runOpaQuery (queryDocInDatabase p t)
   where
     -- | Global search query where ParentId is Master Node Corpus Id
     queryDocInDatabase :: ParentId -> Text -> O.Select (Column SqlInt4, Column SqlJsonb)
     queryDocInDatabase _p q = proc () -> do
         row <- queryNodeSearchTable -< ()
-        restrict -< (_ns_search row)    @@ (sqlTSQuery (unpack q))
+        restrict -< (_ns_search row)    @@ (sqlToTSQuery (unpack q))
         restrict -< (_ns_typename row) .== (sqlInt4 $ toDBid NodeDocument)
         returnA  -< (_ns_id row, _ns_hyperdata row)
 
@@ -71,7 +110,7 @@ searchInCorpusWithNgrams :: HasDBid NodeType
                -> Maybe Offset
                -> Maybe Limit
                -> Maybe OrderBy
-               -> Cmd err [FacetDoc]
+               -> DBCmd err [FacetDoc]
 searchInCorpusWithNgrams _cId _lId _t _ngt _q _o _l _order = undefined
 
 -- | Compute TF-IDF for all 'ngramIds' in given 'CorpusId'. In this
@@ -79,11 +118,11 @@ searchInCorpusWithNgrams _cId _lId _t _ngt _q _o _l _order = undefined
 -- ratio of "number of times our terms appear in given document" and
 -- "number of all terms in document" and return a sorted list of
 -- document ids
-tfidfAll :: (HasDBid NodeType, HasNodeError err) => CorpusId -> [Int] -> Cmd err [Int]
-tfidfAll cId ngramIds = do
+_tfidfAll :: (HasDBid NodeType, HasNodeError err) => CorpusId -> [Int] -> DBCmd err [Int]
+_tfidfAll cId ngramIds = do
   let ngramIdsSet = Set.fromList ngramIds
   lId <- defaultList cId
-  docsWithNgrams <- runOpaQuery (queryListWithNgrams lId ngramIds) :: Cmd err [(Int, Int, Int)]
+  docsWithNgrams <- runOpaQuery (_queryListWithNgrams lId ngramIds) :: DBCmd err [(Int, Int, Int)]
   -- NOTE The query returned docs with ANY ngramIds. We need to further
   -- restrict to ALL ngramIds.
   let docsNgramsM =
@@ -111,8 +150,8 @@ tfidfAll cId ngramIds = do
 
 -- | Query for searching the 'context_node_ngrams' table so that we
 -- find docs with ANY given 'ngramIds'.
-queryListWithNgrams :: ListId -> [Int] -> Select (Column SqlInt4, Column SqlInt4, Column SqlInt4)
-queryListWithNgrams lId ngramIds = proc () -> do
+_queryListWithNgrams :: ListId -> [Int] -> Select (Column SqlInt4, Column SqlInt4, Column SqlInt4)
+_queryListWithNgrams lId ngramIds = proc () -> do
   row <- queryContextNodeNgramsTable -< ()
   restrict -< (_cnng_node_id row) .== (pgNodeId lId)
   restrict -< in_ (sqlInt4 <$> ngramIds) (_cnng_ngrams_id row)
@@ -133,31 +172,29 @@ queryListWithNgrams lId ngramIds = proc () -> do
 searchInCorpus :: HasDBid NodeType
                => CorpusId
                -> IsTrash
-               -> [Text]
+               -> API.Query
                -> Maybe Offset
                -> Maybe Limit
                -> Maybe OrderBy
-               -> Cmd err [FacetDoc]
+               -> DBCmd err [FacetDoc]
 searchInCorpus cId t q o l order = runOpaQuery
                                  $ filterWith o l order
                                  $ queryInCorpus cId t
-                                 $ intercalate " | "
-                                 $ map stemIt q
+                                 $ API.mapQuery (Term . stemIt . getTerm) q
 
 searchCountInCorpus :: HasDBid NodeType
                     => CorpusId
                     -> IsTrash
-                    -> [Text]
-                    -> Cmd err Int
+                    -> API.Query
+                    -> DBCmd err Int
 searchCountInCorpus cId t q = runCountOpaQuery
                             $ queryInCorpus cId t
-                            $ intercalate " | "
-                            $ map stemIt q
+                            $ API.mapQuery (Term . stemIt . getTerm) q
 
 queryInCorpus :: HasDBid NodeType
               => CorpusId
               -> IsTrash
-              -> Text
+              -> API.Query
               -> O.Select FacetDocRead
 queryInCorpus cId t q = proc () -> do
   c <- queryContextSearchTable -< ()
@@ -169,7 +206,7 @@ queryInCorpus cId t q = proc () -> do
                  else matchMaybe (view nc_category <$> nc) $ \case
                         Nothing -> toFields False
                         Just c' -> c' .>= sqlInt4 1
-  restrict -< (c ^. cs_search)           @@ sqlTSQuery (unpack q)
+  restrict -< (c ^. cs_search)           @@ queryToTsSearch q
   restrict -< (c ^. cs_typename )       .== sqlInt4 (toDBid NodeDocument)
   returnA  -< FacetDoc { facetDoc_id         = c^.cs_id
                        , facetDoc_created    = c^.cs_date
@@ -185,23 +222,22 @@ searchInCorpusWithContacts
   :: HasDBid NodeType
   => CorpusId
   -> AnnuaireId
-  -> [Text]
+  -> API.Query
   -> Maybe Offset
   -> Maybe Limit
   -> Maybe OrderBy
-  -> Cmd err [FacetPaired Int UTCTime HyperdataContact Int]
+  -> DBCmd err [FacetPaired Int UTCTime HyperdataContact Int]
 searchInCorpusWithContacts cId aId q o l _order =
   runOpaQuery $ limit'   l
               $ offset'  o
               $ orderBy (desc _fp_score)
               $ selectGroup cId aId
-              $ intercalate " | "
-              $ map stemIt q
+              $ API.mapQuery (Term . stemIt . getTerm) q
 
 selectGroup :: HasDBid NodeType
             => CorpusId
             -> AnnuaireId
-            -> Text
+            -> API.Query
             -> Select FacetPairedRead
 selectGroup cId aId q = proc () -> do
   (a, b, c, d) <- aggregate (p4 (groupBy, groupBy, groupBy, O.sum))
@@ -213,7 +249,7 @@ selectContactViaDoc
   :: HasDBid NodeType
   => CorpusId
   -> AnnuaireId
-  -> Text
+  -> API.Query
   -> SelectArr ()
                ( Field SqlInt4
                , Field SqlTimestamptz
@@ -225,7 +261,7 @@ selectContactViaDoc cId aId query = proc () -> do
   (contact, annuaire, _, corpus, doc) <- queryContactViaDoc -< ()
   restrict -< matchMaybe (view cs_search <$> doc) $ \case
     Nothing -> toFields False
-    Just s  -> s @@ sqlTSQuery (unpack query)
+    Just s  -> s @@ queryToTsSearch query
   restrict -< (view cs_typename <$> doc)          .=== justFields (sqlInt4 (toDBid NodeDocument))
   restrict -< (view nc_node_id <$> corpus)        .=== justFields (pgNodeId cId)
   restrict -< (view nc_node_id <$> annuaire)      .=== justFields (pgNodeId aId)

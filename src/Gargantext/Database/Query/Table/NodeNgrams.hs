@@ -67,7 +67,7 @@ listInsertDb :: Show a => ListId
              -> (ListId -> a -> [NodeNgramsW])
              -> a
              -- -> Cmd err [Returning]
-             -> Cmd err (Map NgramsType (Map Text Int))
+             -> DBCmd err (Map NgramsType (Map Text Int))
 listInsertDb l f ngs = Map.map Map.fromList
                     <$> Map.fromListWith (<>)
                     <$> List.map (\(Returning t tx id) -> (fromJust t, [(tx, id)]))
@@ -75,7 +75,7 @@ listInsertDb l f ngs = Map.map Map.fromList
                     <$> insertNodeNgrams (f l ngs)
 
 -- TODO optimize with size of ngrams
-insertNodeNgrams :: [NodeNgramsW] -> Cmd err [Returning]
+insertNodeNgrams :: [NodeNgramsW] -> DBCmd err [Returning]
 insertNodeNgrams nns = runPGSQuery query (PGS.Only $ Values fields nns')
   where
     fields = map (\t-> QualifiedIdentifier Nothing t) ["int4","int4","text","int4"

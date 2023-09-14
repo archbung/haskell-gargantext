@@ -38,6 +38,7 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
   , flowAnnuaire
   , insertMasterDocs
   , saveDocNgramsWith
+  , addDocumentsToHyperCorpus
 
   , reIndexWith
   , docNgrams
@@ -73,7 +74,7 @@ import Data.Tuple.Extra (first, second)
 import GHC.Generics (Generic)
 import GHC.Num (fromInteger)
 import Gargantext.API.Ngrams.Tools (getTermsWith)
-import Gargantext.Core (Lang(..), PosTagAlgo(..))
+import Gargantext.Core (Lang(..), PosTagAlgo(..), NLPServerConfig)
 import Gargantext.Core (withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.Flow.Types
@@ -287,25 +288,43 @@ flow :: forall env err m a c.
 flow c u cn la mfslw (mLength, docsC) jobHandle = do
   (_userId, userCorpusId, listId) <- createNodes u cn c
   -- TODO if public insertMasterDocs else insertUserDocs
-  runConduit $ zipSources (yieldMany [1..]) docsC
+  nlpServer <- view $ nlpServerGet (_tt_lang la)
+  runConduit $ zipSources (yieldMany ([1..] :: [Int])) docsC
                  .| CList.chunksOf 100
-                 .| mapM_C (\docs -> void $ insertDocs' docs >>= Doc.add userCorpusId)
+                 .| mapM_C (addDocumentsWithProgress nlpServer userCorpusId)
                  .| sinkNull
 
   $(logLocM) DEBUG "Calling flowCorpusUser"
   flowCorpusUser (la ^. tt_lang) u userCorpusId listId c mfslw
 
   where
-    insertDocs' :: [(Integer, a)] -> m [NodeId]
-    insertDocs' [] = pure []
-    insertDocs' docs = do
-      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docs, mLength)
-      ids <- insertMasterDocs c la (snd <$> docs)
+    addDocumentsWithProgress :: NLPServerConfig -> CorpusId -> [(Int, a)] -> m ()
+    addDocumentsWithProgress nlpServer userCorpusId docsChunk = do
+      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docsChunk, mLength)
+      docs <- addDocumentsToHyperCorpus nlpServer c la userCorpusId (map snd docsChunk)
       markProgress (length docs) jobHandle
-      pure ids
+
+
+-- | Given a list of corpus documents and a 'NodeId' identifying the 'CorpusId', adds
+-- the given documents to the corpus. Returns the Ids of the inserted documents.
+addDocumentsToHyperCorpus :: ( DbCmd' env err m
+                             , HasNodeError err
+                             , FlowCorpus document
+                             , MkCorpus corpus
+                             )
+                             => NLPServerConfig
+                             -> Maybe corpus
+                             -> TermType Lang
+                             -> CorpusId
+                             -> [document]
+                             -> m [DocId]
+addDocumentsToHyperCorpus ncs mb_hyper la corpusId docs = do
+  ids <- insertMasterDocs ncs mb_hyper la docs
+  void $ Doc.add corpusId ids
+  pure ids
 
 ------------------------------------------------------------------------
-createNodes :: ( FlowCmdM env err m
+createNodes :: ( DbCmd' env err m, HasNodeError err
                , MkCorpus c
                )
             => User
@@ -371,15 +390,17 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
   pure userCorpusId
 
 
-insertMasterDocs :: ( FlowCmdM env err m
+insertMasterDocs :: ( DbCmd' env err m
+                    , HasNodeError err
                     , FlowCorpus a
                     , MkCorpus   c
                     )
-                 => Maybe c
+                 => NLPServerConfig
+                 -> Maybe c
                  -> TermType Lang
                  -> [a]
                  -> m [DocId]
-insertMasterDocs c lang hs  =  do
+insertMasterDocs ncs c lang hs  =  do
   (masterUserId, _, masterCorpusId) <- getOrMk_RootWithCorpus (UserName userMaster) (Left corpusMasterName) c
   (ids', documentsWithId) <- insertDocs masterUserId masterCorpusId (map (toNode masterUserId Nothing) hs )
   _ <- Doc.add masterCorpusId ids'
@@ -392,7 +413,7 @@ insertMasterDocs c lang hs  =  do
   mapNgramsDocs' :: HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
                 <- mapNodeIdNgrams
                 <$> documentIdWithNgrams
-                      (extractNgramsT $ withLang lang documentsWithId)
+                      (extractNgramsT ncs $ withLang lang documentsWithId)
                       documentsWithId
 
   lId      <- getOrMkList masterCorpusId masterUserId
@@ -402,7 +423,7 @@ insertMasterDocs c lang hs  =  do
   -- _cooc <- insertDefaultNode NodeListCooc lId masterUserId
   pure ids'
 
-saveDocNgramsWith :: (FlowCmdM env err m)
+saveDocNgramsWith :: (DbCmd' env err m)
                   => ListId
                   -> HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
                   -> m ()
@@ -438,9 +459,10 @@ saveDocNgramsWith lId mapNgramsDocs' = do
 
 ------------------------------------------------------------------------
 -- TODO Type NodeDocumentUnicised
-insertDocs :: ( FlowCmdM env err m
+insertDocs :: ( DbCmd' env err m
               -- , FlowCorpus a
               , FlowInsertDB a
+              , HasNodeError err
               )
               => UserId
               -> CorpusId
@@ -486,9 +508,9 @@ mergeData rs = catMaybes . map toDocumentWithId . Map.toList
 ------------------------------------------------------------------------
 documentIdWithNgrams :: HasNodeError err
                      => (a
-                     -> Cmd err (HashMap b (Map NgramsType Int, TermsCount)))
+                     -> DBCmd err (HashMap b (Map NgramsType Int, TermsCount)))
                      -> [Indexed NodeId a]
-                     -> Cmd err [DocumentIdWithNgrams a b]
+                     -> DBCmd err [DocumentIdWithNgrams a b]
 documentIdWithNgrams f = traverse toDocumentIdWithNgrams
   where
     toDocumentIdWithNgrams d = do
@@ -519,10 +541,10 @@ mapNodeIdNgrams = HashMap.unionsWith (Map.unionWith (Map.unionWith addTuples)) .
 ------------------------------------------------------------------------
 instance ExtractNgramsT HyperdataContact
   where
-    extractNgramsT l hc = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extract l hc
+    extractNgramsT _ncs l hc = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extract l hc
       where
         extract :: TermType Lang -> HyperdataContact
-                -> Cmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+                -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
         extract _l hc' = do
           let authors = map text2ngrams
                       $ maybe ["Nothing"] (\a -> [a])
@@ -533,15 +555,15 @@ instance ExtractNgramsT HyperdataContact
 
 instance ExtractNgramsT HyperdataDocument
   where
-    extractNgramsT :: TermType Lang
+    extractNgramsT :: NLPServerConfig
+                   -> TermType Lang
                    -> HyperdataDocument
-                   -> Cmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
-    extractNgramsT lang hd = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extractNgramsT' lang hd
+                   -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+    extractNgramsT ncs lang hd = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extractNgramsT' hd
       where
-        extractNgramsT' :: TermType Lang
-                        -> HyperdataDocument
-                       -> Cmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
-        extractNgramsT' lang' doc = do
+        extractNgramsT' :: HyperdataDocument
+                        -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+        extractNgramsT' doc = do
           let source    = text2ngrams
                         $ maybe "Nothing" identity
                         $ _hd_source doc
@@ -554,11 +576,9 @@ instance ExtractNgramsT HyperdataDocument
                          $ maybe ["Nothing"] (splitOn Authors (doc^. hd_bdd))
                          $ _hd_authors doc
 
-          ncs <- view (nlpServerGet $ lang' ^. tt_lang)
-
-          termsWithCounts' <- map (\(t, cnt) -> (enrichedTerms (lang' ^. tt_lang) CoreNLP NP t, cnt))
+          termsWithCounts' <- map (\(t, cnt) -> (enrichedTerms (lang ^. tt_lang) CoreNLP NP t, cnt))
                               <$> concat
-                              <$> liftBase (extractTerms ncs lang' $ hasText doc)
+                              <$> liftBase (extractTerms ncs lang $ hasText doc)
 
           pure $ HashMap.fromList
                $  [(SimpleNgrams source, (Map.singleton Sources     1, 1))                    ]
@@ -568,7 +588,7 @@ instance ExtractNgramsT HyperdataDocument
 
 instance (ExtractNgramsT a, HasText a) => ExtractNgramsT (Node a)
   where
-    extractNgramsT l (Node { _node_hyperdata = h }) = extractNgramsT l h
+    extractNgramsT ncs l (Node { _node_hyperdata = h }) = extractNgramsT ncs l h
 
 instance HasText a => HasText (Node a)
   where
@@ -592,9 +612,11 @@ extractInsert :: FlowCmdM env err m
               => [Node HyperdataDocument] -> m ()
 extractInsert docs = do
   let documentsWithId = map (\doc -> Indexed (doc ^. node_id) doc) docs
+  let lang = EN
+  ncs <- view $ nlpServerGet lang
   mapNgramsDocs' <- mapNodeIdNgrams
                 <$> documentIdWithNgrams
-                    (extractNgramsT $ withLang (Multi EN) documentsWithId)
+                    (extractNgramsT ncs $ withLang (Multi lang) documentsWithId)
                     documentsWithId
   _ <- insertExtractedNgrams $ HashMap.keys mapNgramsDocs'
   pure ()

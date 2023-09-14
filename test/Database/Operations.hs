@@ -3,33 +3,32 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Database.Operations (
    tests
   ) where
 
 import Control.Exception hiding (assert)
-import Control.Lens hiding (elements)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.Trans.Control
-import Data.IORef
 import Data.Pool hiding (withResource)
 import Data.String
 import Database.PostgreSQL.Simple
+import Gargantext.API.Node.Corpus.Update
+import Gargantext.Core
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
-import Gargantext.Database.Prelude
-import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus
+import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId, getOrMkList)
+import Gargantext.Database.Query.Tree.Root (getRootId)
+import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Prelude
 import Shelly hiding (FilePath, run)
-import Test.QuickCheck.Monadic
-import Test.Hspec
-import Test.Tasty.HUnit hiding (assert)
-import Test.Tasty.QuickCheck
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -38,7 +37,16 @@ import qualified Database.PostgreSQL.Simple.Options as Client
 import qualified Database.Postgres.Temp as Tmp
 import qualified Shelly as SH
 
+import Database.Operations.Types
+import Database.Operations.DocumentSearch
 import Paths_gargantext
+import Test.Hspec
+import Test.QuickCheck.Monadic
+import Test.Tasty.HUnit hiding (assert)
+import Test.Tasty.QuickCheck
+import Gargantext.Database.Admin.Trigger.Init
+import Gargantext.Database.Action.Flow
+import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 
 -- | Keeps a log of usernames we have already generated, so that our
 -- roundtrip tests won't fail.
@@ -56,45 +64,6 @@ dbUser, dbPassword, dbName :: String
 dbUser = "gargantua"
 dbPassword = "gargantua_test"
 dbName = "gargandb_test"
-
-newtype Counter = Counter { _Counter :: IORef Int }
-  deriving Eq
-
-instance Show Counter where
-  show (Counter _) = "Counter"
-
-emptyCounter :: IO Counter
-emptyCounter = Counter <$> newIORef 0
-
-nextCounter :: Counter -> IO Int
-nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
-
-data TestEnv = TestEnv {
-    test_db          :: !DBHandle
-  , test_config      :: !GargConfig
-  , test_usernameGen :: !Counter
-  }
-
-newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
-  deriving ( Functor, Applicative, Monad
-           , MonadReader TestEnv, MonadError IOException
-           , MonadBase IO
-           , MonadBaseControl IO
-           )
-
-data DBHandle = DBHandle {
-    _DBHandle :: Pool PG.Connection
-  , _DBTmp    :: Tmp.DB
-  }
-
-instance HasNodeError IOException where
-  _NodeError = prism' (userError . show) (const Nothing)
-
-instance HasConnectionPool TestEnv where
-  connPool = to (_DBHandle . test_db)
-
-instance HasConfig TestEnv where
-  hasConfig = to test_config
 
 fakeIniPath :: IO FilePath
 fakeIniPath = getDataFileName "test-data/test_config.ini"
@@ -144,11 +113,22 @@ withTestDB = bracket setup teardown
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
-  describe "Read/Writes" $
+  describe "Prelude" $ do
+    it "setup DB triggers" setupEnvironment
+  describe "Read/Writes" $ do
     describe "User creation" $ do
       it "Simple write/read" writeRead01
       it "Simple duplicate"  mkUserDup
       it "Read/Write roundtrip" prop_userCreationRoundtrip
+    describe "Corpus creation" $ do
+      it "Simple write/read" corpusReadWrite01
+      it "Can add language to Corpus" corpusAddLanguage
+      it "Can add documents to a Corpus" corpusAddDocuments
+    describe "Corpus search" $ do
+      it "Can stem query terms" stemmingTest
+      it "Can perform a simple search inside documents" corpusSearch01
+      it "Can perform search by author in documents" corpusSearch02
+      it "Can perform more complex searches using the boolean API" corpusSearch03
 
 data ExpectedActual a =
     Expected a
@@ -160,6 +140,16 @@ instance Eq a => Eq (ExpectedActual a) where
   (Actual a)   == (Expected b) = a == b
   _ == _ = False
 
+setupEnvironment :: TestEnv -> IO ()
+setupEnvironment env = flip runReaderT env $ runTestMonad $ do
+  void $ initFirstTriggers "secret_key"
+  void $ new_user $ mkNewUser (userMaster <> "@cnrs.com") (GargPassword "secret_key")
+  (masterUserId, _masterRootId, masterCorpusId)
+              <- getOrMk_RootWithCorpus (UserName userMaster)
+                                        (Left corpusMasterName)
+                                        (Nothing :: Maybe HyperdataCorpus)
+  masterListId <- getOrMkList masterCorpusId masterUserId
+  void $ initLastTriggers masterListId
 
 writeRead01 :: TestEnv -> Assertion
 writeRead01 env = do
@@ -170,14 +160,14 @@ writeRead01 env = do
     uid1 <- new_user nur1
     uid2 <- new_user nur2
 
-    liftBase $ uid1 `shouldBe` 1
-    liftBase $ uid2 `shouldBe` 2
+    liftBase $ uid1 `shouldBe` 2
+    liftBase $ uid2 `shouldBe` 3
 
     -- Getting the users by username returns the expected IDs
     uid1' <- getUserId (UserName "alfredo")
     uid2' <- getUserId (UserName "paul")
-    liftBase $ uid1' `shouldBe` 1
-    liftBase $ uid2' `shouldBe` 2
+    liftBase $ uid1' `shouldBe` 2
+    liftBase $ uid2' `shouldBe` 3
 
 mkUserDup :: TestEnv -> Assertion
 mkUserDup env = do
@@ -206,3 +196,26 @@ prop_userCreationRoundtrip env = monadicIO $ do
   uid <- runEnv env (new_user nur)
   ur' <- runEnv env (getUserId (UserName $ _nu_username nur))
   run (Expected uid `shouldBe` Actual ur')
+
+-- | We test that we can create and later read-back a 'Corpus'.
+corpusReadWrite01 :: TestEnv -> Assertion
+corpusReadWrite01 env = do
+  flip runReaderT env $ runTestMonad $ do
+    uid      <- getUserId (UserName "alfredo")
+    parentId <- getRootId (UserName "alfredo")
+    [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
+    liftIO $ corpusId `shouldBe` NodeId 416
+    -- Retrieve the corpus by Id
+    [corpus] <- getCorporaWithParentId parentId
+    liftIO $ corpusId `shouldBe` (_node_id corpus)
+
+-- | We test that we can update the existing language for a 'Corpus'.
+corpusAddLanguage :: TestEnv -> Assertion
+corpusAddLanguage env = do
+  flip runReaderT env $ runTestMonad $ do
+    parentId <- getRootId (UserName "alfredo")
+    [corpus] <- getCorporaWithParentId parentId
+    liftIO $ (_hc_lang . _node_hyperdata $ corpus) `shouldBe` Just EN -- defaults to English
+    addLanguageToCorpus (_node_id corpus) IT
+    [corpus'] <- getCorporaWithParentId parentId
+    liftIO $ (_hc_lang . _node_hyperdata $ corpus') `shouldBe` Just IT

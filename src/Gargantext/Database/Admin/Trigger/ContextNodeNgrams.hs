@@ -20,11 +20,12 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core
 -- import Gargantext.Core.Types.Main (ListType(CandidateTerm))
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
-import Gargantext.Database.Prelude (Cmd, execPGSQuery)
+-- (ListId, CorpusId, NodeId)
+import Gargantext.Database.Prelude (execPGSQuery, DBCmd)
 import Gargantext.Prelude
 import qualified Database.PostgreSQL.Simple as DPS
 
-triggerCountInsert :: HasDBid NodeType => Cmd err Int64
+triggerCountInsert :: HasDBid NodeType => DBCmd err Int64
 triggerCountInsert = execPGSQuery query (toDBid NodeDocument, toDBid NodeList)
   where
     query :: DPS.Query
@@ -60,7 +61,7 @@ triggerCountInsert = execPGSQuery query (toDBid NodeDocument, toDBid NodeList)
           EXECUTE PROCEDURE set_ngrams_global_count();
    |]
 
-triggerCountInsert2 :: HasDBid NodeType => Cmd err Int64
+triggerCountInsert2 :: HasDBid NodeType => DBCmd err Int64
 triggerCountInsert2 = execPGSQuery query ( toDBid NodeCorpus
                                          , toDBid NodeDocument
                                          , toDBid NodeList

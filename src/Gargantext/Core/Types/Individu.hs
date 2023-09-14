@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 
 {-|
 Module      : Gargantext.Core.Types.Individu
@@ -25,10 +26,18 @@ import GHC.Generics (Generic)
 import Gargantext.Database.Admin.Types.Node (NodeId, UserId)
 import Gargantext.Prelude hiding (reverse)
 import qualified Gargantext.Prelude.Crypto.Auth as Auth
+import qualified Data.Text as T
 
 -- FIXME UserName used twice
 data User = UserDBId UserId | UserName Text | RootId NodeId | UserPublic
   deriving (Eq)
+
+renderUser :: User -> T.Text
+renderUser = \case
+  UserDBId urId -> T.pack (show urId)
+  UserName txt  -> txt
+  RootId   nId  -> T.pack (show nId)
+  UserPublic    -> T.pack "public"
 
 type Username = Text
 

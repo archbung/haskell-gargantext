@@ -73,7 +73,7 @@ import GHC.Generics (Generic)
 import Gargantext.Core (HasDBid(toDBid))
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runPGSQuery{-, formatPGSQuery-})
+import Gargantext.Database.Prelude (runPGSQuery, DBCmd{-, formatPGSQuery-})
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import qualified Gargantext.Defaults as Defaults
 import Gargantext.Prelude
@@ -93,7 +93,7 @@ import Database.PostgreSQL.Simple (formatQuery)
 -- ParentId : folder ID which is parent of the inserted documents
 -- Administrator of the database has to create a uniq index as following SQL command:
 -- `create unique index on contexts table (typename, parent_id, (hyperdata ->> 'uniqId'));`
-insertDb :: (InsertDb a, HasDBid NodeType) => UserId -> Maybe ParentId -> [a] -> Cmd err [ReturnId]
+insertDb :: (InsertDb a, HasDBid NodeType) => UserId -> Maybe ParentId -> [a] -> DBCmd err [ReturnId]
 insertDb u p = runPGSQuery queryInsert . Only . Values fields . map (insertDb' u p)
       where
         fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes

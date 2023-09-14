@@ -58,6 +58,7 @@ library
       Gargantext.API.Node
       Gargantext.API.Node.Corpus.New
       Gargantext.API.Node.Corpus.Types
+      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
@@ -85,6 +86,7 @@ library
       Gargantext.Core.Text.Terms
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
+      Gargantext.Core.Text.Terms.Mono.Stem.En
       Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
@@ -112,13 +114,17 @@ library
       Gargantext.Core.Viz.Types
       Gargantext.Database.Action.Flow
       Gargantext.Database.Action.Flow.Types
+      Gargantext.Database.Action.Search
       Gargantext.Database.Action.User
       Gargantext.Database.Action.User.New
       Gargantext.Database.Admin.Config
       Gargantext.Database.Admin.Trigger.Init
       Gargantext.Database.Admin.Types.Hyperdata
+      Gargantext.Database.Admin.Types.Hyperdata.Corpus
+      Gargantext.Database.Admin.Types.Hyperdata.Document
       Gargantext.Database.Admin.Types.Node
       Gargantext.Database.Prelude
+      Gargantext.Database.Query.Facet
       Gargantext.Database.Query.Table.NgramsPostag
       Gargantext.Database.Query.Table.Node
       Gargantext.Database.Query.Table.Node.Error
@@ -126,6 +132,7 @@ library
       Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Query.Table.User
       Gargantext.Database.Schema.Ngrams
+      Gargantext.Database.Schema.Node
       Gargantext.Database.Schema.User
       Gargantext.Defaults
       Gargantext.System.Logging
@@ -173,7 +180,6 @@ library
       Gargantext.API.Node.Corpus.New.File
       Gargantext.API.Node.Corpus.New.Types
       Gargantext.API.Node.Corpus.Searx
-      Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.Document.Export
       Gargantext.API.Node.Document.Export.Types
       Gargantext.API.Node.DocumentsFromWriteNodes
@@ -250,7 +256,6 @@ library
       Gargantext.Core.Text.Samples.PL
       Gargantext.Core.Text.Samples.ZH
       Gargantext.Core.Text.Terms.Mono.Stem
-      Gargantext.Core.Text.Terms.Mono.Stem.En
       Gargantext.Core.Text.Terms.Mono.Token
       Gargantext.Core.Text.Terms.Mono.Token.En
       Gargantext.Core.Text.Terms.Multi.Group
@@ -288,7 +293,6 @@ library
       Gargantext.Database.Action.Metrics.NgramsByContext
       Gargantext.Database.Action.Metrics.TFICF
       Gargantext.Database.Action.Node
-      Gargantext.Database.Action.Search
       Gargantext.Database.Action.Share
       Gargantext.Database.Action.TSQuery
       Gargantext.Database.Admin.Access
@@ -298,11 +302,9 @@ library
       Gargantext.Database.Admin.Trigger.NodesContexts
       Gargantext.Database.Admin.Types.Hyperdata.Any
       Gargantext.Database.Admin.Types.Hyperdata.Contact
-      Gargantext.Database.Admin.Types.Hyperdata.Corpus
       Gargantext.Database.Admin.Types.Hyperdata.CorpusField
       Gargantext.Database.Admin.Types.Hyperdata.Dashboard
       Gargantext.Database.Admin.Types.Hyperdata.Default
-      Gargantext.Database.Admin.Types.Hyperdata.Document
       Gargantext.Database.Admin.Types.Hyperdata.File
       Gargantext.Database.Admin.Types.Hyperdata.Folder
       Gargantext.Database.Admin.Types.Hyperdata.Frame
@@ -315,7 +317,6 @@ library
       Gargantext.Database.Admin.Types.Metrics
       Gargantext.Database.GargDB
       Gargantext.Database.Query
-      Gargantext.Database.Query.Facet
       Gargantext.Database.Query.Facet.Types
       Gargantext.Database.Query.Filter
       Gargantext.Database.Query.Join
@@ -344,7 +345,6 @@ library
       Gargantext.Database.Schema.ContextNodeNgrams
       Gargantext.Database.Schema.ContextNodeNgrams2
       Gargantext.Database.Schema.NgramsPostag
-      Gargantext.Database.Schema.Node
       Gargantext.Database.Schema.Node_NodeNgramsNodeNgrams
       Gargantext.Database.Schema.NodeContext
       Gargantext.Database.Schema.NodeContext_NodeContext
@@ -884,6 +884,8 @@ test-suite garg-test-tasty
       Core.Text.Flow
       Core.Utils
       Database.Operations
+      Database.Operations.DocumentSearch
+      Database.Operations.Types
       Graph.Clustering
       Graph.Distance
       Ngrams.Lang
@@ -942,11 +944,13 @@ test-suite garg-test-tasty
     , lens >= 5.2.2 && < 5.3
     , monad-control >= 1.0.3 && < 1.1
     , mtl ^>= 2.2.2
+    , network-uri
     , parsec ^>= 3.1.14.0
     , patches-class ^>= 0.1.0.1
     , patches-map ^>= 0.1.0.1
     , postgres-options >= 0.2 && < 0.3
     , postgresql-simple >= 0.6.4 && < 0.7
+    , process ^>= 1.6.13.2
     , quickcheck-instances ^>= 0.3.25.2
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
@@ -971,6 +975,8 @@ test-suite garg-test-hspec
   main-is: hspec/Main.hs
   other-modules:
       Database.Operations
+      Database.Operations.DocumentSearch
+      Database.Operations.Types
       Paths_gargantext
   hs-source-dirs:
       test
@@ -1022,11 +1028,13 @@ test-suite garg-test-hspec
     , lens >= 5.2.2 && < 5.3
     , monad-control >= 1.0.3 && < 1.1
     , mtl ^>= 2.2.2
+    , network-uri
     , parsec ^>= 3.1.14.0
     , patches-class ^>= 0.1.0.1
     , patches-map ^>= 0.1.0.1
     , postgres-options >= 0.2 && < 0.3
     , postgresql-simple >= 0.6.4 && < 0.7
+    , process ^>= 1.6.13.2
     , quickcheck-instances ^>= 0.3.25.2
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5

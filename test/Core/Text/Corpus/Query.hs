@@ -42,6 +42,10 @@ tests = withResource pubmedSettings (const (pure ())) $ \getPubmedKey ->
   , testProperty "Parses 'A AND B -C'   (left associative)" testParse05
   , testProperty "Parses 'A AND (B -C)' (right associative)" testParse05_01
   , testProperty "Parses (A OR B OR NOT C) AND (D OR E OR F) -(G OR H OR I)" testParse06
+  , testProperty "It supports '\"Haskell\" AND \"Idris\"'" testParse07
+  , testProperty "It supports 'Haskell AND Idris'" testParse07_01
+  , testProperty "It supports 'Raphael'" testParse07_02
+  , testProperty "It supports 'Niki', 'Ajeje' and 'Orf'" testParse07_03
   , testCase     "Parses words into a single constant" testWordsIntoConst
   , testGroup "Arxiv expression converter" [
       testCase "It supports 'A AND B'"     testArxiv01_01
@@ -123,6 +127,27 @@ testParse06 =
         ((BConst (Positive "G") `BOr` (BConst (Positive "H"))) `BOr` (BConst (Positive "I")))
       )
     )
+
+testParse07 :: Property
+testParse07 =
+  translatesInto "\"Haskell\" AND \"Agda\""
+    ((BConst (Positive  "Haskell") `BAnd` (BConst (Positive  "Agda"))))
+
+testParse07_01 :: Property
+testParse07_01 =
+  translatesInto "Haskell AND Agda"
+    ((BConst (Positive  "Haskell") `BAnd` (BConst (Positive  "Agda"))))
+
+testParse07_02 :: Property
+testParse07_02 =
+  translatesInto "Raphael"
+    ((BConst (Positive  "Raphael")))
+
+testParse07_03 :: Property
+testParse07_03 =
+  translatesInto "Niki" ((BConst (Positive "Niki"))) .&&.
+  translatesInto "Ajeje" ((BConst (Positive "Ajeje"))) .&&.
+  translatesInto "Orf" ((BConst (Positive "Orf")))
 
 testWordsIntoConst :: Assertion
 testWordsIntoConst =

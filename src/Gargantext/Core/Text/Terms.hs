@@ -56,7 +56,7 @@ import Gargantext.Core.Text.Terms.Mono.Stem (stem)
 import Gargantext.Core.Text.Terms.Mono.Token.En (tokenize)
 import Gargantext.Core.Text.Terms.Multi (multiterms)
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (Cmd)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (insertNgrams)
 import Gargantext.Database.Query.Table.NgramsPostag (NgramsPostag(..), insertNgramsPostag, np_form, np_lem)
 import Gargantext.Database.Schema.Ngrams (Ngrams(..), NgramsType(..), ngramsTerms, text2ngrams, NgramsId)
@@ -121,9 +121,10 @@ instance Hashable ExtractedNgrams
 class ExtractNgramsT h
   where
     extractNgramsT :: HasText h
-                   => TermType Lang
+                   => NLPServerConfig
+                   -> TermType Lang
                    -> h
-                   -> Cmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+                   -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
 ------------------------------------------------------------------------
 enrichedTerms :: Lang -> PosTagAlgo -> POS -> Terms -> NgramsPostag
 enrichedTerms l pa po (Terms ng1 ng2) =
@@ -148,7 +149,7 @@ extracted2ngrams (SimpleNgrams   ng) = ng
 extracted2ngrams (EnrichedNgrams ng) = view np_form ng
 
 ---------------------------
-insertExtractedNgrams :: [ ExtractedNgrams ] -> Cmd err (HashMap Text NgramsId)
+insertExtractedNgrams :: [ ExtractedNgrams ] -> DBCmd err (HashMap Text NgramsId)
 insertExtractedNgrams ngs = do
   let (s, e) = List.partition isSimpleNgrams ngs
   m1 <- insertNgrams       (map unSimpleNgrams   s)
