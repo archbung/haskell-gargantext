@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.7.7
+
+* [FIX][DOC] Link to documentation
+* [BACK][FEAT][Improving search in Documents (#261)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/261)
+
 ## Version 0.0.6.9.9.7.6.4
 
 * [FRONT][FIX][Ngrams Table: click on terms status (#594)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/594)
