@@ -59,7 +59,7 @@ import qualified Gargantext.API.Public                     as Public
 
 type GargAPI = MkGargAPI (GargAPIVersion GargAPI')
 
-type MkGargAPI sub = "api" :> Summary "API " :> GargAPIVersion sub
+type MkGargAPI sub = "api" :> Summary "API " :> sub
 --- | TODO          :<|> Summary "Latest API" :> GargAPI'
 
 type GargAPIVersion sub = "v1.0"
@@ -87,8 +87,9 @@ type GargAPI' =
           :<|> "public"      :> Public.API
 
 
-type GargPrivateAPI = SA.Auth '[SA.JWT, SA.Cookie] AuthenticatedUser
-                    :> GargPrivateAPI'
+type MkProtectedAPI sub = SA.Auth '[SA.JWT, SA.Cookie] AuthenticatedUser :> sub
+
+type GargPrivateAPI = MkProtectedAPI GargPrivateAPI'
 
 type GargAdminAPI
               -- Roots endpoint

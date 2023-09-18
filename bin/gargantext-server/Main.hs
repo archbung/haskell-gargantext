@@ -22,7 +22,6 @@ Script to start gargantext with different modes (Dev, Prod, Mock).
 module Main where
 
 
-import Data.String (String)
 import Data.Text (unpack)
 import Data.Version (showVersion)
 import Gargantext.API (startGargantext) -- , startGargantextMock)

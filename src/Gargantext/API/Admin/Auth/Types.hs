@@ -13,6 +13,7 @@ Portability : POSIX
 module Gargantext.API.Admin.Auth.Types
       where
 
+import Control.Lens hiding (elements, to)
 import Data.Aeson.TH (deriveJSON)
 import Data.Swagger
 import Data.Text (Text)
@@ -130,4 +131,7 @@ data ForgotPasswordGet = ForgotPasswordGet {_fpGet_password :: Password}
   deriving (Generic )
 $(deriveJSON (unPrefix "_fpGet_") ''ForgotPasswordGet)
 instance ToSchema ForgotPasswordGet where
-  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpGet_") 
+  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpGet_")
+
+makeLenses ''AuthValid
+makeLenses ''AuthResponse
