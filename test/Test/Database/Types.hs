@@ -2,7 +2,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
-module Test.Database.Operations.Types where
+module Test.Database.Types where
 
 import Control.Exception
 import Control.Lens

@@ -18,7 +18,7 @@ import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Network.URI (parseURI)
 
-import Test.Database.Operations.Types
+import Test.Database.Types
 import Test.Hspec.Expectations
 import Test.Tasty.HUnit
 import Gargantext.Core.Text.Terms.Mono.Stem.En

@@ -5,8 +5,9 @@ import Gargantext.Prelude
 
 import Control.Exception
 import Shelly hiding (FilePath)
-import System.Process
 import System.IO
+import System.Process
+import qualified Test.API                     as API
 import qualified Test.Database.Operations     as DB
 
 import Test.Hspec
@@ -40,4 +41,6 @@ stopCoreNLPServer = interruptProcessGroupOf
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  bracket startCoreNLPServer stopCoreNLPServer (const (hspec DB.tests))
+  bracket startCoreNLPServer stopCoreNLPServer $ \_ -> hspec $ do
+    DB.tests
+    API.tests

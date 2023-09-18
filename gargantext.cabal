@@ -62,6 +62,7 @@ library
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
       Gargantext.API.Prelude
+      Gargantext.API.Routes
       Gargantext.Core
       Gargantext.Core.NLP
       Gargantext.Core.Methods.Similarities
@@ -190,7 +191,6 @@ library
       Gargantext.API.Node.Types
       Gargantext.API.Node.Update
       Gargantext.API.Public
-      Gargantext.API.Routes
       Gargantext.API.Search
       Gargantext.API.Server
       Gargantext.API.Swagger
@@ -885,7 +885,8 @@ test-suite garg-test-tasty
       Test.Core.Utils
       Test.Database.Operations
       Test.Database.Operations.DocumentSearch
-      Test.Database.Operations.Types
+      Test.Database.Setup
+      Test.Database.Types
       Test.Graph.Clustering
       Test.Graph.Distance
       Test.Ngrams.Lang
@@ -955,6 +956,7 @@ test-suite garg-test-tasty
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
     , resource-pool >= 0.2.3.2 && < 0.2.4
+    , servant-client
     , servant-job
     , shelly >= 1.9 && < 2
     , stm ^>= 2.5.0.1
@@ -968,15 +970,19 @@ test-suite garg-test-tasty
     , tmp-postgres >= 1.34.1 && < 1.35
     , unordered-containers ^>= 0.2.16.0
     , validity ^>= 0.11.0.1
+    , warp
   default-language: Haskell2010
 
 test-suite garg-test-hspec
   type: exitcode-stdio-1.0
   main-is: drivers/hspec/Main.hs
   other-modules:
+      Test.API
+      Test.API.Authentication
       Test.Database.Operations
       Test.Database.Operations.DocumentSearch
-      Test.Database.Operations.Types
+      Test.Database.Setup
+      Test.Database.Types
       Paths_gargantext
   hs-source-dirs:
       test
@@ -1039,6 +1045,7 @@ test-suite garg-test-hspec
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
     , resource-pool >= 0.2.3.2 && < 0.2.4
+    , servant-client
     , servant-job
     , shelly >= 1.9 && < 2
     , stm ^>= 2.5.0.1
@@ -1052,6 +1059,7 @@ test-suite garg-test-hspec
     , tmp-postgres >= 1.34.1 && < 1.35
     , unordered-containers ^>= 0.2.16.0
     , validity ^>= 0.11.0.1
+    , warp
   default-language: Haskell2010
 
 benchmark garg-bench

@@ -2,18 +2,15 @@
 {-# LANGUAGE TupleSections        #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# OPTIONS_GHC -Wno-orphans      #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Test.Database.Operations (
    tests
   ) where
 
-import Control.Exception hiding (assert)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Pool hiding (withResource)
-import Data.String
 import Database.PostgreSQL.Simple
 import Gargantext.API.Node.Corpus.Update
 import Gargantext.Core
@@ -26,23 +23,15 @@ import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId, getOrMk
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
-import Gargantext.Prelude.Config
 import Prelude
-import Shelly hiding (FilePath, run)
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Database.PostgreSQL.Simple as PG
-import qualified Database.PostgreSQL.Simple.Options as Client
-import qualified Database.Postgres.Temp as Tmp
-import qualified Shelly as SH
 
 import Gargantext.Database.Action.Flow
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Trigger.Init
-import Paths_gargantext
 import Test.Database.Operations.DocumentSearch
-import Test.Database.Operations.Types
+import Test.Database.Setup (withTestDB)
+import Test.Database.Types
 import Test.Hspec
 import Test.QuickCheck.Monadic
 import Test.Tasty.HUnit hiding (assert)
@@ -58,58 +47,6 @@ uniqueArbitraryNewUser currentIx = do
   where
    ascii_txt :: Gen T.Text
    ascii_txt = fmap (T.pack . getPrintableString) arbitrary
-
--- | Test DB settings.
-dbUser, dbPassword, dbName :: String
-dbUser = "gargantua"
-dbPassword = "gargantua_test"
-dbName = "gargandb_test"
-
-fakeIniPath :: IO FilePath
-fakeIniPath = getDataFileName "test-data/test_config.ini"
-
-gargDBSchema :: IO FilePath
-gargDBSchema = getDataFileName "devops/postgres/schema.sql"
-
-teardown :: TestEnv -> IO ()
-teardown TestEnv{..} = do
-  destroyAllResources $ _DBHandle test_db
-  Tmp.stop $ _DBTmp test_db
-
--- | Bootstraps the DB, by creating the DB and the schema.
-bootstrapDB :: Tmp.DB -> Pool PG.Connection -> GargConfig -> IO ()
-bootstrapDB tmpDB pool _cfg = Pool.withResource pool $ \conn -> do
-  void $ PG.execute_ conn (fromString $ "ALTER USER \"" <> dbUser <> "\" with PASSWORD '" <> dbPassword <> "'")
-  schemaPath <- gargDBSchema
-  let connString = Tmp.toConnectionString tmpDB
-  (res,ec) <- shelly $ silently $ escaping False $ do
-    result <- SH.run "psql" ["-d", "\"" <> TE.decodeUtf8 connString <> "\"", "<", fromString schemaPath]
-    (result,) <$> lastExitCode
-  unless (ec == 0) $ throwIO (userError $ show ec <> ": " <> T.unpack res)
-
-tmpPgConfig :: Tmp.Config
-tmpPgConfig = Tmp.defaultConfig <>
-  Tmp.optionsToDefaultConfig mempty
-    { Client.dbname   = pure dbName
-    , Client.user     = pure dbUser
-    , Client.password = pure dbPassword
-    }
-
-setup :: IO TestEnv
-setup = do
-  res <- Tmp.startConfig tmpPgConfig
-  case res of
-    Left err -> fail $ show err
-    Right db -> do
-      gargConfig <- fakeIniPath >>= readConfig
-      pool <- createPool (PG.connectPostgreSQL (Tmp.toConnectionString db))
-                         (PG.close) 2 60 2
-      bootstrapDB db pool gargConfig
-      ugen <- emptyCounter
-      pure $ TestEnv (DBHandle pool db) gargConfig ugen
-
-withTestDB :: (TestEnv -> IO ()) -> IO ()
-withTestDB = bracket setup teardown
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
