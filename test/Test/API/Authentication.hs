@@ -34,6 +34,12 @@ import Gargantext.Database.Prelude
 import Gargantext.Core.NLP
 import qualified Servant.Job.Async as ServantAsync
 import Servant.Auth.Client ()
+import Gargantext.API.Admin.Auth.Types
+import Gargantext.Core.Types.Individu
+import Control.Monad
+import Control.Monad.Reader
+import Gargantext.Database.Action.User.New
+import Gargantext.Core.Types
 
 newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
 newTestEnv testEnv logger port = do
@@ -90,13 +96,49 @@ withTestDBAndPort action =
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do
   describe "Authentication" $ do
-    let version_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion GargVersion)))
     baseUrl <- runIO $ parseBaseUrl "http://localhost"
     manager <- runIO $ newManager defaultManagerSettings
     let clientEnv port = mkClientEnv manager (baseUrl { baseUrlPort = port })
 
     -- testing scenarios start here
-    describe "GET /version" $ do
-      it "requires no auth" $ \(_testEnv, port) -> do
+    describe "GET /api/v1.0/version" $ do
+      let version_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion GargVersion)))
+      it "requires no auth and returns the current version" $ \(_testEnv, port) -> do
         result <- runClientM version_api (clientEnv port)
         result `shouldBe` (Right "0.0.6.9.9.7.7")
+
+    describe "POST /api/v1.0/auth" $ do
+      let auth_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion AuthAPI)))
+
+      it "requires no auth and authenticates the user 'alice'" $ \(testEnv, port) -> do
+
+        -- Let's create two users, Alice & Bob. Alice shouldn't be able to see
+        -- Bob's private data and vice-versa.
+        void $ flip runReaderT testEnv $ runTestMonad $ do
+          let nur1 = mkNewUser "alice@gargan.text" (GargPassword "alice")
+          let nur2 = mkNewUser "bob@gargan.text" (GargPassword "bob")
+
+          void $ new_user nur1
+          void $ new_user nur2
+
+        let authPayload = AuthRequest "alice" (GargPassword "alice")
+        result <- runClientM (auth_api authPayload) (clientEnv port)
+        let expected = AuthResponse {
+                         _authRes_valid = Just $
+                           AuthValid {
+                             _authVal_token = "eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9fQ.t49zZSqkPAulEkYEh4pW17H2uwrkyPTdZKwHyG3KUJ0hzU2UUoPBNj8vdv087RCVBJ4tXgxNbP4j0RBv3gxdqg"
+                           , _authVal_tree_id = NodeId 1
+                           , _authVal_user_id = 1
+                           }
+                         , _authRes_inval = Nothing
+                         }
+        result `shouldBe` (Right expected)
+
+      it "denies login for user 'alice' if password is invalid" $ \(_testEnv, port) -> do
+        let authPayload = AuthRequest "alice" (GargPassword "wrong")
+        result <- runClientM (auth_api authPayload) (clientEnv port)
+        let expected = AuthResponse {
+                       _authRes_valid = Nothing
+                     , _authRes_inval = Just $ AuthInvalid "Invalid password"
+                     }
+        result `shouldBe` (Right expected)

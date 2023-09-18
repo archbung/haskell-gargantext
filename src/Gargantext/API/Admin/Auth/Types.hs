@@ -38,16 +38,16 @@ data AuthRequest = AuthRequest { _authReq_username :: Username
 data AuthResponse = AuthResponse { _authRes_valid :: Maybe AuthValid
                                  , _authRes_inval :: Maybe AuthInvalid
                                  }
-  deriving (Generic)
+  deriving (Generic, Eq, Show)
 
 data AuthInvalid = AuthInvalid { _authInv_message :: Text }
-  deriving (Generic)
+  deriving (Generic, Eq, Show)
 
 data AuthValid = AuthValid { _authVal_token   :: Token
                            , _authVal_tree_id :: TreeId
                            , _authVal_user_id :: UserId
                            }
-  deriving (Generic)
+  deriving (Generic, Eq, Show)
 
 type Token  = Text
 type TreeId = NodeId

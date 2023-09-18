@@ -70,11 +70,14 @@ type GargVersion = "version"
                  :> Summary "Backend version"
                  :> Get '[JSON] Text
 
-type GargAPI' =
+type AuthAPI =
            -- Auth endpoint
                 "auth"  :> Summary "AUTH API"
                         :> ReqBody '[JSON] AuthRequest
                         :> Post    '[JSON] AuthResponse
+
+type GargAPI' =
+               AuthAPI
           :<|> "forgot-password" :> ForgotPasswordAPI
           :<|> "async" :> "forgot-password" :> ForgotPasswordAsyncAPI
           :<|> GargVersion
