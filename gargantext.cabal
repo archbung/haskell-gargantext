@@ -876,33 +876,33 @@ executable gargantext-upgrade
 
 test-suite garg-test-tasty
   type: exitcode-stdio-1.0
-  main-is: tasty/Main.hs
+  main-is: drivers/tasty/Main.hs
   other-modules:
-      Core.Text
-      Core.Text.Corpus.Query
-      Core.Text.Examples
-      Core.Text.Flow
-      Core.Utils
-      Database.Operations
-      Database.Operations.DocumentSearch
-      Database.Operations.Types
-      Graph.Clustering
-      Graph.Distance
-      Ngrams.Lang
-      Ngrams.Lang.En
-      Ngrams.Lang.Fr
-      Ngrams.Lang.Occurrences
-      Ngrams.Metrics
-      Ngrams.NLP
-      Ngrams.Query
-      Ngrams.Query.PaginationCorpus
-      Offline.JSON
-      Parsers.Date
-      Parsers.Types
-      Parsers.WOS
-      Utils
-      Utils.Crypto
-      Utils.Jobs
+      Test.Core.Text
+      Test.Core.Text.Corpus.Query
+      Test.Core.Text.Examples
+      Test.Core.Text.Flow
+      Test.Core.Utils
+      Test.Database.Operations
+      Test.Database.Operations.DocumentSearch
+      Test.Database.Operations.Types
+      Test.Graph.Clustering
+      Test.Graph.Distance
+      Test.Ngrams.Lang
+      Test.Ngrams.Lang.En
+      Test.Ngrams.Lang.Fr
+      Test.Ngrams.Lang.Occurrences
+      Test.Ngrams.Metrics
+      Test.Ngrams.NLP
+      Test.Ngrams.Query
+      Test.Ngrams.Query.PaginationCorpus
+      Test.Offline.JSON
+      Test.Parsers.Date
+      Test.Parsers.Types
+      Test.Parsers.WOS
+      Test.Utils
+      Test.Utils.Crypto
+      Test.Utils.Jobs
       Paths_gargantext
   hs-source-dirs:
       test
@@ -972,11 +972,11 @@ test-suite garg-test-tasty
 
 test-suite garg-test-hspec
   type: exitcode-stdio-1.0
-  main-is: hspec/Main.hs
+  main-is: drivers/hspec/Main.hs
   other-modules:
-      Database.Operations
-      Database.Operations.DocumentSearch
-      Database.Operations.Types
+      Test.Database.Operations
+      Test.Database.Operations.DocumentSearch
+      Test.Database.Operations.Types
       Paths_gargantext
   hs-source-dirs:
       test
