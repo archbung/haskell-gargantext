@@ -1,11 +1,14 @@
 {-# LANGUAGE TupleSections #-}
 module Test.Database.Setup (
-  withTestDB
+    withTestDB
   , fakeIniPath
+  , testEnvToPgConnectionInfo
   ) where
 
 import Control.Exception hiding (assert)
 import Control.Monad
+import Data.Maybe (fromMaybe)
+import Data.Monoid
 import Data.Pool hiding (withResource)
 import Data.String
 import Gargantext.Prelude.Config
@@ -17,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Database.PostgreSQL.Simple as PG
 import qualified Database.PostgreSQL.Simple.Options as Client
+import qualified Database.PostgreSQL.Simple.Options as Opts
 import qualified Database.Postgres.Temp as Tmp
 import qualified Shelly as SH
 
@@ -73,3 +77,16 @@ setup = do
 
 withTestDB :: (TestEnv -> IO ()) -> IO ()
 withTestDB = bracket setup teardown
+
+testEnvToPgConnectionInfo :: TestEnv -> PG.ConnectInfo
+testEnvToPgConnectionInfo TestEnv{..} =
+  PG.ConnectInfo { PG.connectHost     = "0.0.0.0"
+                 , PG.connectPort     = fromIntegral $ fromMaybe 5432
+                                                     $ getLast
+                                                     $ Opts.port
+                                                     $ Tmp.toConnectionOptions
+                                                     $ _DBTmp test_db
+                 , PG.connectUser     = dbUser
+                 , PG.connectPassword = dbPassword
+                 , PG.connectDatabase = dbName
+                 }

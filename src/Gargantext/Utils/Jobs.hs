@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 module Gargantext.Utils.Jobs (
   -- * Serving the JOBS API
@@ -14,11 +15,13 @@ import Data.Aeson (ToJSON)
 import Prelude
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
+import qualified Data.Text as T
 
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Prelude
 import qualified Gargantext.Utils.Jobs.Internal as Internal
 import Gargantext.Utils.Jobs.Monad
+import Gargantext.System.Logging
 
 import qualified Servant.Job.Async as SJ
 
@@ -75,12 +78,11 @@ parsePrios (x : xs) = (:) <$> go x <*> parsePrios xs
             | otherwise                  -> error $
               "parsePrios: invalid input. " ++ show (prop, valS)
 
-readPrios :: FilePath -> IO [(GargJob, Int)]
-readPrios fp = do
+readPrios :: Logger IO -> FilePath -> IO [(GargJob, Int)]
+readPrios logger fp = do
   exists <- doesFileExist fp
   case exists of
     False -> do
-      putStrLn $
-        "Warning: " ++ fp ++ " doesn't exist, using default job priorities."
+      $(logLoc) logger WARNING $ T.pack $ fp ++ " doesn't exist, using default job priorities."
       pure []
     True -> parsePrios . lines =<< readFile fp

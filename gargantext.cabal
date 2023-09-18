@@ -956,8 +956,11 @@ test-suite garg-test-tasty
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
     , resource-pool >= 0.2.3.2 && < 0.2.4
+    , servant-auth
+    , servant-auth-client
     , servant-client
     , servant-job
+    , servant-server
     , shelly >= 1.9 && < 2
     , stm ^>= 2.5.0.1
     , tasty ^>= 1.4.2.1
@@ -1045,8 +1048,11 @@ test-suite garg-test-hspec
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
     , resource-pool >= 0.2.3.2 && < 0.2.4
+    , servant-auth
+    , servant-auth-client
     , servant-client
     , servant-job
+    , servant-server
     , shelly >= 1.9 && < 2
     , stm ^>= 2.5.0.1
     , tasty ^>= 1.4.2.1

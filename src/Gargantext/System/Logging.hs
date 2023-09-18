@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Gargantext.System.Logging (
     LogLevel(..)
@@ -7,6 +8,7 @@ module Gargantext.System.Logging (
   , MonadLogger(..)
   , logM
   , logLocM
+  , logLoc
   , withLogger
   , withLoggerHoisted
   ) where
@@ -73,6 +75,12 @@ logLocM = [| \level msg ->
   in logM level (formatWithLoc loc msg)
   |]
 
+logLoc :: ExpQ
+logLoc = [| \logger level msg ->
+  let loc = $(getLocTH)
+  in logTxt logger level (formatWithLoc loc msg)
+  |]
+
 formatWithLoc :: Loc -> T.Text -> T.Text
 formatWithLoc loc msg = "[" <> locationToText <> "] " <> msg
   where
@@ -109,3 +117,16 @@ withLoggerHoisted :: (MonadBaseControl IO m, HasLogger m)
                   -> (Logger m -> IO a)
                   -> IO a
 withLoggerHoisted params act = bracket (initLogger params) destroyLogger act
+
+-- | A plain logger in the IO monad, waiting for more serious logging solutions like
+-- the one described in https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/229
+instance HasLogger IO where
+  data instance Logger IO        = IOLogger
+  type instance LogInitParams IO = ()
+  type instance LogPayload IO    = String
+  initLogger                     = \() -> pure IOLogger
+  destroyLogger                  = \_  -> pure ()
+  logMsg = \IOLogger lvl msg ->
+    let pfx = "[" <> show lvl <> "] "
+    in putStrLn $ pfx <> msg
+  logTxt lgr lvl msg = logMsg lgr lvl (T.unpack msg)

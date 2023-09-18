@@ -184,8 +184,8 @@ newEnv logger port file = do
   when (port /= settings' ^. appPort) $
     panic "TODO: conflicting settings of port"
 
-  !config_env    <- readConfig file
-  prios         <- Jobs.readPrios (file <> ".jobs")
+  !config_env   <- readConfig file
+  prios         <- withLogger () $ \ioLogger -> Jobs.readPrios ioLogger (file <> ".jobs")
   let prios' = Jobs.applyPrios prios Jobs.defaultPrios
   putStrLn $ "Overrides: " <> show prios
   putStrLn $ "New priorities: " <> show prios'

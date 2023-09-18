@@ -42,5 +42,5 @@ main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
   bracket startCoreNLPServer stopCoreNLPServer $ \_ -> hspec $ do
-    DB.tests
     API.tests
+    DB.tests

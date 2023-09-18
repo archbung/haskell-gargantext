@@ -57,12 +57,14 @@ import qualified Gargantext.API.Node.Document.Export.Types as DocumentExport
 import qualified Gargantext.API.Public                     as Public
 
 
-type GargAPI = "api" :> Summary "API " :> GargAPIVersion
+type GargAPI = MkGargAPI (GargAPIVersion GargAPI')
+
+type MkGargAPI sub = "api" :> Summary "API " :> GargAPIVersion sub
 --- | TODO          :<|> Summary "Latest API" :> GargAPI'
 
-type GargAPIVersion = "v1.0"
-                   :> Summary "Garg API Version "
-                   :> GargAPI'
+type GargAPIVersion sub = "v1.0"
+                        :> Summary "Garg API Version "
+                        :> sub
 
 type GargVersion = "version"
                  :> Summary "Backend version"

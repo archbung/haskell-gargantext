@@ -53,19 +53,6 @@ data MyOptions w =
 instance ParseRecord (MyOptions Wrapped)
 deriving instance Show (MyOptions Unwrapped)
 
--- | A plain logger in the IO monad, waiting for more serious logging solutions like
--- the one described in https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/229
-instance HasLogger IO where
-  data instance Logger IO        = IOLogger
-  type instance LogInitParams IO = ()
-  type instance LogPayload IO    = String
-  initLogger                     = \() -> pure IOLogger
-  destroyLogger                  = \_  -> pure ()
-  logMsg = \IOLogger lvl msg ->
-    let pfx = "[" <> show lvl <> "] "
-    in putStrLn $ pfx <> msg
-  logTxt lgr lvl msg = logMsg lgr lvl (unpack msg)
-
 main :: IO ()
 main = withLogger () $ \ioLogger -> do
   MyOptions myMode myPort myIniFile myVersion  <- unwrapRecord
