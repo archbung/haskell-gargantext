@@ -42,13 +42,13 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
     -- testing scenarios start here
     describe "GET /api/v1.0/version" $ do
       let version_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion GargVersion)))
-      it "requires no auth and returns the current version" $ \(_testEnv, port) -> do
+      it "requires no auth and returns the current version" $ \((_testEnv, port), _) -> do
         result <- runClientM version_api (clientEnv port)
         result `shouldBe` (Right "0.0.6.9.9.7.7")
 
     describe "POST /api/v1.0/auth" $ do
 
-      it "requires no auth and authenticates the user 'alice'" $ \(testEnv, port) -> do
+      it "requires no auth and authenticates the user 'alice'" $ \((testEnv, port), _) -> do
 
         -- Let's create the Alice user.
         void $ flip runReaderT testEnv $ runTestMonad $ do
@@ -69,7 +69,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         let result = over (_Right . authRes_valid . _Just . authVal_token) (const cannedToken) result0
         result `shouldBe` (Right expected)
 
-      it "denies login for user 'alice' if password is invalid" $ \(_testEnv, port) -> do
+      it "denies login for user 'alice' if password is invalid" $ \((_testEnv, port), _) -> do
         let authPayload = AuthRequest "alice" (GargPassword "wrong")
         result <- runClientM (auth_api authPayload) (clientEnv port)
         let expected = AuthResponse {

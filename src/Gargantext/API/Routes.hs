@@ -87,7 +87,7 @@ type GargAPI' =
           :<|> "public"      :> Public.API
 
 
-type MkProtectedAPI sub = SA.Auth '[SA.JWT, SA.Cookie] AuthenticatedUser :> sub
+type MkProtectedAPI private = SA.Auth '[SA.JWT, SA.Cookie] AuthenticatedUser :> private
 
 type GargPrivateAPI = MkProtectedAPI GargPrivateAPI'
 
@@ -98,13 +98,16 @@ type GargAdminAPI
            :<|> "nodes" :> Summary "Nodes endpoint"
                         :> ReqBody '[JSON] [NodeId] :> NodesAPI
 
+-- Node endpoint
+type NodeEndpoint =
+  "node"     :> Summary "Node endpoint"
+             :> Capture "node_id" NodeId
+             :> NodeAPI HyperdataAny
+
 type GargPrivateAPI' =
                 GargAdminAPI
 
-           -- Node endpoint
-           :<|> "node"     :> Summary "Node endpoint"
-                           :> Capture "node_id" NodeId
-                           :> NodeAPI HyperdataAny
+           :<|> NodeEndpoint
 
            -- Context endpoint
            :<|> "context"  :> Summary "Node endpoint"

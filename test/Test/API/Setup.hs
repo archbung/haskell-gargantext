@@ -2,31 +2,32 @@
 
 module Test.API.Setup where
 
-import Prelude
+import Control.Lens
 import Gargantext.API (makeApp)
 import Gargantext.API.Admin.EnvTypes (Mode(Mock), Env (..))
 import Gargantext.API.Admin.Settings
-import Gargantext.System.Logging
-import Servant.Client
-import Test.Database.Setup (withTestDB, fakeIniPath, testEnvToPgConnectionInfo)
-import qualified Network.Wai.Handler.Warp         as Warp
-import Test.Database.Types
-import Gargantext.API.Prelude
-import qualified Gargantext.Utils.Jobs as Jobs
-import qualified Gargantext.Utils.Jobs.Queue as Jobs
-import qualified Gargantext.Utils.Jobs.Settings as Jobs
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
-import qualified Gargantext.Prelude.Mail as Mail
-import qualified Gargantext.Prelude.NLP as NLP
-import Network.HTTP.Client.TLS (newTlsManager)
-import Control.Lens
 import Gargantext.API.Admin.Types
-import Gargantext.Prelude.Config
+import Gargantext.API.Prelude
+import Gargantext.Core.NLP
 import Gargantext.Core.NodeStory
 import Gargantext.Database.Prelude
-import Gargantext.Core.NLP
-import qualified Servant.Job.Async as ServantAsync
+import Gargantext.Prelude.Config
+import Gargantext.System.Logging
+import Network.HTTP.Client.TLS (newTlsManager)
+import Network.Wai (Application)
+import Prelude
 import Servant.Auth.Client ()
+import Servant.Client
+import Test.Database.Setup (withTestDB, fakeIniPath, testEnvToPgConnectionInfo)
+import Test.Database.Types
+import qualified Gargantext.Prelude.Mail as Mail
+import qualified Gargantext.Prelude.NLP as NLP
+import qualified Gargantext.Utils.Jobs as Jobs
+import qualified Gargantext.Utils.Jobs.Monad as Jobs
+import qualified Gargantext.Utils.Jobs.Queue as Jobs
+import qualified Gargantext.Utils.Jobs.Settings as Jobs
+import qualified Network.Wai.Handler.Warp         as Warp
+import qualified Servant.Job.Async as ServantAsync
 
 
 newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
@@ -67,17 +68,15 @@ newTestEnv testEnv logger port = do
     , _env_nlp       = nlp_env
     }
 
-withGargApp :: TestEnv -> (Warp.Port -> IO ()) -> IO ()
-withGargApp testEnv action = do
-  let createApp = do
-        withLoggerHoisted Mock $ \ioLogger -> do
-          env <- newTestEnv testEnv ioLogger 8080
-          makeApp env
-  Warp.testWithApplication createApp action
+withGargApp :: Application -> (Warp.Port -> IO ()) -> IO ()
+withGargApp app action = do
+  Warp.testWithApplication (pure app) action
 
-withTestDBAndPort :: ((TestEnv, Warp.Port) -> IO ()) -> IO ()
+withTestDBAndPort :: (((TestEnv, Warp.Port), Application) -> IO ()) -> IO ()
 withTestDBAndPort action =
-  withTestDB $ \testEnv ->
-    withGargApp testEnv $ \port ->
-      action (testEnv, port)
-
+  withTestDB $ \testEnv -> do
+    app <- withLoggerHoisted Mock $ \ioLogger -> do
+             env <- newTestEnv testEnv ioLogger 8080
+             makeApp env
+    withGargApp app $ \port ->
+      action ((testEnv, port), app)
