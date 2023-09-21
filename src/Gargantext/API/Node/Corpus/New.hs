@@ -19,32 +19,33 @@ New corpus means either:
 module Gargantext.API.Node.Corpus.New
       where
 
+
+-- import Servant.Multipart
+-- import Test.QuickCheck (elements)
 import Conduit
 import Control.Lens hiding (elements, Empty)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
-import qualified Data.ByteString.Base64 as BSB64
+import Data.ByteString.Base64 qualified as BSB64
 import Data.Conduit.Internal (zipSources)
 import Data.Either
 import Data.Swagger
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
 import GHC.Generics (Generic)
-import Servant
-import Servant.Job.Utils (jsonOptions)
--- import Servant.Multipart
-import qualified Data.Text.Encoding as TE
--- import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
-
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
 import Gargantext.API.Node.Corpus.New.Types
 import Gargantext.API.Node.Corpus.Searx
 import Gargantext.API.Node.Corpus.Types
 import Gargantext.API.Node.Corpus.Update (addLanguageToCorpus)
 import Gargantext.API.Node.Types
 import Gargantext.Core (Lang(..), withDefaultLanguage)
+import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion)
+import Gargantext.Core.Text.Corpus.API qualified as API
+import Gargantext.Core.Text.Corpus.Parsers qualified as Parser (FileType(..), parseFormatC)
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
@@ -55,17 +56,19 @@ import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
+import Gargantext.Database.GargDB qualified as GargDB
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (getNodeWith)
+import Gargantext.Database.Query.Table.Node (getNodeWith, getOrMkList)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_parsers)
-import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
-import qualified Gargantext.Core.Text.Corpus.API as API
-import qualified Gargantext.Core.Text.Corpus.Parsers as Parser (FileType(..), parseFormatC)
-import qualified Gargantext.Database.GargDB as GargDB
 import Gargantext.System.Logging
+import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
+import Protolude (mempty)
+import Servant
+import Servant.Job.Utils (jsonOptions)
+import Test.QuickCheck.Arbitrary
 
 ------------------------------------------------------------------------
 {-
@@ -190,7 +193,10 @@ type AddWithFile = Summary "Add with MultipartData to corpus endpoint"
 -- TODO WithQuery also has a corpus id
 
 
-addToCorpusWithQuery :: (FlowCmdM env err m, MonadJobStatus m)
+addToCorpusWithQuery :: ( FlowCmdM env err m
+                        , MonadJobStatus m,
+                          HasNodeStoryImmediateSaver env
+                        , HasNodeArchiveStoryImmediateSaver env)
                        => User
                        -> CorpusId
                        -> WithQuery
@@ -242,6 +248,12 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
 
           corpusId <- flowDataText user txt (Multi l) cid (Just flw) jobHandle
           $(logLocM) DEBUG $ T.pack $ "corpus id " <> show corpusId
+
+          userId <- getUserId user
+          listId <- getOrMkList cid userId
+          v <- currentVersion listId
+          _ <- commitStatePatch listId (Versioned v mempty)
+          
           -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
           sendMail user
           -- TODO ...

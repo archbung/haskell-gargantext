@@ -265,7 +265,7 @@ CREATE INDEX        ON public.nodes USING btree (user_id, typename, parent_id);
 CREATE INDEX        ON public.nodes USING btree (id, typename, date ASC);
 CREATE INDEX        ON public.nodes USING btree (id, typename, date DESC);
 CREATE INDEX        ON public.nodes USING btree (typename, id);
-CREATE UNIQUE INDEX IF NOT EXISTS ON public.nodes USING btree (hash_id);
+CREATE UNIQUE INDEX ON public.nodes USING btree (hash_id);
 
 CREATE INDEX        ON public.contexts USING gin (hyperdata);
 CREATE INDEX        ON public.contexts USING btree (user_id, typename, parent_id);
