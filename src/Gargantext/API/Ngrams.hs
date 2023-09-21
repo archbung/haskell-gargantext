@@ -23,11 +23,14 @@ add get
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# LANGUAGE IncoherentInstances #-}
+
 module Gargantext.API.Ngrams
   ( TableNgramsApi
   , TableNgramsApiGet
   , TableNgramsApiPut
 
+  , commitStatePatch
+  
   , searchTableNgrams
   , getTableNgrams
   , getTableNgramsCorpus
