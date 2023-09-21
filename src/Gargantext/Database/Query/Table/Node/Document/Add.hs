@@ -58,7 +58,7 @@ inputSqlTypes :: [Text]
 inputSqlTypes = ["int4","int4","int4","int4"]
 
 -- | SQL query to add documents
--- TODO return id of added documents only
+-- TODO pure id of added documents only
 queryAdd :: Query
 queryAdd = [sql|
        WITH input_rows(node_id,context_id,score,category) AS (?)

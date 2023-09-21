@@ -188,7 +188,7 @@ onDisk_1 action fp = do
   liftBase $ action (toFilePath dataPath fp) `catch` handleExists
     where
       handleExists e
-        | isDoesNotExistError e = return ()
+        | isDoesNotExistError e = pure ()
         | otherwise = throwIO e
 
 
@@ -207,6 +207,6 @@ onDisk_2 action fp1 fp2 = do
   liftBase $ action fp1' fp2' `catch` handleExists
     where
       handleExists e
-        | isDoesNotExistError e = return ()
+        | isDoesNotExistError e = pure ()
         | otherwise = throwIO e
 ------------------------------------------------------------------------

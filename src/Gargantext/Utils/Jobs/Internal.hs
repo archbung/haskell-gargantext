@@ -96,10 +96,10 @@ newJob newJobHandle getenv jobkind f input = do
         r <- f env (newJobHandle jId (liftIO . pushLog logF . Seq.singleton)) inp
         case r of
           Left e  -> postCallback (SJ.mkChanError e) >> throwIO e
-          Right a -> postCallback (SJ.mkChanResult a) >> return a
+          Right a -> postCallback (SJ.mkChanResult a) >> pure a
 
   jid <- queueJob jobkind (input ^. SJ.job_input) f'
-  return (SJ.JobStatus jid [] SJ.IsPending Nothing)
+  pure (SJ.JobStatus jid [] SJ.IsPending Nothing)
 
 pollJob
   :: MonadJob m t (Seq event) output
@@ -119,7 +119,7 @@ pollJob limit offset jid je = do
           me = either (Just . T.pack . show) (const Nothing) r
       in pure (ls, st, me)
   -- /NOTE/: We need to be careful with the ordering of the logs here:
-  -- we want to return the logs ordered from the newest to the oldest,
+  -- we want to pure the logs ordered from the newest to the oldest,
   -- because the API will use 'limit' to show only the newest ones,
   -- taking 'limit' of them from the front of the list.
   --
@@ -141,15 +141,15 @@ waitJob joberr jid je = do
       m <- getJobsMap
       erj <- waitTilRunning
       case erj of
-        Left res -> return res
+        Left res -> pure res
         Right rj -> do
           (res, _logs) <- liftIO (waitJobDone jid rj m)
-          return res
+          pure res
     RunningJ rj -> do
       m <- getJobsMap
       (res, _logs) <- liftIO (waitJobDone jid rj m)
-      return res
-    DoneJ _ls res -> return res
+      pure res
+    DoneJ _ls res -> pure res
   either (throwError . joberr . JobException) (pure . SJ.JobOutput) r
 
   where waitTilRunning =
@@ -159,8 +159,8 @@ waitJob joberr jid je = do
               QueuedJ _qj -> do
                 liftIO $ threadDelay 50000 -- wait 50ms
                 waitTilRunning
-              RunningJ rj -> return (Right rj)
-              DoneJ _ls res -> return (Left res)
+              RunningJ rj -> pure (Right rj)
+              DoneJ _ls res -> pure (Left res)
 
 killJob
   :: (Ord t, MonadJob m t (Seq event) output)
@@ -174,12 +174,12 @@ killJob t limit offset jid je = do
   (logs, status, merr) <- case jTask je of
     QueuedJ _ -> do
       removeJob True t jid
-      return (mempty, SJ.IsKilled, Nothing)
+      pure (mempty, SJ.IsKilled, Nothing)
     RunningJ rj -> do
       liftIO $ cancel (rjAsync rj)
       lgs <- liftIO (rjGetLog rj)
       removeJob False t jid
-      return (lgs, SJ.IsKilled, Nothing)
+      pure (lgs, SJ.IsKilled, Nothing)
     DoneJ lgs r -> do
       let st = either (const SJ.IsFailure) (const SJ.IsFinished) r
           me = either (Just . T.pack . show) (const Nothing) r

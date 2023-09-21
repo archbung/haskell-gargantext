@@ -225,7 +225,7 @@ instance FromField NodeId where
   fromField field mdata = do
     n <- fromField field mdata
     if (n :: Int) > 0
-       then return $ NodeId n
+       then pure $ NodeId n
        else mzero
 instance ToSchema NodeId
 

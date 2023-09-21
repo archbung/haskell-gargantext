@@ -84,9 +84,9 @@ startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
 
   where runDbCheck env = do
           r <- runExceptT (runReaderT DB.dbCheck env) `catch`
-            (\(_ :: SomeException) -> return $ Right False)
+            (\(_ :: SomeException) -> pure $ Right False)
           case r of
-            Right True -> return ()
+            Right True -> pure ()
             _ -> panic $
               "You must run 'gargantext-init " <> pack file <>
               "' before running gargantext-server (only the first time)."
@@ -246,7 +246,7 @@ makeApp env = do
   serv <- server env
   (ekgStore, ekgMid) <- newEkgStore api
   ekgDir <- (</> "ekg-assets") <$> getDataDir
-  return $ ekgMid $ serveWithContext apiWithEkg cfg
+  pure $ ekgMid $ serveWithContext apiWithEkg cfg
     (ekgServer ekgDir ekgStore :<|> serv)
   where
     cfg :: Servant.Context AuthContext

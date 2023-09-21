@@ -40,7 +40,7 @@ newEkgStore api = do
   registerGcMetrics s
   registerCounter "ekg.server_timestamp_ms" getTimeMs s -- used by UI
   mid <- monitorEndpoints api s
-  return (s, mid)
+  pure (s, mid)
 
   where getTimeMs = (round . (* 1000)) `fmap` getPOSIXTime
 

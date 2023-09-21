@@ -91,7 +91,7 @@ newQueue prios = do
       indices = Map.fromList (zip allTs [0..])
       n = Map.size indices
   vars <- Vector.replicateM n (newTVarIO emptyQ)
-  return $ Queue vars indices prios
+  pure $ Queue vars indices prios
 
 -- | Add a new element to the queue, with the given kind.
 addQueue :: Ord t => t -> a -> Queue t a -> STM ()
@@ -110,7 +110,7 @@ debugDumpQueue q = mconcat <$> (forM [minBound..maxBound] $ \t -> do
   readTVar (queueData q Vector.! (i t)) >>= debugDumpQ t)
   where
     i t = fromJust $ Map.lookup t (queueIndices q)
-    debugDumpQ t (Q xs ys _) = return $ map (\x -> (t, x)) (xs ++ reverse ys)
+    debugDumpQ t (Q xs ys _) = pure $ map (\x -> (t, x)) (xs ++ reverse ys)
 
 type Picker a = [(a, STM ())] -> STM (a, STM ())
 
@@ -127,7 +127,7 @@ popQueue picker q = atomically $ select prioLevels
           Map.toList (queuePrios q)
 
         select :: [[(t, Prio)]] -> STM (Maybe a)
-        select [] = return Nothing
+        select [] = pure Nothing
         select (level:levels) = do
           mres <- selectLevel level
           case mres of
@@ -139,15 +139,15 @@ popQueue picker q = atomically $ select prioLevels
           let indices = catMaybes $ map (flip Map.lookup (queueIndices q) . fst) xs
               queues  = map (queueData q Vector.!) indices
               go qvar = readTVar qvar >>= \qu ->
-                return (peekQ qu, modifyTVar' qvar dropQ)
+                pure (peekQ qu, modifyTVar' qvar dropQ)
           mtopItems <- catMaybesFst <$> traverse go queues
           case mtopItems of
-            Nothing -> return Nothing
-            Just [] -> return Nothing
+            Nothing -> pure Nothing
+            Just [] -> pure Nothing
             Just topItems -> do
               (earliestItem, popItem) <- picker topItems
               popItem
-              return (Just earliestItem)
+              pure (Just earliestItem)
 
         catMaybesFst ((Nothing, _b) : xs) = catMaybesFst xs
         catMaybesFst ((Just a, b) : xs) = ((a, b) :) <$> catMaybesFst xs
@@ -162,7 +162,7 @@ queueRunner picker f q = go
           mres <- popQueue picker q
           case mres of
             Just a -> f a `catch` exc
-            Nothing -> return ()
+            Nothing -> pure ()
           threadDelay 5000 -- 5ms
           go
 
@@ -181,4 +181,4 @@ newQueueWithRunners
 newQueueWithRunners n prios picker f = do
   q <- newQueue prios
   let runners = replicate n (queueRunner picker f q)
-  return (q, runners)
+  pure (q, runners)

@@ -65,13 +65,13 @@ parseGargJob s = case s of
   _ -> Nothing
 
 parsePrios :: [String] -> IO [(GargJob, Int)]
-parsePrios []       = return []
+parsePrios []       = pure []
 parsePrios (x : xs) = (:) <$> go x <*> parsePrios xs
   where go s = case break (=='=') s of
           ([], _) -> error "parsePrios: empty jobname?"
           (prop, valS)
             | Just val <- readMaybe (tail valS)
-            , Just j   <- parseGargJob prop -> return (j, val)
+            , Just j   <- parseGargJob prop -> pure (j, val)
             | otherwise                  -> error $
               "parsePrios: invalid input. " ++ show (prop, valS)
 
@@ -82,5 +82,5 @@ readPrios fp = do
     False -> do
       putStrLn $
         "Warning: " ++ fp ++ " doesn't exist, using default job priorities."
-      return []
+      pure []
     True -> parsePrios . lines =<< readFile fp

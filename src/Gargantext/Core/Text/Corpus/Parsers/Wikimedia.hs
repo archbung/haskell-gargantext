@@ -52,7 +52,7 @@ parseRevision :: MonadThrow m => ConduitT Event o m (Maybe T.Text)
 parseRevision = tagNoAttr "{http://www.mediawiki.org/xml/export-0.10/}revision" $ do
   text <- force "text is missing" $ ignoreExcept "{http://www.mediawiki.org/xml/export-0.10/}text" content
   many_ ignoreAnyTreeContent
-  return text
+  pure text
 
 -- | Utility function that matches everything but the tag given
 tagUntil :: Name -> NameMatcher Name
@@ -95,7 +95,7 @@ parsePage =
   revision <-
     parseRevision
   many_ $ ignoreAnyTreeContent
-  return $ Page { _markupFormat = Mediawiki
+  pure $ Page { _markupFormat = Mediawiki
                 , _title = title
                 , _text = revision }
 
@@ -110,14 +110,14 @@ mediawikiPageToPlain :: Page -> IO Page
 mediawikiPageToPlain page = do
   title <- mediaToPlain $ _title page
   revision <- mediaToPlain $ _text page
-  return $ Page { _markupFormat = Plaintext, _title = title, _text = revision }
+  pure $ Page { _markupFormat = Plaintext, _title = title, _text = revision }
   where mediaToPlain media =
           case media of
-            (Nothing) -> return Nothing
+            (Nothing) -> pure Nothing
             (Just med) -> do
               res <- runIO $ do
                 doc <- readMediaWiki def med
                 writePlain def doc
               case res of
-                (Left _)  -> return Nothing
-                (Right r) -> return $ Just r
+                (Left _)  -> pure Nothing
+                (Right r) -> pure $ Just r

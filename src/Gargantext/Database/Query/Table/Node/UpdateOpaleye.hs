@@ -31,7 +31,7 @@ import Gargantext.Database.Query.Table.Node.Error
 updateHyperdata :: HyperdataC a => NodeId -> a -> DBCmd err Int64
 updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
                                     runUpdate_ c (updateHyperdataQuery i h) >>= \res ->
-                                    putStrLn "after runUpdate_" >> return res
+                                    putStrLn "after runUpdate_" >> pure res
 
 updateHyperdataQuery :: HyperdataC a => NodeId -> a -> Update Int64
 updateHyperdataQuery i h = seq h' $ {- trace "updateHyperdataQuery: encoded JSON" $ -} Update

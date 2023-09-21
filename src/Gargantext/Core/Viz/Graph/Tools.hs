@@ -117,7 +117,7 @@ cooc2graphWith' :: Partitions
                 -> IO Graph
 cooc2graphWith' _doPartitions _bridgenessMethod multi similarity threshold strength myCooc = do
   let (distanceMap, diag, ti) = doSimilarityMap similarity threshold strength myCooc
-  distanceMap `seq` diag `seq` ti `seq` return ()
+  distanceMap `seq` diag `seq` ti `seq` pure ()
 
   partitions <- if (Map.size distanceMap > 0)
       then recursiveClustering' (spinglass' 1) distanceMap
@@ -129,7 +129,7 @@ cooc2graphWith' _doPartitions _bridgenessMethod multi similarity threshold stren
                                         , "Follow the available tutorials on the Training EcoSystems."
                                         , "Ask your co-users of GarganText how to have access to it."
                                         ]
-  length partitions `seq` return ()
+  length partitions `seq` pure ()
 
   let
     !confluence' = BAC.computeConfluences 3 (Map.keys distanceMap) True
@@ -140,7 +140,7 @@ cooc2graphWith' _doPartitions _bridgenessMethod multi similarity threshold stren
 {-
 cooc2graphWith' _doPartitions _bridgenessMethod multi similarity@Distributional threshold strength myCooc = do
   let (distanceMap, diag, ti) = doSimilarityMap similarity threshold strength myCooc
-  distanceMap `seq` diag `seq` ti `seq` return ()
+  distanceMap `seq` diag `seq` ti `seq` pure ()
 
   partitions <- if (Map.size distanceMap > 0)
       then recursiveClustering (spinglass 1) distanceMap
@@ -148,7 +148,7 @@ cooc2graphWith' _doPartitions _bridgenessMethod multi similarity@Distributional 
                                 , "Maybe you should add more Map Terms in your list"
                                 , "Tutorial: TODO"
                                 ]
-  length partitions `seq` return ()
+  length partitions `seq` pure ()
 
   let
     !confluence' = BAC.computeConfluences 3 (Map.keys distanceMap) True

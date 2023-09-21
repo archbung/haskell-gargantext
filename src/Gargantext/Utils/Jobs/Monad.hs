@@ -126,10 +126,10 @@ checkJID
 checkJID (SJ.PrivateID tn n t d) = do
   now <- liftIO getCurrentTime
   js <- getJobsSettings
-  if | tn /= "job" -> return (Left InvalidIDType)
-     | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> return (Left IDExpired)
-     | d /= SJ.macID tn (jsSecretKey js) t n -> return (Left $ InvalidMacID $ T.pack d)
-     | otherwise -> return $ Right (SJ.PrivateID tn n t d)
+  if | tn /= "job" -> pure (Left InvalidIDType)
+     | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> pure (Left IDExpired)
+     | d /= SJ.macID tn (jsSecretKey js) t n -> pure (Left $ InvalidMacID $ T.pack d)
+     | otherwise -> pure $ Right (SJ.PrivateID tn n t d)
 
 withJob
   :: MonadJob m t w a
@@ -139,11 +139,11 @@ withJob
 withJob jid f = do
   r <- checkJID jid
   case r of
-    Left e -> return (Left e)
+    Left e -> pure (Left e)
     Right jid' -> do
       mj <- findJob jid'
       case mj of
-        Nothing -> return (Right Nothing)
+        Nothing -> pure (Right Nothing)
         Just j  -> Right . Just <$> f jid' j
 
 handleIDError
@@ -153,7 +153,7 @@ handleIDError
   -> m a
 handleIDError toE act = act >>= \r -> case r of
   Left err -> throwError (toE err)
-  Right a  -> return a
+  Right a  -> pure a
 
 removeJob
   :: (Ord t, MonadJob m t w a)

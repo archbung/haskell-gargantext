@@ -229,7 +229,7 @@ instance DefaultFromField SqlJsonb HyperdataGraph
     defaultFromField = fromPGSFromField
 
 -----------------------------------------------------------
--- This type is used to return graph via API
+-- This type is used to pure graph via API
 -- hyperdataGraphAPI field is not a Maybe anymore – graph is always computed
 data HyperdataGraphAPI =
   HyperdataGraphAPI { _hyperdataAPIGraph  :: Graph

@@ -56,7 +56,7 @@ instance Arbitrary ShareNodeParams where
 ------------------------------------------------------------------------
 -- TODO permission
 -- TODO refactor userId which is used twice
--- TODO change return type for better warning/info/success/error handling on the front
+-- TODO change pure type for better warning/info/success/error handling on the front
 api :: (HasNodeError err, HasNLPServer env, CmdRandom env err m)
     => User
     -> NodeId

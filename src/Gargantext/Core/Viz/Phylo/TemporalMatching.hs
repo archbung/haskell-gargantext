@@ -616,7 +616,7 @@ separateBranches fdt similarity lambda frequency minBranch thr rise timescale do
                                   ((map (\e -> (e,True)) (fst branches')) ++ (map (\e -> (e,False)) (snd branches'))))
                         else [currentBranch])
   in
-    --  6) if there is no more branch to separate tne return [done'] else continue with [rest]
+    --  6) if there is no more branch to separate tne pure [done'] else continue with [rest]
     if null rest
       then done'
       else separateBranches fdt similarity lambda frequency minBranch thr rise timescale docs coocs roots periods

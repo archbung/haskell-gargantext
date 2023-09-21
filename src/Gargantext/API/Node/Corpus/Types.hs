@@ -69,5 +69,5 @@ instance Arbitrary Datafield where
 
 instance ToSchema Datafield where
   declareNamedSchema _ = do
-    return $ NamedSchema (Just "Datafield") $ mempty
+    pure $ NamedSchema (Just "Datafield") $ mempty
       & type_ ?~ SwaggerObject

@@ -74,7 +74,7 @@ restrictListSize corpusId listId ngramsType listType size = do
   ngrams' <- filterWith listType size occurrences ngrams
 
   _ <- setListNgrams listId ngramsType ngrams'
-  return ()
+  pure ()
 
   where filterWith :: ListType -> Int -> HashMap NgramsTerm Int
                    -> HashMap NgramsTerm NgramsRepoElement

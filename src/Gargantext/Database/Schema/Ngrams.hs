@@ -145,7 +145,7 @@ instance ToField NgramsTypeId where
 instance FromField NgramsTypeId where
   fromField fld mdata = do
     n <- fromField fld mdata
-    if (n :: Int) > 0 then return $ NgramsTypeId n
+    if (n :: Int) > 0 then pure $ NgramsTypeId n
                       else mzero
 instance DefaultFromField (Nullable SqlInt4) NgramsTypeId
   where

@@ -662,7 +662,7 @@ readNodeStoryEnv pool = do
   --       printDebug "[readNodeStoryEnv] saver" mv
   --       let mv' = clearHistory mv
   --       printDebug "[readNodeStoryEnv] saver, cleared" mv'
-  --       return mv'
+  --       pure mv'
   pure $ NodeStoryEnv { _nse_var    = mvar
                       , _nse_saver  = saver
                       , _nse_saver_immediate = saver_immediate

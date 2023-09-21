@@ -116,7 +116,7 @@ searchInCorpusWithNgrams _cId _lId _t _ngt _q _o _l _order = undefined
 -- | Compute TF-IDF for all 'ngramIds' in given 'CorpusId'. In this
 -- case only the "TF" part makes sense and so we only compute the
 -- ratio of "number of times our terms appear in given document" and
--- "number of all terms in document" and return a sorted list of
+-- "number of all terms in document" and pure a sorted list of
 -- document ids
 _tfidfAll :: (HasDBid NodeType, HasNodeError err) => CorpusId -> [Int] -> DBCmd err [Int]
 _tfidfAll cId ngramIds = do

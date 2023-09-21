@@ -104,10 +104,10 @@ gcThread js (JobMap mvar) = go
             mrunningjob <- atomically $ do
               case jTask je of
                 RunningJ rj -> modifyTVar' mvar (Map.delete (jID je))
-                            >> return (Just rj)
-                _ -> return Nothing
+                            >> pure (Just rj)
+                _ -> pure Nothing
             case mrunningjob of
-              Nothing -> return ()
+              Nothing -> pure ()
               Just a  -> killJ a
           go
 
@@ -161,7 +161,7 @@ runJob jid qj (JobMap mvar) js = do
         , jStarted = Just now
         , jTimeoutAfter = Just $ addUTCTime (fromIntegral (jsJobTimeout js)) now
         }
-  return rj
+  pure rj
 
 waitJobDone
   :: Ord jid
@@ -176,7 +176,7 @@ waitJobDone jid rj (JobMap mvar) = do
   atomically $ modifyTVar' mvar $
     flip Map.adjust jid $ \je ->
       je { jEnded = Just now, jTask = DoneJ logs r }
-  return (r, logs)
+  pure (r, logs)
 
 -- | Turn a queued job into a running job by setting up the logging of @w@s and
 --   firing up the async action.
@@ -185,9 +185,9 @@ runJ (QueuedJob a f) = do
   logs <- newTVarIO mempty
   act <- async $ f a (jobLog logs)
   let readLogs = readTVarIO logs
-  return (RunningJob act readLogs)
+  pure (RunningJob act readLogs)
 
--- | Wait for a running job to return (blocking).
+-- | Wait for a running job to pure (blocking).
 waitJ :: RunningJob w a -> IO (Either SomeException a)
 waitJ (RunningJob act _) = waitCatch act
 

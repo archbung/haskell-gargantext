@@ -46,17 +46,17 @@ newJobsState js prios = do
   (q, runners) <- newQueueWithRunners (jsNumRunners js) prios (picker jmap) $ \jid -> do
     mje <- lookupJob jid jmap
     case mje of
-      Nothing -> return ()
+      Nothing -> pure ()
       Just je -> case jTask je of
         QueuedJ qj -> do
           rj <- runJob jid qj jmap js
           (_res, _logs) <- waitJobDone jid rj jmap
-          return ()
-        _ -> return ()
+          pure ()
+        _ -> pure ()
   when (jsDebugLogs js) $ putStrLn $ "Starting " ++ show (jsNumRunners js) ++ " job runners."
   gcAsync <- async $ gcThread js jmap
   runnersAsyncs <- traverse async runners
-  return (JobsState jmap q idgen gcAsync runnersAsyncs)
+  pure (JobsState jmap q idgen gcAsync runnersAsyncs)
 
   where picker
           :: JobMap (SJ.JobID 'SJ.Safe) w a
@@ -65,10 +65,10 @@ newJobsState js prios = do
           jinfos <- fmap catMaybes . forM xs $ \(jid, popjid) -> do
             mje <- Map.lookup jid <$> readTVar jmap
             case mje of
-              Nothing -> return Nothing
-              Just je -> return $ Just (jid, popjid, jRegistered je)
+              Nothing -> pure Nothing
+              Just je -> pure $ Just (jid, popjid, jRegistered je)
           let (jid, popjid, _) = List.minimumBy (comparing _3) jinfos
-          return (jid, popjid)
+          pure (jid, popjid)
 
         _3 (_, _, c) = c
 

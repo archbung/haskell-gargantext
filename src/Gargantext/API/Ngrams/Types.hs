@@ -443,7 +443,7 @@ instance ToSchema a => ToSchema (Replace a) where
   declareNamedSchema (_ :: Proxy (Replace a)) = do
     -- TODO Keep constructor is not supported here.
     aSchema <- declareSchemaRef (Proxy :: Proxy a)
-    return $ NamedSchema (Just "Replace") $ mempty
+    pure $ NamedSchema (Just "Replace") $ mempty
             & type_ ?~ SwaggerObject
             & properties .~
                 InsOrdHashMap.fromList
@@ -473,7 +473,7 @@ instance ToSchema NgramsPatch where
     childrenSch <- declareSchemaRef (Proxy :: Proxy (PatchMSet NgramsTerm))
     listSch <- declareSchemaRef (Proxy :: Proxy (Replace ListType))
     nreSch <- declareSchemaRef (Proxy :: Proxy NgramsRepoElement)
-    return $ NamedSchema (Just "NgramsPatch") $ mempty
+    pure $ NamedSchema (Just "NgramsPatch") $ mempty
             & type_ ?~ SwaggerObject
             & properties .~
                 InsOrdHashMap.fromList

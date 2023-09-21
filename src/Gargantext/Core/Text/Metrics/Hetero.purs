@@ -46,7 +46,7 @@ dicoStruct :: (Integral r, Monad m) => M.Map t r -> m r
 dicoStruct dict_occ = do
     let keys_size = toInteger $ length $ M.keys dict_occ
     let total_occ = sum $ Prelude.map (\(x, y) -> y) $ M.toList dict_occ
-    return $ div total_occ (fromIntegral keys_size)
+    pure $ div total_occ (fromIntegral keys_size)
 
 -- heterogeinity sur UCT (Unité de Context Textuel)
 heterogeinity :: [Char] -> IO Integer
@@ -56,7 +56,7 @@ heterogeinity string = do
     let keys_size = toInteger $ length $ M.keys dict_occ
     let total_occ = sum $ Prelude.map (\(x, y) -> y) $ M.toList dict_occ
 
-    return $ div total_occ (fromIntegral keys_size)
+    pure $ div total_occ (fromIntegral keys_size)
 
 
 --computeHeterogeinity
@@ -79,6 +79,6 @@ main2 = do
                ]
     
     r <- Prelude.map computeHeterogeinity $ Prelude.map (\(t,id) -> id) corpus_ids
-    return r
+    pure r
 
 

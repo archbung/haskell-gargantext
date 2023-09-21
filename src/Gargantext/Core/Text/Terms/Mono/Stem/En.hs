@@ -83,7 +83,7 @@ statefulReplace predicate str end replacement
 replaceEnd :: Eq a => ([a] -> Bool) -> [a] -> [a] -> [a] -> Maybe [a]
 replaceEnd predicate str end replacement = do
             result <- statefulReplace predicate str end replacement
-            return (either identity identity result)
+            pure (either identity identity result)
 
 findStem
   :: (Foldable t, Functor t, Eq a) =>
@@ -103,7 +103,7 @@ beforeStep1b :: [Char] -> Either [Char] [Char]
 beforeStep1b word = fromMaybe (Left word) result
     where
        cond23 x = do { v <- x; either (const Nothing) (return . Right) v }
-       cond1  x = do { v <- x; return (Left v) }
+       cond1  x = do { v <- x; pure (Left v) }
        result =
            cond1  (replaceEnd (measureGT 0)  word "eed" "ee") `mplus`
            cond23 (statefulReplace containsVowel word "ed"  ""  ) `mplus`

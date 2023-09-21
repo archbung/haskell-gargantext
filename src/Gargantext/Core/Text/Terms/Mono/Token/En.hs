@@ -131,7 +131,7 @@ negatives x | "n't" `T.isSuffixOf` x = E [ Right . T.reverse . T.drop 3 . T.reve
 -- | Currently deals with: 'm, 's, 'd, 've, 'll
 contractions :: Tokenizer
 contractions x = case catMaybes . map (splitSuffix x) $ cts of
-                   [] -> return x
+                   [] -> pure x
                    ((w,s):_) -> E [ Right w,Left s]
     where cts = ["'m","'s","'d","'ve","'ll"]
           splitSuffix w sfx = 
@@ -151,7 +151,7 @@ instance Monad (EitherList a) where
     E xs >>= f = E $ concatMap (either (return . Left) (unE . f)) xs
 
 instance Applicative (EitherList a) where
-    pure x = return x
+    pure = pure
     f <*> x = f `ap` x
 
 instance Functor (EitherList a) where

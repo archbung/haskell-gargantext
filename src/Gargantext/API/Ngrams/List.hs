@@ -97,7 +97,7 @@ getJson :: HasNodeStory env err m =>
 getJson lId = do
   lst <- getNgramsList lId
   let (NodeId id') = lId
-  return $ addHeader (concat [ "attachment; filename=GarganText_NgramsList-"
+  pure $ addHeader (concat [ "attachment; filename=GarganText_NgramsList-"
                              , pack $ show id'
                              , ".json"
                              ]
@@ -108,7 +108,7 @@ getCsv :: HasNodeStory env err m =>
 getCsv lId = do
   lst <- getNgramsList lId
   let (NodeId id') = lId
-  return $ case Map.lookup TableNgrams.NgramsTerms lst of
+  pure $ case Map.lookup TableNgrams.NgramsTerms lst of
     Nothing -> noHeader Map.empty
     Just (Versioned { _v_data }) ->
       addHeader (concat [ "attachment; filename=GarganText_NgramsList-"

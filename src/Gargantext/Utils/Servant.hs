@@ -45,7 +45,7 @@ instance MimeRender CSV NgramsTableMap where
 
 instance Read a => MimeUnrender CSV a where
    mimeUnrender _ bs = case BSC.take len bs of
-     "text/csv" -> return . read . BSC.unpack $ BSC.drop len bs
+     "text/csv" -> pure . read . BSC.unpack $ BSC.drop len bs
      _ -> Left "didn't start with the magic incantation"
      where
        len :: Int64

@@ -63,7 +63,7 @@ fieldTuple = do
 constP :: Parser a -> ByteString -> Parser a
 constP p t = case parseOnly p t of
   Left _ -> empty
-  Right a -> return a
+  Right a -> pure a
 
 parseOf :: Parser ByteString -> Parser a -> Parser a
 parseOf ptxt pa = bothParse <|> empty

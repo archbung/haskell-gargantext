@@ -51,7 +51,7 @@ triggerSearchUpdate = execPGSQuery query ( toDBid NodeDocument
           ELSE
             new.search := to_tsvector( 'english' , new.hyperdata::jsonb );
           END IF;
-          return new;
+          pure new;
         end
         $$ LANGUAGE plpgsql;
 
