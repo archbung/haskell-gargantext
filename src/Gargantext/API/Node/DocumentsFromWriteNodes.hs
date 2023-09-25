@@ -21,15 +21,20 @@ import Conduit
 import Control.Lens ((^.))
 import Data.Aeson
 import Data.Either (Either(..), rights)
+import Data.List qualified as List
 import Data.Maybe (fromMaybe)
 import Data.Swagger
 import Data.Text (Text)
+import Data.Text qualified as T
 import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core (Lang(..))
+import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion)
+import Gargantext.Core.Text.Corpus.Parsers.Date (split')
 import Gargantext.Core.Text.Corpus.Parsers.FrameWrite
 import Gargantext.Core.Text.List.Social (FlowSocialListWith)
 import Gargantext.Core.Text.Terms (TermType(..))
@@ -39,15 +44,13 @@ import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Frame
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Node (getChildrenByType, getClosestParentIdByType', getNodeWith)
+import Gargantext.Database.Query.Table.Node (getChildrenByType, getClosestParentIdByType', getNodeWith, getOrMkList)
 import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Gargantext.Core.Text.Corpus.Parsers.Date (split')
+import Protolude (mempty)
 import Servant
 import Text.Read (readMaybe)
-import qualified Data.List           as List
-import qualified Data.Text           as T
 -- import qualified Gargantext.Defaults as Defaults
 
 ------------------------------------------------------------------------
@@ -72,12 +75,16 @@ api uId nId =
   serveJobsAPI DocumentFromWriteNodeJob $ \jHandle p ->
     documentsFromWriteNodes uId nId p jHandle
 
-documentsFromWriteNodes :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
-    => UserId
-    -> NodeId
-    -> Params
-    -> JobHandle m
-    -> m ()
+documentsFromWriteNodes :: ( HasSettings env
+                           , FlowCmdM env err m
+                           , MonadJobStatus m
+                           , HasNodeStoryImmediateSaver env
+                           , HasNodeArchiveStoryImmediateSaver env )
+                        => UserId
+                        -> NodeId
+                        -> Params
+                        -> JobHandle m
+                        -> m ()
 documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle = do
   markStarted 2 jobHandle
   markProgress 1 jobHandle
@@ -112,6 +119,11 @@ documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle
                     cId
                     (Just selection)
                     jobHandle
+
+
+  listId <- getOrMkList cId uId
+  v <- currentVersion listId
+  _ <- commitStatePatch listId (Versioned v mempty)
 
   markProgress 1 jobHandle
 
