@@ -194,9 +194,9 @@ type AddWithFile = Summary "Add with MultipartData to corpus endpoint"
 
 
 addToCorpusWithQuery :: ( FlowCmdM env err m
-                        , MonadJobStatus m,
-                          HasNodeStoryImmediateSaver env
-                        , HasNodeArchiveStoryImmediateSaver env)
+                        , MonadJobStatus m
+                        , HasNodeStoryImmediateSaver env
+                        , HasNodeArchiveStoryImmediateSaver env )
                        => User
                        -> CorpusId
                        -> WithQuery
