@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.7.8
+
+* [FRONT][FIX][Ngrams Table: click on terms status (#594)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/594)
+* [BACK][CLEAN] make hlint happier : return -> pure
+* [FRONT][WIP] removing ALL, putting EN lang by default
+
 ## Version 0.0.6.9.9.7.7
 
 * [FIX][DOC] Link to documentation
