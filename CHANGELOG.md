@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.7.9
+
+* [FRONT][FIX][Slider &#39;level of observation&#39; in phylomemies (#601)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/601)
+* [FRONT][FIX][[Corpus from pads] Put &quot;EN&quot; as default value in the import form language field (#602)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/602)
+
 ## Version 0.0.6.9.9.7.8
 
 * [FRONT][FIX][Ngrams Table: click on terms status (#594)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/594)
