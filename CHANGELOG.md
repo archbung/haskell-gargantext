@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.8
+
+* [FRONT][FIX][[Docs View] Highlight sometimes broken (#598)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/598)
+* [BACK][FIX] return in SQL query (instead of pure)
+
 ## Version 0.0.6.9.9.7.9
 
 * [FRONT][FIX][Slider &#39;level of observation&#39; in phylomemies (#601)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/601)
