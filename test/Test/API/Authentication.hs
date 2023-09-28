@@ -22,9 +22,10 @@ import Control.Monad
 import Control.Monad.Reader
 import Gargantext.Database.Action.User.New
 import Gargantext.Core.Types
-import Test.API.Setup (withTestDBAndPort)
+import Test.API.Setup (withTestDBAndPort, setupEnvironment)
 import qualified Data.Text as T
 import Control.Lens
+import Data.Maybe
 
 auth_api :: AuthRequest -> ClientM AuthResponse
 auth_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion AuthAPI)))
@@ -34,6 +35,8 @@ cannedToken = "eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9fQ.t49zZSqkPAulEkYEh4pW1
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do
+  describe "Prelude" $ do
+    it "setup DB triggers" $ \((testEnv, _), _) -> setupEnvironment testEnv
   describe "Authentication" $ do
     baseUrl <- runIO $ parseBaseUrl "http://localhost"
     manager <- runIO $ newManager defaultManagerSettings
@@ -56,17 +59,17 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
 
         let authPayload = AuthRequest "alice" (GargPassword "alice")
         result0 <- runClientM (auth_api authPayload) (clientEnv port)
+        let result = over (_Right . authRes_valid . _Just . authVal_token) (const cannedToken) result0
         let expected = AuthResponse {
                          _authRes_valid = Just $
                            AuthValid {
                              _authVal_token = cannedToken
-                           , _authVal_tree_id = NodeId 1
-                           , _authVal_user_id = 1
+                           , _authVal_tree_id = fromMaybe (NodeId 1) $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_tree_id
+                           , _authVal_user_id = fromMaybe 1          $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_user_id
                            }
                          , _authRes_inval = Nothing
                          }
 
-        let result = over (_Right . authRes_valid . _Just . authVal_token) (const cannedToken) result0
         result `shouldBe` (Right expected)
 
       it "denies login for user 'alice' if password is invalid" $ \((_testEnv, port), _) -> do

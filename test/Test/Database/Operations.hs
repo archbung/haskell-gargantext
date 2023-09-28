@@ -19,16 +19,14 @@ import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Node (mk, getCorporaWithParentId, getOrMkList)
+import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 import Prelude
+import Test.API.Setup (setupEnvironment)
 import qualified Data.Text as T
 
-import Gargantext.Database.Action.Flow
-import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
-import Gargantext.Database.Admin.Trigger.Init
 import Test.Database.Operations.DocumentSearch
 import Test.Database.Setup (withTestDB)
 import Test.Database.Types
@@ -76,17 +74,6 @@ instance Eq a => Eq (ExpectedActual a) where
   (Expected a) == (Actual b)   = a == b
   (Actual a)   == (Expected b) = a == b
   _ == _ = False
-
-setupEnvironment :: TestEnv -> IO ()
-setupEnvironment env = flip runReaderT env $ runTestMonad $ do
-  void $ initFirstTriggers "secret_key"
-  void $ new_user $ mkNewUser (userMaster <> "@cnrs.com") (GargPassword "secret_key")
-  (masterUserId, _masterRootId, masterCorpusId)
-              <- getOrMk_RootWithCorpus (UserName userMaster)
-                                        (Left corpusMasterName)
-                                        (Nothing :: Maybe HyperdataCorpus)
-  masterListId <- getOrMkList masterCorpusId masterUserId
-  void $ initLastTriggers masterListId
 
 writeRead01 :: TestEnv -> Assertion
 writeRead01 env = do

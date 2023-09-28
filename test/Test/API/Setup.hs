@@ -10,7 +10,11 @@ import Gargantext.API.Admin.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP
 import Gargantext.Core.NodeStory
+import Gargantext.Database.Action.Flow
+import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
+import Gargantext.Database.Admin.Trigger.Init
 import Gargantext.Database.Prelude
+import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Prelude.Config
 import Gargantext.System.Logging
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -28,6 +32,10 @@ import qualified Gargantext.Utils.Jobs.Queue as Jobs
 import qualified Gargantext.Utils.Jobs.Settings as Jobs
 import qualified Network.Wai.Handler.Warp         as Warp
 import qualified Servant.Job.Async as ServantAsync
+import Gargantext.Database.Admin.Types.Hyperdata
+import Control.Monad.Reader
+import Gargantext.Core.Types.Individu
+import Gargantext.Database.Action.User.New
 
 
 newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
@@ -80,3 +88,14 @@ withTestDBAndPort action =
              makeApp env
     withGargApp app $ \port ->
       action ((testEnv, port), app)
+
+setupEnvironment :: TestEnv -> IO ()
+setupEnvironment env = flip runReaderT env $ runTestMonad $ do
+  void $ initFirstTriggers "secret_key"
+  void $ new_user $ mkNewUser (userMaster <> "@cnrs.com") (GargPassword "secret_key")
+  (masterUserId, _masterRootId, masterCorpusId)
+              <- getOrMk_RootWithCorpus (UserName userMaster)
+                                        (Left corpusMasterName)
+                                        (Nothing :: Maybe HyperdataCorpus)
+  masterListId <- getOrMkList masterCorpusId masterUserId
+  void $ initLastTriggers masterListId

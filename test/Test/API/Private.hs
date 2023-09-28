@@ -21,7 +21,7 @@ import Servant
 import Servant.Auth.Client ()
 import Servant.Client
 import Test.API.Authentication (auth_api)
-import Test.API.Setup (withTestDBAndPort)
+import Test.API.Setup (withTestDBAndPort, setupEnvironment)
 import Test.Database.Types
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
@@ -70,6 +70,8 @@ withValidLogin port ur pwd act = do
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do
+  describe "Prelude" $ do
+    it "setup DB triggers" $ \((testEnv, _), _) -> setupEnvironment testEnv
   describe "Private API" $ do
     baseUrl <- runIO $ parseBaseUrl "http://localhost"
     manager <- runIO $ newManager defaultManagerSettings
