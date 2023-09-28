@@ -26,7 +26,6 @@ import Test.Database.Types
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
-import Test.Hspec.Wai.JSON
 import qualified Data.Text.Encoding as TE
 import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Auth.Client as SA
@@ -121,3 +120,9 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/node/8") ""
               `shouldRespondWith'` [jsonFragment| {"id":8,"user_id":2,"name":"alice" } |]
+
+      it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
+        withApplication app $ do
+          withValidLogin port "alice" (GargPassword "alice") $ \token -> do
+            protected token "GET" (mkUrl port "/node/1") ""
+              `shouldRespondWith` 403

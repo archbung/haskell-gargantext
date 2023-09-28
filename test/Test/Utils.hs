@@ -27,6 +27,8 @@ pending reason act = act `catch` (\(e :: SomeException) -> do
   putStrLn $ "PENDING: " <> reason
   putStrLn (displayException e))
 
+-- | Similar to 'json' from the 'Test.Hspec.Wai.JSON' package,
+-- but allows matching on a /fragment/ of the body.
 jsonFragment :: QuasiQuoter
 jsonFragment = QuasiQuoter {
   quoteExp = \input -> [|fromValue $(quoteExp aesonQQ input)|]

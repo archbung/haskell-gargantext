@@ -115,8 +115,8 @@ auth :: (HasSettings env, CmdCommon env, HasJoseError err)
 auth (AuthRequest u p) = do
   checkAuthRequest' <- checkAuthRequest u p
   case checkAuthRequest' of
-    InvalidUser     -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid user")
-    InvalidPassword -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid password")
+    InvalidUser     -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid username or password")
+    InvalidPassword -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid username or password")
     Valid to trId uId   -> pure $ AuthResponse (Just $ AuthValid to trId uId) Nothing
 
 --type instance BasicAuthCfg = BasicAuthData -> IO (AuthResult AuthenticatedUser)
