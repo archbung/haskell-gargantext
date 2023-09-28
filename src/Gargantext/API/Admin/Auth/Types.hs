@@ -107,7 +107,10 @@ instance Arbitrary AuthValid where
                        , u <-  [1..3]
                        ]
 
-data PathId = PathNode NodeId | PathNodeNode ListId DocId
+data PathId = PathNode NodeId
+            | PathNodeNode ListId DocId
+            -- | The captured NodeId must be exactly equal to the logged-in user's NodeId.
+            | PathNodeOwner NodeId
 
 
 ---------------------------

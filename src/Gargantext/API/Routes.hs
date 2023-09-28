@@ -238,18 +238,18 @@ serverGargAdminAPI =  roots
 
 serverPrivateGargAPI'
   :: AuthenticatedUser -> ServerT GargPrivateAPI' (GargM Env GargError)
-serverPrivateGargAPI' (AuthenticatedUser (NodeId uid))
+serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser (NodeId uid))
        =  serverGargAdminAPI
-     :<|> nodeAPI     (Proxy :: Proxy HyperdataAny)      uid
-     :<|> contextAPI  (Proxy :: Proxy HyperdataAny)      uid
-     :<|> nodeAPI     (Proxy :: Proxy HyperdataCorpus)   uid
-     :<|> nodeNodeAPI (Proxy :: Proxy HyperdataAny)      uid
+     :<|> nodeAPI     (Proxy :: Proxy HyperdataAny)      authenticatedUser
+     :<|> contextAPI  (Proxy :: Proxy HyperdataAny)      authenticatedUser
+     :<|> nodeAPI     (Proxy :: Proxy HyperdataCorpus)   authenticatedUser
+     :<|> nodeNodeAPI (Proxy :: Proxy HyperdataAny)      authenticatedUser
      :<|> CorpusExport.getCorpus   -- uid
  --    :<|> nodeAPI     (Proxy :: Proxy HyperdataContact)  uid
-     :<|> nodeAPI     (Proxy :: Proxy HyperdataAnnuaire) uid
-     :<|> Contact.api uid
+     :<|> nodeAPI     (Proxy :: Proxy HyperdataAnnuaire) authenticatedUser
+     :<|> Contact.api authenticatedUser
 
-     :<|> withAccess  (Proxy :: Proxy TableNgramsApi) Proxy uid
+     :<|> withAccess  (Proxy :: Proxy TableNgramsApi) Proxy authenticatedUser
           <$> PathNode <*> apiNgramsTableDoc
 
      :<|> DocumentExport.api uid
@@ -259,13 +259,13 @@ serverPrivateGargAPI' (AuthenticatedUser (NodeId uid))
      -- :<|> withAccess (Proxy :: Proxy (Search.API Search.SearchResult)) Proxy uid
      --     <$> PathNode <*> Search.api -- TODO: move elsewhere
 
-     :<|> withAccess (Proxy :: Proxy GraphAPI)       Proxy uid
+     :<|> withAccess (Proxy :: Proxy GraphAPI)       Proxy authenticatedUser
           <$> PathNode <*> graphAPI uid -- TODO: mock
 
-     :<|> withAccess (Proxy :: Proxy TreeAPI)        Proxy uid
+     :<|> withAccess (Proxy :: Proxy TreeAPI)        Proxy authenticatedUser
           <$> PathNode <*> treeAPI
 
-     :<|> withAccess (Proxy :: Proxy TreeFlatAPI)    Proxy uid
+     :<|> withAccess (Proxy :: Proxy TreeFlatAPI)    Proxy authenticatedUser
           <$> PathNode <*> treeFlatAPI
 
      :<|> members uid

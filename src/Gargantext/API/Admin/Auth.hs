@@ -50,12 +50,12 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
-import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError)
+import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError, serverError)
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
-import Gargantext.Database.Admin.Types.Node (NodeId(..), UserId)
+import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (Cmd', CmdM, CmdCommon)
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree (isDescendantOf, isIn)
@@ -133,29 +133,31 @@ authCheck _env (BasicAuthData login password) = pure $
 -}
 
 withAccessM :: (CmdM env err m, HasServerError err)
-            => UserId
+            => AuthenticatedUser
             -> PathId
             -> m a
             -> m a
-withAccessM uId (PathNode id) m = do
-  d <- id `isDescendantOf` NodeId uId
+withAccessM (AuthenticatedUser uId) (PathNode id) m = do
+  d <- id `isDescendantOf` uId
   if d then m else m -- serverError err401
 
-withAccessM uId (PathNodeNode cId docId) m = do
+withAccessM (AuthenticatedUser uId) (PathNodeNode cId docId) m = do
   _a <- isIn cId docId -- TODO use one query for all ?
-  _d <- cId `isDescendantOf` NodeId uId
+  _d <- cId `isDescendantOf` uId
   if True -- a && d
      then m
-     else m
+     else m -- serverError err401
+withAccessM (AuthenticatedUser uId) (PathNodeOwner id) m = do
+  if uId == id then m else serverError err401
 
 withAccess :: forall env err m api.
               (GargServerC env err m, HasServer api '[]) =>
-              Proxy api -> Proxy m -> UserId -> PathId ->
+              Proxy api -> Proxy m -> AuthenticatedUser -> PathId ->
               ServerT api m -> ServerT api m
-withAccess p _ uId id = hoistServer p f
+withAccess p _ ur id = hoistServer p f
   where
     f :: forall a. m a -> m a
-    f = withAccessM uId id
+    f = withAccessM ur id
 
 {- | Collaborative Schema
 User at his root can create Teams Folder

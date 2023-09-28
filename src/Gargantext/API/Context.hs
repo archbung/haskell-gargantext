@@ -22,7 +22,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Servant
 
 import Gargantext.API.Admin.Auth (withAccess)
-import Gargantext.API.Admin.Auth.Types (PathId(..))
+import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser)
 import Gargantext.API.Prelude
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude -- (Cmd, CmdM)
@@ -39,7 +39,7 @@ contextAPI :: forall proxy a.
        , FromJSON a
        , ToJSON a
        ) => proxy a
-         -> UserId
+         -> AuthenticatedUser
          -> ContextId
          -> GargServer (ContextAPI a)
 contextAPI p uId id' = withAccess (Proxy :: Proxy (ContextAPI a)) Proxy uId (PathNode id') contextAPI'

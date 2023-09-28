@@ -49,6 +49,7 @@ import Gargantext.Database.Admin.Types.Node
 import Gargantext.Prelude (($), {-printDebug,-})
 import qualified Gargantext.Utils.Aeson as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Gargantext.API.Admin.Auth.Types
 
 ------------------------------------------------------------------------
 type API = "contact" :> Summary "Contact endpoint"
@@ -57,9 +58,10 @@ type API = "contact" :> Summary "Contact endpoint"
             :> NodeNodeAPI HyperdataContact
 
 
-api :: UserId -> CorpusId -> ServerT API (GargM Env GargError)
-api uid cid =  (api_async   (RootId (NodeId                   uid)) cid)
-          :<|> (nodeNodeAPI (Proxy :: Proxy HyperdataContact) uid   cid)
+api :: AuthenticatedUser -> CorpusId -> ServerT API (GargM Env GargError)
+api authUser@(AuthenticatedUser (NodeId uid)) cid =
+       (api_async   (RootId (NodeId                   uid)) cid)
+  :<|> (nodeNodeAPI (Proxy :: Proxy HyperdataContact) authUser cid)
 
 type API_Async = AsyncJobs JobLog '[JSON] AddContactParams JobLog
 ------------------------------------------------------------------------

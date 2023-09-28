@@ -35,7 +35,7 @@ import Data.Swagger
 import Data.Text (Text())
 import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth (withAccess)
-import Gargantext.API.Admin.Auth.Types (PathId(..))
+import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..))
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Metrics
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableCorpus)
@@ -180,7 +180,7 @@ type NodeNodeAPI a = Get '[JSON] (Node a)
 
 nodeNodeAPI :: forall proxy a. (JSONB a, ToJSON a)
             => proxy a
-            -> UserId
+            -> AuthenticatedUser
             -> CorpusId
             -> NodeId
             -> GargServer (NodeNodeAPI a)
@@ -194,10 +194,10 @@ nodeNodeAPI p uId cId nId = withAccess (Proxy :: Proxy (NodeNodeAPI a)) Proxy uI
 nodeAPI :: forall proxy a.
        ( HyperdataC a
        ) => proxy a
-         -> UserId
+         -> AuthenticatedUser
          -> NodeId
          -> ServerT (NodeAPI a) (GargM Env GargError)
-nodeAPI p uId id' = withAccess (Proxy :: Proxy (NodeAPI a)) Proxy uId (PathNode id') nodeAPI'
+nodeAPI p authenticatedUser@(AuthenticatedUser (NodeId uId)) id' = withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNodeOwner id') nodeAPI'
   where
     nodeAPI' :: ServerT (NodeAPI a) (GargM Env GargError)
     nodeAPI' =  getNodeWith   id' p

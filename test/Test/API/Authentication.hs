@@ -77,6 +77,6 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         result <- runClientM (auth_api authPayload) (clientEnv port)
         let expected = AuthResponse {
                        _authRes_valid = Nothing
-                     , _authRes_inval = Just $ AuthInvalid "Invalid password"
+                     , _authRes_inval = Just $ AuthInvalid "Invalid username or password"
                      }
         result `shouldBe` (Right expected)
