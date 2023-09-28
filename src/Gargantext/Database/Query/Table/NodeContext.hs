@@ -192,7 +192,7 @@ getContextsForNgramsTerms cId ngramsTerms = do
 
 
 
--- | Query the `context_node_ngrams` table and pure ngrams for given
+-- | Query the `context_node_ngrams` table and return ngrams for given
 -- `context_id` and `list_id`.
 -- WARNING: `context_node_ngrams` can be outdated. This is because it
 -- is expensive to keep all ngrams matching a given context and if
@@ -215,7 +215,7 @@ getContextNgrams contextId listId = do
                 AND node_id = ? |]
 
 
--- | Query the `contexts` table and pure ngrams for given context_id
+-- | Query the `contexts` table and return ngrams for given context_id
 -- and list_id that match the search tsvector.
 -- NOTE This is poor man's tokenization that is used as a hint for the
 -- frontend highlighter.

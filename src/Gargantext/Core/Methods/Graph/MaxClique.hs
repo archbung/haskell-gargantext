@@ -16,7 +16,7 @@ def fast_maximal_cliques(g):
     def rec_maximal_cliques(g, subv):
         mc = []
         if subv == []: # stop condition
-            pure [[]]
+            return [[]]
         else :
             for i in range(len(subv)):
                 newsubv = [j for j in subv[i+1:len(subv)]
@@ -25,7 +25,7 @@ def fast_maximal_cliques(g):
                 for x in mci:
                     x.append(subv[i])
                     mc.append(x)
-            pure mc
+            return mc
 
     def purge(clust):
         clustset = [set(x) for x in clust]
@@ -37,13 +37,13 @@ def fast_maximal_cliques(g):
                     ok = False
             if ok and (not (clustset[i] in new_clust)):
                 new_clust.append(clustset[i])
-        pure [list(x) for x in new_clust]
+        return [list(x) for x in new_clust]
 
     # to optimize : rank the vertices on the degrees
     subv = [(v.index, v.degree()) for v in g.vs()]
     subv.sort(key = lambda z:z[1])
     subv = [x for (x, y) in subv]
-    pure purge(rec_maximal_cliques(g, subv))
+    return purge(rec_maximal_cliques(g, subv))
 
 -}
 

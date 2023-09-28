@@ -159,7 +159,7 @@ queryInsert = [sql|
     , ins AS (
        INSERT INTO contexts (hash_id, typename,user_id,parent_id,name,date,hyperdata)
        SELECT * FROM input_rows
-       ON CONFLICT (hash_id) DO NOTHING -- on unique index -- this does not pure the ids
+       ON CONFLICT (hash_id) DO NOTHING -- on unique index -- this does not return the ids
        RETURNING id,hash_id
        )
 
@@ -182,7 +182,7 @@ queryInsert = [sql|
 -- | When documents are inserted
 -- ReturnType after insertion
 data ReturnId = ReturnId { reInserted :: Bool -- if the document is inserted (True: is new, False: is not new)
-                         , reId       :: NodeId  -- always pure the id of the document (even new or not new)
+                         , reId       :: NodeId  -- always return the id of the document (even new or not new)
                                          --   this is the uniq id in the database
                          , reUniqId   :: Text -- Hash Id with concatenation of sha parameters
                          } deriving (Show, Generic)

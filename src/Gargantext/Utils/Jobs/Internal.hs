@@ -119,7 +119,7 @@ pollJob limit offset jid je = do
           me = either (Just . T.pack . show) (const Nothing) r
       in pure (ls, st, me)
   -- /NOTE/: We need to be careful with the ordering of the logs here:
-  -- we want to pure the logs ordered from the newest to the oldest,
+  -- we want to return the logs ordered from the newest to the oldest,
   -- because the API will use 'limit' to show only the newest ones,
   -- taking 'limit' of them from the front of the list.
   --

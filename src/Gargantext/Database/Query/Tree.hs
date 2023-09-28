@@ -7,7 +7,7 @@ Maintainer  : team@gargantext.org
 Stability   : experimental
 Portability : POSIX
 
-Let a Root Node, pure the Tree of the Node as a directed acyclic graph
+Let a Root Node, return the Tree of the Node as a directed acyclic graph
 (Tree).
 
 -- TODO delete node, if not owned, then suppress the link only

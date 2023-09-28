@@ -141,7 +141,7 @@ runOpaQuery q = mkCmd $ \c -> runSelect c q
 runCountOpaQuery :: Select a -> DBCmd err Int
 runCountOpaQuery q = do
   counts <- mkCmd $ \c -> runSelect c $ countRows q
-  -- countRows is guaranteed to pure a list with exactly one row so DL.head is safe here
+  -- countRows is guaranteed to return a list with exactly one row so DL.head is safe here
   pure $ fromInt64ToInt $ DL.head counts
 
 formatPGSQuery :: PGS.ToRow a => PGS.Query -> a -> Cmd err DB.ByteString

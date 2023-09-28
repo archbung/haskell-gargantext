@@ -187,7 +187,7 @@ runJ (QueuedJob a f) = do
   let readLogs = readTVarIO logs
   pure (RunningJob act readLogs)
 
--- | Wait for a running job to pure (blocking).
+-- | Wait for a running job to return (blocking).
 waitJ :: RunningJob w a -> IO (Either SomeException a)
 waitJ (RunningJob act _) = waitCatch act
 

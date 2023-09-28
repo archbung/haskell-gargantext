@@ -62,7 +62,7 @@ randomString num = do
   pure $ pack str
 
 
--- | Given a list of items of type 'a', pure list with unique items
+-- | Given a list of items of type 'a', return list with unique items
 -- (like List.nub) but tuple-d with their counts in the original list
 groupWithCounts :: (Ord a, Eq a) => [a] -> [(a, Int)]
 groupWithCounts = map f
