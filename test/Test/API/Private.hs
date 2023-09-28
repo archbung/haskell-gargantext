@@ -34,6 +34,7 @@ import Data.ByteString (ByteString)
 import Network.Wai.Test (SResponse)
 import Network.HTTP.Types
 import qualified Data.ByteString.Lazy as L
+import Test.Utils (jsonFragment, shouldRespondWith')
 
 type Env = ((TestEnv, Wai.Port), Application)
 
@@ -49,7 +50,7 @@ protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SRes
 protected tkn mth url payload =
   request mth url [ (hAccept, "application/json;charset=utf-8")
                   , (hContentType, "application/json")
-                  , (hAuthorization, TE.encodeUtf8 tkn)
+                  , (hAuthorization, "Bearer " <> TE.encodeUtf8 tkn)
                   ] payload
 
 getJSON :: ByteString -> WaiSession () SResponse
@@ -118,5 +119,5 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       it "allows 'alice' to see her own node info" $ \((_testEnv, port), app) -> do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
-            protected token "GET" (mkUrl port "/node/1") "" `shouldRespondWith` [json| { } |]
-
+            protected token "GET" (mkUrl port "/node/8") ""
+              `shouldRespondWith'` [jsonFragment| {"id":8,"user_id":2,"name":"alice" } |]
