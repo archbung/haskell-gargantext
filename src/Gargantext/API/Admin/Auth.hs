@@ -30,6 +30,7 @@ And you have the main viz
 
 module Gargantext.API.Admin.Auth
   ( auth
+  , withPolicy
   , forgotPassword
   , forgotPasswordAsync
   , withAccess
@@ -50,7 +51,7 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
-import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError, serverError)
+import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError (..), serverError)
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
@@ -71,6 +72,7 @@ import Servant.Auth.Server
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy.Encoding as LE
 import qualified Gargantext.Prelude.Crypto.Auth as Auth
+import Gargantext.API.Auth.PolicyCheck
 
 ---------------------------------------------------
 
@@ -158,6 +160,24 @@ withAccess p _ ur id = hoistServer p f
   where
     f :: forall a. m a -> m a
     f = withAccessM ur id
+
+withPolicy :: forall env m api. (GargServerC env GargError m, HasServer api '[])
+           => AuthenticatedUser
+           -> BoolExpr AccessCheck
+           -> Proxy api
+           -> Proxy m
+           -> ServerT api m
+           -> AccessPolicyManager
+           -> ServerT api m
+withPolicy ur checks p _ m0 mgr = hoistServer p f m0
+  where
+    f :: forall a. m a -> m a
+    f m = case mgr of
+      AccessPolicyManager{runAccessPolicy} -> do
+        res <- runAccessPolicy ur checks
+        case res of
+          Allow     -> m
+          Deny err  -> throwError $ GargServerError err
 
 {- | Collaborative Schema
 User at his root can create Teams Folder

@@ -40,6 +40,7 @@ import Gargantext.Database.Query.Table.Node.Error (NodeError(..))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_url_backend_api)
+import Gargantext.API.Auth.PolicyCheck ()
 
 
 serverGargAPI :: Text -> ServerT GargAPI (GargM Env GargError)

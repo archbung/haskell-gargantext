@@ -49,6 +49,7 @@ library
       Gargantext.API.Admin.Settings
       Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Types
+      Gargantext.API.Auth.PolicyCheck
       Gargantext.API.Dev
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams
