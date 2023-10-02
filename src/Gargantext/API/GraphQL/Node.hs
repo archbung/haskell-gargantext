@@ -3,10 +3,9 @@
 
 module Gargantext.API.GraphQL.Node where
 
-import Control.Monad.Except (lift)
 import Data.Aeson
 import Data.Either (Either(..))
-import Data.Morpheus.Types ( GQLType )
+import Data.Morpheus.Types ( GQLType, lift )
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth.Types

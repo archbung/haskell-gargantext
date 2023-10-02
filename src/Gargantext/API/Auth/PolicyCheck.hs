@@ -79,6 +79,7 @@ data AccessCheck
   | AC_master_user      NodeId
     -- | Always grant access, effectively a public route.
   | AC_always_allow
+    -- | Always denies access.
   | AC_always_deny
   deriving (Show, Eq)
 

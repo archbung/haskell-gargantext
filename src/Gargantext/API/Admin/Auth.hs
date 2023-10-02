@@ -52,7 +52,7 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
-import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError (..), serverError)
+import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError (..))
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
@@ -150,8 +150,6 @@ withAccessM (AuthenticatedUser uId) (PathNodeNode cId docId) m = do
   if True -- a && d
      then m
      else m -- serverError err401
-withAccessM (AuthenticatedUser uId) (PathNodeOwner id) m = do
-  if uId == id then m else serverError err401
 
 withAccess :: forall env err m api.
               (GargServerC env err m, HasServer api '[]) =>
