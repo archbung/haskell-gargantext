@@ -6,13 +6,10 @@ module Gargantext.API.GraphQL.Annuaire where
 import Control.Lens
 import Data.Morpheus.Types
   ( GQLType
-  , Resolver
-  , QUERY
   , lift
   )
 import Data.Proxy
 import Data.Text (Text)
-import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Database.Admin.Types.Hyperdata.Contact
   ( HyperdataContact
   , ContactWho
@@ -25,6 +22,7 @@ import Gargantext.Database.Query.Table.Context (getContextWith)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import GHC.Generics (Generic)
+import Gargantext.API.GraphQL.Types
 
 data AnnuaireContact = AnnuaireContact
   { ac_title        :: !(Maybe Text)
@@ -49,8 +47,6 @@ data AnnuaireContactArgs
   = AnnuaireContactArgs
     { contact_id :: Int
     } deriving (Generic, GQLType)
-
-type GqlM e env = Resolver QUERY e (GargM env GargError)
 
 -- | Function to resolve user from a query.
 resolveAnnuaireContacts

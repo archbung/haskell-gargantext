@@ -3,28 +3,27 @@
 
 module Gargantext.API.GraphQL.Node where
 
+import Control.Monad.Except (lift)
 import Data.Aeson
 import Data.Either (Either(..))
-import qualified Data.HashMap.Strict as HashMap
-import Data.Morpheus.Types
-  ( GQLType
-  , Resolver
-  , QUERY
-  , lift
-  )
+import Data.Morpheus.Types ( GQLType )
 import Data.Text (Text)
-import qualified Data.Text as T
-import Gargantext.API.Prelude (GargM, GargError)
-import Gargantext.Database.Admin.Types.Node (NodeId(..), NodeType)
-import qualified Gargantext.Database.Admin.Types.Node as NN
-import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNode)
-import Gargantext.Database.Prelude (CmdCommon)  -- , JSONB)
-import qualified Gargantext.Database.Schema.Node as N
-import Gargantext.Prelude
 import GHC.Generics (Generic)
-import qualified Prelude
-import qualified PUBMED.Types as PUBMED
+import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck (withPolicy)
+import Gargantext.API.GraphQL.Types
+import Gargantext.Database.Admin.Types.Node (NodeId(..), NodeType)
+import Gargantext.Database.Prelude (CmdCommon)  -- , JSONB)
+import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNode)
+import Gargantext.Prelude
 import Text.Read (readEither)
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as T
+import qualified Gargantext.Database.Admin.Types.Node as NN
+import qualified Gargantext.Database.Schema.Node as N
+import qualified PUBMED.Types as PUBMED
+import qualified Prelude
 
 data Corpus = Corpus
   { id           :: Int
@@ -50,13 +49,15 @@ data NodeArgs
     { node_id :: Int
     } deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-
 -- | Function to resolve user from a query.
 resolveNodes
   :: (CmdCommon env)
-  => NodeArgs -> GqlM e env [Node]
-resolveNodes NodeArgs { node_id } = dbNodes node_id
+  => AuthenticatedUser
+  -> AccessPolicyManager
+  -> NodeArgs
+  -> GqlM e env [Node]
+resolveNodes autUser mgr NodeArgs { node_id } =
+  withPolicy autUser mgr (nodeChecks (NodeId node_id)) $ dbNodes node_id
 
 resolveNodesCorpus
   :: (CmdCommon env)

@@ -3,10 +3,13 @@
 
 module Gargantext.API.GraphQL.TreeFirstLevel where
 
-import Data.Morpheus.Types (GQLType, lift, Resolver, QUERY)
+import Data.Morpheus.Types (GQLType, lift)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck
+import Gargantext.API.GraphQL.Types
 import Gargantext.Core.Types (Tree, NodeTree, NodeType)
 import Gargantext.Core.Types.Main ( Tree(TreeN), _tn_node, _tn_children, NodeTree(NodeTree, _nt_id, _nt_type), _nt_name )
 import Gargantext.Database.Admin.Config (fromNodeTypeId)
@@ -39,12 +42,15 @@ data TreeFirstLevel m = TreeFirstLevel
   , children :: [TreeNode]
   } deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-
 type ParentId = Maybe NodeId
 
-resolveTree :: (CmdCommon env) => TreeArgs -> GqlM e env (TreeFirstLevel (GqlM e env))
-resolveTree TreeArgs { root_id } = dbTree root_id
+resolveTree :: (CmdCommon env)
+            => AuthenticatedUser
+            -> AccessPolicyManager
+            -> TreeArgs
+            -> GqlM e env (TreeFirstLevel (GqlM e env))
+resolveTree autUser mgr TreeArgs { root_id } =
+  withPolicy autUser mgr (nodeChecks (NodeId root_id)) $ dbTree root_id
 
 dbTree :: (CmdCommon env) =>
           Int -> GqlM e env (TreeFirstLevel (GqlM e env))

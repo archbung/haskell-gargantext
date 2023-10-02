@@ -63,6 +63,7 @@ import Servant
 import qualified Servant.Auth as SA
 import qualified Servant.Auth.Server as SAS
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Auth.PolicyCheck
 
 
 -- | Represents possible GraphQL queries.
@@ -111,8 +112,10 @@ data Contet m
 -- subscriptions are handled.
 rootResolver
   :: (CmdCommon env, HasNLPServer env, HasJobEnv' env, HasSettings env)
-  => RootResolver (GargM env GargError) e Query Mutation Undefined
-rootResolver =
+  => AuthenticatedUser
+  -> AccessPolicyManager
+  -> RootResolver (GargM env GargError) e Query Mutation Undefined
+rootResolver authenticatedUser policyManager =
   RootResolver
     { queryResolver = Query { annuaire_contacts   = GQLA.resolveAnnuaireContacts
                             , context_ngrams      = GQLCTX.resolveContextNgrams
@@ -121,12 +124,12 @@ rootResolver =
                             , imt_schools         = GQLIMT.resolveSchools
                             , job_logs            = GQLAT.resolveJobLogs
                             , languages           = GQLNLP.resolveLanguages
-                            , nodes               = GQLNode.resolveNodes
+                            , nodes               = GQLNode.resolveNodes authenticatedUser policyManager
                             , nodes_corpus        = GQLNode.resolveNodesCorpus
                             , node_parent         = GQLNode.resolveNodeParent
-                            , user_infos          = GQLUserInfo.resolveUserInfos
-                            , users               = GQLUser.resolveUsers
-                            , tree                = GQLTree.resolveTree
+                            , user_infos          = GQLUserInfo.resolveUserInfos authenticatedUser policyManager
+                            , users               = GQLUser.resolveUsers authenticatedUser policyManager
+                            , tree                = GQLTree.resolveTree authenticatedUser policyManager
                             , team                = GQLTeam.resolveTeam }
     , mutationResolver = Mutation { update_user_info       = GQLUserInfo.updateUserInfo
                                   , update_user_pubmed_api_key = GQLUser.updateUserPubmedAPIKey
@@ -137,8 +140,10 @@ rootResolver =
 -- | Main GraphQL "app".
 app
   :: (Typeable env, CmdCommon env, HasJobEnv' env, HasNLPServer env, HasSettings env)
-  => App (EVENT (GargM env GargError)) (GargM env GargError)
-app = deriveApp rootResolver
+  => AuthenticatedUser
+  -> AccessPolicyManager
+  -> App (EVENT (GargM env GargError)) (GargM env GargError)
+app authenticatedUser policyManager = deriveApp (rootResolver authenticatedUser policyManager)
 
 ----------------------------------------------
 
@@ -153,7 +158,7 @@ type Playground = Get '[HTML] ByteString
 -- type API' (name :: Symbol) = name :> (GQAPI :<|> Schema :<|> Playground)
 -- | Our API consists of `GQAPI` and `Playground`.
 type API = SA.Auth '[SA.JWT, SA.Cookie] AuthenticatedUser
-            :> "gql" :> (GQAPI :<|> Playground)
+            :> "gql" :> (PolicyChecked GQAPI :<|> Playground)
 
 gqapi :: Proxy API
 gqapi = Proxy
@@ -175,5 +180,5 @@ gqapi = Proxy
 api
   :: (Typeable env, CmdCommon env, HasJobEnv' env, HasSettings env)
   => ServerT API (GargM env GargError)
-api (SAS.Authenticated _auser) = httpPubApp [] app :<|> pure httpPlayground
-api _                          = panic "401 in graphql" -- SAS.throwAll (_ServerError # err401)
+api (SAS.Authenticated auser) = (httpPubApp [] . app auser) :<|> pure httpPlayground
+api _                         = panic "401 in graphql" -- SAS.throwAll (_ServerError # err401)

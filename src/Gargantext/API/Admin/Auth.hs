@@ -170,14 +170,12 @@ withPolicy :: GargServerC env GargError m
            -> m a
            -> AccessPolicyManager
            -> m a
-withPolicy ur checks h mgr = do
-  a <- h
-  case mgr of
-    AccessPolicyManager{runAccessPolicy} -> do
-      res <- runAccessPolicy ur checks
-      case res of
-        Allow     -> pure a
-        Deny err  -> throwError $ GargServerError $ err
+withPolicy ur checks m mgr = case mgr of
+  AccessPolicyManager{runAccessPolicy} -> do
+    res <- runAccessPolicy ur checks
+    case res of
+      Allow     -> m
+      Deny err  -> throwError $ GargServerError $ err
 
 {- | Collaborative Schema
 User at his root can create Teams Folder

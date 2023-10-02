@@ -3,23 +3,23 @@
 
 module Gargantext.API.GraphQL.Team where
 
-import Gargantext.Prelude
-import GHC.Generics (Generic)
-import Data.Morpheus.Types (GQLType, Resolver, QUERY, ResolverM, lift)
+import Data.Morpheus.Types (GQLType, ResolverM, lift)
 import Data.Text ( Text )
+import GHC.Generics (Generic)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.GraphQL.Types (GqlM)
 import Gargantext.API.GraphQL.Utils (authUser, AuthStatus (Invalid, Valid))
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core.Types (NodeId(..), unNodeId)
-import qualified Gargantext.Core.Types.Individu as Individu
 import Gargantext.Database.Action.Share (membersOf, deleteMemberShip)
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.User (getUsersWithNodeHyperdata)
 import Gargantext.Database.Schema.Node (NodePoly(Node, _node_id), _node_user_id)
-
-import qualified Data.Text as T
 import Gargantext.Database.Schema.User (UserLight(..))
+import Gargantext.Prelude
+import qualified Data.Text as T
+import qualified Gargantext.Core.Types.Individu as Individu
 
 data TeamArgs = TeamArgs
   { team_node_id :: Int } deriving (Generic, GQLType)
@@ -40,9 +40,7 @@ data TeamDeleteMArgs = TeamDeleteMArgs
   , team_node_id     :: Int
   } deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
 type GqlM' e env a = ResolverM e (GargM env GargError) a
-
 
 resolveTeam :: (CmdCommon env) => TeamArgs -> GqlM e env Team
 resolveTeam TeamArgs { team_node_id } = dbTeam team_node_id

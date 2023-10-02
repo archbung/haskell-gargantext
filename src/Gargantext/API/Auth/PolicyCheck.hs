@@ -16,6 +16,7 @@ module Gargantext.API.Auth.PolicyCheck (
   , nodeUser
   , nodeChecks
   , alwaysAllow
+  , alwaysDeny
   ) where
 
 import Control.Lens
@@ -78,6 +79,7 @@ data AccessCheck
   | AC_master_user      NodeId
     -- | Always grant access, effectively a public route.
   | AC_always_allow
+  | AC_always_deny
   deriving (Show, Eq)
 
 -------------------------------------------------------------------------------
@@ -117,6 +119,8 @@ accessPolicyManager = AccessPolicyManager (\ur ac -> interpretPolicy ur ac)
 
 check :: HasNodeError err => AuthenticatedUser -> AccessCheck -> DBCmd err AccessResult
 check (AuthenticatedUser loggedUserNodeId) = \case
+  AC_always_deny
+    -> pure $ Deny err500
   AC_always_allow
     -> pure Allow
   AC_user_node requestedNodeId
@@ -148,6 +152,9 @@ nodeChecks nid =
 
 alwaysAllow :: BoolExpr AccessCheck
 alwaysAllow = BConst . Positive $ AC_always_allow
+
+alwaysDeny :: BoolExpr AccessCheck
+alwaysDeny = BConst . Positive $ AC_always_deny
 
 -------------------------------------------------------------------------------
 -- Instances

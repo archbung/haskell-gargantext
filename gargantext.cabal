@@ -164,8 +164,10 @@ library
       Gargantext.API.GraphQL.IMT
       Gargantext.API.GraphQL.NLP
       Gargantext.API.GraphQL.Node
+      Gargantext.API.GraphQL.PolicyCheck
       Gargantext.API.GraphQL.Team
       Gargantext.API.GraphQL.TreeFirstLevel
+      Gargantext.API.GraphQL.Types
       Gargantext.API.GraphQL.User
       Gargantext.API.GraphQL.UserInfo
       Gargantext.API.GraphQL.Utils

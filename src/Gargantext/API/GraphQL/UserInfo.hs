@@ -7,15 +7,11 @@ import Control.Lens
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Types
   ( GQLType
-  , Resolver
-  , ResolverM
-  , QUERY
   , description
   , lift
   )
 import Data.Text (Text)
 import qualified Data.Text as T
-import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Database.Admin.Types.Hyperdata
   ( HyperdataUser(..)
   , hc_source
@@ -49,6 +45,11 @@ import GHC.Generics (Generic)
 import Gargantext.API.GraphQL.Utils (AuthStatus(Invalid, Valid), authUser)
 import Gargantext.API.Admin.Types (HasSettings)
 import qualified Gargantext.Core.Types.Individu as Individu
+import Gargantext.API.GraphQL.Types
+import Gargantext.API.Admin.Auth.Types hiding (Valid)
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck
+import Gargantext.Database.Admin.Types.Node
 
 data UserInfo = UserInfo
   { ui_id             :: Int
@@ -100,20 +101,20 @@ data UserInfoMArgs
     , ui_cwDescription  :: Maybe Text
     } deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-type GqlM' e env err = ResolverM e (GargM env err) Int
-
 -- | Function to resolve user from a query.
 resolveUserInfos
   :: (CmdCommon env)
-  => UserInfoArgs -> GqlM e env [UserInfo]
-resolveUserInfos UserInfoArgs { user_id } = dbUsers user_id
+  => AuthenticatedUser
+  -> AccessPolicyManager
+  -> UserInfoArgs -> GqlM e env [UserInfo]
+resolveUserInfos autUser mgr UserInfoArgs { user_id } =
+  withPolicy autUser mgr (nodeChecks (NodeId user_id)) $ dbUsers user_id
 
 -- | Mutation for user info
 updateUserInfo
   :: (CmdCommon env, HasSettings env)
   -- => UserInfoMArgs -> ResolverM e (GargM env err) Int
-  => UserInfoMArgs -> GqlM' e env err
+  => UserInfoMArgs -> GqlM' e env Int
 updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
   -- lift $ printDebug "[updateUserInfo] ui_id" ui_id
   users <- lift (getUsersWithNodeHyperdata (Individu.UserDBId ui_id))

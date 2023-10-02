@@ -6,20 +6,22 @@ module Gargantext.API.GraphQL.User where
 import Data.Maybe (listToMaybe)
 import Data.Morpheus.Types
   ( GQLType
-  , Resolver, ResolverM, QUERY
   , lift
   )
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.GraphQL.Types
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..))
 import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (CmdCommon)
-import qualified Gargantext.Database.Query.Table.User as DBUser
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
-import GHC.Generics (Generic)
 import qualified Gargantext.Core.Types.Individu as Individu
+import qualified Gargantext.Database.Query.Table.User as DBUser
+import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck
 
 data User m = User
   { u_email     :: Text
@@ -40,14 +42,15 @@ data UserPubmedAPIKeyMArgs
     , api_key  :: Text }
     deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-type GqlM' e env a = ResolverM e (GargM env GargError) a
-
 -- | Function to resolve user from a query.
 resolveUsers
   :: (CmdCommon env)
-  => UserArgs -> GqlM e env [User (GqlM e env)]
-resolveUsers UserArgs { user_id } = dbUsers user_id
+  => AuthenticatedUser
+  -> AccessPolicyManager
+  -> UserArgs
+  -> GqlM e env [User (GqlM e env)]
+resolveUsers autUser mgr UserArgs { user_id } = do
+  withPolicy autUser mgr (nodeChecks (NodeId user_id)) $ dbUsers user_id
 
 -- | Inner function to fetch the user from DB.
 dbUsers

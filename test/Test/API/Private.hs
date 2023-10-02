@@ -8,6 +8,7 @@ module Test.API.Private where
 import Control.Exception
 import Control.Monad
 import Control.Monad.Reader
+import Data.ByteString (ByteString)
 import Data.Maybe
 import Data.Proxy
 import Fmt
@@ -16,6 +17,8 @@ import Gargantext.API.Routes
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User.New
 import Network.HTTP.Client hiding (Proxy)
+import Network.HTTP.Types
+import Network.Wai.Test (SResponse)
 import Prelude
 import Servant
 import Servant.Auth.Client ()
@@ -26,14 +29,12 @@ import Test.Database.Types
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
+import Test.Hspec.Wai.JSON (json)
+import Test.Utils (jsonFragment, shouldRespondWith')
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Text.Encoding as TE
 import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Auth.Client as SA
-import Data.ByteString (ByteString)
-import Network.Wai.Test (SResponse)
-import Network.HTTP.Types
-import qualified Data.ByteString.Lazy as L
-import Test.Utils (jsonFragment, shouldRespondWith')
 
 type Env = ((TestEnv, Wai.Port), Application)
 
@@ -126,3 +127,20 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/node/1") ""
               `shouldRespondWith` 403
+
+    describe "GET /api/v1.0/tree" $ do
+      it "unauthorised users shouldn't see anything" $ \((_testEnv, port), app) -> do
+        withApplication app $ do
+          get (mkUrl port "/tree/1") `shouldRespondWith` 401
+
+      it "allows 'alice' to see her own node info" $ \((_testEnv, port), app) -> do
+        withApplication app $ do
+          withValidLogin port "alice" (GargPassword "alice") $ \token -> do
+            protected token "GET" (mkUrl port "/tree/8") ""
+              `shouldRespondWith'` [jsonFragment| { "node": {"id":8, "name":"alice", "type": "NodeUser" } } |]
+
+      it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
+        withApplication app $ do
+          withValidLogin port "alice" (GargPassword "alice") $ \token -> do
+            protected token "GET" (mkUrl port "/tree/1") ""
+              `shouldRespondWith` [json| {} |]

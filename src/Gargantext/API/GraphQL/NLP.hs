@@ -10,23 +10,17 @@ module Gargantext.API.GraphQL.NLP
   where
 
 import Control.Lens (view)
-import qualified Data.Map.Strict as Map
-import Data.Morpheus.Types
-  ( GQLType
-  , Resolver
-  , QUERY
-  )
-import Gargantext.API.Prelude (GargM, GargError)
+import Data.Morpheus.Types (GQLType)
+import Gargantext.API.GraphQL.Types
 import Gargantext.Core (Lang(..), NLPServerConfig(..), PosTagAlgo)  -- , allLangs)
 import Gargantext.Core.NLP (HasNLPServer(..))
 import Gargantext.Prelude
 import Protolude
+import qualified Data.Map.Strict as Map
 
 data LanguagesArgs
   = LanguagesArgs
     { } deriving (Generic, GQLType)
-
-type GqlM e env = Resolver QUERY e (GargM env GargError)
 
 type LanguagesMap = Map.Map Lang NLPServer
 
