@@ -143,4 +143,4 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/tree/1") ""
-              `shouldRespondWith` [json| {} |]
+              `shouldRespondWith` 403

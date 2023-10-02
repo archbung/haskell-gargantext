@@ -31,6 +31,7 @@ And you have the main viz
 module Gargantext.API.Admin.Auth
   ( auth
   , withPolicy
+  , withPolicyT
   , forgotPassword
   , forgotPasswordAsync
   , withAccess
@@ -176,6 +177,22 @@ withPolicy ur checks m mgr = case mgr of
     case res of
       Allow     -> m
       Deny err  -> throwError $ GargServerError $ err
+
+withPolicyT :: forall env m api. (
+                 GargServerC env GargError m
+               , HasServer api '[]
+               )
+            => Proxy api
+            -> Proxy m
+            -> AuthenticatedUser
+            -> BoolExpr AccessCheck
+            -> ServerT api m
+            -> AccessPolicyManager
+            -> ServerT api m
+withPolicyT p _ ur checks m0 mgr = hoistServer p f m0
+  where
+    f :: forall a. m a -> m a
+    f m = withPolicy ur checks m mgr
 
 {- | Collaborative Schema
 User at his root can create Teams Folder

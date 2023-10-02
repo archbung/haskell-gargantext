@@ -14,6 +14,7 @@ Portability : POSIX
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeApplications     #-}
 
 module Gargantext.API.Routes
       where
@@ -27,7 +28,7 @@ import Servant.Auth as SA
 import Servant.Auth.Swagger ()
 import Servant.Swagger.UI
 
-import Gargantext.API.Admin.Auth (ForgotPasswordAPI, ForgotPasswordAsyncAPI, withAccess)
+import Gargantext.API.Admin.Auth (ForgotPasswordAPI, ForgotPasswordAsyncAPI, withAccess, withPolicyT)
 import Gargantext.API.Admin.Auth.Types (AuthRequest, AuthResponse, AuthenticatedUser(..), PathId(..))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.FrontEnd (FrontEndAPI)
@@ -55,6 +56,7 @@ import qualified Gargantext.API.Node.Corpus.New            as New
 import qualified Gargantext.API.Node.Document.Export       as DocumentExport
 import qualified Gargantext.API.Node.Document.Export.Types as DocumentExport
 import qualified Gargantext.API.Public                     as Public
+import Gargantext.API.Auth.PolicyCheck
 
 
 type GargAPI = MkGargAPI (GargAPIVersion GargAPI')
@@ -170,7 +172,7 @@ type GargPrivateAPI' =
            -- Tree endpoint
            :<|> "tree"    :> Summary "Tree endpoint"
                           :> Capture "tree_id" NodeId
-                          :> TreeAPI
+                          :> PolicyChecked TreeAPI
            -- Flat tree endpoint
            :<|> "treeflat" :> Summary "Flat tree endpoint"
                            :> Capture "tree_id" NodeId
@@ -262,8 +264,7 @@ serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser (NodeId uid))
      :<|> withAccess (Proxy :: Proxy GraphAPI)       Proxy authenticatedUser
           <$> PathNode <*> graphAPI uid -- TODO: mock
 
-     :<|> withAccess (Proxy :: Proxy TreeAPI)        Proxy authenticatedUser
-          <$> PathNode <*> treeAPI
+     :<|> (\nodeId -> withPolicyT (Proxy @TreeAPI) Proxy authenticatedUser (nodeChecks nodeId) (treeAPI nodeId))
 
      :<|> withAccess (Proxy :: Proxy TreeFlatAPI)    Proxy authenticatedUser
           <$> PathNode <*> treeFlatAPI
