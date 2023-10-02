@@ -66,7 +66,7 @@ import Gargantext.Database.Schema.Node (NodePoly(_node_id))
 import Gargantext.Prelude hiding (reverse)
 import Gargantext.Prelude.Crypto.Pass.User (gargPass)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Protolude hiding (to)
+import Protolude hiding (Handler, to)
 import Servant
 import Servant.Auth.Server
 import qualified Data.Text as Text
@@ -161,23 +161,23 @@ withAccess p _ ur id = hoistServer p f
     f :: forall a. m a -> m a
     f = withAccessM ur id
 
-withPolicy :: forall env m api. (GargServerC env GargError m, HasServer api '[])
+-- | Given the 'AuthenticatedUser', a policy check and a function that returns an @a@,
+-- it runs the underlying policy check to ensure that the resource is returned only to
+-- who is entitled to see it.
+withPolicy :: GargServerC env GargError m
            => AuthenticatedUser
            -> BoolExpr AccessCheck
-           -> Proxy api
-           -> Proxy m
-           -> ServerT api m
+           -> m a
            -> AccessPolicyManager
-           -> ServerT api m
-withPolicy ur checks p _ m0 mgr = hoistServer p f m0
-  where
-    f :: forall a. m a -> m a
-    f m = case mgr of
-      AccessPolicyManager{runAccessPolicy} -> do
-        res <- runAccessPolicy ur checks
-        case res of
-          Allow     -> m
-          Deny err  -> throwError $ GargServerError err
+           -> m a
+withPolicy ur checks h mgr = do
+  a <- h
+  case mgr of
+    AccessPolicyManager{runAccessPolicy} -> do
+      res <- runAccessPolicy ur checks
+      case res of
+        Allow     -> pure a
+        Deny err  -> throwError $ GargServerError $ err
 
 {- | Collaborative Schema
 User at his root can create Teams Folder

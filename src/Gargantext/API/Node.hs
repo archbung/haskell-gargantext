@@ -119,7 +119,7 @@ roots = getNodesWithParentId Nothing
 -- CanFavorite
 -- CanMoveToTrash
 
-type NodeAPI a = PolicyChecked (Get '[JSON] (Node a))
+type NodeAPI a = PolicyChecked (NodeNodeAPI a)
              :<|> "rename" :> RenameApi
              :<|> PostNodeApi -- TODO move to children POST
              :<|> PostNodeAsync
@@ -193,7 +193,7 @@ nodeNodeAPI p uId cId nId = withAccess (Proxy :: Proxy (NodeNodeAPI a)) Proxy uI
 ------------------------------------------------------------------------
 -- TODO: make the NodeId type indexed by `a`, then we no longer need the proxy.
 nodeAPI :: forall proxy a.
-       ( HyperdataC a
+       ( HyperdataC a, Show a
        ) => proxy a
          -> AuthenticatedUser
          -> NodeId
@@ -201,14 +201,8 @@ nodeAPI :: forall proxy a.
 nodeAPI p authenticatedUser@(AuthenticatedUser (NodeId uId)) id' = withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode id') nodeAPI'
   where
 
-    api :: Proxy (NodeNodeAPI a)
-    api = Proxy
-
-    m   :: Proxy (GargM Env GargError)
-    m   = Proxy
-
     nodeAPI' :: ServerT (NodeAPI a) (GargM Env GargError)
-    nodeAPI' =  withPolicy authenticatedUser (nodeOwner id' `BOr` nodeSuper id') api m (getNodeWith   id' p)
+    nodeAPI' =  withPolicy authenticatedUser (nodeChecks id') (getNodeWith   id' p)
            :<|> rename        id'
            :<|> postNode  uId id'
            :<|> postNodeAsyncAPI  uId id'

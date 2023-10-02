@@ -210,7 +210,7 @@ pgContextId :: ContextId -> O.Column O.SqlInt4
 pgContextId = pgNodeId
 
 ------------------------------------------------------------------------
-newtype NodeId = NodeId Int
+newtype NodeId = NodeId { _NodeId :: Int }
   deriving (Read, Generic, Num, Eq, Ord, Enum, ToJSONKey, FromJSONKey, ToJSON, FromJSON, Hashable, Csv.ToField)
 instance GQLType NodeId
 instance Show NodeId where

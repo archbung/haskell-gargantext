@@ -59,7 +59,7 @@ import Gargantext.Core.Types.Main (NodeTree(..), Tree(..))
 import Gargantext.Database.Admin.Config (fromNodeTypeId, nodeTypeId, fromNodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata.Any (HyperdataAny)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runPGSQuery)
+import Gargantext.Database.Prelude (Cmd, runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeNode (getNodeNode)
@@ -356,7 +356,7 @@ dbTree rootId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
       [] -> allNodeTypes
       _  -> nodeTypes
 
-isDescendantOf :: NodeId -> RootId -> Cmd err Bool
+isDescendantOf :: NodeId -> RootId -> DBCmd err Bool
 isDescendantOf childId rootId = (== [Only True])
   <$> runPGSQuery [sql|
                   BEGIN ;
