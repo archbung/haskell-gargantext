@@ -397,15 +397,16 @@ recursiveParents :: NodeId
        -> Cmd err [DbTreeNode]
 recursiveParents nodeId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
   <$> runPGSQuery [sql|
-    WITH RECURSIVE recursiveParents AS(
-      SELECT id, typename, parent_id, name
-      FROM public.nodes WHERE id = ?
-    UNION ALL
-        SELECT n.id, n.typename, n.parent_id, n.name
-      FROM public.nodes n 
-      INNER JOIN recursiveParents rp ON n.id = rp.parent_id
-      WHERE n.typename IN ?
-    ) SELECT * FROM recursiveParents;
+    WITH RECURSIVE recursiveParents AS
+    (
+      SELECT id, typename, parent_id, name, 1 as original_order
+        FROM public.nodes WHERE id = ?
+      UNION ALL
+        SELECT n.id, n.typename, n.parent_id, n.name, rp.original_order+1
+          FROM public.nodes n 
+          INNER JOIN recursiveParents rp ON n.id = rp.parent_id
+            WHERE n.typename IN ?
+    ) SELECT id, typename, parent_id, name FROM recursiveParents ORDER BY original_order DESC;
     |] (nodeId, In typename)
   where
     typename = map nodeTypeId ns
