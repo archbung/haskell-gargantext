@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.8.1
+
+* [BACK][FIX][Security considerations (#259)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/259)
+
 ## Version 0.0.6.9.9.8
 
 * [FRONT][FIX][[Docs View] Highlight sometimes broken (#598)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/598)
