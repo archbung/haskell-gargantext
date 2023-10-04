@@ -52,9 +52,6 @@ data BreadcrumbInfo = BreadcrumbInfo
     parents :: [TreeNode]
   } deriving (Generic, GQLType)
 
-
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-
 type ParentId = Maybe NodeId
 
 resolveTree :: (CmdCommon env)
