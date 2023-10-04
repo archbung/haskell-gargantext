@@ -128,10 +128,10 @@ rootResolver authenticatedUser policyManager =
                             , nodes               = GQLNode.resolveNodes authenticatedUser policyManager
                             , nodes_corpus        = GQLNode.resolveNodesCorpus
                             , node_parent         = GQLNode.resolveNodeParent
-                            , user_infos          = GQLUserInfo.resolveUserInfos
-                            , users               = GQLUser.resolveUsers
-                            , tree                = GQLTree.resolveTree
-                            , team                = GQLTeam.resolveTeam
+                            , user_infos          = GQLUserInfo.resolveUserInfos authenticatedUser policyManager
+                            , users               = GQLUser.resolveUsers authenticatedUser policyManager
+                            , tree                = GQLTree.resolveTree authenticatedUser policyManager
+                            , team                = GQLTeam.resolveTeam 
                             , tree_branch         = GQLTree.resolveBreadcrumb }
     , mutationResolver = Mutation { update_user_info       = GQLUserInfo.updateUserInfo
                                   , update_user_pubmed_api_key = GQLUser.updateUserPubmedAPIKey
