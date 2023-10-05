@@ -49,7 +49,6 @@ import Gargantext.API.GraphQL.Types
 import Gargantext.API.Admin.Auth.Types hiding (Valid)
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck
--- import Gargantext.Database.Admin.Types.Node
 
 data UserInfo = UserInfo
   { ui_id             :: Int
