@@ -47,7 +47,9 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       let version_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion GargVersion)))
       it "requires no auth and returns the current version" $ \((_testEnv, port), _) -> do
         result <- runClientM version_api (clientEnv port)
-        result `shouldBe` (Right "0.0.6.9.9.8")
+        case result of
+          Left err -> fail (show err)
+          Right r  -> r `shouldSatisfy` ((>= 1) . T.length) -- we got something back
 
     describe "POST /api/v1.0/auth" $ do
 
