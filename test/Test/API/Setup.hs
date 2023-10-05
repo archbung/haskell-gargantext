@@ -3,6 +3,9 @@
 module Test.API.Setup where
 
 import Control.Lens
+import Control.Monad.Reader
+import Data.ByteString (ByteString)
+import Fmt (Builder, (+|), (|+))
 import Gargantext.API (makeApp)
 import Gargantext.API.Admin.EnvTypes (Mode(Mock), Env (..))
 import Gargantext.API.Admin.Settings
@@ -10,9 +13,12 @@ import Gargantext.API.Admin.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP
 import Gargantext.Core.NodeStory
+import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.Flow
+import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Trigger.Init
+import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Prelude.Config
@@ -31,11 +37,8 @@ import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Gargantext.Utils.Jobs.Queue as Jobs
 import qualified Gargantext.Utils.Jobs.Settings as Jobs
 import qualified Network.Wai.Handler.Warp         as Warp
+import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Job.Async as ServantAsync
-import Gargantext.Database.Admin.Types.Hyperdata
-import Control.Monad.Reader
-import Gargantext.Core.Types.Individu
-import Gargantext.Database.Action.User.New
 
 
 newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
@@ -99,3 +102,21 @@ setupEnvironment env = flip runReaderT env $ runTestMonad $ do
                                         (Nothing :: Maybe HyperdataCorpus)
   masterListId <- getOrMkList masterCorpusId masterUserId
   void $ initLastTriggers masterListId
+
+-- | Creates two users, Alice & Bob. Alice shouldn't be able to see
+-- Bob's private data and vice-versa.
+createAliceAndBob :: TestEnv -> IO ()
+createAliceAndBob testEnv = do
+  void $ flip runReaderT testEnv $ runTestMonad $ do
+    let nur1 = mkNewUser "alice@gargan.text" (GargPassword "alice")
+    let nur2 = mkNewUser "bob@gargan.text" (GargPassword "bob")
+
+    void $ new_user nur1
+    void $ new_user nur2
+
+curApi :: Builder
+curApi = "v1.0"
+
+mkUrl :: Wai.Port -> Builder -> ByteString
+mkUrl _port urlPiece =
+  "/api/" +| curApi |+ urlPiece
