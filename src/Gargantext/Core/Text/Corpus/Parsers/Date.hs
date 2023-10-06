@@ -53,12 +53,11 @@ dateSplit Nothing    = pure (Nothing, (Nothing, Nothing, Nothing))
 dateSplit (Just txt) = do
   utcTime <- parse txt
   let (y, m, d) = split' utcTime
-  pure (Just utcTime, (Just y, Just m,Just d))
+  pure (Just utcTime, (Just y, Just m, Just d))
 
 split' :: UTCTime -> (Year, Month, Day)
-split' utcTime = (fromIntegral y, m, d)
+split' (UTCTime day _) = (fromIntegral y, m, d)
   where
-    (UTCTime day _) = utcTime
     (y,m,d)         = toGregorian day
 
 type Year  = Int

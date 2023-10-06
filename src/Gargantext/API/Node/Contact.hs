@@ -87,7 +87,7 @@ addContact :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
 addContact u nId (AddContactParams fn ln) jobHandle = do
 
   markStarted 2 jobHandle
-  _ <- flow (Nothing :: Maybe HyperdataAnnuaire) u (Right [nId]) (Multi EN) Nothing (Just 1, yield $ hyperdataContact fn ln) jobHandle
+  _ <- flow (Nothing :: Maybe HyperdataAnnuaire) u (Right [nId]) (Multi EN) Nothing (1, yield $ hyperdataContact fn ln) jobHandle
 
   markComplete jobHandle
 addContact _uId _nId _p jobHandle = do

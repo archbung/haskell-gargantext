@@ -12,6 +12,7 @@ import Gargantext.Prelude
 
 data FileType = CSV
               | CSV_HAL
+              | Istex
               | PresseRIS
               | WOS
               | Iramuteq
@@ -26,6 +27,7 @@ instance ToJSON FileType
 instance FromHttpApiData FileType where
   parseUrlPiece "CSV"       = pure CSV
   parseUrlPiece "CSV_HAL"   = pure CSV_HAL
+  parseUrlPiece "Istex"     = pure Istex
   parseUrlPiece "PresseRis" = pure PresseRIS
   parseUrlPiece "WOS"       = pure WOS
   parseUrlPiece "Iramuteq"  = pure Iramuteq

@@ -147,6 +147,7 @@ library
       Gargantext.Utils.Jobs.State
       Gargantext.Utils.SpacyNLP
       Gargantext.Utils.Tuple
+      Gargantext.Utils.Zip
   other-modules:
       Gargantext.API.Admin.Auth
       Gargantext.API.Admin.FrontEnd
@@ -229,6 +230,7 @@ library
       Gargantext.Core.Text.Corpus.Parsers.Iramuteq
       Gargantext.Core.Text.Corpus.Parsers.Isidore
       Gargantext.Core.Text.Corpus.Parsers.JSON
+      Gargantext.Core.Text.Corpus.Parsers.JSON.Istex
       Gargantext.Core.Text.Corpus.Parsers.Json2Csv
       Gargantext.Core.Text.Corpus.Parsers.RIS
       Gargantext.Core.Text.Corpus.Parsers.RIS.Presse
@@ -665,6 +667,7 @@ executable gargantext-cli
     , gargantext-prelude
     , ini ^>= 0.4.1
     , optparse-generic ^>= 1.4.7
+    , protolude ^>= 0.3.0
     , split ^>= 0.2.3.4
     , text ^>= 1.2.4.1
     , unordered-containers ^>= 0.2.16.0

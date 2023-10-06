@@ -16,25 +16,19 @@ module Gargantext.Core.Text.Corpus.Parsers.CSV where
 
 import Conduit
 import Control.Applicative
-import qualified Data.ByteString      as BS
-import qualified Data.ByteString.Lazy as BL
-import Data.Char (ord)
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BL
 import Data.Csv
-import Data.Either (Either(..))
-import Data.Maybe (fromMaybe)
-import Data.Text (Text, pack, length, intercalate)
+import Data.Text (pack)
+import Data.Text qualified as T
 import Data.Time.Segment (jour)
-import qualified Data.Vector          as V
 import Data.Vector (Vector)
-import GHC.IO (FilePath)
-import GHC.Word (Word8)
-
-import qualified Prelude
-
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import Gargantext.Prelude hiding (length)
+import Data.Vector qualified as V
 import Gargantext.Core.Text
 import Gargantext.Core.Text.Context
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Prelude hiding (length, show)
+import Protolude
 
 ---------------------------------------------------------------
 headerCsvGargV3 :: Header
@@ -117,7 +111,7 @@ fromDocs docs = V.map fromDocs' docs
 -- | Split a document in its context
 -- TODO adapt the size of the paragraph according to the corpus average
 splitDoc :: Mean -> SplitContext -> CsvDoc -> Vector CsvDoc
-splitDoc m splt doc = let docSize = (length $ csv_abstract doc) in
+splitDoc m splt doc = let docSize = (T.length $ csv_abstract doc) in
                           if docSize > 1000
                             then
                               if (mod (round m) docSize) >= 10
@@ -148,7 +142,7 @@ type Mean = Double
 docsSize :: Vector CsvDoc -> Mean
 docsSize csvDoc = mean ls
   where
-    ls = V.toList $ V.map (fromIntegral . length . csv_abstract) csvDoc
+    ls = V.toList $ V.map (fromIntegral . T.length . csv_abstract) csvDoc
 
 
 ---------------------------------------------------------------
@@ -158,7 +152,7 @@ unIntOrDec :: IntOrDec -> Int
 unIntOrDec (IntOrDec i) = i
 instance FromField IntOrDec where
   parseField s = case runParser (parseField s :: Parser Int) of
-    Left _err -> IntOrDec <$> Prelude.floor <$> (parseField s :: Parser Double)
+    Left _err -> IntOrDec <$> floor <$> (parseField s :: Parser Double)
     Right n   -> pure $ IntOrDec n
 instance ToField IntOrDec where
   toField (IntOrDec i) = toField i
@@ -230,44 +224,40 @@ csvEncodeOptions d = defaultEncodeOptions {encDelimiter = delimiter d}
 delimiter :: Delimiter -> Word8
 delimiter Tab   = fromIntegral $ ord '\t'
 delimiter Comma = fromIntegral $ ord ','
-------------------------------------------------------------------------
-------------------------------------------------------------------------
-readCsvOn' :: [CsvDoc -> Text] -> FilePath -> IO (Either Prelude.String [Text])
-readCsvOn' fields fp = do
-  r <- readCSVFile fp
-  pure $ ( V.toList
-          . V.map (\l -> intercalate (pack " ") $ map (\field -> field l) fields)
-          . snd ) <$> r
 
 ------------------------------------------------------------------------
 
-readFileLazy :: (FromNamedRecord a) => proxy a -> Delimiter -> FilePath -> IO (Either Prelude.String (Header, Vector a))
+readFileLazy :: (FromNamedRecord a)
+             => proxy a
+             -> Delimiter
+             -> FilePath
+             -> IO (Either Text (Header, Vector a))
 readFileLazy d f = fmap (readByteStringLazy d f) . BL.readFile
 
 readFileStrict :: (FromNamedRecord a)
                => proxy a
                -> Delimiter
                -> FilePath
-               -> IO (Either Prelude.String (Header, Vector a))
+               -> IO (Either Text (Header, Vector a))
 readFileStrict d f = fmap (readByteStringStrict d f) . BS.readFile
 
 readByteStringLazy :: (FromNamedRecord a)
                    => proxy a
                    -> Delimiter
                    -> BL.ByteString
-                   -> Either Prelude.String (Header, Vector a)
-readByteStringLazy _f d bs = decodeByNameWith (csvDecodeOptions d) bs
+                   -> Either Text (Header, Vector a)
+readByteStringLazy _f d bs = first pack $ decodeByNameWith (csvDecodeOptions d) bs
 
 readByteStringStrict :: (FromNamedRecord a)
                      => proxy a
                      -> Delimiter
                      -> BS.ByteString
-                     -> Either Prelude.String (Header, Vector a)
+                     -> Either Text (Header, Vector a)
 readByteStringStrict d ff = (readByteStringLazy d ff) . BL.fromStrict
 
 ------------------------------------------------------------------------
 -- | TODO use readFileLazy
-readCSVFile :: FilePath -> IO (Either Prelude.String (Header, Vector CsvDoc))
+readCSVFile :: FilePath -> IO (Either Text (Header, Vector CsvDoc))
 readCSVFile fp = do
   result <- fmap (readCsvLazyBS Comma) $ BL.readFile fp
   case result of
@@ -277,20 +267,24 @@ readCSVFile fp = do
 
 
 -- | TODO use readByteStringLazy
-readCsvLazyBS :: Delimiter -> BL.ByteString -> Either Prelude.String (Header, Vector CsvDoc)
-readCsvLazyBS d bs = decodeByNameWith (csvDecodeOptions d) bs
+readCsvLazyBS :: Delimiter
+              -> BL.ByteString
+              -> Either Text (Header, Vector CsvDoc)
+readCsvLazyBS d bs = first pack $ decodeByNameWith (csvDecodeOptions d) bs
 
 ------------------------------------------------------------------------
 -- | TODO use readFileLazy
-readCsvHal :: FilePath -> IO (Either Prelude.String (Header, Vector CsvHal))
-readCsvHal = fmap readCsvHalLazyBS . BL.readFile
+readCsvHal :: FilePath -> IO (Either Text (Header, Vector CsvHal))
+readCsvHal fp = do
+  c <- BL.readFile fp
+  pure $ readCsvHalLazyBS c
 
 -- | TODO use readByteStringLazy
-readCsvHalLazyBS :: BL.ByteString -> Either Prelude.String (Header, Vector CsvHal)
-readCsvHalLazyBS bs = decodeByNameWith (csvDecodeOptions Tab) bs
+readCsvHalLazyBS :: BL.ByteString -> Either Text (Header, Vector CsvHal)
+readCsvHalLazyBS bs = first pack $ decodeByNameWith (csvDecodeOptions Tab) bs
 
-readCsvHalBSStrict :: BS.ByteString -> Either Prelude.String (Header, Vector CsvHal)
-readCsvHalBSStrict = readCsvHalLazyBS . BL.fromStrict
+readCsvHalBSStrict :: BS.ByteString -> Either Text (Header, Vector CsvHal)
+readCsvHalBSStrict bs = readCsvHalLazyBS $ BL.fromStrict bs
 
 ------------------------------------------------------------------------
 writeFile :: FilePath -> (Header, Vector CsvDoc) -> IO ()
@@ -437,25 +431,25 @@ csv2doc (CsvDoc { .. })
     pubDay = fromMaybe defaultDay csv_publication_day
 
 ------------------------------------------------------------------------
-parseHal :: FilePath -> IO (Either Prelude.String [HyperdataDocument])
+parseHal :: FilePath -> IO (Either Text [HyperdataDocument])
 parseHal fp = do
   r <- readCsvHal fp
   pure $ (V.toList . V.map csvHal2doc . snd) <$> r
 
-parseHal' :: BL.ByteString -> Either Prelude.String [HyperdataDocument]
+parseHal' :: BL.ByteString -> Either Text [HyperdataDocument]
 parseHal' bs = (V.toList . V.map csvHal2doc . snd) <$> readCsvHalLazyBS bs
 
 ------------------------------------------------------------------------
 
-parseCsv :: FilePath -> IO (Either Prelude.String [HyperdataDocument])
+parseCsv :: FilePath -> IO (Either Text [HyperdataDocument])
 parseCsv fp = fmap (V.toList . V.map csv2doc . snd) <$> readCSVFile fp
 
 {-
-parseCsv' ::  BL.ByteString -> Either Prelude.String [HyperdataDocument]
+parseCsv' ::  BL.ByteString -> Either Text [HyperdataDocument]
 parseCsv' bs = (V.toList . V.map csv2doc . snd) <$> readCsvLazyBS Comma bs
 -}
 
-parseCsv' :: BL.ByteString -> Either Prelude.String [HyperdataDocument]
+parseCsv' :: BL.ByteString -> Either Text [HyperdataDocument]
 parseCsv' bs = do
   let
     result = case readCsvLazyBS Comma bs of
@@ -464,15 +458,13 @@ parseCsv' bs = do
   (V.toList . V.map csv2doc . snd) <$> result
 
 parseCsvC :: BL.ByteString
-          -> Either Prelude.String (Maybe Integer, ConduitT () HyperdataDocument Identity ())
-parseCsvC bs = do
-  let
-    result = case readCsvLazyBS Comma bs of
+          -> Either Text (Integer, ConduitT () HyperdataDocument Identity ())
+parseCsvC bs =
+  (\(_h, rs) -> (fromIntegral $ V.length rs, yieldMany rs .| mapC csv2doc)) <$> eResult
+  where
+    eResult = case readCsvLazyBS Comma bs of
       Left  _err -> readCsvLazyBS Tab bs
       Right res -> Right res
-  case result of
-    Left err -> Left err
-    Right r -> Right (Just $ Prelude.fromIntegral $ Prelude.length $ snd r, (yieldMany $ snd r) .| mapC csv2doc)
 
 ------------------------------------------------------------------------
 -- Csv v3 weighted for phylo

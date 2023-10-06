@@ -1,3 +1,15 @@
+{-|
+Module      : Gargantext.Utils.Aeson
+Description : Gargantext utilities
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+
+Utilities for handling zip files
+-}
+
 module Gargantext.Utils.Aeson where
 
 import Data.Aeson.Types

@@ -56,24 +56,23 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
 
 import Conduit
 import Control.Lens hiding (elements, Indexed)
-import Control.Monad (void)
 import Data.Aeson.TH (deriveJSON)
+import Data.Conduit qualified as C
 import Data.Conduit.Internal (zipSources)
+import Data.Conduit.List qualified as CL
+import Data.Conduit.List qualified as CList
 import Data.Either
-import Data.Foldable (for_)
-import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
-import Data.List (concat)
-import Data.Map.Strict (Map, lookup)
-import Data.Maybe (catMaybes)
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
+import Data.Map.Strict (lookup)
+import Data.Map.Strict qualified as Map
 import Data.Monoid
 import Data.Proxy
-import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Swagger
-import Data.Tuple.Extra (first, second)
-import GHC.Generics (Generic)
-import GHC.Num (fromInteger)
+import Data.Text qualified as T
 import Gargantext.API.Ngrams.Tools (getTermsWith)
+import Gargantext.API.Ngrams.Types qualified as NT
 import Gargantext.Core (Lang(..), PosTagAlgo(..), NLPServerConfig)
 import Gargantext.Core (withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
@@ -81,6 +80,7 @@ import Gargantext.Core.Flow.Types
 import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text
+import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat, FileType, splitOn)
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
@@ -94,6 +94,7 @@ import Gargantext.Core.Types.Main
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Core.Utils (addTuples)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
+import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Database.Action.Flow.List
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Flow.Utils (insertDocNgrams, DocumentIdWithNgrams(..))
@@ -106,6 +107,7 @@ import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node.Document.Add qualified as Doc (add)
 import Gargantext.Database.Query.Table.Node.Document.Insert -- (insertDocuments, ReturnId(..), addUniqIdsDoc, addUniqIdsContact, ToDbData(..))
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
@@ -115,24 +117,12 @@ import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node (NodePoly(..), node_id)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Database.Types
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (show)
 import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
-import System.FilePath (FilePath)
-import qualified Data.Conduit      as C
-import qualified Data.Conduit.List as CL
-import qualified Data.Conduit.List as CList
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Set            as Set
-import qualified Data.Text as T
-import qualified Gargantext.API.Ngrams.Types as NT
-import qualified Gargantext.Core.Text.Corpus.API as API
-import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
-import qualified Gargantext.Database.Query.Table.Node.Document.Add  as Doc (add)
-import qualified PUBMED.Types as PUBMED
+import Protolude hiding (to)
+import PUBMED.Types qualified as PUBMED
 
 ------------------------------------------------------------------------
 -- Imports for upgrade function
@@ -161,10 +151,10 @@ data DataText = DataOld ![NodeId]
 
 -- Show instance is not possible because of IO
 printDataText :: DataText -> IO ()
-printDataText (DataOld xs) = putStrLn $ show xs
+printDataText (DataOld xs) = putText $ show xs
 printDataText (DataNew (maybeInt, conduitData)) = do
   res <- C.runConduit (conduitData .| CL.consume)
-  putStrLn $ show (maybeInt, res)
+  putText $ show (maybeInt, res)
 
 -- TODO use the split parameter in config file
 getDataText :: FlowCmdM env err m
@@ -194,7 +184,7 @@ getDataText_Debug :: FlowCmdM env err m
 getDataText_Debug a l q li = do
   result <- getDataText a l q Nothing li
   case result of
-    Left  err -> liftBase $ putStrLn $ show err
+    Left  err -> liftBase $ putText $ show err
     Right res -> liftBase $ printDataText res
 
 
@@ -220,7 +210,7 @@ flowDataText u (DataOld ids) tt cid mfslw _ = do
 flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle = do
   $(logLocM) DEBUG $ T.pack $ "Found " <> show mLen <> " new documents to process"
   for_ (mLen <&> fromInteger) (`addMoreSteps` jobHandle)
-  flowCorpus u (Right [cid]) tt mfslw (mLen, (transPipe liftBase txtC)) jobHandle
+  flowCorpus u (Right [cid]) tt mfslw (fromMaybe 0 mLen, (transPipe liftBase txtC)) jobHandle
 
 ------------------------------------------------------------------------
 -- TODO use proxy
@@ -234,7 +224,7 @@ flowAnnuaire :: (FlowCmdM env err m, MonadJobStatus m)
 flowAnnuaire u n l filePath jobHandle = do
   -- TODO Conduit for file
   docs <- liftBase $ ((readFile_Annuaire filePath) :: IO [HyperdataContact])
-  flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (Just $ fromIntegral $ length docs, yieldMany docs) jobHandle
+  flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (fromIntegral $ length docs, yieldMany docs) jobHandle
 
 ------------------------------------------------------------------------
 flowCorpusFile :: (FlowCmdM env err m, MonadJobStatus m)
@@ -252,10 +242,10 @@ flowCorpusFile u n _l la ft ff fp mfslw jobHandle = do
   eParsed <- liftBase $ parseFile ft ff fp
   case eParsed of
     Right parsed -> do
-      flowCorpus u n la mfslw (Just $ fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
+      flowCorpus u n la mfslw (fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
       --let docs = splitEvery 500 $ take l parsed
       --flowCorpus u n la mfslw (yieldMany $ map (map toHyperdataDocument) docs) logStatus
-    Left e       -> panic $ "Error: " <> T.pack e
+    Left e       -> panic $ "Error: " <> e
 
 ------------------------------------------------------------------------
 -- | TODO improve the needed type to create/update a corpus
@@ -265,7 +255,7 @@ flowCorpus :: (FlowCmdM env err m, FlowCorpus a, MonadJobStatus m)
            -> Either CorpusName [CorpusId]
            -> TermType Lang
            -> Maybe FlowSocialListWith
-           -> (Maybe Integer, ConduitT () a m ())
+           -> (Integer, ConduitT () a m ())
            -> JobHandle m
            -> m CorpusId
 flowCorpus = flow (Nothing :: Maybe HyperdataCorpus)
@@ -282,10 +272,10 @@ flow :: forall env err m a c.
         -> Either CorpusName [CorpusId]
         -> TermType Lang
         -> Maybe FlowSocialListWith
-        -> (Maybe Integer, ConduitT () a m ())
+        -> (Integer, ConduitT () a m ())
         -> JobHandle m
         -> m CorpusId
-flow c u cn la mfslw (mLength, docsC) jobHandle = do
+flow c u cn la mfslw (count, docsC) jobHandle = do
   (_userId, userCorpusId, listId) <- createNodes u cn c
   -- TODO if public insertMasterDocs else insertUserDocs
   nlpServer <- view $ nlpServerGet (_tt_lang la)
@@ -300,7 +290,7 @@ flow c u cn la mfslw (mLength, docsC) jobHandle = do
   where
     addDocumentsWithProgress :: NLPServerConfig -> CorpusId -> [(Int, a)] -> m ()
     addDocumentsWithProgress nlpServer userCorpusId docsChunk = do
-      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docsChunk, mLength)
+      $(logLocM) DEBUG $ T.pack $ "calling insertDoc, ([idx], mLength) = " <> show (fst <$> docsChunk, count)
       docs <- addDocumentsToHyperCorpus nlpServer c la userCorpusId (map snd docsChunk)
       markProgress (length docs) jobHandle
 
@@ -410,7 +400,7 @@ insertMasterDocs ncs c lang hs  =  do
   -- this will enable global database monitoring
 
   -- maps :: IO Map Ngrams (Map NgramsType (Map NodeId Int))
-  mapNgramsDocs' :: HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
+  mapNgramsDocs' :: HashMap.HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
                 <- mapNodeIdNgrams
                 <$> documentIdWithNgrams
                       (extractNgramsT ncs $ withLang lang documentsWithId)
@@ -425,7 +415,7 @@ insertMasterDocs ncs c lang hs  =  do
 
 saveDocNgramsWith :: (DbCmd' env err m)
                   => ListId
-                  -> HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
+                  -> HashMap.HashMap ExtractedNgrams (Map NgramsType (Map NodeId (Int, TermsCount)))
                   -> m ()
 saveDocNgramsWith lId mapNgramsDocs' = do
   --printDebug "[saveDocNgramsWith] mapNgramsDocs'" mapNgramsDocs'
@@ -508,7 +498,7 @@ mergeData rs = catMaybes . map toDocumentWithId . Map.toList
 ------------------------------------------------------------------------
 documentIdWithNgrams :: HasNodeError err
                      => (a
-                     -> DBCmd err (HashMap b (Map NgramsType Int, TermsCount)))
+                     -> DBCmd err (HashMap.HashMap b (Map NgramsType Int, TermsCount)))
                      -> [Indexed NodeId a]
                      -> DBCmd err [DocumentIdWithNgrams a b]
 documentIdWithNgrams f = traverse toDocumentIdWithNgrams
@@ -521,7 +511,7 @@ documentIdWithNgrams f = traverse toDocumentIdWithNgrams
 -- | TODO check optimization
 mapNodeIdNgrams :: (Ord b, Hashable b)
                 => [DocumentIdWithNgrams a b]
-                -> HashMap b
+                -> HashMap.HashMap b
                        (Map NgramsType
                             (Map NodeId (Int, TermsCount))
                        )
@@ -532,7 +522,7 @@ mapNodeIdNgrams = HashMap.unionsWith (Map.unionWith (Map.unionWith addTuples)) .
     -- for it (which is the number of times the terms appears in a
     -- document) is copied over to all its types.
     f :: DocumentIdWithNgrams a b
-      -> HashMap b (Map NgramsType (Map NodeId (Int, TermsCount)))
+      -> HashMap.HashMap b (Map NgramsType (Map NodeId (Int, TermsCount)))
     f d = fmap (\(ngramsTypeMap, cnt) -> fmap (\i -> Map.singleton nId (i, cnt)) ngramsTypeMap) $ documentNgrams d
       where
         nId = _index $ documentWithId d
@@ -544,7 +534,7 @@ instance ExtractNgramsT HyperdataContact
     extractNgramsT _ncs l hc = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extract l hc
       where
         extract :: TermType Lang -> HyperdataContact
-                -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+                -> DBCmd err (HashMap.HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
         extract _l hc' = do
           let authors = map text2ngrams
                       $ maybe ["Nothing"] (\a -> [a])
@@ -558,11 +548,11 @@ instance ExtractNgramsT HyperdataDocument
     extractNgramsT :: NLPServerConfig
                    -> TermType Lang
                    -> HyperdataDocument
-                   -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+                   -> DBCmd err (HashMap.HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
     extractNgramsT ncs lang hd = HashMap.mapKeys (cleanExtractedNgrams 255) <$> extractNgramsT' hd
       where
         extractNgramsT' :: HyperdataDocument
-                        -> DBCmd err (HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
+                        -> DBCmd err (HashMap.HashMap ExtractedNgrams (Map NgramsType Int, TermsCount))
         extractNgramsT' doc = do
           let source    = text2ngrams
                         $ maybe "Nothing" identity

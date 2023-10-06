@@ -18,34 +18,25 @@ Main specifications to index a corpus with a term list
 module Main where
 
 import Control.Concurrent.Async as CCA (mapConcurrently)
-import Control.Concurrent (getNumCapabilities, myThreadId, threadCapability)
-import Control.Monad (zipWithM)
 import Control.Monad.IO.Class
 import Data.Aeson
-import Data.ByteString.Lazy (writeFile)
-import Data.Either (Either(..))
-import Data.List (cycle, concat, unwords)
 import Data.List.Split (chunksOf)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict    as DM
-import Data.Text (pack, Text)
-import qualified Data.Text as DT
+import Data.Map.Strict qualified as DM
+import Data.Text (pack)
+import Data.Text qualified as DT
+import Data.Text.Lazy qualified as DTL
+import Data.Text.Lazy.Encoding qualified as TLE
 import Data.Tuple.Extra (both)
-import qualified Data.Vector as DV
+import Data.Vector qualified as DV
 import GHC.Generics
-import System.IO (hPutStr, hFlush, stderr)
-import System.Environment
-
-import Gargantext.Prelude
-import Gargantext.Core
-import Gargantext.Core.Types
-import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Context
-import Gargantext.Core.Text.Terms.WithList
-import Gargantext.Core.Text.Corpus.Parsers.CSV (readCSVFile, csv_title, csv_abstract, csv_publication_year, unIntOrDec, fromMIntOrDec, defaultYear)
+import Gargantext.Core.Text.Corpus.Parsers.CSV (readCSVFile, csv_title, csv_abstract, csv_publication_year, fromMIntOrDec, defaultYear)
 import Gargantext.Core.Text.List.Formats.CSV (csvMapTermList)
-import Gargantext.Core.Text.Terms (terms)
 import Gargantext.Core.Text.Metrics.Count (coocOnContexts, Coocs)
+import Gargantext.Core.Text.Terms.WithList
+import Gargantext.Prelude hiding (show)
+import Protolude
+import System.IO (hFlush)
 
 ------------------------------------------------------------------------
 -- OUTPUT format
@@ -78,7 +69,7 @@ filterTermsAndCooc patterns (year, ts) = do
     log m = do
       tid    <- myThreadId
       (p, _) <- threadCapability tid
-      putStrLn . unwords $
+      putText . unwords $
         ["filterTermsAndCooc:", m, show year, "on proc", show p]
 
 main :: IO ()
@@ -97,14 +88,14 @@ main = do
       -- termListMap :: [Text]
       termList <- csvMapTermList termListFile
 
-      putStrLn $ show $ length termList
+      putText $ show $ length termList
 
       let patterns = buildPatterns termList
 
       -- r <- mapConcurrentlyChunked (filterTermsAndCooc patterns) (DM.toList corpus)
       r <-  mapConcurrently (filterTermsAndCooc patterns) (DM.toList corpus)
-      writeFile outputFile $ encode (CoocByYears r)
-    Left e -> panic $ "Error: " <> (pack e)
+      writeFile outputFile $ DTL.toStrict $ TLE.decodeUtf8 $ encode (CoocByYears r)
+    Left e -> panic $ "Error: " <> e
 
 
 
@@ -113,7 +104,7 @@ main = do
 mapMP :: MonadIO m => (a -> m b) -> [a] -> m [b]
 mapMP f xs = do
     bs <- zipWithM g (cycle "-\\|/") xs
-    liftIO $ hPutStr stderr "\rDone\n"
+    liftIO $ hPutStr stderr ("\rDone\n" :: Text)
     pure bs
   where
     g c x = do
@@ -130,6 +121,7 @@ mapConcurrentlyChunked f ts = do
 
 
 --terms' :: Patterns -> Text -> Corpus [[Text]]
+terms' :: Applicative f => Patterns -> Text -> f [[Text]]
 terms' pats txt = pure $ concat $ extractTermsWithList pats txt
 
 

@@ -90,6 +90,13 @@ frameCalcUploadAsync uId nId (FrameCalcUpload _wf_lang _wf_selection) jobHandle 
   case mCId of
     Nothing -> markFailure 1 Nothing jobHandle
     Just cId ->
-      addToCorpusWithForm (RootId (NodeId uId)) cId (NewWithForm CSV Plain body _wf_lang "calc-upload.csv" _wf_selection) jobHandle
+      addToCorpusWithForm (RootId (NodeId uId))
+                          cId
+                          (NewWithForm { _wf_filetype = CSV
+                                       , _wf_fileformat = Plain
+                                       , _wf_data = body
+                                       , _wf_lang
+                                       , _wf_name = "calc-upload.csv"
+                                       , _wf_selection }) jobHandle
 
   markComplete jobHandle

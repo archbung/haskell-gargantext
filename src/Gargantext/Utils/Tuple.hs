@@ -1,3 +1,14 @@
+
+{-|
+Module      : Gargantext.Utils.Tuple
+Description : Gargantext utilities
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 module Gargantext.Utils.Tuple where
 
 import Protolude

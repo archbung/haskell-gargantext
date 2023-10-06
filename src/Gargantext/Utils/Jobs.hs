@@ -1,3 +1,13 @@
+{-|
+Module      : Gargantext.Utils.Jobs
+Description : Gargantext utilities
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 module Gargantext.Utils.Jobs (

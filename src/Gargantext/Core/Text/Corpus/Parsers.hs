@@ -24,46 +24,37 @@ module Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..), clean,
     where
 
 -- import Gargantext.Core.Text.Learn (detectLangDefault)
-import "zip" Codec.Archive.Zip (withArchive, getEntry, getEntries)
+import "zip" Codec.Archive.Zip (EntrySelector, withArchive, getEntry, getEntries, unEntrySelector)
 import Conduit
 import Control.Concurrent.Async as CCA (mapConcurrently)
-import Control.Monad (join)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Attoparsec.ByteString (parseOnly, Parser)
-import Data.Either(Either(..))
-import Data.Either.Extra (partitionEithers)
-import Data.List (concat, lookup)
-import Data.Ord()
-import Data.String (String())
-import Data.String()
-import Data.Text (Text, intercalate, pack, unpack)
-import Data.Text.Encoding (decodeUtf8)
-import Data.Tuple.Extra (both, first, second)
+import Data.ByteString qualified as DB
+import Data.ByteString.Char8 qualified as DBC
+import Data.ByteString.Lazy qualified as DBL
+import Data.List (lookup)
+import Data.Map qualified as DM
+import Data.Text qualified as DT
+import Data.Tuple.Extra (both) -- , first, second)
 import Gargantext.API.Node.Corpus.New.Types (FileFormat(..))
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.CSV (parseHal, parseCsv, parseCsvC)
-import Gargantext.Core.Text.Corpus.Parsers.JSON (parseJSONC)
+import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
+import Gargantext.Core.Text.Corpus.Parsers.FrameWrite (text2titleParagraphs)
+import Gargantext.Core.Text.Corpus.Parsers.Iramuteq qualified as Iramuteq
+import Gargantext.Core.Text.Corpus.Parsers.JSON (parseJSONC, parseIstex)
+import Gargantext.Core.Text.Corpus.Parsers.RIS qualified as RIS
 import Gargantext.Core.Text.Corpus.Parsers.RIS.Presse (presseEnrich)
+import Gargantext.Core.Text.Corpus.Parsers.WOS qualified as WOS
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Query.Table.Ngrams (NgramsType(..))
-import Gargantext.Prelude
-import System.FilePath (FilePath(), takeExtension)
-import System.IO.Temp (emptySystemTempFile)
-import Gargantext.Core.Text.Corpus.Parsers.FrameWrite (text2titleParagraphs)
-import qualified Data.ByteString       as DB
-import qualified Data.ByteString.Char8 as DBC
-import qualified Data.ByteString.Lazy  as DBL
-import qualified Data.Map              as DM
-import qualified Data.Text             as DT
-import qualified Data.Text as Text
-import qualified Gargantext.Core.Text.Corpus.Parsers.Date      as Date
-import qualified Gargantext.Core.Text.Corpus.Parsers.Iramuteq  as Iramuteq
-import qualified Gargantext.Core.Text.Corpus.Parsers.RIS       as RIS
-import qualified Gargantext.Core.Text.Corpus.Parsers.WOS       as WOS
-import qualified Prelude
+import Gargantext.Prelude hiding (show, undefined)
+import Gargantext.Utils.Zip qualified as UZip
+import Protolude
+import System.FilePath (takeExtension)
 ------------------------------------------------------------------------
 
-type ParseError = String
+type ParseError = Text
 --type Field      = Text
 --type Document   = DM.Map Field Text
 --type FilesParsed = DM.Map FilePath FileParsed
@@ -81,6 +72,7 @@ data FileType = WOS
               | CsvHal
               | Iramuteq
               | JSON
+              | Istex
   deriving (Show, Eq)
 
 -- Implemented (ISI Format)
@@ -93,22 +85,21 @@ parseFormatC :: MonadBaseControl IO m
              => FileType
              -> FileFormat
              -> DB.ByteString
-             -> m (Either Prelude.String (Maybe Integer, ConduitT () HyperdataDocument IO ()))
+             -> m (Either Text (Integer, ConduitT () HyperdataDocument IO ()))
 parseFormatC CsvGargV3 Plain bs = do
   let eParsedC = parseCsvC $ DBL.fromStrict bs
-  case eParsedC of
-    Left err -> pure $ Left err
-    Right (mLen, parsedC) -> pure $ Right (mLen, transPipe (pure . runIdentity) parsedC)
+  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
 parseFormatC CsvHal    Plain bs = do
   let eParsedC = parseCsvC $ DBL.fromStrict bs
-  case eParsedC of
-    Left err -> pure $ Left err
-    Right (mLen, parsedC) -> pure $ Right (mLen, transPipe (pure . runIdentity) parsedC)
+  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
+parseFormatC Istex Plain bs = do
+  ep <- liftBase $ parseIstex EN $ DBL.fromStrict bs
+  pure $ (\p -> (1, yieldMany [p])) <$> ep
 parseFormatC RisPresse Plain bs = do
   --docs <- enrichWith RisPresse
   let eDocs = runParser' RisPresse bs
   pure $ (\docs ->
-            ( Just $ fromIntegral $ length docs
+            ( fromIntegral $ length docs
             , yieldMany docs
               .| mapC presseEnrich
               .| mapC (map $ both decodeUtf8)
@@ -116,7 +107,7 @@ parseFormatC RisPresse Plain bs = do
 parseFormatC WOS Plain bs = do
   let eDocs = runParser' WOS bs
   pure $ (\docs ->
-            ( Just $ fromIntegral $ length docs
+            ( fromIntegral $ length docs
             , yieldMany docs
               .| mapC (map $ first WOS.keys)
               .| mapC (map $ both decodeUtf8)
@@ -125,27 +116,21 @@ parseFormatC WOS Plain bs = do
 parseFormatC Iramuteq Plain bs = do
   let eDocs = runParser' Iramuteq bs
   pure $ (\docs ->
-            ( Just $ fromIntegral $ length docs
+            ( fromIntegral $ length docs
             , yieldMany docs
               .| mapC (map $ first Iramuteq.keys)
               .| mapC (map $ both decodeUtf8)
-              .| mapMC ((toDoc Iramuteq) . (map (second (Text.replace "_" " "))))
+              .| mapMC ((toDoc Iramuteq) . (map (second (DT.replace "_" " "))))
             )
          )
               <$> eDocs
-
 parseFormatC JSON    Plain bs = do
   let eParsedC = parseJSONC $ DBL.fromStrict bs
-  case eParsedC of
-    Left err -> pure $ Left err
-    Right (mLen, parsedC) -> pure $ Right (mLen, transPipe (pure . runIdentity) parsedC)
-
-parseFormatC ft ZIP bs = do
-  path <- liftBase $ emptySystemTempFile "parsed-zip"
-  liftBase $ DB.writeFile path bs
-  fileContents <- liftBase $ withArchive path $ do
-    files <- DM.keys <$> getEntries
-    mapM getEntry files
+  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
+parseFormatC ft ZIP bs = liftBase $ UZip.withZipFileBS bs $ do
+  fileNames <- filter (filterZIPFileNameP ft) <$> DM.keys <$> getEntries
+  printDebug "[parseFormatC] fileNames" fileNames
+  fileContents <- mapM getEntry fileNames
   --printDebug "[parseFormatC] fileContents" fileContents
   eContents <- mapM (parseFormatC ft Plain) fileContents
   --printDebug "[parseFormatC] contents" contents
@@ -158,12 +143,17 @@ parseFormatC ft ZIP bs = do
         _  -> do
           let lenghts = fst <$> contents
           let contents' = snd <$> contents
-          let totalLength = sum $ sum <$> lenghts  -- Trick: sum (Just 1) = 1, sum Nothing = 0
-          pure $ Right ( Just totalLength
+          let totalLength = sum lenghts
+          pure $ Right ( totalLength
                        , sequenceConduits contents' >> pure () ) -- .| mapM_C (printDebug "[parseFormatC] doc")
-    _ -> pure $ Left $ unpack $ intercalate "\n" $ pack <$> errs
+    _ -> pure $ Left $ DT.intercalate "\n" errs
+parseFormatC _ _ _ = pure $ Left "Not implemented"
 
-parseFormatC _ _ _ = undefined
+
+filterZIPFileNameP :: FileType -> EntrySelector -> Bool
+filterZIPFileNameP Istex f = (takeExtension (unEntrySelector f) == ".json") &&
+                             ((unEntrySelector f) /= "manifest.json")
+filterZIPFileNameP _     _ = True
 
 
 etale :: [HyperdataDocument] -> [HyperdataDocument]
@@ -204,28 +194,29 @@ etale = concat . (map etale')
 -- TODO manage errors here
 -- TODO: to debug maybe add the filepath in error message
 
-parseFile :: FileType -> FileFormat -> FilePath -> IO (Either Prelude.String [HyperdataDocument])
-parseFile CsvHal    Plain p = parseHal p
+parseFile :: FileType
+          -> FileFormat
+          -> FilePath
+          -> IO (Either Text [HyperdataDocument])
 parseFile CsvGargV3 Plain p = parseCsv p
-
+parseFile CsvHal    Plain p = parseHal p
 parseFile RisPresse Plain p = do
   docs <- join $ mapM (toDoc RIS) <$> snd <$> enrichWith RisPresse <$> readFileWith RIS p
   pure $ Right docs
-
 parseFile WOS       Plain p = do
   docs <- join $ mapM (toDoc WOS) <$> snd <$> enrichWith WOS       <$> readFileWith WOS p
   pure $ Right docs
-
-parseFile Iramuteq       Plain p = do
-  docs <- join $ mapM ((toDoc Iramuteq) . (map (second (Text.replace "_" " "))))
+parseFile Iramuteq  Plain p = do
+  docs <- join $ mapM ((toDoc Iramuteq) . (map (second (DT.replace "_" " "))))
               <$> snd
               <$> enrichWith Iramuteq
               <$> readFileWith Iramuteq p
   pure $ Right docs
-
-
+parseFile Istex Plain p = do
+  printDebug "[parseFile] Istex ZIP p" p
+  pure $ Left "Error! Not supported yet!"
 parseFile ff        _ p = do
-  docs <- join $ mapM (toDoc ff)  <$> snd <$> enrichWith ff        <$> readFileWith ff  p
+  docs <- join $ mapM (toDoc ff) <$> snd <$> enrichWith ff        <$> readFileWith ff  p
   pure $ Right docs
 
 toDoc :: FileType -> [(Text, Text)] -> IO HyperdataDocument
@@ -239,24 +230,24 @@ toDoc ff d = do
       (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit dateToParse
 
       let hd = HyperdataDocument { _hd_bdd = Just $ DT.pack $ show ff
-                             , _hd_doi = lookup "doi" d
-                             , _hd_url = lookup "URL" d
-                             , _hd_uniqId = Nothing
-                             , _hd_uniqIdBdd = Nothing
-                             , _hd_page = Nothing
-                             , _hd_title = lookup "title" d
-                             , _hd_authors = lookup "authors" d
-                             , _hd_institutes = lookup "institutes" d
-                             , _hd_source = lookup "source" d
-                             , _hd_abstract = lookup "abstract" d
-                             , _hd_publication_date = fmap (DT.pack . show) utcTime
-                             , _hd_publication_year = pub_year
-                             , _hd_publication_month = pub_month
-                             , _hd_publication_day = pub_day
-                             , _hd_publication_hour = Nothing
-                             , _hd_publication_minute = Nothing
-                             , _hd_publication_second = Nothing
-                             , _hd_language_iso2 = Just $ (DT.pack . show) lang }
+                                 , _hd_doi = lookup "doi" d
+                                 , _hd_url = lookup "URL" d
+                                 , _hd_uniqId = Nothing
+                                 , _hd_uniqIdBdd = Nothing
+                                 , _hd_page = Nothing
+                                 , _hd_title = lookup "title" d
+                                 , _hd_authors = lookup "authors" d
+                                 , _hd_institutes = lookup "institutes" d
+                                 , _hd_source = lookup "source" d
+                                 , _hd_abstract = lookup "abstract" d
+                                 , _hd_publication_date = fmap (DT.pack . show) utcTime
+                                 , _hd_publication_year = pub_year
+                                 , _hd_publication_month = pub_month
+                                 , _hd_publication_day = pub_day
+                                 , _hd_publication_hour = Nothing
+                                 , _hd_publication_minute = Nothing
+                                 , _hd_publication_second = Nothing
+                                 , _hd_language_iso2 = Just $ (DT.pack . show) lang }
       -- printDebug "[G.C.T.C.Parsers] HyperdataDocument" hd
       pure hd
 
@@ -297,12 +288,13 @@ withParser Iramuteq = Iramuteq.parser
 withParser _   = panic "[ERROR] Parser not implemented yet"
 
 runParser :: FileType -> DB.ByteString
-          -> IO (Either String [[(DB.ByteString, DB.ByteString)]])
+          -> IO (Either Text [[(DB.ByteString, DB.ByteString)]])
 runParser format text = pure $ runParser' format text
 
-runParser' :: FileType -> DB.ByteString
-          -> (Either String [[(DB.ByteString, DB.ByteString)]])
-runParser' format text = parseOnly (withParser format) text
+runParser' :: FileType
+          -> DB.ByteString
+          -> (Either Text [[(DB.ByteString, DB.ByteString)]])
+runParser' format text = first DT.pack $ parseOnly (withParser format) text
 
 openZip :: FilePath -> IO [DB.ByteString]
 openZip fp = do

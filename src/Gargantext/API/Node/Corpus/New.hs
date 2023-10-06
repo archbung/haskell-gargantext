@@ -42,7 +42,7 @@ import Gargantext.API.Node.Corpus.Searx
 import Gargantext.API.Node.Corpus.Types
 import Gargantext.API.Node.Corpus.Update (addLanguageToCorpus)
 import Gargantext.API.Node.Types
-import Gargantext.Core (Lang(..), withDefaultLanguage)
+import Gargantext.Core (Lang(..), withDefaultLanguage, defaultLanguage)
 import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion)
 import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.Corpus.Parsers qualified as Parser (FileType(..), parseFormatC)
@@ -278,33 +278,35 @@ addToCorpusWithForm :: (FlowCmdM env err m, MonadJobStatus m)
                     -> NewWithForm
                     -> JobHandle m
                     -> m ()
-addToCorpusWithForm user cid (NewWithForm ft ff d (withDefaultLanguage -> l) _n sel) jobHandle = do
+addToCorpusWithForm user cid nwf jobHandle = do
   -- printDebug "[addToCorpusWithForm] Parsing corpus: " cid
   -- printDebug "[addToCorpusWithForm] fileType" ft
   -- printDebug "[addToCorpusWithForm] fileFormat" ff
 
+  let l = nwf ^. wf_lang . non defaultLanguage
   addLanguageToCorpus cid l
 
   limit' <- view $ hasConfig . gc_max_docs_parsers
   let limit = fromIntegral limit' :: Integer
   let
-    parseC = case ft of
-      CSV_HAL   -> Parser.parseFormatC Parser.CsvHal
+    parseC = case (nwf ^. wf_filetype) of
       CSV       -> Parser.parseFormatC Parser.CsvGargV3
-      WOS       -> Parser.parseFormatC Parser.WOS
-      PresseRIS -> Parser.parseFormatC Parser.RisPresse
+      CSV_HAL   -> Parser.parseFormatC Parser.CsvHal
       Iramuteq  -> Parser.parseFormatC Parser.Iramuteq
+      Istex     -> Parser.parseFormatC Parser.Istex
       JSON      -> Parser.parseFormatC Parser.JSON
+      PresseRIS -> Parser.parseFormatC Parser.RisPresse
+      WOS       -> Parser.parseFormatC Parser.WOS
 
   -- TODO granularity of the logStatus
-  let data' = case ff of
-        Plain -> cs d
-        ZIP   -> case BSB64.decode $ TE.encodeUtf8 d of
+  let data' = case (nwf ^. wf_fileformat) of
+        Plain -> cs (nwf ^. wf_data)
+        ZIP   -> case BSB64.decode $ TE.encodeUtf8 (nwf ^. wf_data) of
           Left err -> panic $ T.pack "[addToCorpusWithForm] error decoding base64: " <> T.pack err
           Right decoded -> decoded
-  eDocsC <- liftBase $ parseC ff data'
+  eDocsC <- liftBase $ parseC (nwf ^. wf_fileformat) data'
   case eDocsC of
-    Right (mCount, docsC) -> do
+    Right (count, docsC) -> do
       -- TODO Add progress (jobStatus) update for docs - this is a
       -- long action
 
@@ -333,9 +335,9 @@ addToCorpusWithForm user cid (NewWithForm ft ff d (withDefaultLanguage -> l) _n 
       _cid' <- flowCorpus user
                           (Right [cid])
                           (Multi l)
-                          (Just sel)
+                          (Just (nwf ^. wf_selection))
                           --(Just $ fromIntegral $ length docs, docsC')
-                          (mCount, transPipe liftBase docsC') -- TODO fix number of docs
+                          (count, transPipe liftBase docsC') -- TODO fix number of docs
                           --(map (map toHyperdataDocument) docs)
                           jobHandle
 
@@ -347,7 +349,7 @@ addToCorpusWithForm user cid (NewWithForm ft ff d (withDefaultLanguage -> l) _n 
       markComplete jobHandle
     Left e -> do
       printDebug "[addToCorpusWithForm] parse error" e
-      markFailed (Just $ T.pack e) jobHandle
+      markFailed (Just e) jobHandle
 
 {-
 addToCorpusWithFile :: FlowCmdM env err m

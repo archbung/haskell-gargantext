@@ -14,22 +14,17 @@ Portability : POSIX
 module Gargantext.Core.Ext.IMT where
 
 import Data.Either (Either(..))
+import Data.List qualified as DL
 import Data.Map.Strict (Map)
-import Data.Text (Text, splitOn)
-
-import qualified Data.Set    as S
-import qualified Data.List   as DL
-import qualified Data.Vector as DV
-import qualified Data.Map.Strict    as M
-import qualified Prelude
-
+import Data.Map.Strict qualified as M
 import Data.Morpheus.Types (GQLType)
+import Data.Set qualified as S
+import Data.Text (Text, splitOn)
+import Data.Vector qualified as DV
 import GHC.Generics (Generic)
-
-import Gargantext.Prelude
-
-import Gargantext.Core.Text.Metrics.Utils      as Utils
 import Gargantext.Core.Text.Corpus.Parsers.CSV as CSV
+import Gargantext.Core.Text.Metrics.Utils      as Utils
+import Gargantext.Prelude
 
 data School = School { school_shortName :: Text
                      , school_longName  :: Text
@@ -112,7 +107,7 @@ mapIdSchool :: Map Text Text
 mapIdSchool = M.fromList $ Gargantext.Prelude.map
                 (\(School { school_shortName, school_id }) -> (school_id, school_shortName)) schools
 
-hal_data :: IO (Either Prelude.String (DV.Vector CsvHal))
+hal_data :: IO (Either Text (DV.Vector CsvHal))
 hal_data = do
   r <- CSV.readCsvHal "doc/corpus_imt/Gargantext_Corpus.csv"
   pure $ snd <$> r
