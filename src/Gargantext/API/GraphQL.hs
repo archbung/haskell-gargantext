@@ -83,6 +83,7 @@ data Query m
     , users               :: GQLUser.UserArgs -> m [GQLUser.User m]
     , tree                :: GQLTree.TreeArgs -> m (GQLTree.TreeFirstLevel m)
     , team                :: GQLTeam.TeamArgs -> m GQLTeam.Team
+    , tree_branch         :: GQLTree.BreadcrumbArgs -> m (GQLTree.BreadcrumbInfo)
     } deriving (Generic, GQLType)
 
 data Mutation m
@@ -130,7 +131,8 @@ rootResolver authenticatedUser policyManager =
                             , user_infos          = GQLUserInfo.resolveUserInfos authenticatedUser policyManager
                             , users               = GQLUser.resolveUsers authenticatedUser policyManager
                             , tree                = GQLTree.resolveTree authenticatedUser policyManager
-                            , team                = GQLTeam.resolveTeam }
+                            , team                = GQLTeam.resolveTeam 
+                            , tree_branch         = GQLTree.resolveBreadcrumb }
     , mutationResolver = Mutation { update_user_info       = GQLUserInfo.updateUserInfo
                                   , update_user_pubmed_api_key = GQLUser.updateUserPubmedAPIKey
                                   , delete_team_membership = GQLTeam.deleteTeamMembership

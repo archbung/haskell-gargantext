@@ -1,3 +1,10 @@
+## Version 0.0.6.9.9.8.2
+
+* [FRONT][FIX][[User page] Fix the error message when the page loads (#604)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/604)
+* [FRONT][FIX][[Node content] Breadcrumb: display the full path of a node, as a breadcrumb (with each clickable parent) (#568)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/568)
+* [BACK][FIX][[Node content] Breadcrumb: display the full path of a node, as a breadcrumb (with each clickable parent) (#263)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/263)
+* [BACK][FIX][Post policy-manager fixups (#273)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/273)
+
 ## Version 0.0.6.9.9.8.1
 
 * [BACK][FIX][Security considerations (#259)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/259)

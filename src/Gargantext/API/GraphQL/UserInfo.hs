@@ -49,7 +49,7 @@ import Gargantext.API.GraphQL.Types
 import Gargantext.API.Admin.Auth.Types hiding (Valid)
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck
-import Gargantext.Database.Admin.Types.Node
+-- import Gargantext.Database.Admin.Types.Node
 
 data UserInfo = UserInfo
   { ui_id             :: Int
@@ -108,7 +108,8 @@ resolveUserInfos
   -> AccessPolicyManager
   -> UserInfoArgs -> GqlM e env [UserInfo]
 resolveUserInfos autUser mgr UserInfoArgs { user_id } =
-  withPolicy autUser mgr (nodeChecks (NodeId user_id)) $ dbUsers user_id
+  -- FIXME(adn) we should use a proper policy, not 'alwaysAllow'.
+  withPolicy autUser mgr alwaysAllow $ dbUsers user_id
 
 -- | Mutation for user info
 updateUserInfo

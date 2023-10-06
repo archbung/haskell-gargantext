@@ -50,7 +50,8 @@ resolveUsers
   -> UserArgs
   -> GqlM e env [User (GqlM e env)]
 resolveUsers autUser mgr UserArgs { user_id } = do
-  withPolicy autUser mgr (nodeChecks (NodeId user_id)) $ dbUsers user_id
+  -- FIXME(adn) we should use a proper policy, not 'alwaysAllow'.
+  withPolicy autUser mgr alwaysAllow $ dbUsers user_id
 
 -- | Inner function to fetch the user from DB.
 dbUsers

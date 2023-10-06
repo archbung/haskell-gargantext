@@ -3,7 +3,14 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Test.API.Private where
+module Test.API.Private (
+    tests
+
+  -- * Utility functions
+  , withValidLogin
+  , getJSON
+  , protected
+  ) where
 
 import Control.Exception
 import Control.Monad
@@ -11,11 +18,9 @@ import Control.Monad.Reader
 import Data.ByteString (ByteString)
 import Data.Maybe
 import Data.Proxy
-import Fmt
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Routes
 import Gargantext.Core.Types.Individu
-import Gargantext.Database.Action.User.New
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Types
 import Network.Wai.Test (SResponse)
@@ -24,26 +29,15 @@ import Servant
 import Servant.Auth.Client ()
 import Servant.Client
 import Test.API.Authentication (auth_api)
-import Test.API.Setup (withTestDBAndPort, setupEnvironment)
-import Test.Database.Types
+import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
-import Test.Hspec.Wai.JSON (json)
 import Test.Utils (jsonFragment, shouldRespondWith')
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text.Encoding as TE
 import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Auth.Client as SA
-
-type Env = ((TestEnv, Wai.Port), Application)
-
-curApi :: Builder
-curApi = "v1.0"
-
-mkUrl :: Wai.Port -> Builder -> ByteString
-mkUrl _port urlPiece =
-  "/api/" +| curApi |+ urlPiece
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
 protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
@@ -57,7 +51,7 @@ getJSON :: ByteString -> WaiSession () SResponse
 getJSON url =
   request "GET" url [(hContentType, "application/json")] ""
 
-withValidLogin :: MonadIO m => Wai.Port -> Username -> GargPassword -> (Token -> m a) -> m a
+withValidLogin :: (MonadFail m, MonadIO m) => Wai.Port -> Username -> GargPassword -> (Token -> m a) -> m a
 withValidLogin port ur pwd act = do
   baseUrl <- liftIO $ parseBaseUrl "http://localhost"
   manager <- liftIO $ newManager defaultManagerSettings
@@ -66,7 +60,11 @@ withValidLogin port ur pwd act = do
   result <- liftIO $ runClientM (auth_api authPayload) clientEnv
   case result of
     Left err  -> liftIO $ throwIO $ userError (show err)
-    Right res -> let token = _authVal_token $ fromJust (_authRes_valid res) in act token
+    Right res
+      | Just tkn <- _authRes_valid res
+      -> act (_authVal_token tkn)
+      | otherwise
+      -> fail $ "No token found in " <> show res
 
 
 tests :: Spec
@@ -83,14 +81,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       -- FIXME(adn): unclear if this is useful at all. Doesn't do permission checking.
       it "doesn't allow someone with an invalid token to show the results" $ \((testEnv, port), _) -> do
 
-        -- Let's create two users, Alice & Bob. Alice shouldn't be able to see
-        -- Bob's private data and vice-versa.
-        void $ flip runReaderT testEnv $ runTestMonad $ do
-          let nur1 = mkNewUser "alice@gargan.text" (GargPassword "alice")
-          let nur2 = mkNewUser "bob@gargan.text" (GargPassword "bob")
-
-          void $ new_user nur1
-          void $ new_user nur2
+        createAliceAndBob testEnv
 
         let ( roots_api :<|> _nodes_api
               ) = client (Proxy :: Proxy (MkProtectedAPI GargAdminAPI)) (SA.Token "bogus")

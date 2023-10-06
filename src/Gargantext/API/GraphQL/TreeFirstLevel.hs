@@ -42,6 +42,16 @@ data TreeFirstLevel m = TreeFirstLevel
   , children :: [TreeNode]
   } deriving (Generic, GQLType)
 
+data BreadcrumbArgs = BreadcrumbArgs
+  {
+    node_id :: Int
+  } deriving (Generic, GQLType)
+
+data BreadcrumbInfo = BreadcrumbInfo
+  {
+    parents :: [TreeNode]
+  } deriving (Generic, GQLType)
+
 type ParentId = Maybe NodeId
 
 resolveTree :: (CmdCommon env)
@@ -97,3 +107,22 @@ nodeToTreeNode N.Node {..} = if (fromNodeTypeId _node_typename /= NN.NodeFolderS
                                            }
                              else
                              Nothing
+
+resolveBreadcrumb :: (CmdCommon env) => BreadcrumbArgs -> GqlM e env (BreadcrumbInfo)
+resolveBreadcrumb BreadcrumbArgs { node_id } = dbRecursiveParents node_id
+
+convertDbTreeToTreeNode :: T.DbTreeNode -> TreeNode
+convertDbTreeToTreeNode T.DbTreeNode { _dt_name, _dt_nodeId, _dt_typeId, _dt_parentId } = TreeNode
+  { name = _dt_name
+  , id = NN.unNodeId _dt_nodeId
+  , node_type = fromNodeTypeId _dt_typeId
+  , parent_id = NN.unNodeId <$> _dt_parentId
+  }
+
+dbRecursiveParents :: (CmdCommon env) => Int -> GqlM e env (BreadcrumbInfo)
+dbRecursiveParents node_id = do
+  let nId = NodeId node_id
+  dbParents <- lift $ T.recursiveParents nId allNodeTypes
+  let treeNodes = map convertDbTreeToTreeNode dbParents
+  let breadcrumbInfo = BreadcrumbInfo { parents = treeNodes }
+  pure breadcrumbInfo  
