@@ -1,6 +1,5 @@
 
-import System.Environment (getArgs)
-import Prelude (IO, id, (.), ($))
+import Prelude (IO, id, (.))
 import Data.Aeson (encode)
 import Codec.Serialise (deserialise)
 import qualified Data.ByteString.Lazy as L

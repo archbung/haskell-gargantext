@@ -3,7 +3,6 @@ module Main where
 
 import Gargantext.Prelude
 
-import Control.Exception
 import Shelly hiding (FilePath)
 import System.IO
 import System.Process

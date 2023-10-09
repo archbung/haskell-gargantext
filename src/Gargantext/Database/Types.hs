@@ -30,6 +30,10 @@ data Indexed i a =
 
 makeLenses ''Indexed
 
+instance Bifunctor Indexed where
+  first  f (Indexed i a) = Indexed (f i) a
+  second g (Indexed i a) = Indexed i (g a)
+
 ----------------------------------------------------------------------
 -- | Main instances
 instance (FromField i, FromField a) => PGS.FromRow (Indexed i a) where

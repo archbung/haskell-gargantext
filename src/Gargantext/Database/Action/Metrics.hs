@@ -32,7 +32,7 @@ import Gargantext.API.Ngrams.Types (TabType(..), ngramsTypeFromTabType, NgramsTe
 import Gargantext.Core (HasDBid(toDBid))
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Text.Metrics (scored, Scored(..), {-localMetrics, toScored-})
-import Gargantext.Core.Types (ListType(..), NodeType(..), ContextId)
+import Gargantext.Core.Types (ListType(..), NodeType(..), ContextId, contextId2NodeId)
 import Gargantext.Core.Types.Query (Limit(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser{-, getTficfWith-})
 import Gargantext.Database.Admin.Config (userMaster)
@@ -61,7 +61,9 @@ getNgramsCooc cId lId tabType maybeLimit = do
 
   lIds <- selectNodesWithUsername NodeList userMaster
 
+  -- FIXME(adn) Audit this, we are converting from a ContextId to a NodeId
   myCooc <- HM.filter (>1) <$> getCoocByNgrams (Diagonal True)
+                           <$> HM.map (Set.map contextId2NodeId)
                            <$> groupNodesByNgrams ngs
                            <$> getContextsByNgramsOnlyUser cId
                                                            (lIds <> [lId])

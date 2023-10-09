@@ -23,6 +23,13 @@ import Data.ByteString.Lazy qualified as BSL
 import Data.MIME.Types qualified as DMT
 import Data.Swagger
 import Data.Text qualified as T
+import Data.Text
+import Servant
+import qualified Gargantext.Database.GargDB as GargDB
+import qualified Network.HTTP.Media as M
+
+import Data.Either
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
@@ -33,14 +40,11 @@ import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Admin.Types.Hyperdata.File
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.GargDB qualified as GargDB
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Network.HTTP.Media qualified as M
-import Servant
 
 data RESPONSE deriving Typeable
 
@@ -57,8 +61,8 @@ type FileApi = Summary "File download"
 instance MimeUnrender RESPONSE BSResponse where
   mimeUnrender _ lbs = Right $ BSResponse (BSL.toStrict lbs)
 
-fileApi :: UserId -> NodeId -> GargServer FileApi
-fileApi uId nId = fileDownload uId nId
+fileApi :: NodeId -> GargServer FileApi
+fileApi nId = fileDownload nId
 
 newtype Contents = Contents BS.ByteString
 
@@ -74,10 +78,9 @@ instance ToSchema BSResponse  where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy TODO)
 
 fileDownload :: (HasSettings env, FlowCmdM env err m)
-             => UserId
-             -> NodeId
+             => NodeId
              -> m (Headers '[Servant.Header "Content-Type" Text] BSResponse)
-fileDownload uId nId = do
+fileDownload nId = do
   -- printDebug "[fileDownload] uId" uId
   -- printDebug "[fileDownload] nId" nId
 
@@ -108,27 +111,30 @@ type FileAsyncApi = Summary "File Async Api"
                  :> "add"
                  :> AsyncJobs JobLog '[FormUrlEncoded] NewWithFile JobLog
 
-fileAsyncApi :: UserId -> NodeId -> ServerT FileAsyncApi (GargM Env GargError)
-fileAsyncApi uId nId =
+fileAsyncApi :: AuthenticatedUser
+             -- ^ The logged-in user
+             -> NodeId
+             -> ServerT FileAsyncApi (GargM Env GargError)
+fileAsyncApi authenticatedUser nId =
   serveJobsAPI AddFileJob $ \jHandle i ->
-    addWithFile uId nId i jHandle
+    addWithFile authenticatedUser nId i jHandle
 
 
 addWithFile :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
-            => UserId
+            => AuthenticatedUser
+            -- ^ The logged-in user
             -> NodeId
             -> NewWithFile
             -> JobHandle m
             -> m ()
-addWithFile uId nId nwf@(NewWithFile _d _l fName) jobHandle = do
+addWithFile authenticatedUser nId nwf@(NewWithFile _d _l fName) jobHandle = do
 
   -- printDebug "[addWithFile] Uploading file: " nId
   markStarted 1 jobHandle
 
   fPath <- GargDB.writeFile nwf
   -- printDebug "[addWithFile] File saved as: " fPath
-
-  nIds <- mkNodeWithParent NodeFile (Just nId) uId fName
+  nIds <- mkNodeWithParent NodeFile (Just nId) userId fName
 
   _ <- case nIds of
     [nId'] -> do
@@ -143,3 +149,5 @@ addWithFile uId nId nwf@(NewWithFile _d _l fName) jobHandle = do
 
   -- printDebug "[addWithFile] File upload finished: " nId
   markComplete jobHandle
+  where
+    userId = authenticatedUser ^. auth_user_id

@@ -101,7 +101,7 @@ mkRoot user = do
   -- TODO ? Which name for user Node ?
   una <- getUsername user
 
-  case uid > 0 of
+  case isPositive uid of
      False -> nodeError NegativeId
      True  -> do
        rs <- mkNodeWithParent NodeUser Nothing uid una
@@ -126,7 +126,7 @@ selectRoot (UserName username) = proc () -> do
 selectRoot (UserDBId uid) = proc () -> do
     row   <- queryNodeTable -< ()
     restrict -< _node_typename row   .== (sqlInt4 $ toDBid NodeUser)
-    restrict -< _node_user_id   row   .== (sqlInt4 uid)
+    restrict -< _node_user_id   row   .== (sqlInt4 $ _UserId uid)
     returnA  -< row
 
 selectRoot (RootId nid) =

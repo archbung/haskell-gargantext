@@ -237,7 +237,7 @@ serverGargAdminAPI =  roots
 
 serverPrivateGargAPI'
   :: AuthenticatedUser -> ServerT GargPrivateAPI' (GargM Env GargError)
-serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser (NodeId uid))
+serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser userNodeId userId)
        =  serverGargAdminAPI
      :<|> nodeAPI     (Proxy :: Proxy HyperdataAny)      authenticatedUser
      :<|> contextAPI  (Proxy :: Proxy HyperdataAny)      authenticatedUser
@@ -251,7 +251,7 @@ serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser (NodeId uid))
      :<|> withAccess  (Proxy :: Proxy TableNgramsApi) Proxy authenticatedUser
           <$> PathNode <*> apiNgramsTableDoc
 
-     :<|> DocumentExport.api uid
+     :<|> DocumentExport.api userNodeId
 
      :<|> count -- TODO: undefined
 
@@ -259,18 +259,18 @@ serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser (NodeId uid))
      --     <$> PathNode <*> Search.api -- TODO: move elsewhere
 
      :<|> withAccess (Proxy :: Proxy GraphAPI)       Proxy authenticatedUser
-          <$> PathNode <*> graphAPI uid -- TODO: mock
+          <$> PathNode <*> graphAPI userId -- TODO: mock
 
      :<|> (\nodeId -> withPolicyT (Proxy @TreeAPI) Proxy authenticatedUser (nodeChecks nodeId) (treeAPI nodeId))
 
      :<|> withAccess (Proxy :: Proxy TreeFlatAPI)    Proxy authenticatedUser
           <$> PathNode <*> treeFlatAPI
 
-     :<|> members uid
+     :<|> members
      -- TODO access
-     :<|> addCorpusWithForm  (RootId (NodeId uid))
+     :<|> addCorpusWithForm  (RootId userNodeId)
     -- :<|> addCorpusWithFile  (RootId (NodeId uid))
-     :<|> addCorpusWithQuery (RootId (NodeId uid))
+     :<|> addCorpusWithQuery (RootId userNodeId)
 
      -- :<|> addAnnuaireWithForm
      -- :<|> New.api  uid -- TODO-SECURITY

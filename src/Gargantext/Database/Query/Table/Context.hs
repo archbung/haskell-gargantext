@@ -36,10 +36,10 @@ import Prelude            hiding (null, id, map, sum)
 
 getContextWith :: (HasNodeError err, JSONB a)
             => ContextId -> proxy a -> DBCmd err (Node a)
-getContextWith nId _ = do
-  maybeContext <- headMay <$> runOpaQuery (selectContext (pgNodeId nId))
+getContextWith cId _ = do
+  maybeContext <- headMay <$> runOpaQuery (selectContext (pgContextId cId))
   case maybeContext of
-    Nothing -> nodeError (DoesNotExist nId)
+    Nothing -> nodeError (NoContextFound cId)
     Just  r -> pure $ context2node r
 
 queryContextSearchTable :: Select ContextSearchRead
@@ -117,7 +117,7 @@ getContextsIdWithType :: (HasNodeError err, HasDBid NodeType)
                       => NodeType -> DBCmd err [ContextId]
 getContextsIdWithType nt = do
   ns <- runOpaQuery $ selectContextsIdWithType nt
-  pure (map NodeId ns)
+  pure (map UnsafeMkContextId ns)
 
 selectContextsIdWithType :: HasDBid NodeType
                       => NodeType -> Select (Column SqlInt4)

@@ -31,14 +31,13 @@ import Gargantext.Database.Action.Node
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
-import Gargantext.Database.Query.Table.Node.User
-import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 import Web.FormUrlEncoded (FromForm, ToForm)
+import Gargantext.API.Admin.Auth.Types
 
 ------------------------------------------------------------------------
 data PostNode = PostNode { pn_name     :: Text
@@ -56,14 +55,14 @@ instance Arbitrary PostNode where
 
 ------------------------------------------------------------------------
 postNode :: HasNodeError err
-         => UserId
+         => AuthenticatedUser
+         -- ^ The logged-in user
          -> NodeId
          -> PostNode
          -> Cmd err [NodeId]
-postNode uId pId (PostNode nodeName nt) = do
-  nodeUser <- getNodeUser (NodeId uId)
-  let uId' = nodeUser ^. node_user_id
-  mkNodeWithParent nt (Just pId) uId' nodeName
+postNode authenticatedUser pId (PostNode nodeName nt) = do
+  let userId = authenticatedUser ^. auth_user_id
+  mkNodeWithParent nt (Just pId) userId nodeName
 
 ------------------------------------------------------------------------
 type PostNodeAsync = Summary "Post Node"
@@ -72,29 +71,32 @@ type PostNodeAsync = Summary "Post Node"
 
 
 postNodeAsyncAPI
-  :: UserId -> NodeId -> ServerT PostNodeAsync (GargM Env GargError)
-postNodeAsyncAPI uId nId =
-  serveJobsAPI NewNodeJob $ \jHandle p -> postNodeAsync uId nId p jHandle
+  :: AuthenticatedUser
+  -- ^ The logged-in user
+  -> NodeId
+  -- ^ The target node
+  -> ServerT PostNodeAsync (GargM Env GargError)
+postNodeAsyncAPI authenticatedUser nId =
+  serveJobsAPI NewNodeJob $ \jHandle p -> postNodeAsync authenticatedUser nId p jHandle
 
 ------------------------------------------------------------------------
 postNodeAsync :: (FlowCmdM env err m, MonadJobStatus m)
-    => UserId
+    => AuthenticatedUser
+    -- ^ The logged in user
     -> NodeId
     -> PostNode
     -> JobHandle m
     -> m ()
-postNodeAsync uId nId (PostNode nodeName tn) jobHandle = do
+postNodeAsync authenticatedUser nId (PostNode nodeName tn) jobHandle = do
 
   -- printDebug "postNodeAsync" nId
   markStarted 3 jobHandle
   markProgress 1 jobHandle
 
-  nodeUser <- getNodeUser (NodeId uId)
-
   -- _ <- threadDelay 1000
   markProgress 1 jobHandle
 
-  let uId' = nodeUser ^. node_user_id
-  _ <- mkNodeWithParent tn (Just nId) uId' nodeName
+  let userId = authenticatedUser ^. auth_user_id
+  _ <- mkNodeWithParent tn (Just nId) userId nodeName
 
   markComplete jobHandle

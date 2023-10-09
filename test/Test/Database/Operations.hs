@@ -83,14 +83,14 @@ writeRead01 env = do
     uid1 <- new_user nur1
     uid2 <- new_user nur2
 
-    liftBase $ uid1 `shouldBe` 2
-    liftBase $ uid2 `shouldBe` 3
+    liftBase $ uid1 `shouldBe` UnsafeMkUserId 2
+    liftBase $ uid2 `shouldBe` UnsafeMkUserId 3
 
     -- Getting the users by username returns the expected IDs
     uid1' <- getUserId (UserName "alfredo")
     uid2' <- getUserId (UserName "paul")
-    liftBase $ uid1' `shouldBe` 2
-    liftBase $ uid2' `shouldBe` 3
+    liftBase $ uid1' `shouldBe` UnsafeMkUserId 2
+    liftBase $ uid2' `shouldBe` UnsafeMkUserId 3
 
 mkUserDup :: TestEnv -> Assertion
 mkUserDup env = do
@@ -127,7 +127,7 @@ corpusReadWrite01 env = do
     uid      <- getUserId (UserName "alfredo")
     parentId <- getRootId (UserName "alfredo")
     [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
-    liftIO $ corpusId `shouldBe` NodeId 416
+    liftIO $ corpusId `shouldBe` UnsafeMkNodeId 416
     -- Retrieve the corpus by Id
     [corpus] <- getCorporaWithParentId parentId
     liftIO $ corpusId `shouldBe` (_node_id corpus)

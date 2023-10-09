@@ -23,10 +23,9 @@ import Data.ByteString.Char8 qualified as C8
 import Data.List  (nub, isSuffixOf, tail)
 import Data.List.Split
 import Data.Maybe (fromJust)
-import Data.Text  (unwords, unpack, replace, pack)
+import Data.Text  (unpack, replace, pack)
 import Data.Text qualified as T
 import Data.Vector qualified as Vector
-import GHC.IO (FilePath)
 import Gargantext.API.Ngrams.Prelude (toTermList)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Text.Context (TermList)
@@ -46,7 +45,6 @@ import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (hash, replace)
 import Prelude qualified
 import System.Directory (listDirectory,doesFileExist)
-import System.Environment
 
 data Backup = BackupPhyloWithoutLink | BackupPhylo deriving (Show)
 
@@ -99,7 +97,7 @@ wosToDocs limit patterns time path = do
 csvToDocs :: CorpusParser -> Patterns -> TimeUnit -> FilePath -> IO [Document]
 csvToDocs parser patterns time path =
   case parser of
-    Wos  _     -> undefined
+    Wos  _     -> Prelude.error "csvToDocs: unimplemented"
     Csv  limit -> Vector.toList
       <$> Vector.take limit
       <$> Vector.map (\row -> Document (toPhyloDate  (Csv.fromMIntOrDec Csv.defaultYear $ csv_publication_year row) (fromMaybe Csv.defaultMonth $ csv_publication_month row) (fromMaybe Csv.defaultDay $ csv_publication_day row) time)
@@ -170,7 +168,7 @@ seaToLabel config = case (seaElevation config) of
 
 sensToLabel :: PhyloConfig -> [Char]
 sensToLabel config = case (similarity config) of
-      Hamming _ _ -> undefined
+      Hamming _ _ -> Prelude.error "sensToLabel: unimplemented"
       WeightedLogJaccard s _ -> ("WeightedLogJaccard_"  <> show s)
       WeightedLogSim s _ -> ( "WeightedLogSim-sens_"  <> show s)
 
@@ -184,7 +182,7 @@ cliqueToLabel config = case (clique config) of
 syncToLabel :: PhyloConfig -> [Char]
 syncToLabel config = case (phyloSynchrony config) of
       ByProximityThreshold scl sync_sens scope _ -> ("scale_" <> (show scope) <> "_" <> (show sync_sens)  <> "_"  <> (show scl))
-      ByProximityDistribution _ _ -> undefined
+      ByProximityDistribution _ _ -> "syncToLabel: unimplemented"
 
 qualToConfig :: PhyloConfig -> [Char]
 qualToConfig config = case (phyloQuality config) of
@@ -234,7 +232,7 @@ readListV4 path = do
   case listJson of
     Left err -> do
       putStrLn err
-      undefined
+      Prelude.error "readListV4 unimplemented"
     Right listV4 -> pure listV4
 
 

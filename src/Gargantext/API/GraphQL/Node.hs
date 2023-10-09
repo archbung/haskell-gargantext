@@ -22,7 +22,7 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck (withPolicy)
 import Gargantext.API.GraphQL.Types
-import Gargantext.Database.Admin.Types.Node (NodeId(..), NodeType)
+import Gargantext.Database.Admin.Types.Node (NodeType)
 import Gargantext.Database.Admin.Types.Node qualified as NN
 import Gargantext.Database.Prelude (CmdCommon)  -- , JSONB)
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNode)
@@ -76,14 +76,14 @@ dbNodes
   :: (CmdCommon env)
   => Int -> GqlM e env [Node]
 dbNodes node_id = do
-  node <- lift $ getNode $ NodeId node_id
+  node <- lift $ getNode $ NN.UnsafeMkNodeId node_id
   pure [toNode node]
 
 dbNodesCorpus
   :: (CmdCommon env)
   => Int -> GqlM e env [Corpus]
 dbNodesCorpus corpus_id = do
-  corpus <- lift $ getNode $ NodeId corpus_id
+  corpus <- lift $ getNode $ NN.UnsafeMkNodeId corpus_id
   pure [toCorpus corpus]
 
 data NodeParentArgs
@@ -107,7 +107,7 @@ dbParentNodes node_id parent_type = do
       lift $ printDebug "[dbParentNodes] error reading parent type" (T.pack err)
       pure []
     Right parentType -> do
-      mNodeId <- lift $ getClosestParentIdByType (NodeId node_id) parentType -- (fromNodeTypeId parent_type_id)
+      mNodeId <- lift $ getClosestParentIdByType (NN.UnsafeMkNodeId node_id) parentType -- (fromNodeTypeId parent_type_id)
       case mNodeId of
         Nothing -> pure []
         Just id -> do

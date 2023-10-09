@@ -22,16 +22,16 @@ import Gargantext.API.GraphQL.PolicyCheck
 import Gargantext.API.GraphQL.Types
 import Gargantext.Core.Types.Individu qualified as Individu
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..))
-import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.User qualified as DBUser
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
+import Gargantext.Core.Types
 
 data User m = User
   { u_email     :: Text
   , u_hyperdata :: m (Maybe HyperdataUser)
-  , u_id        :: Int
+  , u_id        :: UserId
   , u_username  :: Text }
   deriving (Generic, GQLType)
 
@@ -61,7 +61,7 @@ resolveUsers autUser mgr UserArgs { user_id } = do
 -- | Inner function to fetch the user from DB.
 dbUsers :: (CmdCommon env)
         => Int -> GqlM e env [User (GqlM e env)]
-dbUsers user_id = lift (map toUser <$> DBUser.getUsersWithId (Individu.RootId $ NodeId user_id))
+dbUsers user_id = lift (map toUser <$> DBUser.getUsersWithId (Individu.RootId $ UnsafeMkNodeId user_id))
 
 toUser
   :: (CmdCommon env)
@@ -73,12 +73,12 @@ toUser (UserLight { .. }) = User { u_email = userLight_email
 
 resolveHyperdata
   :: (CmdCommon env)
-  => Int -> GqlM e env (Maybe HyperdataUser)
+  => UserId -> GqlM e env (Maybe HyperdataUser)
 resolveHyperdata userid = lift (listToMaybe <$> DBUser.getUserHyperdata (Individu.UserDBId userid))
 
 updateUserPubmedAPIKey :: ( CmdCommon env, HasSettings env) =>
                           UserPubmedAPIKeyMArgs -> GqlM' e env Int
 updateUserPubmedAPIKey UserPubmedAPIKeyMArgs { user_id, api_key } = do
-  _ <- lift $ DBUser.updateUserPubmedAPIKey (Individu.RootId $ NodeId user_id) api_key
+  _ <- lift $ DBUser.updateUserPubmedAPIKey (Individu.RootId $ UnsafeMkNodeId user_id) api_key
 
   pure 1

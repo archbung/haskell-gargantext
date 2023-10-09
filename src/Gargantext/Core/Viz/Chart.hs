@@ -34,6 +34,7 @@ import Gargantext.Database.Query.Table.NodeContext (selectDocsDates)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude hiding (toList)
+import qualified Data.Set            as Set
 
 
 histoData :: CorpusId -> DBCmd err Histo
@@ -83,7 +84,8 @@ treeData cId nt lt = do
     dico = filterListWithRoot [lt] ts
     terms = catMaybes $ List.concat $ map (\(a,b) -> [Just a, b]) $ HashMap.toList dico
 
-  cs' <- getContextsByNgramsOnlyUser cId (ls' <> ls) nt terms
+  -- FIXME(adn) Audit the usage, as we are converting between a context id to a node id.
+  cs' <- HashMap.map (Set.map contextId2NodeId) <$> getContextsByNgramsOnlyUser cId (ls' <> ls) nt terms
 
   m  <- getListNgrams ls nt
   pure $ V.fromList $ toTree lt cs' m

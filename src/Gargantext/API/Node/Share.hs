@@ -49,7 +49,7 @@ instance ToJSON    ShareNodeParams where
 instance ToSchema  ShareNodeParams
 instance Arbitrary ShareNodeParams where
   arbitrary = elements [ ShareTeamParams "user1"
-                       , SharePublicParams (NodeId 1)
+                       , SharePublicParams (UnsafeMkNodeId 1)
                        ]
 ------------------------------------------------------------------------
 -- TODO permission
@@ -86,7 +86,7 @@ api userInviting nId (ShareTeamParams user') = do
               _ <- case List.null children of
                 True -> do
                   -- printDebug "[G.A.N.Share.api]" ("Invitation is enabled if you share a corpus at least" :: Text)
-                  pure 0
+                  pure $ UnsafeMkUserId 0
                 False -> do
                   -- printDebug "[G.A.N.Share.api]" ("Your invitation is sent to: " <> user'')
                   newUser user''

@@ -88,26 +88,25 @@ data Charts = Sources | Authors | Institutes | Ngrams | All
     deriving (Generic, Eq, Ord, Enum, Bounded)
 
 ------------------------------------------------------------------------
-api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
-api uId nId =
+api :: NodeId -> ServerT API (GargM Env GargError)
+api nId =
   serveJobsAPI UpdateNodeJob $ \jHandle p ->
-    updateNode uId nId p jHandle
+    updateNode nId p jHandle
 
 updateNode :: (HasNodeStory env err m, HasSettings env, MonadJobStatus m)
-           => UserId
-           -> NodeId
+           => NodeId
            -> UpdateNodeParams
            -> JobHandle m
            -> m ()
-updateNode uId nId (UpdateNodeParamsGraph metric partitionMethod bridgeMethod strength nt1 nt2) jobHandle = do
+updateNode nId (UpdateNodeParamsGraph metric partitionMethod bridgeMethod strength nt1 nt2) jobHandle = do
 
   markStarted 2 jobHandle
   -- printDebug "Computing graph: " method
-  _ <- recomputeGraph uId nId partitionMethod bridgeMethod (Just metric) (Just strength) nt1 nt2 True
+  _ <- recomputeGraph nId partitionMethod bridgeMethod (Just metric) (Just strength) nt1 nt2 True
   -- printDebug "Graph computed: " method
   markComplete jobHandle
 
-updateNode _uId nid1 (LinkNodeReq nt nid2) jobHandle = do
+updateNode nid1 (LinkNodeReq nt nid2) jobHandle = do
   markStarted 2 jobHandle
   _ <- case nt of
     NodeAnnuaire -> pairing nid2 nid1 Nothing -- defaultList
@@ -118,7 +117,7 @@ updateNode _uId nid1 (LinkNodeReq nt nid2) jobHandle = do
   markComplete jobHandle
 
 -- | `Advanced` to update graphs
-updateNode _uId lId (UpdateNodeParamsList Advanced) jobHandle = do
+updateNode lId (UpdateNodeParamsList Advanced) jobHandle = do
   markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode lId
 
@@ -134,7 +133,7 @@ updateNode _uId lId (UpdateNodeParamsList Advanced) jobHandle = do
 
   markComplete jobHandle
 
-updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
+updateNode lId (UpdateNodeParamsList _mode) jobHandle = do
   markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode lId
 
@@ -149,7 +148,7 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
 
   markComplete jobHandle
 
-updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
+updateNode phyloId (UpdateNodePhylo config) jobHandle = do
   markStarted 3 jobHandle
   corpusId' <- view node_parent_id <$> getNode phyloId
   markProgress 1 jobHandle
@@ -172,7 +171,7 @@ updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
   -- sendMail (UserDBId userId)
   markComplete jobHandle
 
-updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
+updateNode tId (UpdateNodeParamsTexts _mode) jobHandle = do
   markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode tId
   markProgress 1 jobHandle
@@ -186,7 +185,7 @@ updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
   markComplete jobHandle
 
 
-updateNode _uId _nId _p jobHandle = do
+updateNode _nId _p jobHandle = do
   simuLogs jobHandle 10
 ------------------------------------------------------------------------
 

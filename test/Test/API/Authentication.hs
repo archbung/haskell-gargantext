@@ -64,8 +64,8 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
                          _authRes_valid = Just $
                            AuthValid {
                              _authVal_token = cannedToken
-                           , _authVal_tree_id = fromMaybe (NodeId 1) $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_tree_id
-                           , _authVal_user_id = fromMaybe 1          $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_user_id
+                           , _authVal_tree_id = fromMaybe (UnsafeMkNodeId 1) $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_tree_id
+                           , _authVal_user_id = fromMaybe (UnsafeMkUserId 1) $ listToMaybe $ result0 ^.. _Right . authRes_valid . _Just . authVal_user_id
                            }
                          , _authRes_inval = Nothing
                          }

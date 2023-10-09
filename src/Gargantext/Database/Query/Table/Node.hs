@@ -13,9 +13,10 @@ Portability : POSIX
 {-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE ViewPatterns           #-}
 
 module Gargantext.Database.Query.Table.Node
   where
@@ -123,11 +124,11 @@ getClosestParentIdByType :: HasDBid NodeType
 getClosestParentIdByType nId nType = do
   result <- runPGSQuery query (PGS.Only nId)
   case result of
-    [(NodeId parentId, pTypename)] -> do
+    [(_NodeId -> parentId, pTypename)] -> do
       if toDBid nType == pTypename then
-        pure $ Just $ NodeId parentId
+        pure $ Just $ UnsafeMkNodeId parentId
       else
-        getClosestParentIdByType (NodeId parentId) nType
+        getClosestParentIdByType (UnsafeMkNodeId parentId) nType
     _ -> pure Nothing
   where
     query :: PGS.Query
@@ -147,9 +148,9 @@ getClosestParentIdByType' :: HasDBid NodeType
 getClosestParentIdByType' nId nType = do
   result <- runPGSQuery query (PGS.Only nId)
   case result of
-    [(NodeId id, pTypename)] -> do
+    [(_NodeId -> id, pTypename)] -> do
       if toDBid nType == pTypename then
-        pure $ Just $ NodeId id
+        pure $ Just $ UnsafeMkNodeId id
       else
         getClosestParentIdByType nId nType
     _ -> pure Nothing
@@ -223,7 +224,7 @@ getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
   where
     selectNodeWithType ::  HasDBid NodeType
                         => NodeId -> NodeType -> Select NodeRead
-    selectNodeWithType (NodeId nId') nt' = proc () -> do
+    selectNodeWithType (_NodeId -> nId') nt' = proc () -> do
         row@(Node ti _ tn _ _ _ _ _) <- queryNodeTable -< ()
         restrict -< ti .== sqlInt4 nId'
         restrict -< tn .== sqlInt4 (toDBid nt')
@@ -232,7 +233,7 @@ getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
 getNodesIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> DBCmd err [NodeId]
 getNodesIdWithType nt = do
   ns <- runOpaQuery $ selectNodesIdWithType nt
-  pure (map NodeId ns)
+  pure (map UnsafeMkNodeId ns)
 
 selectNodesIdWithType :: HasDBid NodeType
                       => NodeType -> Select (Column SqlInt4)
@@ -299,7 +300,7 @@ node :: (ToJSON a, Hyperdata a, HasDBid NodeType)
 node nodeType name hyperData parentId userId =
   Node Nothing Nothing
        (sqlInt4 typeId)
-       (sqlInt4 userId)
+       (sqlInt4 $ _UserId userId)
        (pgNodeId <$> parentId)
        (sqlStrictText name)
        Nothing
@@ -344,7 +345,7 @@ insertNodesWithParentR pid ns = insertNodesR (set node_parent_id (pgNodeId <$> p
 
 node2table :: HasDBid NodeType
            => UserId -> Maybe ParentId -> Node' -> NodeWrite
-node2table uid pid (Node' nt txt v []) = Node Nothing Nothing (sqlInt4 $ toDBid nt) (sqlInt4 uid) (fmap pgNodeId pid) (sqlStrictText txt) Nothing (sqlStrictJSONB $ cs $ encode v)
+node2table uid pid (Node' nt txt v []) = Node Nothing Nothing (sqlInt4 $ toDBid nt) (sqlInt4 $ _UserId uid) (fmap pgNodeId pid) (sqlStrictText txt) Nothing (sqlStrictJSONB $ cs $ encode v)
 node2table _ _ (Node' _ _ _ _) = panic "node2table: should not happen, Tree insert not implemented yet"
 
 

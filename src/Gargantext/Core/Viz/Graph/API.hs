@@ -41,9 +41,8 @@ import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Database.Query.Table.Node.User (getNodeUser)
-import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Ngrams
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
@@ -72,19 +71,18 @@ instance ToJSON GraphVersions
 instance ToSchema GraphVersions
 
 graphAPI :: UserId -> NodeId -> ServerT GraphAPI (GargM Env GargError)
-graphAPI u n = getGraph         u n
-          :<|> graphAsync       u n
-          :<|> graphClone       u n
-          :<|> getGraphGexf     u n
-          :<|> graphVersionsAPI u n
+graphAPI userId n = getGraph n
+          :<|> graphAsync        n
+          :<|> graphClone        userId n
+          :<|> getGraphGexf      n
+          :<|> graphVersionsAPI  userId n
 
 ------------------------------------------------------------------------
 --getGraph :: UserId -> NodeId -> GargServer HyperdataGraphAPI
 getGraph :: HasNodeStory env err m
-          => UserId
-         -> NodeId
+         => NodeId
          -> m HyperdataGraphAPI
-getGraph _uId nId = do
+getGraph nId = do
   nodeGraph <- getNodeWith nId (Proxy :: Proxy HyperdataGraph)
 
   let
@@ -120,8 +118,7 @@ getGraph _uId nId = do
 
 --recomputeGraph :: UserId -> NodeId -> Maybe GraphMetric -> GargNoServer Graph
 recomputeGraph :: HasNodeStory env err m
-               => UserId
-               -> NodeId
+               => NodeId
                -> PartitionMethod
                -> BridgenessMethod
                -> Maybe GraphMetric
@@ -130,7 +127,7 @@ recomputeGraph :: HasNodeStory env err m
                -> NgramsType
                -> Bool
                -> m Graph
-recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStrength nt1 nt2 force' = do
+recomputeGraph nId partitionMethod bridgeMethod maybeSimilarity maybeStrength nt1 nt2 force' = do
   nodeGraph <- getNodeWith nId (Proxy :: Proxy HyperdataGraph)
   let
     graph  = nodeGraph ^. node_hyperdata . hyperdataGraph
@@ -251,9 +248,9 @@ type GraphAsyncAPI = Summary "Recompute graph"
                      :> AsyncJobsAPI JobLog () JobLog
 
 
-graphAsync :: UserId -> NodeId -> ServerT GraphAsyncAPI (GargM Env GargError)
-graphAsync u n =
-  serveJobsAPI RecomputeGraphJob $ \jHandle _ -> graphRecompute u n jHandle
+graphAsync :: NodeId -> ServerT GraphAsyncAPI (GargM Env GargError)
+graphAsync n =
+  serveJobsAPI RecomputeGraphJob $ \jHandle _ -> graphRecompute n jHandle
 
 
 --graphRecompute :: UserId
@@ -262,13 +259,12 @@ graphAsync u n =
 --               -> GargNoServer JobLog
 -- TODO get Graph Metadata to recompute
 graphRecompute ::  (HasNodeStory env err m, MonadJobStatus m)
-               => UserId
-               -> NodeId
+               => NodeId
                -> JobHandle m
                -> m ()
-graphRecompute u n jobHandle = do
+graphRecompute n jobHandle = do
   markStarted 1 jobHandle
-  _g <- recomputeGraph u n Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
+  _g <- recomputeGraph n Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
   markComplete jobHandle
 
 ------------------------------------------------------------
@@ -280,7 +276,7 @@ type GraphVersionsAPI = Summary "Graph versions"
 graphVersionsAPI :: UserId -> NodeId -> GargServer GraphVersionsAPI
 graphVersionsAPI u n =
            graphVersions u n
-      :<|> recomputeVersions u n
+      :<|> recomputeVersions n
 
 graphVersions :: (HasNodeStory env err m)
               => UserId
@@ -312,10 +308,9 @@ graphVersions u nId = do
                        , gv_repo = v }
 
 recomputeVersions :: HasNodeStory env err m
-                  => UserId
-                  -> NodeId
+                  => NodeId
                   -> m Graph
-recomputeVersions uId nId = recomputeGraph uId nId Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
+recomputeVersions nId = recomputeGraph nId Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
 
 ------------------------------------------------------------
 graphClone :: HasNodeError err
@@ -323,13 +318,11 @@ graphClone :: HasNodeError err
            -> NodeId
            -> HyperdataGraphAPI
            -> DBCmd err NodeId
-graphClone uId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
-                                      , _hyperdataAPICamera = camera }) = do
+graphClone userId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
+                                         , _hyperdataAPICamera = camera }) = do
   let nodeType = NodeGraph
-  nodeUser <- getNodeUser (NodeId uId)
   nodeParent <- getNodeWith pId (Proxy :: Proxy HyperdataGraph)
-  let uId' = nodeUser ^. node_user_id
-  nIds <- mkNodeWithParent nodeType (Just pId) uId' $ nodeParent ^. node_name
+  nIds <- mkNodeWithParent nodeType (Just pId) userId $ nodeParent ^. node_name
   case nIds of
     [] -> pure pId
     (nId:_) -> do
@@ -345,9 +338,8 @@ graphClone uId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
 --             -> NodeId
 --             -> GargNoServer (Headers '[Servant.Header "Content-Disposition" Text] Graph)
 getGraphGexf :: HasNodeStory env err m
-              => UserId
-             -> NodeId
+              => NodeId
              -> m (Headers '[Servant.Header "Content-Disposition" Text] Graph)
-getGraphGexf uId nId = do
-  HyperdataGraphAPI { _hyperdataAPIGraph = graph } <- getGraph uId nId
+getGraphGexf nId = do
+  HyperdataGraphAPI { _hyperdataAPIGraph = graph } <- getGraph nId
   pure $ addHeader "attachment; filename=graph.gexf" graph

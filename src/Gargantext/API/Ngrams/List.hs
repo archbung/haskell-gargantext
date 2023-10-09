@@ -93,9 +93,8 @@ getJson :: HasNodeStory env err m =>
        ListId -> m (Headers '[Header "Content-Disposition" Text] NgramsList)
 getJson lId = do
   lst <- getNgramsList lId
-  let (NodeId id') = lId
   pure $ addHeader (concat [ "attachment; filename=GarganText_NgramsList-"
-                             , pack $ show id'
+                             , pack $ show (_NodeId lId)
                              , ".json"
                              ]
                      ) lst
@@ -104,12 +103,11 @@ getCsv :: HasNodeStory env err m =>
        ListId -> m (Headers '[Header "Content-Disposition" Text] NgramsTableMap)
 getCsv lId = do
   lst <- getNgramsList lId
-  let (NodeId id') = lId
   pure $ case Map.lookup TableNgrams.NgramsTerms lst of
     Nothing -> noHeader Map.empty
     Just (Versioned { _v_data }) ->
       addHeader (concat [ "attachment; filename=GarganText_NgramsList-"
-                        , pack $ show id'
+                        , pack $ show (_NodeId lId)
                         , ".csv"
                         ]
                 ) _v_data

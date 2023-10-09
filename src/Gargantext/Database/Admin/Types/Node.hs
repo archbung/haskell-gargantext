@@ -12,6 +12,8 @@ Portability : POSIX
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE DerivingVia                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
 -- {-# LANGUAGE DuplicateRecordFields #-}
@@ -46,9 +48,26 @@ import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
 import Text.Read (read)
 
+-- | A class generalising over resource identifiers in gargantext
+class ResourceId a where
+  isPositive :: a -> Bool
 
+-- | A unique identifier for users within gargantext. Note that the 'UserId' for users is
+-- typically /different/ from their 'NodeId', as the latter tracks the resources being created,
+-- whereas this one tracks only users.
+newtype UserId = UnsafeMkUserId { _UserId :: Int }
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (ToSchema, ToJSON, FromJSON, FromField, ToField)
 
-type UserId = Int
+instance GQLType UserId
+
+instance ResourceId UserId where
+  isPositive = (> 0) . _UserId
+
+instance DefaultFromField SqlInt4 UserId
+  where
+    defaultFromField = fromPGSFromField
+
 type MasterUserId = UserId
 
 type NodeTypeId   = Int
@@ -199,38 +218,56 @@ instance (Arbitrary hyperdata
 
 ------------------------------------------------------------------------
 pgNodeId :: NodeId -> O.Column O.SqlInt4
-pgNodeId = O.sqlInt4 . id2int
-  where
-    id2int :: NodeId -> Int
-    id2int (NodeId n) = n
+pgNodeId = pgResourceId _NodeId
+
+pgResourceId :: (a -> Int) -> a -> O.Column O.SqlInt4
+pgResourceId id2int = O.sqlInt4 . id2int
 
 pgContextId :: ContextId -> O.Column O.SqlInt4
-pgContextId = pgNodeId
+pgContextId = pgResourceId _ContextId
 
 ------------------------------------------------------------------------
-newtype NodeId = NodeId { _NodeId :: Int }
+-- | A unique identifier for a /node/ in the gargantext tree. Every time
+-- we create something in Gargantext (a user, a corpus, etc) we add a node
+-- to a tree, and each node has its unique identifier. Note how nodes might
+-- have also /other/ identifiers, to better qualify them.
+newtype NodeId = UnsafeMkNodeId { _NodeId :: Int }
   deriving (Read, Generic, Num, Eq, Ord, Enum, ToJSONKey, FromJSONKey, ToJSON, FromJSON, Hashable, Csv.ToField)
+
+instance ResourceId NodeId where
+  isPositive = (> 0) . _NodeId
+
 instance GQLType NodeId
 instance Prelude.Show NodeId where
-  show (NodeId n) = "nodeId-" <> show n
+  show (UnsafeMkNodeId n) = "nodeId-" <> show n
 instance Serialise NodeId
 instance ToField NodeId where
-  toField (NodeId n) = toField n
+  toField (UnsafeMkNodeId n) = toField n
 instance ToRow NodeId where
-  toRow (NodeId i) = [toField i]
+  toRow (UnsafeMkNodeId i) = [toField i]
 
 instance FromField NodeId where
   fromField field mdata = do
-    n <- fromField field mdata
-    if (n :: Int) > 0
-       then pure $ NodeId n
+    n <- UnsafeMkNodeId <$> fromField field mdata
+    if isPositive n
+       then pure n
        else mzero
 instance ToSchema NodeId
 
--- TODO make another type
-type ContextId = NodeId
+-- | An identifier for a 'Context' in gargantext.
+newtype ContextId = UnsafeMkContextId { _ContextId :: Int }
+  deriving stock   (Show, Eq, Ord, Generic)
+  deriving newtype (Csv.ToField, ToJSONKey, FromJSONKey, ToJSON, FromJSON, ToField, ToSchema)
+  deriving FromField via NodeId
 
-newtype NodeContextId = NodeContextId Int
+instance ToParamSchema ContextId
+
+instance FromHttpApiData ContextId where
+  parseUrlPiece n = pure $ UnsafeMkContextId $ (read . cs) n
+instance ToHttpApiData ContextId where
+  toUrlPiece (UnsafeMkContextId n) = toUrlPiece n
+
+newtype NodeContextId = UnsafeMkNodeContextId { _NodeContextId :: Int }
   deriving (Read, Generic, Num, Eq, Ord, Enum, ToJSONKey, FromJSONKey, ToJSON, FromJSON, Hashable, Csv.ToField)
 
 
@@ -238,17 +275,27 @@ newtype NodeContextId = NodeContextId Int
 --  toField (NodeId nodeId) = Csv.toField nodeId
 
 unNodeId :: NodeId -> Int
-unNodeId (NodeId n) = n
+unNodeId = _NodeId
+
+-- | Converts a 'NodeId' into a 'ContextId'.
+-- FIXME(adn) We should audit the usage of this function,
+-- to make sure that a ContextId and a NodeId are /really/
+-- conceptually the same thing.
+nodeId2ContextId :: NodeId -> ContextId
+nodeId2ContextId = UnsafeMkContextId . _NodeId
+
+contextId2NodeId :: ContextId -> NodeId
+contextId2NodeId = UnsafeMkNodeId . _ContextId
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 instance FromHttpApiData NodeId where
-  parseUrlPiece n = pure $ NodeId $ (read . cs) n
+  parseUrlPiece n = pure $ UnsafeMkNodeId $ (read . cs) n
 instance ToHttpApiData NodeId where
-  toUrlPiece (NodeId n) = toUrlPiece n
+  toUrlPiece (UnsafeMkNodeId n) = toUrlPiece n
 instance ToParamSchema NodeId
 instance Arbitrary NodeId where
-  arbitrary = NodeId <$> arbitrary
+  arbitrary = UnsafeMkNodeId <$> arbitrary
 
 type ParentId    = NodeId
 type CorpusId    = NodeId

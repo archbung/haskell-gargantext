@@ -14,7 +14,10 @@ import Control.Lens (Prism', (#), (^?))
 import Data.Aeson
 import Data.Text qualified as T
 import Gargantext.Core.Types.Individu
-import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
+
+import Prelude hiding (null, id, map, sum, show)
+
+import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..), ContextId)
 import Gargantext.Prelude hiding (sum, head)
 import Prelude qualified
 
@@ -31,6 +34,7 @@ data NodeError = NoListFound { listId :: ListId }
                | NotImplYet
                | ManyNodeUsers
                | DoesNotExist NodeId
+               | NoContextFound ContextId
                | NeedsConfiguration
                | NodeError Text
                | QueryNoParse Text
@@ -50,14 +54,15 @@ instance Prelude.Show NodeError
     show ManyParents   = "Too many parents"
     show ManyNodeUsers = "Many userNode/user"
     show (DoesNotExist n)   = "Node does not exist (" <> show n <> ")"
+    show (NoContextFound n) = "Context node does not exist (" <> show n <> ")"
     show NeedsConfiguration = "Needs configuration"
     show (NodeError e)      = "NodeError: " <> cs e
     show (QueryNoParse err) = "QueryNoParse: " <> T.unpack err
 
 instance ToJSON NodeError where
-  toJSON (NoListFound { listId = NodeId listId }) =
+  toJSON (NoListFound { listId }) =
     object [ ( "error", "No list found" )
-           , ( "listId", Number $ fromIntegral listId ) ]
+           , ( "listId", toJSON listId ) ]
   toJSON err =
     object [ ( "error", String $ T.pack $ show err ) ]
 

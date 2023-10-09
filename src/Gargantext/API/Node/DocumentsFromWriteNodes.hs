@@ -44,6 +44,8 @@ import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
+import Gargantext.API.Admin.Auth.Types
+-- import qualified Gargantext.Defaults as Defaults
 
 ------------------------------------------------------------------------
 type API = Summary " Documents from Write nodes."
@@ -62,22 +64,26 @@ instance ToJSON Params where
   toJSON = genericToJSON defaultOptions
 instance ToSchema Params
 ------------------------------------------------------------------------
-api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
-api uId nId =
+api :: AuthenticatedUser
+    -- ^ The logged-in user
+    -> NodeId
+    -> ServerT API (GargM Env GargError)
+api authenticatedUser nId =
   serveJobsAPI DocumentFromWriteNodeJob $ \jHandle p ->
-    documentsFromWriteNodes uId nId p jHandle
+    documentsFromWriteNodes authenticatedUser nId p jHandle
 
 documentsFromWriteNodes :: ( HasSettings env
                            , FlowCmdM env err m
                            , MonadJobStatus m
                            , HasNodeStoryImmediateSaver env
                            , HasNodeArchiveStoryImmediateSaver env )
-                        => UserId
+                        => AuthenticatedUser
+                        -- ^ The logged-in user
                         -> NodeId
                         -> Params
                         -> JobHandle m
                         -> m ()
-documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle = do
+documentsFromWriteNodes authenticatedUser nId Params { selection, lang, paragraphs } jobHandle = do
   markStarted 2 jobHandle
   markProgress 1 jobHandle
 
@@ -105,7 +111,7 @@ documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle
                   -> hyperdataDocumentFromFrameWrite lang paragraphs' (node, contents)) <$> frameWritesWithContents
   let parsed = List.concat $ rights parsedE
   -- printDebug "DocumentsFromWriteNodes: uId" uId
-  _ <- flowDataText (RootId (NodeId uId))
+  _ <- flowDataText (RootId userNodeId)
                     (DataNew (Just $ fromIntegral $ length parsed, yieldMany parsed))
                     (Multi lang)
                     cId
@@ -113,11 +119,15 @@ documentsFromWriteNodes uId nId Params { selection, lang, paragraphs } jobHandle
                     jobHandle
 
 
-  listId <- getOrMkList cId uId
+  -- FIXME(adn) If we were to store the UserID inside an 'AuthenticatedUser', we won't need this.
+  listId <- getOrMkList cId userId
   v <- currentVersion listId
   _ <- commitStatePatch listId (Versioned v mempty)
 
   markProgress 1 jobHandle
+  where
+    userNodeId = authenticatedUser ^. auth_node_id
+    userId     = authenticatedUser ^. auth_user_id
 
 ------------------------------------------------------------------------
 hyperdataDocumentFromFrameWrite :: Lang -> Int -> (Node HyperdataFrame, T.Text) -> Either T.Text [HyperdataDocument]

@@ -884,6 +884,7 @@ test-suite garg-test-tasty
   type: exitcode-stdio-1.0
   main-is: drivers/tasty/Main.hs
   other-modules:
+      Test.API.Setup
       Test.Core.Text
       Test.Core.Text.Corpus.Query
       Test.Core.Text.Examples

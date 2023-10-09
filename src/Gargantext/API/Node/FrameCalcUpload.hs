@@ -21,6 +21,12 @@ import Data.ByteString.Lazy qualified as BSL
 import Data.ByteString.UTF8 qualified as BSU8
 import Data.Swagger
 import Data.Text qualified as T
+import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Servant
+import Web.FormUrlEncoded (FromForm)
+
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Node.Corpus.New (addToCorpusWithForm)
@@ -38,10 +44,6 @@ import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNodeWi
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
-import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Servant
-import Web.FormUrlEncoded (FromForm)
 
 data FrameCalcUpload = FrameCalcUpload {
   _wf_lang      :: !(Maybe Lang)
@@ -60,20 +62,21 @@ type API = Summary " FrameCalc upload"
            :> "async"
            :> AsyncJobs JobLog '[JSON] FrameCalcUpload JobLog
 
-api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
-api uId nId =
+api :: AuthenticatedUser -> NodeId -> ServerT API (GargM Env GargError)
+api authenticatedUser nId =
   serveJobsAPI UploadFrameCalcJob $ \jHandle p ->
-    frameCalcUploadAsync uId nId p jHandle
+    frameCalcUploadAsync authenticatedUser nId p jHandle
 
 
 
 frameCalcUploadAsync :: (HasConfig env, FlowCmdM env err m, MonadJobStatus m)
-                     => UserId
+                     => AuthenticatedUser
+                     -- ^ The logged-in user
                      -> NodeId
                      -> FrameCalcUpload
                      -> JobHandle m
                      -> m ()
-frameCalcUploadAsync uId nId (FrameCalcUpload _wf_lang _wf_selection) jobHandle = do
+frameCalcUploadAsync authenticatedUser nId (FrameCalcUpload _wf_lang _wf_selection) jobHandle = do
   markStarted 5 jobHandle
 
   -- printDebug "[frameCalcUploadAsync] uId" uId
@@ -99,7 +102,8 @@ frameCalcUploadAsync uId nId (FrameCalcUpload _wf_lang _wf_selection) jobHandle 
   case mCId of
     Nothing -> markFailure 1 Nothing jobHandle
     Just cId ->
-      addToCorpusWithForm (RootId (NodeId uId))
+      -- FIXME(adn) Audit this conversion.
+      addToCorpusWithForm (RootId userNodeId)
                           cId
                           (NewWithForm { _wf_filetype = CSV
                                        , _wf_fileformat = Plain
@@ -109,3 +113,5 @@ frameCalcUploadAsync uId nId (FrameCalcUpload _wf_lang _wf_selection) jobHandle 
                                        , _wf_selection }) jobHandle
 
   markComplete jobHandle
+  where
+    userNodeId = authenticatedUser ^. auth_node_id

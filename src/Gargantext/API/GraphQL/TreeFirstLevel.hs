@@ -22,8 +22,8 @@ import Gargantext.API.GraphQL.Types
 import Gargantext.Core.Types (Tree, NodeTree, NodeType)
 import Gargantext.Core.Types.Main ( Tree(TreeN), _tn_node, _tn_children, NodeTree(NodeTree, _nt_id, _nt_type), _nt_name )
 import Gargantext.Database.Admin.Config (fromNodeTypeId)
-import Gargantext.Database.Admin.Types.Node (allNodeTypes, NodeId (NodeId))
 import Gargantext.Database.Admin.Types.Node qualified as NN
+import Gargantext.Database.Admin.Types.Node (allNodeTypes, NodeId (UnsafeMkNodeId))
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Tree qualified as T
@@ -76,9 +76,9 @@ resolveTree autUser mgr TreeArgs { root_id } =
 dbTree :: (CmdCommon env) =>
           Int -> GqlM e env (TreeFirstLevel (GqlM e env))
 dbTree root_id = do
-  let rId = NodeId root_id
+  let rId = UnsafeMkNodeId root_id
   t <- lift $ T.tree T.TreeFirstLevel rId allNodeTypes
-  n <- lift $ getNode $ NodeId root_id
+  n <- lift $ getNode $ UnsafeMkNodeId root_id
   let pId = toParentId n
   pure $ toTree rId pId t
   where
@@ -93,10 +93,7 @@ toTree rId pId TreeN { _tn_node, _tn_children } = TreeFirstLevel
   }
 
 toTreeNode :: ParentId -> NodeTree -> TreeNode
-toTreeNode pId NodeTree { _nt_name, _nt_id, _nt_type } = TreeNode { name = _nt_name, id = id2int _nt_id, node_type = _nt_type, parent_id = id2int <$> pId}
-  where
-    id2int :: NodeId -> Int
-    id2int (NodeId n) = n
+toTreeNode pId NodeTree { _nt_name, _nt_id, _nt_type } = TreeNode { name = _nt_name, id = NN._NodeId _nt_id, node_type = _nt_type, parent_id = NN._NodeId <$> pId}
 
 childrenToTreeNodes :: (Tree NodeTree, NodeId) -> TreeNode
 childrenToTreeNodes (TreeN {_tn_node}, rId) = toTreeNode (Just rId) _tn_node
@@ -132,7 +129,7 @@ convertDbTreeToTreeNode T.DbTreeNode { _dt_name, _dt_nodeId, _dt_typeId, _dt_par
 
 dbRecursiveParents :: (CmdCommon env) => Int -> GqlM e env (BreadcrumbInfo)
 dbRecursiveParents node_id = do
-  let nId = NodeId node_id
+  let nId = UnsafeMkNodeId node_id
   dbParents <- lift $ T.recursiveParents nId allNodeTypes
   let treeNodes = map convertDbTreeToTreeNode dbParents
   let breadcrumbInfo = BreadcrumbInfo { parents = treeNodes }

@@ -28,18 +28,18 @@ Node API
 module Gargantext.API.Node
   where
 
+import Control.Lens ((^.))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
 import Data.Swagger
 import Gargantext.API.Admin.Auth (withAccess, withPolicy)
-import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..))
+import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..), auth_node_id)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Metrics
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableCorpus)
 import Gargantext.API.Ngrams.Types (TabType(..))
 import Gargantext.API.Node.DocumentUpload qualified as DocumentUpload
-import Gargantext.API.Node.DocumentsFromWriteNodes qualified as DocumentsFromWriteNodes
 import Gargantext.API.Node.File
 import Gargantext.API.Node.FrameCalcUpload qualified as FrameCalcUpload
 import Gargantext.API.Node.New
@@ -73,6 +73,7 @@ import Gargantext.Prelude
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import qualified Gargantext.API.Node.DocumentsFromWriteNodes as DFWN
 
 
 -- | Admin NodesAPI
@@ -153,7 +154,7 @@ type NodeAPI a = PolicyChecked (NodeNodeAPI a)
              :<|> "file"      :> FileApi
              :<|> "async"     :> FileAsyncApi
 
-             :<|> "documents-from-write-nodes" :> DocumentsFromWriteNodes.API
+             :<|> "documents-from-write-nodes" :> DFWN.API
              :<|> DocumentUpload.API
 
 -- TODO-ACCESS: check userId CanRenameNode nodeId
@@ -195,49 +196,52 @@ nodeAPI :: forall proxy a.
          -> AuthenticatedUser
          -> NodeId
          -> ServerT (NodeAPI a) (GargM Env GargError)
-nodeAPI p authenticatedUser@(AuthenticatedUser (NodeId uId)) id' = withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode id') nodeAPI'
+nodeAPI p authenticatedUser targetNode =
+  withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode targetNode) nodeAPI'
   where
 
+    userRootId = RootId $ authenticatedUser ^. auth_node_id
+
     nodeAPI' :: ServerT (NodeAPI a) (GargM Env GargError)
-    nodeAPI' =  withPolicy authenticatedUser (nodeChecks id') (getNodeWith   id' p)
-           :<|> rename        id'
-           :<|> postNode  uId id'
-           :<|> postNodeAsyncAPI  uId id'
-           :<|> FrameCalcUpload.api uId id'
-           :<|> putNode       id'
-           :<|> Update.api uId id'
-           :<|> Action.deleteNode (RootId $ NodeId uId) id'
-           :<|> getChildren   id' p
+    nodeAPI' =  withPolicy authenticatedUser (nodeChecks targetNode) (getNodeWith targetNode p)
+           :<|> rename                                targetNode
+           :<|> postNode            authenticatedUser targetNode
+           :<|> postNodeAsyncAPI    authenticatedUser targetNode
+           :<|> FrameCalcUpload.api authenticatedUser targetNode
+           :<|> putNode                               targetNode
+           :<|> Update.api                            targetNode
+           :<|> Action.deleteNode   userRootId        targetNode
+           :<|> getChildren                           targetNode p
 
            -- TODO gather it
-           :<|> tableApi             id'
-           :<|> apiNgramsTableCorpus id'
+           :<|> tableApi                              targetNode
+           :<|> apiNgramsTableCorpus                  targetNode
 
-           :<|> catApi      id'
-           :<|> scoreApi    id'
-           :<|> Search.api  id'
-           :<|> Share.api   (RootId $ NodeId uId) id'
+           :<|> catApi                                targetNode
+           :<|> scoreApi                              targetNode
+           :<|> Search.api                            targetNode
+           :<|> Share.api           userRootId        targetNode
            -- Pairing Tools
-           :<|> pairWith    id'
-           :<|> pairs       id'
-           :<|> getPair     id'
+           :<|> pairWith                              targetNode
+           :<|> pairs                                 targetNode
+           :<|> getPair                               targetNode
 
            -- VIZ
-           :<|> scatterApi id'
-           :<|> chartApi   id'
-           :<|> pieApi     id'
-           :<|> treeApi    id'
-           :<|> phyloAPI   id' uId
-           :<|> moveNode   (RootId $ NodeId uId) id'
+           :<|> scatterApi                            targetNode
+           :<|> chartApi                              targetNode
+           :<|> pieApi                                targetNode
+           :<|> treeApi                               targetNode
+           :<|> phyloAPI                              targetNode
+           :<|> moveNode           userRootId         targetNode
            -- :<|> nodeAddAPI id'
            -- :<|> postUpload id'
-           :<|> Share.unPublish id'
+           :<|> Share.unPublish                       targetNode
 
-           :<|> fileApi uId id'
-           :<|> fileAsyncApi uId id'
+           :<|> fileApi                               targetNode
+           :<|> fileAsyncApi       authenticatedUser  targetNode
 
-           :<|> DocumentsFromWriteNodes.api uId id'
-           :<|> DocumentUpload.api uId id'
+           :<|> DFWN.api           authenticatedUser  targetNode
+           :<|> DocumentUpload.api                    targetNode
 
 
 ------------------------------------------------------------------------

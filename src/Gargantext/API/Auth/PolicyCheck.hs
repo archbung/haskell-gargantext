@@ -22,7 +22,6 @@ module Gargantext.API.Auth.PolicyCheck (
 import Control.Lens
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.Core.Types
-import Gargantext.Database.Action.User
 import Gargantext.Database.Prelude (DBCmd, HasConfig (..))
 import Gargantext.Prelude.Config (GargConfig(..))
 import Prelude
@@ -38,6 +37,7 @@ import Control.Monad
 import Gargantext.API.Prelude
 import Servant.Auth.Server.Internal.AddSetCookie
 import Gargantext.Database.Query.Tree
+import Gargantext.Database.Query.Tree.Root
 
 -------------------------------------------------------------------------------
 -- Types
@@ -119,7 +119,7 @@ accessPolicyManager = AccessPolicyManager (\ur ac -> interpretPolicy ur ac)
 
 
 check :: HasNodeError err => AuthenticatedUser -> AccessCheck -> DBCmd err AccessResult
-check (AuthenticatedUser loggedUserNodeId) = \case
+check (AuthenticatedUser loggedUserNodeId _loggedUserUserId) = \case
   AC_always_deny
     -> pure $ Deny err500
   AC_always_allow
@@ -129,8 +129,8 @@ check (AuthenticatedUser loggedUserNodeId) = \case
   AC_master_user _requestedNodeId
     -> do
       masterUsername <- _gc_masteruser <$> view hasConfig
-      masterNodeId   <- getUserId (UserName masterUsername)
-      enforce err403 $ (NodeId masterNodeId) == loggedUserNodeId
+      masterNodeId   <- getRootId (UserName masterUsername)
+      enforce err403 $ masterNodeId == loggedUserNodeId
   AC_node_descendant nodeId
     -> enforce err403 =<< nodeId `isDescendantOf` loggedUserNodeId
 

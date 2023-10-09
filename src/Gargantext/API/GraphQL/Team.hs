@@ -57,7 +57,7 @@ resolveTeam TeamArgs { team_node_id } = dbTeam team_node_id
 dbTeam :: (CmdCommon env) =>
           Int -> GqlM e env Team
 dbTeam nodeId = do
-  let nId = NodeId nodeId
+  let nId = UnsafeMkNodeId nodeId
   res <- lift $ membersOf nId
   teamNode <- lift $ getNode nId
   userNodes <- lift $ getUsersWithNodeHyperdata $ Individu.UserDBId $ uId teamNode
@@ -79,7 +79,7 @@ dbTeam nodeId = do
 deleteTeamMembership :: (CmdCommon env, HasSettings env) =>
                         TeamDeleteMArgs -> GqlM' e env [Int]
 deleteTeamMembership TeamDeleteMArgs { token, shared_folder_id, team_node_id } = do
-  teamNode <- lift $ getNode $ NodeId team_node_id
+  teamNode <- lift $ getNode $ UnsafeMkNodeId team_node_id
   userNodes <- lift (getUsersWithNodeHyperdata $ Individu.UserDBId $ uId teamNode)
   case userNodes of
     [] -> panic $ "[deleteTeamMembership] User with id " <> T.pack (show $ uId teamNode) <> " doesn't exist."
@@ -88,7 +88,7 @@ deleteTeamMembership TeamDeleteMArgs { token, shared_folder_id, team_node_id } =
       case testAuthUser of
         Invalid -> panic "[deleteTeamMembership] failed to validate user"
         Valid -> do
-          lift $ deleteMemberShip [(NodeId shared_folder_id, NodeId team_node_id)]
+          lift $ deleteMemberShip [(UnsafeMkNodeId shared_folder_id, UnsafeMkNodeId team_node_id)]
   where
     uId Node { _node_user_id } = _node_user_id
     nId Node { _node_id } = _node_id

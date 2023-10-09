@@ -192,7 +192,8 @@ getNgramsDocId cId lId nt = do
   let ngs = filterListWithRoot [MapTerm, CandidateTerm] $ mapTermListRoot (lId:lIds) nt repo
   -- printDebug "getNgramsDocId" ngs
 
-  groupNodesByNgrams ngs <$> getContextsByNgramsOnlyUser cId (lIds <> [lId]) nt (HashMap.keys ngs)
+  -- FIXME(adinapoli) we should audit this, we are converting from 'ContextId' to 'NodeId'.
+  HM.map (Set.map contextId2NodeId) . groupNodesByNgrams ngs <$> getContextsByNgramsOnlyUser cId (lIds <> [lId]) nt (HashMap.keys ngs)
 
 hashmapReverse :: (Ord a, Eq b, Hashable b)
         => HashMap a (Set b) -> HashMap b (Set a)

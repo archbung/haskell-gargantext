@@ -66,7 +66,7 @@ api_node nId = do
   -- TODO optimize with SQL
   case Set.member nId pubNodes of
     False -> panic "Not allowed" -- TODO throwErr
-    True  -> fileApi 0 nId
+    True  -> fileApi nId
 
 -------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ filterPublicDatas :: [(Node HyperdataFolder, Maybe Int)]
                   -> [(Node HyperdataFolder, [NodeId])]
 filterPublicDatas datas =
   map (\(n,mi) ->
-          let mi' = NodeId <$> mi in
+          let mi' = UnsafeMkNodeId <$> mi in
                   ( _node_id n, (n, maybe [] (:[]) mi' ))
       ) datas
       & Map.fromListWith (\(n1,i1) (_n2,i2) -> (n1, i1 <> i2))

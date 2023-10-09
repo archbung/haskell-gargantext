@@ -75,18 +75,17 @@ type API = Summary " Document upload"
            :> "async"
            :> AsyncJobs JobLog '[JSON] DocumentUpload JobLog
 
-api :: UserId -> NodeId -> ServerT API (GargM Env GargError)
-api uId nId =
+api :: NodeId -> ServerT API (GargM Env GargError)
+api nId =
   serveJobsAPI UploadDocumentJob $ \jHandle q -> do
-      documentUploadAsync uId nId q jHandle
+      documentUploadAsync nId q jHandle
 
 documentUploadAsync :: (FlowCmdM env err m, MonadJobStatus m)
-               => UserId
-               -> NodeId
+               => NodeId
                -> DocumentUpload
                -> JobHandle m
                -> m ()
-documentUploadAsync _uId nId doc jobHandle = do
+documentUploadAsync nId doc jobHandle = do
   markStarted 1 jobHandle
   _docIds <- documentUpload nId doc
   -- printDebug "documentUploadAsync" docIds

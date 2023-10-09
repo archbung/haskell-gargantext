@@ -16,9 +16,6 @@ Ngrams by node enable contextual metrics.
 module Gargantext.Database.Action.Metrics.NgramsByContext
   where
 
--- import Debug.Trace (trace)
---import Data.Map.Strict.Patch (PatchMap, Replace, diff)
--- import Control.Monad (void)
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified as List
@@ -26,13 +23,14 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as DPS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Database.PostgreSQL.Simple.ToField qualified as DPS
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Database.PostgreSQL.Simple.Types qualified as DPST
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core
 import Gargantext.Data.HashMap.Strict.Utils as HM
-import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId, MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
-import Gargantext.Database.Prelude (DBCmd, runPGSQuery)  -- , execPGSQuery)
+import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId (..), MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Schema.Ngrams (ngramsTypeId, NgramsType(..))
 import Gargantext.Prelude
 
@@ -50,7 +48,7 @@ countContextsByNgramsWith f m = (total, m')
 
 
     groupContextsByNgramsWith :: (NgramsTerm -> NgramsTerm)
-                              -> HashMap NgramsTerm (Set NodeId)
+                              -> HashMap NgramsTerm (Set ContextId)
                               -> HashMap NgramsTerm (Set NgramsTerm, Set ContextId)
     groupContextsByNgramsWith f' m'' =
       HM.fromListWith (<>) $ map (\(t,ns) -> (f' t, (Set.singleton t, ns)))
@@ -69,7 +67,7 @@ getContextsByNgramsUser cId nt =
       selectNgramsByContextUser :: HasDBid NodeType
                                 => CorpusId
                                 -> NgramsType
-                                -> DBCmd err [(NodeId, Text)]
+                                -> DBCmd err [(ContextId, Text)]
       selectNgramsByContextUser cId' nt' =
         runPGSQuery queryNgramsByContextUser
                     ( cId'
@@ -110,7 +108,7 @@ getOccByNgramsOnlyFast :: CorpusId
                        -> DBCmd err (HashMap NgramsTerm [ContextId])
 getOccByNgramsOnlyFast cId lId nt = do
     --HM.fromList <$> map (\(t,n) -> (NgramsTerm t, round n)) <$> run cId lId nt
-    HM.fromList <$> map (\(t, ns) -> (NgramsTerm t, NodeId <$> DPST.fromPGArray ns)) <$> run cId lId nt
+    HM.fromList <$> map (\(t, ns) -> (NgramsTerm t, UnsafeMkContextId <$> DPST.fromPGArray ns)) <$> run cId lId nt
     where
 
       run :: CorpusId
@@ -249,7 +247,7 @@ getContextsByNgramsOnlyUser :: HasDBid NodeType
                             -> [ListId]
                             -> NgramsType
                             -> [NgramsTerm]
-                            -> DBCmd err (HashMap NgramsTerm (Set NodeId))
+                            -> DBCmd err (HashMap NgramsTerm (Set ContextId))
 getContextsByNgramsOnlyUser cId ls nt ngs =
      HM.unionsWith        (<>)
    . map (HM.fromListWith (<>)
@@ -262,7 +260,7 @@ getNgramsByContextOnlyUser :: HasDBid NodeType
                            -> [ListId]
                            -> NgramsType
                            -> [NgramsTerm]
-                           -> DBCmd err (Map NodeId (Set NgramsTerm))
+                           -> DBCmd err (Map ContextId (Set NgramsTerm))
 getNgramsByContextOnlyUser cId ls nt ngs =
      Map.unionsWith         (<>)
    . map ( Map.fromListWith (<>)
@@ -284,7 +282,7 @@ selectNgramsOnlyByContextUser cId ls nt tms =
   runPGSQuery queryNgramsOnlyByContextUser
                 ( Values fields ((DPS.Only . unNgramsTerm) <$> tms)
                 , Values [QualifiedIdentifier Nothing "int4"]
-                         (DPS.Only <$> (map (\(NodeId n) -> n) ls))
+                         (DPS.Only <$> map DPS.toField ls)
                 , cId
                 , toDBid NodeDocument
                 , ngramsTypeId nt
@@ -330,7 +328,7 @@ selectNgramsOnlyByDocUser dId ls nt tms =
   runPGSQuery queryNgramsOnlyByDocUser
                 ( Values fields ((DPS.Only . unNgramsTerm) <$> tms)
                 , Values [QualifiedIdentifier Nothing "int4"]
-                         (DPS.Only <$> (map (\(NodeId n) -> n) ls))
+                         (DPS.Only <$> (map DPS.toField ls))
                 , dId
                 , ngramsTypeId nt
                 )

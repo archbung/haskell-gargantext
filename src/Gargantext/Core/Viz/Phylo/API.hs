@@ -50,9 +50,9 @@ type PhyloAPI = Summary "Phylo API"
             :<|> PostPhylo
 
 
-phyloAPI :: PhyloId -> UserId -> GargServer PhyloAPI
-phyloAPI n u = getPhylo  n
-        :<|> postPhylo n u
+phyloAPI :: PhyloId -> GargServer PhyloAPI
+phyloAPI n = getPhylo  n
+        :<|> postPhylo n
         -- :<|> putPhylo  n
         -- :<|> deletePhylo  n
 
@@ -163,8 +163,8 @@ type PostPhylo =  QueryParam "listId" ListId
           --     :> ReqBody '[JSON] PhyloQueryBuild
                :> (Post '[JSON] NodeId)
 
-postPhylo :: PhyloId -> UserId -> GargServer PostPhylo
-postPhylo phyloId _userId _lId = do
+postPhylo :: PhyloId -> GargServer PostPhylo
+postPhylo phyloId _lId = do
   -- TODO get Reader settings
   -- s <- ask
   -- let
