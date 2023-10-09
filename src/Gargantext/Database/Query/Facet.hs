@@ -39,15 +39,12 @@ module Gargantext.Database.Query.Facet
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.))
-import qualified Data.Text as T
-import Opaleye
-import qualified Opaleye.Aggregate as OAgg
-import Protolude hiding (null, map, sum, not)
-import qualified Opaleye.Internal.Unpackspec()
-
+import Data.Text qualified as T
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset, IsTrash)
+import Gargantext.Database.Prelude
+import Gargantext.Database.Query.Facet.Types
 import Gargantext.Database.Query.Filter
 import Gargantext.Database.Query.Table.Context
 import Gargantext.Database.Query.Table.ContextNodeNgrams
@@ -55,11 +52,13 @@ import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeContext (queryNodeContextTable)
-import Gargantext.Database.Query.Facet.Types
-import Gargantext.Database.Prelude
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.NodeContext
+import Opaleye
+import Opaleye.Aggregate qualified as OAgg
+import Opaleye.Internal.Unpackspec ()
+import Protolude hiding (null, map, sum, not)
 
 ------------------------------------------------------------------------
 
@@ -162,7 +161,7 @@ viewDocuments cId lId t ntId mQuery mYear =
                                 , facetDoc_hyperdata  = OAgg.groupBy
                                 , facetDoc_category   = OAgg.groupBy
                                 , facetDoc_ngramCount = OAgg.sumInt4
-                                , facetDoc_score      = OAgg.sumInt4 })
+                                , facetDoc_score      = OAgg.groupBy })
         (viewDocumentsAgg cId lId t ntId mQuery mYear)
 
 viewDocumentsAgg :: CorpusId
@@ -188,7 +187,7 @@ viewDocumentsAgg cId lId t ntId mQuery mYear = proc () -> do
                        -- currently it is all 0's in the DB and the
                        -- search functionality on the frontend orders
                        -- by Score.
-                       , facetDoc_score      = ngramCount
+                       , facetDoc_score      = unsafeCast "int8" $ nc ^. nc_score
                        }
 
 -- TODO Join with context_node_ngrams at context_id/node_id and sum by

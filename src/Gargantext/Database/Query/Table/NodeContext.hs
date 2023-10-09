@@ -180,15 +180,17 @@ getContextsForNgramsTerms cId ngramsTerms = do
                        date,
                        hyperdata,
                        nodes_contexts.score AS score,
-                       nodes_contexts.category AS category,
-                       context_node_ngrams.doc_count AS doc_count
+                       nodes_contexts.category AS category --,
+                       -- context_node_ngrams.doc_count AS doc_count
                     FROM contexts
                     JOIN context_node_ngrams ON contexts.id = context_node_ngrams.context_id
                     JOIN nodes_contexts ON contexts.id = nodes_contexts.context_id
                     JOIN ngrams ON context_node_ngrams.ngrams_id = ngrams.id
                     WHERE nodes_contexts.node_id = ?
                      AND ngrams.terms IN ?) t
-                   ORDER BY t.doc_count DESC |]
+                   -- ORDER BY t.doc_count DESC
+                   ORDER BY t.score DESC
+                   |]
 
 
 

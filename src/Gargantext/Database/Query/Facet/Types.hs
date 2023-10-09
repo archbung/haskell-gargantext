@@ -152,7 +152,7 @@ type FacetDocAggPart = Facet (Field SqlInt4       )
                              (Field SqlJsonb      )
                              (Field SqlInt4) -- Category
                              (Field SqlInt4) -- Ngrams Count
-                             (Field SqlInt4) -- Score
+                             (Field SqlInt8) -- Score
 
 -----------------------------------------------------------------------
 -----------------------------------------------------------------------
