@@ -56,7 +56,9 @@ resolveNodes
   -> NodeArgs
   -> GqlM e env [Node]
 resolveNodes autUser mgr NodeArgs { node_id } =
-  withPolicy autUser mgr (nodeChecks (NodeId node_id)) $ dbNodes node_id
+  -- FIXME(adn) We should have a way to enforce the access policy on
+  -- the public or public folders, instead of using 'alwaysAllow'.
+  withPolicy autUser mgr alwaysAllow $ dbNodes node_id
 
 resolveNodesCorpus
   :: (CmdCommon env)
