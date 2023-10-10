@@ -62,11 +62,13 @@ library
       Gargantext.API.Node.Corpus.Update
       Gargantext.API.Node.File
       Gargantext.API.Node.Share
+      Gargantext.API.Node.Update
       Gargantext.API.Prelude
       Gargantext.API.Routes
       Gargantext.Core
-      Gargantext.Core.NLP
+      Gargantext.Core.Mail.Types
       Gargantext.Core.Methods.Similarities
+      Gargantext.Core.NLP
       Gargantext.Core.NodeStory
       Gargantext.Core.Text
       Gargantext.Core.Text.Context
@@ -193,7 +195,6 @@ library
       Gargantext.API.Node.Get
       Gargantext.API.Node.New
       Gargantext.API.Node.Types
-      Gargantext.API.Node.Update
       Gargantext.API.Public
       Gargantext.API.Search
       Gargantext.API.Server
@@ -206,7 +207,6 @@ library
       Gargantext.Core.Flow.Ngrams
       Gargantext.Core.Flow.Types
       Gargantext.Core.Mail
-      Gargantext.Core.Mail.Types
       Gargantext.Core.Methods.Graph.BAC.Proxemy
       Gargantext.Core.Methods.Graph.MaxClique
       Gargantext.Core.Methods.Matrix.Accelerate.Utils
@@ -941,6 +941,7 @@ test-suite garg-test-tasty
     , crawlerArxiv
     , duckling ^>= 0.2.0.0
     , extra ^>= 1.7.9
+    , fast-logger ^>= 3.0.5
     , fmt
     , gargantext
     , gargantext-prelude
@@ -1044,6 +1045,7 @@ test-suite garg-test-hspec
     , crawlerArxiv
     , duckling ^>= 0.2.0.0
     , extra ^>= 1.7.9
+    , fast-logger ^>= 3.0.5
     , fmt
     , gargantext
     , gargantext-prelude

@@ -1,3 +1,13 @@
+{-|
+Module      : Gargantext.Core.NLP
+Description : GarganText NLP
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 module Gargantext.Core.NLP where
 
 import Control.Lens (Getter, at, non)

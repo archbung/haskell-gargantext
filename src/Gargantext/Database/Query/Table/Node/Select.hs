@@ -27,7 +27,7 @@ import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.User
 import Gargantext.Database.Query.Table.User
 
-selectNodesWithUsername :: (HasDBid NodeType) => NodeType -> Username -> Cmd err [NodeId]
+selectNodesWithUsername :: (HasDBid NodeType) => NodeType -> Username -> DBCmd err [NodeId]
 selectNodesWithUsername nt u = runOpaQuery $ proc () -> do
   n <- queryNodeTable -< ()
   usrs <- optionalRestrict queryUserTable -<

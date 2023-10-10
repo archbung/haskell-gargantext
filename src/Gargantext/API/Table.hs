@@ -133,7 +133,10 @@ getTableApi cId tabType mLimit mOffset mOrderBy mQuery mYear =
       t <- getTable cId tabType mOffset mLimit mOrderBy mQuery mYear
       pure $ constructHashedResponse t
 
-postTableApi :: (CmdM env err m, MonadLogger m, HasNodeError err) => NodeId -> TableQuery -> m FacetTableResult
+postTableApi :: (CmdM env err m, MonadLogger m, HasNodeError err)
+             => NodeId
+             -> TableQuery
+             -> m FacetTableResult
 postTableApi cId tq = case tq of
  TableQuery o l order ft "" -> do
    $(logLocM) DEBUG $ "New search with no query"
@@ -170,7 +173,8 @@ searchInCorpus' cId t q o l order = do
     Right boolQuery -> do
       docs          <- searchInCorpus cId t boolQuery o l order
       countAllDocs  <- searchCountInCorpus cId t boolQuery
-      pure $ TableResult { tr_docs = docs, tr_count = countAllDocs }
+      pure $ TableResult { tr_docs = docs
+                         , tr_count = countAllDocs }
 
 
 getTable :: HasNodeError err

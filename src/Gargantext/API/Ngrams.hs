@@ -108,7 +108,6 @@ import Gargantext.Core.NodeStory
 import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasInvalidError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
 import Gargantext.API.Ngrams.Tools
-import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Node (NodeType(..))
@@ -418,8 +417,6 @@ tableNgramsPut tabType listId (Versioned p_version p_table)
 
 
 tableNgramsPostChartsAsync :: ( HasNodeStory env err m
-                              , FlowCmdM     env err m
-                              , HasNodeError err
                               , HasSettings env
                               , MonadJobStatus m
                               )
@@ -471,7 +468,7 @@ tableNgramsPostChartsAsync utn jobHandle = do
               -- printDebug "[tableNgramsPostChartsAsync] Terms, updating Metrics (Histo), cId" cId
               markStarted 6 jobHandle
 {-
-              _ <- Metrics.updateChart cId (Just listId) tabType Nothing
+              _ <- Metrics.updateChart cId listId tabType Nothing
               logRefSuccess
               _ <- Metrics.updatePie cId (Just listId) tabType Nothing
               logRefSuccess

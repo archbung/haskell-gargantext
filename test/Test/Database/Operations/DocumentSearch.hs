@@ -1,14 +1,27 @@
+{-|
+Module      : Test.Database.Operations.DocumentSearch
+Description : GarganText database tests
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
+
 module Test.Database.Operations.DocumentSearch where
 
 import Prelude
 
+import Control.Lens (view)
 import Control.Monad.Reader
 import Data.Aeson.QQ.Simple
 import Data.Aeson.Types
-import Data.Maybe
+-- import Gargantext.API.Node.Update (updateDocs)
 import Gargantext.Core
+import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.Flow
 import Gargantext.Database.Action.Search
@@ -16,7 +29,7 @@ import Gargantext.Database.Admin.Types.Hyperdata.Document
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Node (NodePoly(..))
-import Network.URI (parseURI)
+-- import Network.URI (parseURI)
 
 import Test.Database.Types
 import Test.Hspec.Expectations
@@ -104,11 +117,6 @@ exampleDocument_04 = either error id $ parseEither parseJSON $ [aesonQQ|
 }
 |]
 
-nlpServerConfig :: NLPServerConfig
-nlpServerConfig =
-  let uri = parseURI "http://localhost:9000"
-  in NLPServerConfig CoreNLP (fromMaybe (error "parseURI for nlpServerConfig failed") uri)
-
 corpusAddDocuments :: TestEnv -> Assertion
 corpusAddDocuments env = do
   flip runReaderT env $ runTestMonad $ do
@@ -118,9 +126,11 @@ corpusAddDocuments env = do
     [corpus] <- getCorporaWithParentId parentId
     let corpusId = _node_id corpus
 
-    ids <- addDocumentsToHyperCorpus nlpServerConfig
+    let lang = EN
+    server <- view (nlpServerGet lang)
+    ids <- addDocumentsToHyperCorpus server
                                      (Just $ _node_hyperdata $ corpus)
-                                     (Multi EN)
+                                     (Multi lang)
                                      corpusId
                                      [exampleDocument_01, exampleDocument_02, exampleDocument_03, exampleDocument_04]
     liftIO $ length ids `shouldBe` 4
@@ -177,3 +187,24 @@ corpusSearch03 env = do
       length results1 `shouldBe` 1
       map facetDoc_title results2 `shouldBe` ["Haskell for OCaml programmers"]
       map facetDoc_title results3 `shouldBe` ["PyPlasm: computational geometry made easy", "Haskell for OCaml programmers"]
+
+-- | Check that the score doc count is correct
+--   TODO This test is unfinished because `updateDocs` needs more work
+corpusScore01 :: TestEnv -> Assertion
+corpusScore01 env = do
+  flip runReaderT env $ runTestMonad $ do
+
+    parentId <- getRootId (UserName userMaster)
+    [corpus] <- getCorporaWithParentId parentId
+
+    results <- searchInCorpus (_node_id corpus) False (mkQ "Haskell") Nothing Nothing Nothing
+
+    liftIO $ do
+      map facetDoc_title results `shouldBe` ["Haskell for OCaml programmers", "Rust for functional programmers"]
+
+      map facetDoc_score results `shouldBe` [Just 0.0, Just 0.0]
+
+    -- _ <- updateDocs (_node_id corpus)
+
+    liftIO $ do
+      map facetDoc_score results `shouldBe` [Just 0.0, Just 0.0]

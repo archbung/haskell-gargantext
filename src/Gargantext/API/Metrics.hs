@@ -26,6 +26,7 @@ import Gargantext.API.HashedResponse
 import Gargantext.API.Ngrams.NgramsTree
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude (GargServer)
+import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Metrics (Scored(..), {-normalizeGlobal,-} normalizeLocal)
 import Gargantext.Core.Types (CorpusId, ListId, ListType(..))
 import Gargantext.Core.Types.Query (Limit)
@@ -34,7 +35,6 @@ import Gargantext.Core.Viz.Types
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataList(..), hl_chart, hl_pie, hl_scatter, hl_tree)
 import Gargantext.Database.Admin.Types.Metrics (ChartMetrics(..), Metric(..), Metrics(..))
 import Gargantext.Database.Admin.Types.Node (NodeId)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
@@ -67,12 +67,12 @@ scatterApi id' = getScatter id'
             :<|> updateScatter id'
             :<|> getScatterHash id'
 
-getScatter :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> m (HashedResponse Metrics)
+getScatter :: HasNodeStory env err m
+           => CorpusId
+           -> Maybe ListId
+           -> TabType
+           -> Maybe Limit
+           -> m (HashedResponse Metrics)
 getScatter cId maybeListId tabType _maybeLimit = do
   listId <- case maybeListId of
     Just lid -> pure lid
@@ -84,32 +84,35 @@ getScatter cId maybeListId tabType _maybeLimit = do
   chart <- case mChart of
     Just chart -> pure chart
     Nothing    -> do
-      updateScatter' cId maybeListId tabType Nothing
+      updateScatter' cId listId tabType Nothing
 
   pure $ constructHashedResponse chart
 
-updateScatter :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> m ()
+updateScatter :: HasNodeStory env err m
+              => CorpusId
+              -> Maybe ListId
+              -> TabType
+              -> Maybe Limit
+              -> m ()
 updateScatter cId maybeListId tabType maybeLimit = do
+  listId <- case maybeListId of
+    Just lid -> pure lid
+    Nothing  -> defaultList cId
   -- printDebug "[updateScatter] cId" cId
   -- printDebug "[updateScatter] maybeListId" maybeListId
   -- printDebug "[updateScatter] tabType" tabType
   -- printDebug "[updateScatter] maybeLimit" maybeLimit
-  _ <- updateScatter' cId maybeListId tabType maybeLimit
+  _ <- updateScatter' cId listId tabType maybeLimit
   pure ()
 
-updateScatter' :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> m Metrics
-updateScatter' cId maybeListId tabType maybeLimit = do
-  (ngs', scores) <- Metrics.getMetrics cId maybeListId tabType maybeLimit
+updateScatter' :: HasNodeStory env err m
+               => CorpusId
+               -> ListId
+               -> TabType
+               -> Maybe Limit
+               -> m Metrics
+updateScatter' cId listId tabType maybeLimit = do
+  (ngs', scores) <- Metrics.getMetrics cId listId tabType maybeLimit
 
   let
     metrics      = fmap (\(Scored t s1 s2) -> Metric { m_label = unNgramsTerm t
@@ -120,9 +123,6 @@ updateScatter' cId maybeListId tabType maybeLimit = do
     listType t m = maybe (panic errorMsg) fst $ HashMap.lookup t m
     errorMsg     = "API.Node.metrics: key absent"
 
-  listId <- case maybeListId of
-    Just lid -> pure lid
-    Nothing  -> defaultList cId
   node <- getNodeWith listId (Proxy :: Proxy HyperdataList)
   let hl = node ^. node_hyperdata
       scatterMap = hl ^. hl_scatter
@@ -130,11 +130,11 @@ updateScatter' cId maybeListId tabType maybeLimit = do
 
   pure $ Metrics metrics
 
-getScatterHash :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> m Text
+getScatterHash :: HasNodeStory env err m
+               => CorpusId
+               -> Maybe ListId
+               -> TabType
+               -> m Text
 getScatterHash cId maybeListId tabType = do
   hash <$> getScatter cId maybeListId tabType Nothing
 
@@ -163,8 +163,8 @@ chartApi id' = getChart id'
           :<|> getChartHash id'
 
 -- TODO add start / end
-getChart :: FlowCmdM env err m =>
-            CorpusId
+getChart :: HasNodeStory env err m
+         => CorpusId
          -> Maybe UTCTime
          -> Maybe UTCTime
          -> Maybe ListId
@@ -181,7 +181,7 @@ getChart cId _start _end maybeListId tabType = do
   chart <- case mChart of
     Just chart -> pure chart
     Nothing    -> do
-      updateChart' cId maybeListId tabType Nothing
+      updateChart' cId listId tabType Nothing
 
   pure $ constructHashedResponse chart
 
@@ -190,25 +190,25 @@ updateChart :: HasNodeError err =>
   -> Maybe ListId
   -> TabType
   -> Maybe Limit
-  -> Cmd err ()
+  -> DBCmd err ()
 updateChart cId maybeListId tabType maybeLimit = do
+  listId <- case maybeListId of
+    Just lid -> pure lid
+    Nothing  -> defaultList cId
   printDebug "[updateChart] cId" cId
-  printDebug "[updateChart] maybeListId" maybeListId
+  printDebug "[updateChart] listId" listId
   printDebug "[updateChart] tabType" tabType
   printDebug "[updateChart] maybeLimit" maybeLimit
-  _ <- updateChart' cId maybeListId tabType maybeLimit
+  _ <- updateChart' cId listId tabType maybeLimit
   pure ()
 
 updateChart' :: HasNodeError err =>
   CorpusId
-  -> Maybe ListId
+  -> ListId
   -> TabType
   -> Maybe Limit
-  -> Cmd err (ChartMetrics Histo)
-updateChart' cId maybeListId tabType _maybeLimit = do
-  listId <- case maybeListId of
-    Just lid -> pure lid
-    Nothing  -> defaultList cId
+  -> DBCmd err (ChartMetrics Histo)
+updateChart' cId listId tabType _maybeLimit = do
   node <- getNodeWith listId (Proxy :: Proxy HyperdataList)
   let hl = node ^. node_hyperdata
       chartMap = hl ^. hl_chart
@@ -218,11 +218,11 @@ updateChart' cId maybeListId tabType _maybeLimit = do
   pure $ ChartMetrics h
 
 
-getChartHash :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> m Text
+getChartHash :: HasNodeStory env err m
+             => CorpusId
+             -> Maybe ListId
+             -> TabType
+             -> m Text
 getChartHash cId maybeListId tabType = do
   hash <$> getChart cId Nothing Nothing maybeListId tabType
 
@@ -249,7 +249,7 @@ pieApi id' = getPie id'
         :<|> updatePie id'
         :<|> getPieHash id'
 
-getPie :: FlowCmdM env err m
+getPie :: HasNodeStory env err m
        => CorpusId
        -> Maybe UTCTime
        -> Maybe UTCTime
@@ -271,12 +271,12 @@ getPie cId _start _end maybeListId tabType = do
 
   pure $ constructHashedResponse chart
 
-updatePie :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> m ()
+updatePie :: HasNodeStory env err m
+          => CorpusId
+          -> Maybe ListId
+          -> TabType
+          -> Maybe Limit
+          -> m ()
 updatePie cId maybeListId tabType maybeLimit = do
   printDebug "[updatePie] cId" cId
   printDebug "[updatePie] maybeListId" maybeListId
@@ -285,12 +285,12 @@ updatePie cId maybeListId tabType maybeLimit = do
   _ <- updatePie' cId maybeListId tabType maybeLimit
   pure ()
 
-updatePie' :: FlowCmdM env err m =>
-     CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> m (ChartMetrics Histo)
+updatePie' :: (HasNodeStory env err m, HasNodeError err)
+           => CorpusId
+           -> Maybe ListId
+           -> TabType
+           -> Maybe Limit
+           -> m (ChartMetrics Histo)
 updatePie' cId maybeListId tabType _maybeLimit = do
   listId <- case maybeListId of
     Just lid -> pure lid
@@ -304,11 +304,11 @@ updatePie' cId maybeListId tabType _maybeLimit = do
 
   pure $ ChartMetrics p
 
-getPieHash :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> m Text
+getPieHash :: HasNodeStory env err m
+           => CorpusId
+           -> Maybe ListId
+           -> TabType
+           -> m Text
 getPieHash cId maybeListId tabType = do
   hash <$> getPie cId Nothing Nothing maybeListId tabType
 
@@ -338,7 +338,7 @@ treeApi id' = getTree id'
          :<|> updateTree id'
          :<|> getTreeHash id'
 
-getTree :: FlowCmdM env err m
+getTree :: HasNodeStory env err m
         => CorpusId
         -> Maybe UTCTime
         -> Maybe UTCTime
@@ -362,12 +362,12 @@ getTree cId _start _end maybeListId tabType listType = do
 
   pure $ constructHashedResponse chart
 
-updateTree :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> ListType
-  -> m ()
+updateTree :: HasNodeStory env err m
+           => CorpusId
+           -> Maybe ListId
+           -> TabType
+           -> ListType
+           -> m ()
 updateTree cId maybeListId tabType listType = do
   printDebug "[updateTree] cId" cId
   printDebug "[updateTree] maybeListId" maybeListId
@@ -376,12 +376,12 @@ updateTree cId maybeListId tabType listType = do
   _ <- updateTree' cId maybeListId tabType listType
   pure ()
 
-updateTree' :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> ListType
-  -> m (ChartMetrics (Vector NgramsTree))
+updateTree' :: HasNodeStory env err m
+            => CorpusId
+            -> Maybe ListId
+            -> TabType
+            -> ListType
+            -> m (ChartMetrics (Vector NgramsTree))
 updateTree' cId maybeListId tabType listType = do
   listId <- case maybeListId of
     Just lid -> pure lid
@@ -395,11 +395,11 @@ updateTree' cId maybeListId tabType listType = do
 
   pure $ ChartMetrics t
 
-getTreeHash :: FlowCmdM env err m =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> ListType
-  -> m Text
+getTreeHash :: HasNodeStory env err m
+            => CorpusId
+            -> Maybe ListId
+            -> TabType
+            -> ListType
+            -> m Text
 getTreeHash cId maybeListId tabType listType = do
   hash <$> getTree cId Nothing Nothing maybeListId tabType listType

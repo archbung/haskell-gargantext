@@ -117,7 +117,7 @@ import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config (nodeTypeId)
-import Gargantext.Database.Prelude (CmdM', HasConnectionPool(..), HasConfig)
+import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
@@ -143,12 +143,10 @@ data NodeStoryEnv = NodeStoryEnv
   }
   deriving (Generic)
 
-type HasNodeStory env err m = ( CmdM' env err m
+type HasNodeStory env err m = ( DbCmd' env err m
                               , MonadReader env m
                               , MonadError  err m
                               , HasNodeStoryEnv env
-                              , HasConfig env
-                              , HasConnectionPool env
                               , HasNodeError err
                               )
 

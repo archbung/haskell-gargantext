@@ -34,11 +34,10 @@ import Gargantext.Core.Viz.Graph.GEXF ()
 import Gargantext.Core.Viz.Graph.Tools -- (cooc2graph)
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
@@ -83,8 +82,8 @@ graphAPI u n = getGraph         u n
 
 ------------------------------------------------------------------------
 --getGraph :: UserId -> NodeId -> GargServer HyperdataGraphAPI
-getGraph :: FlowCmdM env err m
-         => UserId
+getGraph :: HasNodeStory env err m
+          => UserId
          -> NodeId
          -> m HyperdataGraphAPI
 getGraph _uId nId = do
@@ -122,7 +121,7 @@ getGraph _uId nId = do
 
 
 --recomputeGraph :: UserId -> NodeId -> Maybe GraphMetric -> GargNoServer Graph
-recomputeGraph :: FlowCmdM env err m
+recomputeGraph :: HasNodeStory env err m
                => UserId
                -> NodeId
                -> PartitionMethod
@@ -179,7 +178,7 @@ recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStreng
 
 
 -- TODO remove repo
-computeGraph :: FlowCmdM env err m
+computeGraph :: HasNodeError err
              => CorpusId
              -> PartitionMethod
              -> BridgenessMethod
@@ -187,7 +186,7 @@ computeGraph :: FlowCmdM env err m
              -> Strength
              -> (NgramsType, NgramsType)
              -> NodeListStory
-             -> m Graph
+             -> DBCmd err Graph
 computeGraph corpusId partitionMethod bridgeMethod similarity strength (nt1,nt2) repo = do
   -- Getting the Node parameters
   lId  <- defaultList corpusId
@@ -230,7 +229,7 @@ defaultGraphMetadata :: HasNodeError err
                      -> NodeListStory
                      -> GraphMetric
                      -> Strength
-                     -> Cmd err GraphMetadata
+                     -> DBCmd err GraphMetadata
 defaultGraphMetadata cId t repo gm str = do
   lId  <- defaultList cId
 
@@ -265,7 +264,7 @@ graphAsync u n =
 --               -> (JobLog -> GargNoServer ())
 --               -> GargNoServer JobLog
 -- TODO get Graph Metadata to recompute
-graphRecompute :: (FlowCmdM env err m, MonadJobStatus m)
+graphRecompute ::  (HasNodeStory env err m, MonadJobStatus m)
                => UserId
                -> NodeId
                -> JobHandle m
@@ -319,7 +318,7 @@ graphVersions n nId = do
                            , gv_repo = v }
 
 --recomputeVersions :: UserId -> NodeId -> GargNoServer Graph
-recomputeVersions :: FlowCmdM env err m
+recomputeVersions :: HasNodeStory env err m
                   => UserId
                   -> NodeId
                   -> m Graph
@@ -351,8 +350,8 @@ graphClone uId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
 --getGraphGexf :: UserId
 --             -> NodeId
 --             -> GargNoServer (Headers '[Servant.Header "Content-Disposition" Text] Graph)
-getGraphGexf :: FlowCmdM env err m
-             => UserId
+getGraphGexf :: HasNodeStory env err m
+              => UserId
              -> NodeId
              -> m (Headers '[Servant.Header "Content-Disposition" Text] Graph)
 getGraphGexf uId nId = do

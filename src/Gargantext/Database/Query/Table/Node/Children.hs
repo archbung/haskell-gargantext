@@ -36,12 +36,12 @@ import Opaleye
 
 
 -- TODO getAllTableDocuments
-getAllDocuments :: HasDBid NodeType => ParentId -> Cmd err (TableResult (Node HyperdataDocument))
+getAllDocuments :: HasDBid NodeType => ParentId -> DBCmd err (TableResult (Node HyperdataDocument))
 getAllDocuments pId = getAllChildren pId (Proxy :: Proxy HyperdataDocument)
                                          (Just NodeDocument)
 
 -- TODO getAllTableContacts
-getAllContacts :: HasDBid NodeType => ParentId -> Cmd err (TableResult (Node HyperdataContact))
+getAllContacts :: HasDBid NodeType => ParentId -> DBCmd err (TableResult (Node HyperdataContact))
 getAllContacts pId = getAllChildren pId (Proxy :: Proxy HyperdataContact)
                                         (Just NodeContact)
 
@@ -49,7 +49,7 @@ getAllChildren :: (JSONB a, HasDBid NodeType)
                => ParentId
                -> proxy a
                -> Maybe NodeType
-               -> Cmd err (NodeTableResult a)
+               -> DBCmd err (NodeTableResult a)
 getAllChildren pId p maybeNodeType = getChildren pId p maybeNodeType Nothing Nothing
 
 
@@ -59,7 +59,7 @@ getChildren :: (JSONB a, HasDBid NodeType)
             -> Maybe NodeType
             -> Maybe Offset
             -> Maybe Limit
-            -> Cmd err (NodeTableResult a)
+            -> DBCmd err (NodeTableResult a)
 getChildren pId p t@(Just NodeDocument) maybeOffset maybeLimit = getChildrenContext pId p t maybeOffset maybeLimit
 getChildren pId p t@(Just NodeContact ) maybeOffset maybeLimit = getChildrenContext pId p t maybeOffset maybeLimit
 getChildren a b c d e = getChildrenNode a b c d e
@@ -71,7 +71,7 @@ getChildrenNode :: (JSONB a, HasDBid NodeType)
             -> Maybe NodeType
             -> Maybe Offset
             -> Maybe Limit
-            -> Cmd err (NodeTableResult a)
+            -> DBCmd err (NodeTableResult a)
 getChildrenNode pId _ maybeNodeType maybeOffset maybeLimit = do
   -- printDebug "getChildrenNode" (pId, maybeNodeType)
   let query = selectChildrenNode pId maybeNodeType
@@ -97,12 +97,12 @@ selectChildrenNode parentId maybeNodeType = proc () -> do
 
 
 getChildrenContext :: (JSONB a, HasDBid NodeType)
-            => ParentId
-            -> proxy a
-            -> Maybe NodeType
-            -> Maybe Offset
-            -> Maybe Limit
-            -> Cmd err (NodeTableResult a)
+                   => ParentId
+                   -> proxy a
+                   -> Maybe NodeType
+                   -> Maybe Offset
+                   -> Maybe Limit
+                   -> DBCmd err (NodeTableResult a)
 getChildrenContext pId _ maybeNodeType maybeOffset maybeLimit = do
   -- printDebug "getChildrenContext" (pId, maybeNodeType)
   let query = selectChildren' pId maybeNodeType

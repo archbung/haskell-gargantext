@@ -374,8 +374,8 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
   -- Annuaire Flow
   -- _ <- mkAnnuaire  rootUserId userId
   _ <- reIndexWith userCorpusId listId NgramsTerms (Set.singleton MapTerm)
-  _ <- updateContextScore      userCorpusId (Just listId)
-  _ <- updateNgramsOccurrences userCorpusId (Just listId)
+  _ <- updateContextScore      userCorpusId listId
+  _ <- updateNgramsOccurrences userCorpusId listId
   
   pure userCorpusId
 
@@ -614,9 +614,7 @@ extractInsert docs = do
 
 
 -- | Re-index documents of a corpus with ngrams in the list
-reIndexWith :: ( HasNodeStory env err m
-               , FlowCmdM     env err m
-               )
+reIndexWith :: ( HasNodeStory env err m )
             => CorpusId
             -> ListId
             -> NgramsType

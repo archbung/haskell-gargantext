@@ -32,7 +32,7 @@ queryNodeContext_NodeContextTable :: Select NodeContext_NodeContextRead
 queryNodeContext_NodeContextTable = selectTable nodeContext_NodeContextTable
 -}
 
-insertNodeContext_NodeContext :: [(CorpusId, DocId, AnnuaireId, ContactId)] -> Cmd err [Int]
+insertNodeContext_NodeContext :: [(CorpusId, DocId, AnnuaireId, ContactId)] -> DBCmd err [Int]
 insertNodeContext_NodeContext contexts = do
   let
     fields = map (\t -> QualifiedIdentifier Nothing t) $ snd fields_name
