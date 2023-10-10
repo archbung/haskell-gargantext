@@ -14,12 +14,15 @@ Portability : POSIX
 module Gargantext.Core.Viz.Chart
   where
 
+import Data.HashMap.Strict qualified as HashMap
 import Data.List (sortOn)
+import Data.List qualified as List
 import Data.Map.Strict (toList)
-import qualified Data.List as List
 import Data.Maybe (catMaybes)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 
+import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
 import Gargantext.Core.Types.Main
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Prelude
@@ -28,21 +31,18 @@ import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.NodeContext (selectDocsDates)
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
-import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
 
 -- Pie Chart
 import Gargantext.API.Ngrams.NgramsTree
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types
-import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Core.Viz.Types
-import qualified Data.HashMap.Strict as HashMap
 
 
-histoData :: CorpusId -> Cmd err Histo
+histoData :: CorpusId -> DBCmd err Histo
 histoData cId = do
   dates <- selectDocsDates cId
   let (ls, css) = V.unzip
@@ -53,9 +53,9 @@ histoData cId = do
   pure (Histo ls css)
 
 
-chartData :: FlowCmdM env err m
-        => CorpusId -> NgramsType -> ListType
-        -> m Histo
+chartData :: HasNodeStory env err m
+          => CorpusId -> NgramsType -> ListType
+          -> m Histo
 chartData cId nt lt = do
   ls' <- selectNodesWithUsername NodeList userMaster
   ls <- map (_node_id) <$> getListsWithParentId cId
@@ -77,7 +77,7 @@ chartData cId nt lt = do
   pure (Histo dates (round <$> count))
 
 
-treeData :: FlowCmdM env err m
+treeData :: HasNodeStory env err m
         => CorpusId -> NgramsType -> ListType
         -> m (V.Vector NgramsTree)
 treeData cId nt lt = do

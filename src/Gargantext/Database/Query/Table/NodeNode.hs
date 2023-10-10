@@ -54,12 +54,12 @@ queryNodeNodeTable :: Select NodeNodeRead
 queryNodeNodeTable = selectTable nodeNodeTable
 
 -- | not optimized (get all ngrams without filters)
-_nodesNodes :: Cmd err [NodeNode]
+_nodesNodes :: DBCmd err [NodeNode]
 _nodesNodes = runOpaQuery queryNodeNodeTable
 
 ------------------------------------------------------------------------
 -- | Basic NodeNode tools
-getNodeNode :: NodeId -> Cmd err [NodeNode]
+getNodeNode :: NodeId -> DBCmd err [NodeNode]
 getNodeNode n = runOpaQuery (selectNodeNode $ pgNodeId n)
   where
     selectNodeNode :: Column SqlInt4 -> Select NodeNodeRead
@@ -71,7 +71,7 @@ getNodeNode n = runOpaQuery (selectNodeNode $ pgNodeId n)
 ------------------------------------------------------------------------
 -- TODO (refactor with Children)
 {-
-getNodeNodeWith :: NodeId -> proxy a -> Maybe NodeType -> Cmd err [a]
+getNodeNodeWith :: NodeId -> proxy a -> Maybe NodeType -> DBCmd err [a]
 getNodeNodeWith pId _ maybeNodeType = runOpaQuery query
   where
     query = selectChildren pId maybeNodeType
@@ -93,7 +93,7 @@ getNodeNodeWith pId _ maybeNodeType = runOpaQuery query
 -}
 
 ------------------------------------------------------------------------
-insertNodeNode :: [NodeNode] -> Cmd err Int
+insertNodeNode :: [NodeNode] -> DBCmd err Int
 insertNodeNode ns = mkCmd $ \conn -> fromIntegral <$> (runInsert_ conn
                           $ Insert nodeNodeTable ns' rCount (Just DoNothing))
   where
@@ -111,7 +111,7 @@ insertNodeNode ns = mkCmd $ \conn -> fromIntegral <$> (runInsert_ conn
 type Node1_Id = NodeId
 type Node2_Id = NodeId
 
-deleteNodeNode :: Node1_Id -> Node2_Id -> Cmd err Int
+deleteNodeNode :: Node1_Id -> Node2_Id -> DBCmd err Int
 deleteNodeNode n1 n2 = mkCmd $ \conn ->
   fromIntegral <$> runDelete_ conn
                   (Delete nodeNodeTable
@@ -123,7 +123,7 @@ deleteNodeNode n1 n2 = mkCmd $ \conn ->
 
 ------------------------------------------------------------------------
 -- | Favorite management
-_nodeNodeCategory :: CorpusId -> DocId -> Int -> Cmd err [Int]
+_nodeNodeCategory :: CorpusId -> DocId -> Int -> DBCmd err [Int]
 _nodeNodeCategory cId dId c = map (\(PGS.Only a) -> a) <$> runPGSQuery favQuery (c,cId,dId)
   where
     favQuery :: PGS.Query
@@ -132,7 +132,7 @@ _nodeNodeCategory cId dId c = map (\(PGS.Only a) -> a) <$> runPGSQuery favQuery 
                RETURNING node2_id;
                |]
 
-nodeNodesCategory :: [(CorpusId, DocId, Int)] -> Cmd err [Int]
+nodeNodesCategory :: [(CorpusId, DocId, Int)] -> DBCmd err [Int]
 nodeNodesCategory inputData = map (\(PGS.Only a) -> a)
                             <$> runPGSQuery catQuery (PGS.Only $ Values fields inputData)
   where
@@ -148,7 +148,7 @@ nodeNodesCategory inputData = map (\(PGS.Only a) -> a)
 
 ------------------------------------------------------------------------
 -- | Score management
-_nodeNodeScore :: CorpusId -> DocId -> Int -> Cmd err [Int]
+_nodeNodeScore :: CorpusId -> DocId -> Int -> DBCmd err [Int]
 _nodeNodeScore cId dId c = map (\(PGS.Only a) -> a) <$> runPGSQuery scoreQuery (c,cId,dId)
   where
     scoreQuery :: PGS.Query
@@ -157,7 +157,7 @@ _nodeNodeScore cId dId c = map (\(PGS.Only a) -> a) <$> runPGSQuery scoreQuery (
                   RETURNING node2_id;
                   |]
 
-nodeNodesScore :: [(CorpusId, DocId, Int)] -> Cmd err [Int]
+nodeNodesScore :: [(CorpusId, DocId, Int)] -> DBCmd err [Int]
 nodeNodesScore inputData = map (\(PGS.Only a) -> a)
                             <$> runPGSQuery catScore (PGS.Only $ Values fields inputData)
   where
@@ -172,7 +172,7 @@ nodeNodesScore inputData = map (\(PGS.Only a) -> a)
                   |]
 
 ------------------------------------------------------------------------
-_selectCountDocs :: HasDBid NodeType => CorpusId -> Cmd err Int
+_selectCountDocs :: HasDBid NodeType => CorpusId -> DBCmd err Int
 _selectCountDocs cId = runCountOpaQuery (queryCountDocs cId)
   where
     queryCountDocs cId' = proc () -> do
@@ -188,13 +188,13 @@ _selectCountDocs cId = runCountOpaQuery (queryCountDocs cId)
 
 
 -- | TODO use UTCTime fast
-selectDocsDates :: HasDBid NodeType => CorpusId -> Cmd err [Text]
+selectDocsDates :: HasDBid NodeType => CorpusId -> DBCmd err [Text]
 selectDocsDates cId =  map (head' "selectDocsDates" . splitOn "-")
                    <$> catMaybes
                    <$> map (view hd_publication_date)
                    <$> selectDocs cId
 
-selectDocs :: HasDBid NodeType => CorpusId -> Cmd err [HyperdataDocument]
+selectDocs :: HasDBid NodeType => CorpusId -> DBCmd err [HyperdataDocument]
 selectDocs cId = runOpaQuery (queryDocs cId)
 
 queryDocs :: HasDBid NodeType => CorpusId -> O.Select (Column SqlJsonb)
@@ -207,7 +207,7 @@ queryDocs cId = proc () -> do
   restrict -< n ^. node_typename .== (sqlInt4 $ toDBid NodeDocument)
   returnA -< view node_hyperdata n
 
-selectDocNodes :: HasDBid NodeType =>CorpusId -> Cmd err [Node HyperdataDocument]
+selectDocNodes :: HasDBid NodeType => CorpusId -> DBCmd err [Node HyperdataDocument]
 selectDocNodes cId = runOpaQuery (queryDocNodes cId)
 
 queryDocNodes :: HasDBid NodeType =>CorpusId -> O.Select NodeRead
@@ -230,7 +230,7 @@ joinInCorpus = proc () -> do
 
 ------------------------------------------------------------------------
 selectPublicNodes :: HasDBid NodeType => (Hyperdata a, DefaultFromField SqlJsonb a)
-                  => Cmd err [(Node a, Maybe Int)]
+                  => DBCmd err [(Node a, Maybe Int)]
 selectPublicNodes = runOpaQuery (queryWithType NodeFolderPublic)
 
 queryWithType :: HasDBid NodeType

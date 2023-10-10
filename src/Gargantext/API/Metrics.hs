@@ -190,7 +190,7 @@ updateChart :: HasNodeError err =>
   -> Maybe ListId
   -> TabType
   -> Maybe Limit
-  -> Cmd err ()
+  -> DBCmd err ()
 updateChart cId maybeListId tabType maybeLimit = do
   printDebug "[updateChart] cId" cId
   printDebug "[updateChart] maybeListId" maybeListId
@@ -204,7 +204,7 @@ updateChart' :: HasNodeError err =>
   -> Maybe ListId
   -> TabType
   -> Maybe Limit
-  -> Cmd err (ChartMetrics Histo)
+  -> DBCmd err (ChartMetrics Histo)
 updateChart' cId maybeListId tabType _maybeLimit = do
   listId <- case maybeListId of
     Just lid -> pure lid

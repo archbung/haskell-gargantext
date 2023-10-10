@@ -70,12 +70,12 @@ queryNodeContextTable :: Select NodeContextRead
 queryNodeContextTable = selectTable nodeContextTable
 
 -- | not optimized (get all ngrams without filters)
-_nodesContexts :: Cmd err [NodeContext]
+_nodesContexts :: DBCmd err [NodeContext]
 _nodesContexts = runOpaQuery queryNodeContextTable
 
 ------------------------------------------------------------------------
 -- | Basic NodeContext tools
-getNodeContexts :: NodeId -> Cmd err [NodeContext]
+getNodeContexts :: NodeId -> DBCmd err [NodeContext]
 getNodeContexts n = runOpaQuery (selectNodeContexts $ pgNodeId n)
   where
     selectNodeContexts :: Field SqlInt4 -> Select NodeContextRead
@@ -85,7 +85,7 @@ getNodeContexts n = runOpaQuery (selectNodeContexts $ pgNodeId n)
       returnA -< ns
 
 
-getNodeContext :: HasNodeError err => ContextId -> NodeId -> Cmd err NodeContext
+getNodeContext :: HasNodeError err => ContextId -> NodeId -> DBCmd err NodeContext
 getNodeContext c n = do
   maybeNodeContext <- headMay <$> runOpaQuery (selectNodeContext (pgNodeId c) (pgNodeId n))
   case maybeNodeContext of
@@ -99,7 +99,7 @@ getNodeContext c n = do
       restrict -< _nc_node_id ns .== n'
       returnA -< ns
 
-updateNodeContextCategory :: ContextId -> NodeId -> Int -> Cmd err Int64
+updateNodeContextCategory :: ContextId -> NodeId -> Int -> DBCmd err Int64
 updateNodeContextCategory cId nId cat = do
   execPGSQuery upScore (cat, cId, nId)
   where
@@ -120,7 +120,7 @@ data ContextForNgrams =
 getContextsForNgrams :: HasNodeError err
                      => NodeId
                      -> [Int]
-                     -> Cmd err [ContextForNgrams]
+                     -> DBCmd err [ContextForNgrams]
 getContextsForNgrams cId ngramsIds = do
   res <- runPGSQuery query (cId, PGS.In ngramsIds)
   pure $ (\( _cfn_nodeId
@@ -153,7 +153,7 @@ data ContextForNgramsTerms =
 getContextsForNgramsTerms :: HasNodeError err
                           => NodeId
                           -> [Text]
-                          -> Cmd err [ContextForNgramsTerms]
+                          -> DBCmd err [ContextForNgramsTerms]
 getContextsForNgramsTerms cId ngramsTerms = do
   res <- runPGSQuery query (cId, PGS.In ngramsTerms)
   pure $ (\( _cfnt_nodeId
@@ -203,7 +203,7 @@ getContextsForNgramsTerms cId ngramsTerms = do
 getContextNgrams :: HasNodeError err
                  => NodeId
                  -> NodeId
-                 -> Cmd err [Text]
+                 -> DBCmd err [Text]
 getContextNgrams contextId listId = do
   res <- runPGSQuery query (contextId, listId)
   pure $ (\(PGS.Only term) -> term) <$> res
@@ -227,7 +227,7 @@ getContextNgrams contextId listId = do
 getContextNgramsMatchingFTS :: HasNodeError err
                             => NodeId
                             -> NodeId
-                            -> Cmd err [Text]
+                            -> DBCmd err [Text]
 getContextNgramsMatchingFTS contextId listId = do
   res <- runPGSQuery query (listId, contextId)
   pure $ (\(PGS.Only term) -> term) <$> res
@@ -256,7 +256,7 @@ getContextNgramsMatchingFTS contextId listId = do
                 AND (contexts.search @@ plainto_tsquery(ngrams.terms)
                   OR contexts.search @@ plainto_tsquery('french', ngrams.terms)) |]
 ------------------------------------------------------------------------
-insertNodeContext :: [NodeContext] -> Cmd err Int
+insertNodeContext :: [NodeContext] -> DBCmd err Int
 insertNodeContext ns = mkCmd $ \conn -> fromIntegral <$> (runInsert_ conn
                           $ Insert nodeContextTable ns' rCount (Just DoNothing))
   where
@@ -274,7 +274,7 @@ insertNodeContext ns = mkCmd $ \conn -> fromIntegral <$> (runInsert_ conn
 type Node_Id    = NodeId
 type Context_Id = NodeId
 
-deleteNodeContext :: Node_Id -> Context_Id -> Cmd err Int
+deleteNodeContext :: Node_Id -> Context_Id -> DBCmd err Int
 deleteNodeContext n c = mkCmd $ \conn ->
   fromIntegral <$> runDelete_ conn
                               (Delete nodeContextTable
@@ -286,7 +286,7 @@ deleteNodeContext n c = mkCmd $ \conn ->
 
 ------------------------------------------------------------------------
 -- | Favorite management
-nodeContextsCategory :: [(CorpusId, DocId, Int)] -> Cmd err [Int]
+nodeContextsCategory :: [(CorpusId, DocId, Int)] -> DBCmd err [Int]
 nodeContextsCategory inputData = map (\(PGS.Only a) -> a)
                             <$> runPGSQuery catSelect (PGS.Only $ Values fields inputData)
   where
@@ -302,7 +302,7 @@ nodeContextsCategory inputData = map (\(PGS.Only a) -> a)
 
 ------------------------------------------------------------------------
 -- | Score management
-nodeContextsScore :: [(CorpusId, DocId, Int)] -> Cmd err [Int]
+nodeContextsScore :: [(CorpusId, DocId, Int)] -> DBCmd err [Int]
 nodeContextsScore inputData = map (\(PGS.Only a) -> a)
                             <$> runPGSQuery catScore (PGS.Only $ Values fields inputData)
   where
@@ -318,7 +318,7 @@ nodeContextsScore inputData = map (\(PGS.Only a) -> a)
 
 
 ------------------------------------------------------------------------
-selectCountDocs :: HasDBid NodeType => CorpusId -> Cmd err Int
+selectCountDocs :: HasDBid NodeType => CorpusId -> DBCmd err Int
 selectCountDocs cId = runCountOpaQuery (queryCountDocs cId)
   where
     queryCountDocs cId' = proc () -> do
@@ -330,13 +330,13 @@ selectCountDocs cId = runCountOpaQuery (queryCountDocs cId)
 
 
 -- | TODO use UTCTime fast
-selectDocsDates :: HasDBid NodeType => CorpusId -> Cmd err [Text]
+selectDocsDates :: HasDBid NodeType => CorpusId -> DBCmd err [Text]
 selectDocsDates cId =  map (head' "selectDocsDates" . splitOn "-")
                    <$> catMaybes
                    <$> map (view hd_publication_date)
                    <$> selectDocs cId
 
-selectDocs :: HasDBid NodeType => CorpusId -> Cmd err [HyperdataDocument]
+selectDocs :: HasDBid NodeType => CorpusId -> DBCmd err [HyperdataDocument]
 selectDocs cId = runOpaQuery (queryDocs cId)
 
 queryDocs :: HasDBid NodeType => CorpusId -> O.Select (Field SqlJsonb)
@@ -347,7 +347,7 @@ queryDocs cId = proc () -> do
   restrict -< (c ^. context_typename) .== sqlInt4 (toDBid NodeDocument)
   returnA  -< view (context_hyperdata) c
 
-selectDocNodes :: HasDBid NodeType => CorpusId -> Cmd err [Context HyperdataDocument]
+selectDocNodes :: HasDBid NodeType => CorpusId -> DBCmd err [Context HyperdataDocument]
 selectDocNodes cId = runOpaQuery (queryDocNodes cId)
 
 queryDocNodes :: HasDBid NodeType => CorpusId -> O.Select ContextRead
@@ -380,7 +380,7 @@ joinOn1 = proc () -> do
 
 ------------------------------------------------------------------------
 selectPublicContexts :: HasDBid NodeType => (Hyperdata a, DefaultFromField SqlJsonb a)
-                  => Cmd err [(Node a, Maybe Int)]
+                  => DBCmd err [(Node a, Maybe Int)]
 selectPublicContexts = runOpaQuery (queryWithType NodeFolderPublic)
 
 queryWithType :: HasDBid NodeType => NodeType -> O.Select (NodeRead, MaybeFields (Field SqlInt4))

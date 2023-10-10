@@ -20,25 +20,25 @@ module Gargantext.Database.Action.Metrics.NgramsByContext
 --import Data.Map.Strict.Patch (PatchMap, Replace, diff)
 -- import Control.Monad (void)
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HM
+import Data.List qualified as List
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Tuple.Extra (first, second, swap)
+import Database.PostgreSQL.Simple qualified as DPS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
+import Database.PostgreSQL.Simple.Types qualified as DPST
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core
 import Gargantext.Data.HashMap.Strict.Utils as HM
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId, MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
-import Gargantext.Database.Prelude (Cmd, runPGSQuery)  -- , execPGSQuery)
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)  -- , execPGSQuery)
 import Gargantext.Database.Schema.Ngrams (ngramsTypeId, NgramsType(..))
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict              as HM
-import qualified Data.List                        as List
-import qualified Data.Map.Strict                  as Map
-import qualified Data.Set                         as Set
-import qualified Database.PostgreSQL.Simple       as DPS
-import qualified Database.PostgreSQL.Simple.Types as DPST
 
 -- | fst is size of Supra Corpus
 --   snd is Texts and size of Occurrences (different docs)
@@ -61,10 +61,10 @@ countContextsByNgramsWith f m = (total, m')
                            $ HM.toList m''
 
 ------------------------------------------------------------------------
-getContextsByNgramsUser ::  HasDBid NodeType
+getContextsByNgramsUser :: HasDBid NodeType
                         => CorpusId
                         -> NgramsType
-                        -> Cmd err (HashMap NgramsTerm (Set ContextId))
+                        -> DBCmd err (HashMap NgramsTerm (Set ContextId))
 getContextsByNgramsUser cId nt =
   HM.fromListWith (<>) <$> map (\(n,t) -> (NgramsTerm t, Set.singleton n))
                     <$> selectNgramsByContextUser cId nt
@@ -73,7 +73,7 @@ getContextsByNgramsUser cId nt =
       selectNgramsByContextUser :: HasDBid NodeType
                                 => CorpusId
                                 -> NgramsType
-                                -> Cmd err [(NodeId, Text)]
+                                -> DBCmd err [(NodeId, Text)]
       selectNgramsByContextUser cId' nt' =
         runPGSQuery queryNgramsByContextUser
                     ( cId'
@@ -99,11 +99,11 @@ getContextsByNgramsUser cId nt =
 
 ------------------------------------------------------------------------
 getOccByNgramsOnlyFast_withSample :: HasDBid NodeType
-                       => CorpusId
-                       -> Int
-                       -> NgramsType
-                       -> [NgramsTerm]
-                       -> Cmd err (HashMap NgramsTerm Int)
+                                  => CorpusId
+                                  -> Int
+                                  -> NgramsType
+                                  -> [NgramsTerm]
+                                  -> DBCmd err (HashMap NgramsTerm Int)
 getOccByNgramsOnlyFast_withSample cId int nt ngs =
   HM.fromListWith (+) <$> selectNgramsOccurrencesOnlyByContextUser_withSample cId int nt ngs
 
@@ -111,7 +111,7 @@ getOccByNgramsOnlyFast_withSample cId int nt ngs =
 getOccByNgramsOnlyFast :: CorpusId
                        -> ListId
                        -> NgramsType
-                       -> Cmd err (HashMap NgramsTerm [ContextId])
+                       -> DBCmd err (HashMap NgramsTerm [ContextId])
 getOccByNgramsOnlyFast cId lId nt = do
     --HM.fromList <$> map (\(t,n) -> (NgramsTerm t, round n)) <$> run cId lId nt
     HM.fromList <$> map (\(t, ns) -> (NgramsTerm t, NodeId <$> DPST.fromPGArray ns)) <$> run cId lId nt
@@ -120,7 +120,7 @@ getOccByNgramsOnlyFast cId lId nt = do
       run :: CorpusId
            -> ListId
            -> NgramsType
-           -> Cmd err [(Text, DPST.PGArray Int)]
+           -> DBCmd err [(Text, DPST.PGArray Int)]
       run cId' lId' nt' = runPGSQuery query
                 ( cId'
                 , lId'
@@ -179,11 +179,11 @@ getOccByNgramsOnlyFast cId lId nt = do
 
 
 selectNgramsOccurrencesOnlyByContextUser_withSample :: HasDBid NodeType
-                                      => CorpusId
-                                      -> Int
-                                      -> NgramsType
-                                      -> [NgramsTerm]
-                                      -> Cmd err [(NgramsTerm, Int)]
+                                                    => CorpusId
+                                                    -> Int
+                                                    -> NgramsType
+                                                    -> [NgramsTerm]
+                                                    -> DBCmd err [(NgramsTerm, Int)]
 selectNgramsOccurrencesOnlyByContextUser_withSample cId int nt tms =
   fmap (first NgramsTerm) <$>
   runPGSQuery queryNgramsOccurrencesOnlyByContextUser_withSample
@@ -216,10 +216,10 @@ queryNgramsOccurrencesOnlyByContextUser_withSample = [sql|
   |]
 
 selectNgramsOccurrencesOnlyByContextUser_withSample' :: HasDBid NodeType
-                                      => CorpusId
-                                      -> Int
-                                      -> NgramsType
-                                      -> Cmd err [(NgramsTerm, Int)]
+                                                     => CorpusId
+                                                     -> Int
+                                                     -> NgramsType
+                                                     -> DBCmd err [(NgramsTerm, Int)]
 selectNgramsOccurrencesOnlyByContextUser_withSample' cId int nt =
   fmap (first NgramsTerm) <$>
   runPGSQuery queryNgramsOccurrencesOnlyByContextUser_withSample
@@ -253,7 +253,7 @@ getContextsByNgramsOnlyUser :: HasDBid NodeType
                          -> [ListId]
                          -> NgramsType
                          -> [NgramsTerm]
-                         -> Cmd err (HashMap NgramsTerm (Set NodeId))
+                         -> DBCmd err (HashMap NgramsTerm (Set NodeId))
 getContextsByNgramsOnlyUser cId ls nt ngs =
      HM.unionsWith        (<>)
    . map (HM.fromListWith (<>)
@@ -262,11 +262,11 @@ getContextsByNgramsOnlyUser cId ls nt ngs =
            (splitEvery 1000 ngs)
 
 getNgramsByContextOnlyUser :: HasDBid NodeType
-                        => NodeId
-                        -> [ListId]
-                        -> NgramsType
-                        -> [NgramsTerm]
-                        -> Cmd err (Map NodeId (Set NgramsTerm))
+                           => NodeId
+                           -> [ListId]
+                           -> NgramsType
+                           -> [NgramsTerm]
+                           -> DBCmd err (Map NodeId (Set NgramsTerm))
 getNgramsByContextOnlyUser cId ls nt ngs =
      Map.unionsWith         (<>)
    . map ( Map.fromListWith (<>)
@@ -282,7 +282,7 @@ selectNgramsOnlyByContextUser :: HasDBid NodeType
                            -> [ListId]
                            -> NgramsType
                            -> [NgramsTerm]
-                           -> Cmd err [(NgramsTerm, ContextId)]
+                           -> DBCmd err [(NgramsTerm, ContextId)]
 selectNgramsOnlyByContextUser cId ls nt tms =
   fmap (first NgramsTerm) <$>
   runPGSQuery queryNgramsOnlyByContextUser
@@ -317,7 +317,7 @@ getNgramsByDocOnlyUser :: DocId
                        -> [ListId]
                        -> NgramsType
                        -> [NgramsTerm]
-                       -> Cmd err (HashMap NgramsTerm (Set NodeId))
+                       -> DBCmd err (HashMap NgramsTerm (Set NodeId))
 getNgramsByDocOnlyUser cId ls nt ngs =
   HM.unionsWith (<>)
   . map (HM.fromListWith (<>) . map (second Set.singleton))
@@ -328,7 +328,7 @@ selectNgramsOnlyByDocUser :: DocId
                           -> [ListId]
                           -> NgramsType
                           -> [NgramsTerm]
-                          -> Cmd err [(NgramsTerm, NodeId)]
+                          -> DBCmd err [(NgramsTerm, NodeId)]
 selectNgramsOnlyByDocUser dId ls nt tms =
   fmap (first NgramsTerm) <$>
   runPGSQuery queryNgramsOnlyByDocUser
@@ -360,7 +360,7 @@ queryNgramsOnlyByDocUser = [sql|
 getContextsByNgramsMaster :: HasDBid NodeType
                           =>  UserCorpusId
                           -> MasterCorpusId
-                          -> Cmd err (HashMap Text (Set NodeId))
+                          -> DBCmd err (HashMap Text (Set NodeId))
 getContextsByNgramsMaster ucId mcId = unionsWith (<>)
                                  . map (HM.fromListWith (<>) . map (\(n,t) -> (t, Set.singleton n)))
                                  -- . takeWhile (not . List.null)
@@ -368,11 +368,11 @@ getContextsByNgramsMaster ucId mcId = unionsWith (<>)
                                 <$> mapM (selectNgramsByContextMaster 1000 ucId mcId) [0,500..10000]
 
 selectNgramsByContextMaster :: HasDBid NodeType
-                         => Int
-                         -> UserCorpusId
-                         -> MasterCorpusId
-                         -> Int
-                         -> Cmd err [(NodeId, Text)]
+                            => Int
+                            -> UserCorpusId
+                            -> MasterCorpusId
+                            -> Int
+                            -> DBCmd err [(NodeId, Text)]
 selectNgramsByContextMaster n ucId mcId p = runPGSQuery
                                queryNgramsByContextMaster'
                                  ( ucId

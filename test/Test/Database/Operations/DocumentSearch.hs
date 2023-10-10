@@ -19,8 +19,7 @@ import Control.Lens (view)
 import Control.Monad.Reader
 import Data.Aeson.QQ.Simple
 import Data.Aeson.Types
-import Data.Maybe
-import Gargantext.API.Node.Update (updateDocs)
+-- import Gargantext.API.Node.Update (updateDocs)
 import Gargantext.Core
 import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.Types.Individu
@@ -30,7 +29,7 @@ import Gargantext.Database.Admin.Types.Hyperdata.Document
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Node (NodePoly(..))
-import Network.URI (parseURI)
+-- import Network.URI (parseURI)
 
 import Test.Database.Types
 import Test.Hspec.Expectations

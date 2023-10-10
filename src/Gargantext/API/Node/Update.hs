@@ -28,6 +28,7 @@ import Gargantext.API.Admin.Types (HasSettings)
 --import Gargantext.API.Ngrams.Types (TabType(..))
 import Gargantext.API.Prelude (GargM, GargError, simuLogs)
 import Gargantext.Core.Methods.Similarities (GraphMetric(..))
+import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Graph.API (recomputeGraph)
 import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..))
@@ -196,13 +197,13 @@ updateNode _uId _nId _p jobHandle = do
   simuLogs jobHandle 10
 ------------------------------------------------------------------------
 
-updateDocs :: (FlowCmdM env err m, MonadJobStatus m)
+updateDocs :: (HasNodeStory env err m)
             => NodeId -> m ()
 updateDocs cId = do
   lId <- defaultList cId
   _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
   _ <- updateNgramsOccurrences cId (Just lId)
-  _ <- updateContextScore      cId (Just lId)
+  _ <- updateContextScore      cId lId
   _ <- Metrics.updateChart     cId (Just lId) NgramsTypes.Docs Nothing
   -- printDebug "updateContextsScore" (cId, lId, u)
   pure ()
