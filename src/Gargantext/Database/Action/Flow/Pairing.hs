@@ -25,8 +25,8 @@ import Data.Set (Set)
 import Data.Text (Text)
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.API.Prelude (GargNoServer)
 import Gargantext.Core
+import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Metrics.CharByChar (levenshtein)
 import Gargantext.Core.Types (TableResult(..))
 import Gargantext.Core.Types.Main
@@ -38,6 +38,7 @@ import Gargantext.Database.Admin.Types.Node -- (AnnuaireId, CorpusId, ListId, Do
 import Gargantext.Database.Query.Prelude (returnA, queryNodeNodeTable)
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Children (getAllContacts)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext_NodeContext (insertNodeContext_NodeContext)
 import Gargantext.Database.Query.Table.NodeNode (insertNodeNode)
@@ -68,7 +69,8 @@ isPairedWith nId nt = runOpaQuery (selectQuery nt nId)
       returnA  -<  node^.node_id
 
 -----------------------------------------------------------------------
-pairing :: AnnuaireId -> CorpusId -> Maybe ListId -> GargNoServer [Int]
+pairing :: (HasNodeStory env err m, HasNodeError err)
+        => AnnuaireId -> CorpusId -> Maybe ListId -> m [Int]
 pairing a c l' = do
   l <- case l' of
     Nothing -> defaultList c
@@ -78,9 +80,10 @@ pairing a c l' = do
   insertNodeContext_NodeContext $ prepareInsert c a dataPaired
 
 
-dataPairing :: AnnuaireId
+dataPairing :: HasNodeStory env err m
+             => AnnuaireId
              -> (CorpusId, ListId, NgramsType)
-             -> GargNoServer (HashMap ContactId (Set DocId))
+             -> m (HashMap ContactId (Set DocId))
 dataPairing aId (cId, lId, ngt) = do
   -- mc :: HM.HashMap ContactName (Set ContactId)
   mc <- getNgramsContactId aId
@@ -164,7 +167,7 @@ getClosest f (NgramsTerm from) candidates = fst <$> head scored
 
 ------------------------------------------------------------------------
 getNgramsContactId :: AnnuaireId
-                   -> Cmd err (HashMap ContactName (Set NodeId))
+                   -> DBCmd err (HashMap ContactName (Set NodeId))
 getNgramsContactId aId = do
   contacts <- getAllContacts aId
   -- printDebug "getAllContexts" (tr_count contacts)
@@ -181,10 +184,11 @@ toName contact = NgramsTerm $ (Text.toTitle firstName) <> " " <> (Text.toTitle l
     firstName = fromMaybe "" $ contact^.(node_hyperdata . hc_who . _Just . cw_firstName)
     lastName  = fromMaybe "" $ contact^.(node_hyperdata . hc_who . _Just . cw_lastName)
 
-getNgramsDocId :: CorpusId
+getNgramsDocId :: HasNodeStory env err m
+                => CorpusId
                 -> ListId
                 -> NgramsType
-                -> GargNoServer (HashMap DocAuthor (Set NodeId))
+                -> m (HashMap DocAuthor (Set NodeId))
 getNgramsDocId cId lId nt = do
   lIds <- selectNodesWithUsername NodeList userMaster
   repo <- getRepo (lId:lIds)

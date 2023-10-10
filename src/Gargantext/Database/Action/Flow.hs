@@ -385,7 +385,7 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
   -- _ <- mkAnnuaire  rootUserId userId
   _ <- reIndexWith userCorpusId listId NgramsTerms (Set.singleton MapTerm)
   _ <- updateContextScore      userCorpusId listId
-  _ <- updateNgramsOccurrences userCorpusId (Just listId)
+  _ <- updateNgramsOccurrences userCorpusId listId
   
   pure userCorpusId
 

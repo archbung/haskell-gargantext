@@ -36,36 +36,29 @@ import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Text.Metrics (scored, Scored(..), {-localMetrics, toScored-})
 import Gargantext.Core.Types (ListType(..), NodeType(..), ContextId)
 import Gargantext.Core.Types.Query (Limit(..))
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser{-, getTficfWith-})
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId)
 import Gargantext.Database.Prelude (runPGSQuery{-, formatPGSQuery-})
-import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Prelude
 
-getMetrics :: FlowCmdM env err m
-            => CorpusId -> Maybe ListId -> TabType -> Maybe Limit
-            -> m (HashMap NgramsTerm (ListType, Maybe NgramsTerm), Vector (Scored NgramsTerm))
-getMetrics cId maybeListId tabType maybeLimit = do
-  (ngs, _, myCooc) <- getNgramsCooc cId maybeListId tabType maybeLimit
+getMetrics :: (HasNodeStory env err m)
+           => CorpusId -> ListId -> TabType -> Maybe Limit
+           -> m (HashMap NgramsTerm (ListType, Maybe NgramsTerm), Vector (Scored NgramsTerm))
+getMetrics cId listId tabType maybeLimit = do
+  (ngs, _, myCooc) <- getNgramsCooc cId listId tabType maybeLimit
   -- TODO HashMap
   pure (ngs, scored myCooc)
 
 
-getNgramsCooc :: (FlowCmdM env err m)
-            => CorpusId -> Maybe ListId -> TabType -> Maybe Limit
-            -> m ( HashMap NgramsTerm (ListType, Maybe NgramsTerm)
-                 , HashMap NgramsTerm (Maybe RootTerm)
-                 , HashMap (NgramsTerm, NgramsTerm) Int
-                 )
-getNgramsCooc cId maybeListId tabType maybeLimit = do
-
-  lId <- case maybeListId of
-    Nothing   -> defaultList cId
-    Just lId' -> pure lId'
-
+getNgramsCooc :: (HasNodeStory env err m)
+              => CorpusId -> ListId -> TabType -> Maybe Limit
+              -> m ( HashMap NgramsTerm (ListType, Maybe NgramsTerm)
+                   , HashMap NgramsTerm (Maybe RootTerm)
+                   , HashMap (NgramsTerm, NgramsTerm) Int
+                   )
+getNgramsCooc cId lId tabType maybeLimit = do
   (ngs', ngs) <- getNgrams lId tabType
 
   lIds <- selectNodesWithUsername NodeList userMaster
@@ -81,21 +74,17 @@ getNgramsCooc cId maybeListId tabType maybeLimit = do
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 updateNgramsOccurrences :: (HasNodeStory env err m)
-                        => CorpusId -> Maybe ListId
+                        => CorpusId -> ListId
                         -> m ()
-updateNgramsOccurrences cId mlId = do
-  _ <- mapM (updateNgramsOccurrences' cId mlId Nothing) [Terms, Sources, Authors, Institutes]
+updateNgramsOccurrences cId lId = do
+  _ <- mapM (updateNgramsOccurrences' cId lId Nothing) [Terms, Sources, Authors, Institutes]
   pure ()
 
 
 updateNgramsOccurrences' :: (HasNodeStory env err m)
-                         => CorpusId -> Maybe ListId -> Maybe Limit -> TabType
+                         => CorpusId -> ListId -> Maybe Limit -> TabType
                          -> m [Int]
-updateNgramsOccurrences' cId maybeListId maybeLimit tabType = do
-
-  lId <- case maybeListId of
-    Nothing   -> defaultList cId
-    Just lId' -> pure lId'
+updateNgramsOccurrences' cId lId maybeLimit tabType = do
 
   result <- getNgramsOccurrences cId lId tabType maybeLimit
 

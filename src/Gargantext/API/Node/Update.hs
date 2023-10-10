@@ -16,16 +16,17 @@ Portability : POSIX
 module Gargantext.API.Node.Update
       where
 
---import Gargantext.Core.Types.Individu (User(..))
 import Control.Lens (view)
 import Data.Aeson
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Set qualified as Set
 import Data.Swagger
 import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
---import Gargantext.API.Ngrams.Types (TabType(..))
+import Gargantext.API.Metrics qualified as Metrics
+import Gargantext.API.Ngrams.Types qualified as NgramsTypes
 import Gargantext.API.Prelude (GargM, GargError, simuLogs)
 import Gargantext.Core.Methods.Similarities (GraphMetric(..))
 import Gargantext.Core.NodeStory (HasNodeStory)
@@ -35,10 +36,8 @@ import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..
 import Gargantext.Core.Viz.Graph.Types (Strength)
 import Gargantext.Core.Viz.Phylo (PhyloSubConfigAPI(..), subConfigAPI2config)
 import Gargantext.Core.Viz.Phylo.API.Tools (flowPhyloAPI)
--- import Gargantext.Database.Action.Mail (sendMail)
 import Gargantext.Database.Action.Flow (reIndexWith)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContextScore)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
@@ -47,15 +46,12 @@ import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
 import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
+import Gargantext.Utils.Aeson qualified as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (Enum, Bounded, minBound, maxBound)
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
-import qualified Data.Set                    as Set
-import qualified Gargantext.API.Metrics      as Metrics
-import qualified Gargantext.API.Ngrams.Types as NgramsTypes
-import qualified Gargantext.Utils.Aeson      as GUA
 
 ------------------------------------------------------------------------
 type API = Summary " Update node according to NodeType params"
@@ -100,12 +96,12 @@ api uId nId =
   serveJobsAPI UpdateNodeJob $ \jHandle p ->
     updateNode uId nId p jHandle
 
-updateNode :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
-    => UserId
-    -> NodeId
-    -> UpdateNodeParams
-    -> JobHandle m
-    -> m ()
+updateNode :: (HasNodeStory env err m, HasSettings env, MonadJobStatus m)
+           => UserId
+           -> NodeId
+           -> UpdateNodeParams
+           -> JobHandle m
+           -> m ()
 updateNode uId nId (UpdateNodeParamsGraph metric partitionMethod bridgeMethod strength nt1 nt2) jobHandle = do
 
   markStarted 2 jobHandle
@@ -150,7 +146,7 @@ updateNode _uId lId (UpdateNodeParamsList _mode) jobHandle = do
   _ <- case corpusId of
     Just cId -> do
       _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
-      _ <- updateNgramsOccurrences cId (Just lId)
+      _ <- updateNgramsOccurrences cId lId
       pure ()
     Nothing  -> pure ()
 
@@ -202,9 +198,9 @@ updateDocs :: (HasNodeStory env err m)
 updateDocs cId = do
   lId <- defaultList cId
   _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
-  _ <- updateNgramsOccurrences cId (Just lId)
+  _ <- updateNgramsOccurrences cId lId
   _ <- updateContextScore      cId lId
-  _ <- Metrics.updateChart     cId (Just lId) NgramsTypes.Docs Nothing
+  _ <- Metrics.updateChart'    cId lId NgramsTypes.Docs Nothing
   -- printDebug "updateContextsScore" (cId, lId, u)
   pure ()
 

@@ -1,5 +1,4 @@
 {-|
-import Gargantext.Database.Prelude (Cmd, runPGSQuery)
 Module      : Gargantext.Database.Query.Table.Node
 Description : Main Tools of Node to the database
 Copyright   : (c) CNRS, 2017-Present
@@ -53,7 +52,7 @@ selectNode id' = proc () -> do
     restrict -< _node_id row .== id'
     returnA  -< row
 
-runGetNodes :: Select NodeRead -> Cmd err [Node HyperdataAny]
+runGetNodes :: Select NodeRead -> DBCmd err [Node HyperdataAny]
 runGetNodes = runOpaQuery
 
 ------------------------------------------------------------------------
@@ -84,7 +83,7 @@ selectNodesWith' parentId maybeNodeType = proc () -> do
       returnA  -< row ) -< ()
     returnA -< node'
 
-deleteNode :: NodeId -> Cmd err Int
+deleteNode :: NodeId -> DBCmd err Int
 deleteNode n = mkCmd $ \conn ->
   fromIntegral <$> runDelete_ conn
                  (Delete nodeTable
@@ -92,7 +91,7 @@ deleteNode n = mkCmd $ \conn ->
                          rCount
                  )
 
-deleteNodes :: [NodeId] -> Cmd err Int
+deleteNodes :: [NodeId] -> DBCmd err Int
 deleteNodes ns = mkCmd $ \conn ->
   fromIntegral <$> runDelete_ conn
                    (Delete nodeTable
@@ -102,7 +101,7 @@ deleteNodes ns = mkCmd $ \conn ->
 
 -- TODO: NodeType should match with `a'
 getNodesWith :: (JSONB a, HasDBid NodeType) => NodeId -> proxy a -> Maybe NodeType
-             -> Maybe Offset -> Maybe Limit -> Cmd err [Node a]
+             -> Maybe Offset -> Maybe Limit -> DBCmd err [Node a]
 getNodesWith parentId _ nodeType maybeOffset maybeLimit =
     runOpaQuery $ selectNodesWith parentId nodeType maybeOffset maybeLimit
 
@@ -110,7 +109,7 @@ getNodesWith parentId _ nodeType maybeOffset maybeLimit =
 -- TODO: Why not use getNodesWith?
 getNodesWithParentId :: (Hyperdata a, JSONB a)
                      => Maybe NodeId
-                     -> Cmd err [Node a]
+                     -> DBCmd err [Node a]
 getNodesWithParentId n = runOpaQuery $ selectNodesWithParentID n'
   where
     n' = case n of
@@ -124,7 +123,7 @@ getNodesWithParentId n = runOpaQuery $ selectNodesWithParentID n'
 getClosestParentIdByType :: HasDBid NodeType
                          => NodeId
                          -> NodeType
-                         -> Cmd err (Maybe NodeId)
+                         -> DBCmd err (Maybe NodeId)
 getClosestParentIdByType nId nType = do
   result <- runPGSQuery query (PGS.Only nId)
   case result of
@@ -148,7 +147,7 @@ getClosestParentIdByType nId nType = do
 getClosestParentIdByType' :: HasDBid NodeType
                           => NodeId
                           -> NodeType
-                          -> Cmd err (Maybe NodeId)
+                          -> DBCmd err (Maybe NodeId)
 getClosestParentIdByType' nId nType = do
   result <- runPGSQuery query (PGS.Only nId)
   case result of
@@ -185,14 +184,14 @@ getChildrenByType nId nType = do
     |]
 
 ------------------------------------------------------------------------
-getDocumentsV3WithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataDocumentV3]
+getDocumentsV3WithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataDocumentV3]
 getDocumentsV3WithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeDocument)
 
 -- TODO: merge with getDocumentsWithParentId by having a class IsHyperdataDocument
-getDocumentsWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataDocument]
+getDocumentsWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataDocument]
 getDocumentsWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeDocument)
 
-getListsModelWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Node HyperdataModel]
+getListsModelWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataModel]
 getListsModelWithParentId n = runOpaQuery $ selectNodesWith' n (Just NodeModel)
 
 getCorporaWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataCorpus]
@@ -209,7 +208,7 @@ selectNodesWithParentID n = proc () -> do
 ------------------------------------------------------------------------
 -- | Example of use:
 -- runCmdReplEasy  (getNodesWithType NodeList (Proxy :: Proxy HyperdataList))
-getNodesWithType :: (HasNodeError err, JSONB a, HasDBid NodeType) => NodeType -> proxy a -> Cmd err [Node a]
+getNodesWithType :: (HasNodeError err, JSONB a, HasDBid NodeType) => NodeType -> proxy a -> DBCmd err [Node a]
 getNodesWithType nt _ = runOpaQuery $ selectNodesWithType nt
   where
     selectNodesWithType ::  HasDBid NodeType
@@ -223,7 +222,7 @@ getNodeWithType :: (HasNodeError err, JSONB a, HasDBid NodeType)
                 => NodeId
                 -> NodeType
                 -> proxy a
-                -> Cmd err [Node a]
+                -> DBCmd err [Node a]
 getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
   where
     selectNodeWithType ::  HasDBid NodeType
@@ -234,7 +233,7 @@ getNodeWithType nId nt _ = runOpaQuery $ selectNodeWithType nId nt
         restrict -< tn .== sqlInt4 (toDBid nt')
         returnA -< row
 
-getNodesIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> Cmd err [NodeId]
+getNodesIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> DBCmd err [NodeId]
 getNodesIdWithType nt = do
   ns <- runOpaQuery $ selectNodesIdWithType nt
   pure (map NodeId ns)
@@ -248,7 +247,7 @@ selectNodesIdWithType nt = proc () -> do
 
 ------------------------------------------------------------------------
 
-nodeExists :: (HasNodeError err) => NodeId -> Cmd err Bool
+nodeExists :: (HasNodeError err) => NodeId -> DBCmd err Bool
 nodeExists nId = (== [PGS.Only True])
   <$> runPGSQuery [sql|SELECT true FROM nodes WHERE id = ? |] (PGS.Only nId)
 
@@ -317,7 +316,7 @@ insertNodes :: [NodeWrite] -> DBCmd err Int64
 insertNodes ns = mkCmd $ \conn -> runInsert_ conn $ Insert nodeTable ns rCount Nothing
 
 {-
-insertNodes' :: [Node a] -> Cmd err Int64
+insertNodes' :: [Node a] -> DBCmd err Int64
 insertNodes' ns = mkCmd $ \conn -> runInsert_ conn
                         $ Insert nodeTable ns' rCount Nothing
   where
@@ -359,11 +358,11 @@ data Node' = Node' { _n_type :: NodeType
                    , _n_children :: [Node']
                    } deriving (Show)
 
-mkNodes :: [NodeWrite] -> Cmd err Int64
+mkNodes :: [NodeWrite] -> DBCmd err Int64
 mkNodes ns = mkCmd $ \conn -> runInsert_ conn
                    $ Insert nodeTable ns rCount Nothing
 
-mkNodeR :: [NodeWrite] -> Cmd err [NodeId]
+mkNodeR :: [NodeWrite] -> DBCmd err [NodeId]
 mkNodeR ns = mkCmd $ \conn -> runInsert_ conn $ Insert nodeTable ns (rReturning _node_id) Nothing
 
 ------------------------------------------------------------------------
@@ -410,7 +409,7 @@ defaultList :: (HasNodeError err, HasDBid NodeType) => CorpusId -> DBCmd err Lis
 defaultList cId =
   maybe (nodeError (NoListFound cId)) (pure . view node_id) . headMay =<< getListsWithParentId cId
 
-defaultListMaybe :: (HasNodeError err, HasDBid NodeType) => CorpusId -> Cmd err (Maybe NodeId)
+defaultListMaybe :: (HasNodeError err, HasDBid NodeType) => CorpusId -> DBCmd err (Maybe NodeId)
 defaultListMaybe cId = headMay <$> map (view node_id ) <$> getListsWithParentId cId
 
 getListsWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Node HyperdataList]

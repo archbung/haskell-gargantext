@@ -16,35 +16,33 @@ module Gargantext.Core.Viz.Phylo.API.Tools
 
 import Control.Lens hiding (Context)
 import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
+import Data.ByteString.Lazy qualified as Lazy
 import Data.Map.Strict (Map)
-import Data.Proxy
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.Proxy
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text, pack)
 import Data.Time.Calendar (fromGregorian, diffGregorianDurationClip, cdMonths, diffDays, showGregorian)
 import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import Gargantext.API.Ngrams.Prelude (getTermList)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.API.Prelude (GargNoServer)
-import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
 import Gargantext.Core (withDefaultLanguage, Lang)
+import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
 import Gargantext.Core.Types (Context)
--- import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (ListType(MapTerm))
 import Gargantext.Core.Viz.Phylo (TimeUnit(..), Date, Document(..), PhyloConfig(..), Phylo)
 import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
 import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
 import Gargantext.Core.Viz.Phylo.PhyloTools  ({-printIOMsg, printIOComment,-} setConfig)
--- import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
--- import Gargantext.Database.Admin.Config (userMaster)
--- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
--- import Gargantext.Database.Action.Flow (getOrMk_RootWithCorpus)
--- import Gargantext.Database.Admin.Config (userMaster)
--- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataPhylo(..), HyperdataCorpus(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ContextId, PhyloId)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
@@ -53,21 +51,19 @@ import Gargantext.Prelude
 import Prelude hiding (map)
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
-import System.Process      as Shell
-import qualified Data.ByteString.Lazy                    as Lazy
-import qualified Data.Map.Strict  as Map
-import qualified Data.Set  as Set
+import System.Process qualified as Shell
 
 --------------------------------------------------------------------
-getPhyloData :: PhyloId -> GargNoServer (Maybe Phylo)
+getPhyloData :: HasNodeError err
+             => PhyloId -> DBCmd err (Maybe Phylo)
 getPhyloData phyloId = do
   nodePhylo <- getNodeWith phyloId (Proxy :: Proxy HyperdataPhylo)
   pure $ _hp_data $ _node_hyperdata nodePhylo
 
-putPhylo :: PhyloId -> GargNoServer Phylo
+putPhylo :: PhyloId -> DBCmd err Phylo
 putPhylo = undefined
 
-savePhylo :: PhyloId -> GargNoServer ()
+savePhylo :: PhyloId -> DBCmd err ()
 savePhylo = undefined
 
 --------------------------------------------------------------------
@@ -93,7 +89,8 @@ phylo2dot2json phylo = do
       Just v  -> pure v
 
 
-flowPhyloAPI :: PhyloConfig -> CorpusId -> GargNoServer Phylo
+flowPhyloAPI :: (HasNodeStory env err m, HasNodeError err)
+             => PhyloConfig -> CorpusId -> m Phylo
 flowPhyloAPI config cId = do
   corpus <- corpusIdtoDocuments (timeUnit config) cId
   let phyloWithCliques = toPhyloWithoutLink corpus config
@@ -103,7 +100,8 @@ flowPhyloAPI config cId = do
   pure $ toPhylo $ setConfig config phyloWithCliques
 
 --------------------------------------------------------------------
-corpusIdtoDocuments :: TimeUnit -> CorpusId -> GargNoServer [Document]
+corpusIdtoDocuments :: (HasNodeStory env err m, HasNodeError err)
+                    => TimeUnit -> CorpusId -> m [Document]
 corpusIdtoDocuments timeUnit corpusId = do
   docs <- selectDocNodes corpusId
   lId  <- defaultList corpusId
