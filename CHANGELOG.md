@@ -1,3 +1,10 @@
+## Version 0.0.6.9.9.8.3
+
+* [BACK][FIX][Docs Node: Score (#272)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/272)
+* [BACK][FIX][Post policy-manager fixups (#273)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/273)
+* [FRONT][FEAT][[Corpus Upload] Add a new ISTEX (from a zip file) option in the selectbox source field (first field below the &quot;Browse files&quot; button) (#603)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/603)
+* [FRONT][FIX][[Tree] Change the &quot;Hide Tree&quot; button by a more intuitive toggle button (display the btn in the lateral bar) (#530)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/530)
+
 ## Version 0.0.6.9.9.8.2
 
 * [FRONT][FIX][[User page] Fix the error message when the page loads (#604)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/604)
