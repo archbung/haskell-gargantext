@@ -8,6 +8,7 @@ module Gargantext.API.Admin.EnvTypes (
     GargJob(..)
   , Env(..)
   , Mode(..)
+  , modeToLoggingLevels
   , mkJobHandle
   , env_logger
   , env_manager

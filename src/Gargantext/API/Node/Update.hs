@@ -181,24 +181,31 @@ updateNode _userId phyloId (UpdateNodePhylo config) jobHandle = do
 updateNode _uId tId (UpdateNodeParamsTexts _mode) jobHandle = do
   markStarted 3 jobHandle
   corpusId <- view node_parent_id <$> getNode tId
-  lId      <- defaultList $ fromMaybe (panic "[G.A.N.Update] updateNode/UpdateNodeParamsTexts: no defaultList") corpusId
   markProgress 1 jobHandle
 
   _ <- case corpusId of
-    Just cId -> do
-      _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
-      _ <- updateNgramsOccurrences cId (Just lId)
-      _ <- updateContextScore      cId (Just lId)
-      _ <- Metrics.updateChart     cId (Just lId) NgramsTypes.Docs Nothing
-      -- printDebug "updateContextsScore" (cId, lId, u)
+    Just cId -> updateDocs cId
+    Nothing  -> do
+      _ <- panic "[G.A.N.Update] updateNode/UpdateNodeParamsText: no corpus Id given"
       pure ()
-    Nothing  -> pure ()
 
   markComplete jobHandle
 
 
 updateNode _uId _nId _p jobHandle = do
   simuLogs jobHandle 10
+------------------------------------------------------------------------
+
+updateDocs :: (FlowCmdM env err m, MonadJobStatus m)
+    => NodeId -> m ()
+updateDocs cId = do
+  lId <- defaultList cId
+  _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
+  _ <- updateNgramsOccurrences cId (Just lId)
+  _ <- updateContextScore      cId (Just lId)
+  _ <- Metrics.updateChart     cId (Just lId) NgramsTypes.Docs Nothing
+  -- printDebug "updateContextsScore" (cId, lId, u)
+  pure ()
 
 ------------------------------------------------------------------------
 -- TODO unPrefix "pn_" FromJSON, ToJSON, ToSchema, adapt frontend.

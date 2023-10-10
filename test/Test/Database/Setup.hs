@@ -10,20 +10,21 @@ import Control.Monad
 import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Pool hiding (withResource)
+import Data.Pool qualified as Pool
 import Data.String
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
+import Database.PostgreSQL.Simple qualified as PG
+import Database.PostgreSQL.Simple.Options qualified as Client
+import Database.PostgreSQL.Simple.Options qualified as Opts
+import Database.Postgres.Temp qualified as Tmp
+import Gargantext.API.Admin.EnvTypes (Mode(Mock))
 import Gargantext.Prelude.Config
+import Gargantext.System.Logging (withLoggerHoisted)
 import Paths_gargantext
 import Prelude
 import Shelly hiding (FilePath, run)
-import qualified Data.Pool as Pool
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Database.PostgreSQL.Simple as PG
-import qualified Database.PostgreSQL.Simple.Options as Client
-import qualified Database.PostgreSQL.Simple.Options as Opts
-import qualified Database.Postgres.Temp as Tmp
-import qualified Shelly as SH
-
+import Shelly qualified as SH
 import Test.Database.Types
 
 -- | Test DB settings.
@@ -73,7 +74,8 @@ setup = do
                          (PG.close) 2 60 2
       bootstrapDB db pool gargConfig
       ugen <- emptyCounter
-      pure $ TestEnv (DBHandle pool db) gargConfig ugen
+      withLoggerHoisted Mock $ \logger -> do
+        pure $ TestEnv (DBHandle pool db) gargConfig ugen logger
 
 withTestDB :: (TestEnv -> IO ()) -> IO ()
 withTestDB = bracket setup teardown
