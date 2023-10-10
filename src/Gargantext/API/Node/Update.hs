@@ -197,7 +197,7 @@ updateNode _uId _nId _p jobHandle = do
 ------------------------------------------------------------------------
 
 updateDocs :: (FlowCmdM env err m, MonadJobStatus m)
-    => NodeId -> m ()
+            => NodeId -> m ()
 updateDocs cId = do
   lId <- defaultList cId
   _ <- reIndexWith cId lId NgramsTerms (Set.singleton MapTerm)
