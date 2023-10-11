@@ -18,14 +18,19 @@ module Gargantext.Core.Text.List
 
 import Control.Lens hiding (both) -- ((^.), view, over, set, (_1), (_2))
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
+import Data.HashSet qualified as HashSet
+import Data.List qualified as List
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Monoid (mempty)
 import Data.Ord (Down(..))
 import Data.Set (Set)
--- import Data.Text (Text)
+import Data.Set qualified as Set
 import Data.Tuple.Extra (both)
 import Gargantext.API.Ngrams.Types (NgramsElement, NgramsTerm(..))
+import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Text (size)
 import Gargantext.Core.Text.List.Group
@@ -36,10 +41,11 @@ import Gargantext.Core.Text.List.Social.Prelude
 import Gargantext.Core.Text.Metrics (scored', Scored(..), scored_speExc, scored_genInc, normalizeGlobal, normalizeLocal, scored_terms)
 import Gargantext.Core.Types (ListType(..), MasterCorpusId, UserCorpusId)
 import Gargantext.Core.Types.Individu (User(..))
+import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, getContextsByNgramsOnlyUser)
 import Gargantext.Database.Action.Metrics.TFICF (getTficf_withSample)
 import Gargantext.Database.Admin.Types.Node (NodeId)
-import Gargantext.Database.Prelude (CmdM)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (text2ngrams)
 import Gargantext.Database.Query.Table.NgramsPostag (selectLems)
 import Gargantext.Database.Query.Table.Node (defaultList)
@@ -47,12 +53,6 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..), Ngrams(..))
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.HashSet as HashSet
-import qualified Data.List    as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Set     as Set
-import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
 
 {-
 -- TODO maybe useful for later
@@ -65,7 +65,7 @@ isStopTerm (StopSize n) x = Text.length x < n || any isStopChar (Text.unpack x)
 
 -- | TODO improve grouping functions of Authors, Sources, Institutes..
 buildNgramsLists :: ( HasNodeStory env err m
-                    , CmdM     env err m
+                    , HasNLPServer env
                     , HasTreeError err
                     , HasNodeError err
                     )
@@ -90,7 +90,7 @@ data MapListSize = MapListSize { unMapListSize :: !Int }
 data MaxListSize = MaxListSize { unMaxListSize :: !Int }
 
 buildNgramsOthersList :: ( HasNodeError err
-                         , CmdM     env err m
+                         , HasNLPServer env
                          , HasNodeStory env err m
                          , HasTreeError err
                          )
@@ -134,11 +134,9 @@ buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize,
 
 
 getGroupParams :: ( HasNodeError err
-                  , CmdM     env err m
-                  , HasNodeStory env err m
                   , HasTreeError err
                   )
-               => GroupParams -> HashSet Ngrams -> m GroupParams
+               => GroupParams -> HashSet Ngrams -> DBCmd err GroupParams
 getGroupParams gp@(GroupWithPosTag l nsc _m) ng = do
   !hashMap <- HashMap.fromList <$> selectLems l nsc (HashSet.toList ng)
   -- printDebug "hashMap" hashMap
@@ -148,7 +146,7 @@ getGroupParams gp _ = pure gp
 
 -- TODO use ListIds
 buildNgramsTermsList :: ( HasNodeError err
-                        , CmdM     env err m
+                        , HasNLPServer env
                         , HasNodeStory env err m
                         , HasTreeError err
                         )

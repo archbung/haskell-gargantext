@@ -108,7 +108,7 @@ getGraph _uId nId = do
         let defaultEdgesStrength   = Strong
         let defaultBridgenessMethod = BridgenessMethod_Basic
         graph' <- computeGraph cId defaultPartitionMethod defaultBridgenessMethod (withMetric defaultMetric) defaultEdgesStrength (NgramsTerms, NgramsTerms) repo
-        mt     <- defaultGraphMetadata cId "Title" repo defaultMetric defaultEdgesStrength
+        mt     <- defaultGraphMetadata cId listId "Title" repo defaultMetric defaultEdgesStrength
         let
           graph'' = set graph_metadata (Just mt) graph'
           hg = HyperdataGraphAPI graph'' camera
@@ -167,7 +167,7 @@ recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStreng
 
   case graph of
     Nothing     -> do
-      mt     <- defaultGraphMetadata cId "Title" repo (fromMaybe Order1 maybeSimilarity) strength
+      mt     <- defaultGraphMetadata cId listId "Title" repo (fromMaybe Order1 maybeSimilarity) strength
       g <- computeG $ Just mt
       pure $ trace "[G.V.G.API.recomputeGraph] Graph empty, computed" g
     Just graph' -> if (listVersion == Just v) && (not force)
@@ -225,14 +225,13 @@ computeGraph corpusId partitionMethod bridgeMethod similarity strength (nt1,nt2)
 
 defaultGraphMetadata :: HasNodeError err
                      => CorpusId
+                     -> ListId
                      -> Text
                      -> NodeListStory
                      -> GraphMetric
                      -> Strength
                      -> DBCmd err GraphMetadata
-defaultGraphMetadata cId t repo gm str = do
-  lId  <- defaultList cId
-
+defaultGraphMetadata cId lId t repo gm str = do
   pure $ GraphMetadata { _gm_title         = t
                        , _gm_metric        = gm
                        , _gm_edgesStrength = Just str

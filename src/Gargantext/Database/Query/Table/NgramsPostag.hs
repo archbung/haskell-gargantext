@@ -155,7 +155,7 @@ SELECT terms,id FROM ins_form_ret
 
 -- TODO add lang and postag algo
 -- TODO remove when form == lem in insert
-selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> Cmd err [(Form, Lem)]
+selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> DBCmd err [(Form, Lem)]
 selectLems l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems (PGS.Only $ Values fields datas)
   where
     fields = map (\t -> QualifiedIdentifier Nothing t) ["int4","int4","text", "int4"]

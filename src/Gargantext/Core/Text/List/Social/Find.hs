@@ -25,7 +25,7 @@ import Gargantext.Prelude
 
 ------------------------------------------------------------------------
 findListsId :: (HasNodeError err, HasTreeError err)
-            => User -> NodeMode -> Cmd err [NodeId]
+            => User -> NodeMode -> DBCmd err [NodeId]
 findListsId u mode = do
   rootId <- getRootId u
   ns <- map (view dt_nodeId) <$> filter ((== nodeTypeId NodeList) . (view dt_typeId))
@@ -40,7 +40,7 @@ findListsId u mode = do
 findNodes' :: (HasTreeError err, HasNodeError err)
           => RootId
           -> NodeMode
-          -> Cmd err [DbTreeNode]
+          -> DBCmd err [DbTreeNode]
 findNodes' r Private = do
   pv <- (findNodes r Private $ [NodeFolderPrivate]          <> commonNodes)
   sh <- (findNodes' r Shared)
@@ -52,3 +52,5 @@ findNodes' r PublicDirect = findNodes r Public  $ [NodeFolderPublic ]          <
 
 commonNodes:: [NodeType]
 commonNodes = [NodeFolder, NodeCorpus, NodeList, NodeFolderShared, NodeTeam]
+
+

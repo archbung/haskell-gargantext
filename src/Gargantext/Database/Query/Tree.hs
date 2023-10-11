@@ -60,7 +60,7 @@ import Gargantext.Core.Types.Main (NodeTree(..), Tree(..))
 import Gargantext.Database.Admin.Config (fromNodeTypeId, nodeTypeId, fromNodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata.Any (HyperdataAny)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, DBCmd)
+import Gargantext.Database.Prelude (runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeNode (getNodeNode)
@@ -89,7 +89,7 @@ tree :: (HasTreeError err, HasNodeError err)
      => TreeMode
      -> RootId
      -> [NodeType]
-     -> Cmd err (Tree NodeTree)
+     -> DBCmd err (Tree NodeTree)
 tree TreeBasic    = tree_basic
 tree TreeAdvanced = tree_advanced
 tree TreeFirstLevel = tree_first_level
@@ -100,7 +100,7 @@ tree TreeFirstLevel = tree_first_level
 tree_basic :: (HasTreeError err, HasNodeError err)
            => RootId
            -> [NodeType]
-           -> Cmd err (Tree NodeTree)
+           -> DBCmd err (Tree NodeTree)
 tree_basic r nodeTypes =
   (dbTree r nodeTypes <&> toTreeParent) >>= toTree
   -- Same as (but easier to read) :
@@ -110,7 +110,7 @@ tree_basic r nodeTypes =
 tree_advanced :: (HasTreeError err, HasNodeError err)
               => RootId
               -> [NodeType]
-              -> Cmd err (Tree NodeTree)
+              -> DBCmd err (Tree NodeTree)
 tree_advanced r nodeTypes = do
   -- let rPrefix s = "[tree_advanced] root = " <> show r <> " " <> s
   mainRoot    <- findNodes r Private nodeTypes
@@ -128,7 +128,7 @@ tree_advanced r nodeTypes = do
 tree_first_level :: (HasTreeError err, HasNodeError err)
                  => RootId
                  -> [NodeType]
-                 -> Cmd err (Tree NodeTree)
+                 -> DBCmd err (Tree NodeTree)
 tree_first_level r nodeTypes = do
   -- let rPrefix s = mconcat [ "[tree_first_level] root = "
   --                         , show r
@@ -151,7 +151,7 @@ tree_flat :: (HasTreeError err, HasNodeError err)
           => RootId
           -> [NodeType]
           -> Maybe Text
-          -> Cmd err [NodeTree]
+          -> DBCmd err [NodeTree]
 tree_flat r nodeTypes q = do
   mainRoot <- findNodes r Private nodeTypes
   publicRoots <- findNodes r Public nodeTypes
@@ -169,7 +169,7 @@ findNodes :: (HasTreeError err, HasNodeError err)
           => RootId
           -> NodeMode
           -> [NodeType]
-          -> Cmd err [DbTreeNode]
+          -> DBCmd err [DbTreeNode]
 findNodes r Private nt       = dbTree r nt
 findNodes r Shared  nt       = findShared r NodeFolderShared nt sharedTreeUpdate
 findNodes r SharedDirect  nt = findSharedDirect r NodeFolderShared nt sharedTreeUpdate
@@ -181,7 +181,7 @@ findNodes r PublicDirect  nt = findSharedDirect r NodeFolderPublic nt publicTree
 --   Queries the `nodes_nodes` table.
 findShared :: HasTreeError err
            => RootId -> NodeType -> [NodeType] -> UpdateTree err
-           -> Cmd err [DbTreeNode]
+           -> DBCmd err [DbTreeNode]
 findShared r nt nts fun = do
   foldersSharedId <- findNodesId r [nt]
   trees           <- mapM (updateTree nts fun) foldersSharedId
@@ -192,7 +192,7 @@ findShared r nt nts fun = do
 -- and get the tree for its parent.
 findSharedDirect :: (HasTreeError err, HasNodeError err)
                  => RootId -> NodeType -> [NodeType] -> UpdateTree err
-                 -> Cmd err [DbTreeNode]
+                 -> DBCmd err [DbTreeNode]
 findSharedDirect r nt nts fun = do
   -- let rPrefix s = mconcat [ "[findSharedDirect] r = "
   --                         , show r
@@ -214,11 +214,11 @@ findSharedDirect r nt nts fun = do
       pure $ concat trees
 
 
-type UpdateTree err = ParentId -> [NodeType] -> NodeId -> Cmd err [DbTreeNode]
+type UpdateTree err = ParentId -> [NodeType] -> NodeId -> DBCmd err [DbTreeNode]
 
 updateTree :: HasTreeError err
            => [NodeType] -> UpdateTree err -> RootId
-           -> Cmd err [DbTreeNode]
+           -> DBCmd err [DbTreeNode]
 updateTree nts fun r = do
   folders       <- getNodeNode r
   nodesSharedId <- mapM (fun r nts)
@@ -245,12 +245,12 @@ publicTreeUpdate p nt n = dbTree n nt
 
 
 -- | findNodesId returns all nodes matching nodeType but the root (Nodeuser)
-findNodesId :: RootId -> [NodeType] -> Cmd err [NodeId]
+findNodesId :: RootId -> [NodeType] -> DBCmd err [NodeId]
 findNodesId r nt = tail
                 <$> map _dt_nodeId
                 <$> dbTree r nt
 
-findNodesWithType :: RootId -> [NodeType] -> [NodeType] -> Cmd err [DbTreeNode]
+findNodesWithType :: RootId -> [NodeType] -> [NodeType] -> DBCmd err [DbTreeNode]
 findNodesWithType root target through =
   filter isInTarget <$> dbTree root through
     where
@@ -331,7 +331,7 @@ toSubtreeParent r ns = fromListWith (\a b -> nub $ a <> b) . map (\n -> (_dt_par
 -- | Main DB Tree function
 dbTree :: RootId
        -> [NodeType]
-       -> Cmd err [DbTreeNode]
+       -> DBCmd err [DbTreeNode]
 dbTree rootId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
   <$> runPGSQuery [sql|
     WITH RECURSIVE
@@ -383,7 +383,7 @@ isDescendantOf childId rootId = (== [Only True])
   |] (childId, rootId)
 
 -- TODO should we check the category?
-isIn :: NodeId -> DocId -> Cmd err Bool
+isIn :: NodeId -> DocId -> DBCmd err Bool
 isIn cId docId = ( == [Only True])
   <$> runPGSQuery [sql| SELECT COUNT(*) = 1
     FROM nodes_nodes nn
@@ -393,8 +393,8 @@ isIn cId docId = ( == [Only True])
 
 -- Recursive parents function to construct a breadcrumb
 recursiveParents :: NodeId
-       -> [NodeType]
-       -> Cmd err [DbTreeNode]
+                 -> [NodeType]
+                 -> DBCmd err [DbTreeNode]
 recursiveParents nodeId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
   <$> runPGSQuery [sql|
     WITH RECURSIVE recursiveParents AS
