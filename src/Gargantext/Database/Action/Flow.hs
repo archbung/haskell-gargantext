@@ -622,7 +622,8 @@ instance HasText a => HasText (Node a)
 -- | TODO putelsewhere
 -- | Upgrade function
 -- Suppose all documents are English (this is the case actually)
-indexAllDocumentsWithPosTag :: FlowCmdM env err m
+indexAllDocumentsWithPosTag :: ( HasNodeStory env err m
+                               , HasNLPServer env )
                             => m ()
 indexAllDocumentsWithPosTag = do
   rootId    <- getRootId (UserName userMaster)
@@ -631,7 +632,8 @@ indexAllDocumentsWithPosTag = do
   _ <- mapM extractInsert (splitEvery 1000 docs)
   pure ()
 
-extractInsert :: FlowCmdM env err m
+extractInsert :: ( HasNodeStory env err m
+                 , HasNLPServer env )
               => [Node HyperdataDocument] -> m ()
 extractInsert docs = do
   let documentsWithId = map (\doc -> Indexed (doc ^. node_id) doc) docs

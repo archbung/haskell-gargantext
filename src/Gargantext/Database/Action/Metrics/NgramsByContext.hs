@@ -249,11 +249,11 @@ queryNgramsOccurrencesOnlyByContextUser_withSample' = [sql|
 
 ------------------------------------------------------------------------
 getContextsByNgramsOnlyUser :: HasDBid NodeType
-                         => CorpusId
-                         -> [ListId]
-                         -> NgramsType
-                         -> [NgramsTerm]
-                         -> DBCmd err (HashMap NgramsTerm (Set NodeId))
+                            => CorpusId
+                            -> [ListId]
+                            -> NgramsType
+                            -> [NgramsTerm]
+                            -> DBCmd err (HashMap NgramsTerm (Set NodeId))
 getContextsByNgramsOnlyUser cId ls nt ngs =
      HM.unionsWith        (<>)
    . map (HM.fromListWith (<>)

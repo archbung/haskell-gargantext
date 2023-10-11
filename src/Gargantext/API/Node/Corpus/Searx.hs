@@ -3,43 +3,46 @@
 module Gargantext.API.Node.Corpus.Searx where
 
 import Control.Lens (view)
+import Data.Aeson qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Either (Either(..))
+import Data.HashMap.Strict qualified as HashMap
+import Data.Text qualified as T
+import Data.Text qualified as Text
 import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Tuple.Select (sel1, sel2, sel3)
 import GHC.Generics (Generic)
 import Gargantext.Core (Lang(..))
-import Gargantext.Core.NLP (nlpServerGet)
+import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
+import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
 import Gargantext.Core.Text.Terms (TermType(..))
+import Gargantext.Core.Types (HasInvalidError)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus) --, DataText(..))
 import Gargantext.Database.Action.Flow.List (flowList_DbRepo)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Config (userMaster)
-import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ListId, NodeType(NodeTexts))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (defaultListMaybe, getOrMkList)
+import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
+import Gargantext.Database.Query.Tree.Error (HasTreeError)
 import Gargantext.Database.Query.Tree.Root (getOrMk_RootWithCorpus)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
+import Prelude qualified
 import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text, void)
-import qualified Data.Aeson as Aeson
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as T
-import qualified Data.Text as Text
-import qualified Gargantext.Core.Text.Corpus.API as API
-import qualified Prelude
 
 langToSearx :: Lang -> Text
 langToSearx All = "en-US"
@@ -108,7 +111,12 @@ fetchSearxPage (FetchSearxParams { _fsp_language
   let dec = Aeson.eitherDecode $ responseBody res :: (Either Prelude.String SearxResponse)
   pure dec
 
-insertSearxResponse :: (MonadBase IO m, FlowCmdM env err m)
+insertSearxResponse :: ( MonadBase IO m
+                       , HasNodeStory env err m
+                       , HasNLPServer env
+                       , HasNodeError err
+                       , HasTreeError err
+                       , HasInvalidError err )
                     => User
                     -> CorpusId
                     -> ListId
@@ -145,7 +153,13 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
   pure ()
 
 -- TODO Make an async task out of this?
-triggerSearxSearch :: (MonadBase IO m, FlowCmdM env err m, MonadJobStatus m)
+triggerSearxSearch :: ( MonadBase IO m
+                      , HasNodeStory env err m
+                      , HasNLPServer env
+                      , HasNodeError err
+                      , HasTreeError err
+                      , HasInvalidError err 
+                      , MonadJobStatus m )
             => User
             -> CorpusId
             -> API.RawQuery
