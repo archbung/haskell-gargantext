@@ -9,7 +9,7 @@ import Data.Proxy
 import Gargantext.Core
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DbCmd')
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)

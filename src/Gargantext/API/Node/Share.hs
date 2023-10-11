@@ -27,7 +27,7 @@ import Gargantext.Database.Action.Share as DB (shareNodeWith, unPublish)
 import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (CmdRandom)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Tree (findNodesWithType)
 import Gargantext.Prelude

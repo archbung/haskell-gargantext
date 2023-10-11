@@ -29,7 +29,7 @@ import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.Flow (getOrMkRoot)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (Cmd, DBCmd, CmdM)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..), nodeError, NodeError(..))
 import Gargantext.Database.Query.Table.User
 import Gargantext.Prelude

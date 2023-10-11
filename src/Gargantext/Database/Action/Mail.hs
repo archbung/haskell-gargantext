@@ -18,7 +18,7 @@ import Gargantext.Core.Mail (mail, MailModel(..))
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Action.User
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (CmdM)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Schema.User
 import Gargantext.Prelude

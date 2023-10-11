@@ -25,7 +25,7 @@ import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, JSONB, runOpaQuery)
 import Gargantext.Database.Query.Filter (limit', offset')
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Schema.Context
@@ -35,7 +35,7 @@ import Prelude            hiding (null, id, map, sum)
 
 
 getContextWith :: (HasNodeError err, JSONB a)
-            => ContextId -> proxy a -> Cmd err (Node a)
+            => ContextId -> proxy a -> DBCmd err (Node a)
 getContextWith nId _ = do
   maybeContext <- headMay <$> runOpaQuery (selectContext (pgNodeId nId))
   case maybeContext of
@@ -51,7 +51,7 @@ selectContext id' = proc () -> do
     restrict -< _context_id row .== id'
     returnA  -< row
 
-runGetContexts :: Select ContextRead -> Cmd err [Context HyperdataAny]
+runGetContexts :: Select ContextRead -> DBCmd err [Context HyperdataAny]
 runGetContexts = runOpaQuery
 
 ------------------------------------------------------------------------
@@ -84,11 +84,11 @@ selectContextsWith' parentId maybeContextType = proc () -> do
 
 
 ------------------------------------------------------------------------
-getDocumentsV3WithParentId :: HasDBid NodeType => NodeId -> Cmd err [Context HyperdataDocumentV3]
+getDocumentsV3WithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Context HyperdataDocumentV3]
 getDocumentsV3WithParentId n = runOpaQuery $ selectContextsWith' n (Just NodeDocument)
 
 -- TODO: merge with getDocumentsWithParentId by having a class IsHyperdataDocument
-getDocumentsWithParentId :: HasDBid NodeType => NodeId -> Cmd err [Context HyperdataDocument]
+getDocumentsWithParentId :: HasDBid NodeType => NodeId -> DBCmd err [Context HyperdataDocument]
 getDocumentsWithParentId n = runOpaQuery $ selectContextsWith' n (Just NodeDocument)
 
 ------------------------------------------------------------------------
@@ -102,7 +102,8 @@ selectContextsWithParentID n = proc () -> do
 ------------------------------------------------------------------------
 -- | Example of use:
 -- runCmdReplEasy  (getNodesWithType NodeList (Proxy :: Proxy HyperdataList))
-getContextsWithType :: (HasNodeError err, JSONB a, HasDBid NodeType) => NodeType -> proxy a -> Cmd err [Context a]
+getContextsWithType :: (HasNodeError err, JSONB a, HasDBid NodeType)
+                    => NodeType -> proxy a -> DBCmd err [Context a]
 getContextsWithType nt _ = runOpaQuery $ selectContextsWithType nt
   where
     selectContextsWithType ::  HasDBid NodeType
@@ -112,7 +113,8 @@ getContextsWithType nt _ = runOpaQuery $ selectContextsWithType nt
         restrict -< tn .== (sqlInt4 $ toDBid nt')
         returnA -< row
 
-getContextsIdWithType :: (HasNodeError err, HasDBid NodeType) => NodeType -> Cmd err [ContextId]
+getContextsIdWithType :: (HasNodeError err, HasDBid NodeType)
+                      => NodeType -> DBCmd err [ContextId]
 getContextsIdWithType nt = do
   ns <- runOpaQuery $ selectContextsIdWithType nt
   pure (map NodeId ns)

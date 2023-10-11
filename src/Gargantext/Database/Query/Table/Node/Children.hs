@@ -22,15 +22,11 @@ import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument, HyperdataContact)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, JSONB, runCountOpaQuery, runOpaQuery)
 import Gargantext.Database.Query.Filter
-
-import Gargantext.Database.Schema.Node
-import Gargantext.Database.Schema.Context
-import Gargantext.Database.Schema.NodeContext
 import Gargantext.Database.Query.Table.NodeContext
-
-
+import Gargantext.Database.Schema.Context
+import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Opaleye
 

@@ -56,9 +56,9 @@ import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Routes
 import Gargantext.API.Server (server)
 import Gargantext.Core.NodeStory
--- import Gargantext.Database.Prelude (Cmd)
--- import Gargantext.Database.Action.Metrics.NgramsByContext (refreshNgramsMaterialized)
+import Gargantext.Database.Prelude qualified as DB
 import Gargantext.Prelude hiding (putStrLn)
+import Gargantext.System.Logging
 import Network.HTTP.Types hiding (Query)
 import Network.Wai
 import Network.Wai.Handler.Warp hiding (defaultSettings)
@@ -66,10 +66,8 @@ import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.RequestLogger
 import Paths_gargantext (getDataDir)
 import Servant
+import System.Cron.Schedule qualified as Cron
 import System.FilePath
-import qualified Gargantext.Database.Prelude as DB
-import qualified System.Cron.Schedule as Cron
-import Gargantext.System.Logging
 
 -- | startGargantext takes as parameters port number and Ini file.
 startGargantext :: Mode -> PortNumber -> FilePath -> IO ()

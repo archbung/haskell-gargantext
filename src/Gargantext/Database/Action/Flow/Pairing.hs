@@ -16,13 +16,18 @@ module Gargantext.Database.Action.Flow.Pairing
   -- (pairing)
     where
 
-import Debug.Trace (trace)
 import Control.Lens (_Just, (^.), view)
-import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HM
+import Data.HashMap.Strict qualified as HashMap
+import Data.Hashable (Hashable)
+import Data.List qualified as List
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text)
+import Data.Text qualified as Text
+import Debug.Trace (trace)
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core
@@ -42,16 +47,11 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext_NodeContext (insertNodeContext_NodeContext)
 import Gargantext.Database.Query.Table.NodeNode (insertNodeNode)
+import Gargantext.Database.Prelude (Cmd, runOpaQuery)
 import Gargantext.Database.Schema.Ngrams -- (NgramsType(..))
 import Gargantext.Database.Schema.Node
--- import Gargantext.Database.Schema.Context
-import qualified Data.HashMap.Strict as HM
 import Gargantext.Prelude hiding (sum)
 import Opaleye
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.List           as List
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
 
 -- | isPairedWith
 -- All NodeAnnuaire paired with a Corpus of NodeId nId:

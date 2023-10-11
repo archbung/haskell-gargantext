@@ -32,7 +32,7 @@ import Servant.Swagger.Internal
 import Gargantext.API.Node.Corpus.New.Types
 import Gargantext.Core.Types (TODO)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Prelude (Cmd)
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (hash)
 

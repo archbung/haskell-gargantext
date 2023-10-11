@@ -14,16 +14,16 @@ module Gargantext.Core.Mail where
 import Control.Lens (view)
 import Control.Monad.Reader (MonadReader)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Network.URI.Encode (encodeText)
+import Data.List qualified as List
 import Data.Text (Text, unlines, splitOn)
 import Gargantext.Core.Types.Individu
+import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_url, gc_backend_name)
-import Gargantext.Database.Prelude
 import Gargantext.Prelude.Mail (gargMail, GargMail(..))
 import Gargantext.Prelude.Mail.Types (MailConfig)
-import qualified Data.List as List
+import Network.URI.Encode (encodeText)
 
 
 -- | Tool to put elsewhere

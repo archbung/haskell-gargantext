@@ -47,7 +47,7 @@ import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Action.Learn (FavOrTrash(..), moreLike)
 import Gargantext.Database.Action.Search
 import Gargantext.Database.Admin.Types.Node hiding (ERROR, DEBUG)
-import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Prelude (CmdM, DbCmd', DBCmd)
 import Gargantext.Database.Query.Facet (FacetDoc , runViewDocuments, runCountDocuments, OrderBy(..), runViewAuthorsDoc)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Prelude
@@ -184,7 +184,7 @@ getTable :: HasNodeError err
          -> Maybe OrderBy
          -> Maybe RawQuery
          -> Maybe Text
-         -> Cmd err FacetTableResult
+         -> DBCmd err FacetTableResult
 getTable cId ft o l order raw_query year = do
   docs      <- getTable' cId ft o l order query year
   docsCount <- runCountDocuments cId (ft == Just Trash) query year

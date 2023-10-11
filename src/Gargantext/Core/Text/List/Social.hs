@@ -17,10 +17,14 @@ import Control.Lens (view)
 import Control.Monad (mzero)
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
+import Data.List qualified as List
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Monoid (mconcat)
 import Data.Pool
 import Data.Swagger
+import Data.Text qualified as T
+import Data.Vector qualified as V
 import GHC.Generics
 import Gargantext.API.Ngrams.Types (NgramsTerm, NgramsPatch)
 import Gargantext.Core.NodeStory (getNodesArchiveHistory)
@@ -29,17 +33,13 @@ import Gargantext.Core.Text.List.Social.Patch (addScorePatches)
 import Gargantext.Core.Text.List.Social.Prelude (FlowCont, FlowListScores)
 import Gargantext.Core.Types.Individu (User)
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, connPool)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree (NodeMode(Private), HasTreeError)
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 import Test.QuickCheck
 import Web.Internal.HttpApiData (ToHttpApiData, FromHttpApiData, parseUrlPiece, toUrlPiece)
-import qualified Data.List       as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Text       as T
-import qualified Data.Vector     as V
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 -- | Main parameters

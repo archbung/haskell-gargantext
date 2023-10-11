@@ -32,7 +32,7 @@ import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Hyperdata.Default
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, JSONB, mkCmd, runPGSQuery, runOpaQuery)
 import Gargantext.Database.Query.Filter (limit', offset')
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Schema.Node

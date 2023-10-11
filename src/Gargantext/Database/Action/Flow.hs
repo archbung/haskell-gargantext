@@ -103,7 +103,7 @@ import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DbCmd', DBCmd)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node

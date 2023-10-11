@@ -211,8 +211,8 @@ toHyperdataRowDocumentGQL hyperdata =
                                      }
     HyperdataRowContact { } -> Nothing
 
-updateNodeContextCategory :: ( CmdCommon env, HasSettings env) =>
-                             NodeContextCategoryMArgs -> GqlM' e env [Int]
+updateNodeContextCategory :: (CmdCommon env, HasSettings env)
+                          => NodeContextCategoryMArgs -> GqlM' e env [Int]
 updateNodeContextCategory NodeContextCategoryMArgs { context_id, node_id, category } = do
   _ <- lift $ DNC.updateNodeContextCategory (NodeId context_id) (NodeId node_id) category
 

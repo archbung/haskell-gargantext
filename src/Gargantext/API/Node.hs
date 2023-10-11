@@ -37,12 +37,19 @@ import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth (withAccess, withPolicy)
 import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..))
 import Gargantext.API.Admin.EnvTypes
+import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Metrics
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableCorpus)
 import Gargantext.API.Ngrams.Types (TabType(..))
+import Gargantext.API.Node.DocumentUpload qualified as DocumentUpload
+import Gargantext.API.Node.DocumentsFromWriteNodes qualified as DocumentsFromWriteNodes
 import Gargantext.API.Node.File
+import Gargantext.API.Node.FrameCalcUpload qualified as FrameCalcUpload
 import Gargantext.API.Node.New
+import Gargantext.API.Node.Share qualified as Share
+import Gargantext.API.Node.Update qualified as Update
 import Gargantext.API.Prelude
+import Gargantext.API.Search qualified as Search
 import Gargantext.API.Table
 import Gargantext.Core.Types (NodeTableResult)
 import Gargantext.Core.Types.Individu (User(..))
@@ -50,15 +57,17 @@ import Gargantext.Core.Types.Main (Tree, NodeTree)
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Core.Viz.Phylo.API (PhyloAPI, phyloAPI)
+import Gargantext.Database.Action.Delete qualified as Action (deleteNode)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Prelude (Cmd, JSONB)
 import Gargantext.Database.Query.Facet (FacetDoc, OrderBy(..))
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Children (getChildren)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.Node.Update (Update(..), update)
+import Gargantext.Database.Query.Table.Node.Update qualified as U (update, Update(..))
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Query.Table.NodeContext (nodeContextsCategory, nodeContextsScore)
 import Gargantext.Database.Query.Table.NodeNode
@@ -67,15 +76,6 @@ import Gargantext.Prelude
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-import qualified Gargantext.API.Node.DocumentUpload as DocumentUpload
-import qualified Gargantext.API.Node.DocumentsFromWriteNodes as DocumentsFromWriteNodes
-import qualified Gargantext.API.Node.FrameCalcUpload as FrameCalcUpload
-import qualified Gargantext.API.Node.Share  as Share
-import qualified Gargantext.API.Node.Update as Update
-import qualified Gargantext.API.Search as Search
-import qualified Gargantext.Database.Action.Delete as Action (deleteNode)
-import qualified Gargantext.Database.Query.Table.Node.Update as U (update, Update(..))
-import Gargantext.API.Auth.PolicyCheck
 
 
 -- | Admin NodesAPI

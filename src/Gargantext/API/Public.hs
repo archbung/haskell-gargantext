@@ -34,7 +34,7 @@ import qualified Data.Set as Set
 import Gargantext.API.Prelude
 import Gargantext.API.Node.File
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (Cmd, DBCmd)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Hyperdata.CorpusField
 import Gargantext.Database.Admin.Types.Node
@@ -79,7 +79,7 @@ api_node nId = do
 
 
 selectPublic :: HasNodeError err
-             => Cmd err [( Node HyperdataFolder, Maybe Int)]
+             => DBCmd err [( Node HyperdataFolder, Maybe Int)]
 selectPublic = selectPublicNodes
 
   -- For tests only

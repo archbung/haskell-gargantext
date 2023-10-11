@@ -25,7 +25,7 @@ import Gargantext.API.Admin.Auth (withAccess)
 import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser)
 import Gargantext.API.Prelude
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Prelude (JSONB)
 import Gargantext.Database.Query.Table.Context
 
 -------------------------------------------------------------------

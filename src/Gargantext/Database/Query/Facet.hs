@@ -43,7 +43,7 @@ import Data.Text qualified as T
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset, IsTrash)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, runCountOpaQuery, runOpaQuery)
 import Gargantext.Database.Query.Facet.Types
 import Gargantext.Database.Query.Filter
 import Gargantext.Database.Query.Table.Context

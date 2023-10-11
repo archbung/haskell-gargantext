@@ -35,7 +35,7 @@ import Gargantext.Core.Viz.Types
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataList(..), hl_chart, hl_pie, hl_scatter, hl_tree)
 import Gargantext.Database.Admin.Types.Metrics (ChartMetrics(..), Metric(..), Metrics(..))
 import Gargantext.Database.Admin.Types.Node (NodeId)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)

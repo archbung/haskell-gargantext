@@ -25,31 +25,31 @@ import Control.Exception (Exception)
 import Control.Lens (Prism', (#))
 import Control.Lens.TH (makePrisms)
 import Control.Monad (mapM_)
+import Control.Monad.Error.Class (MonadError(..))
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.Error.Class (MonadError(..))
 import Crypto.JOSE.Error as Jose
 import Data.Aeson.Types
-import qualified Data.Text as Text
 import Data.Typeable
 import Data.Validity
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
+import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.NodeStory
-import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (CmdM, CmdRandom, HasConnectionPool, HasConfig)
 import Gargantext.Database.Query.Table.Node.Error (NodeError(..), HasNodeError(..))
 import Gargantext.Database.Query.Tree
 import Gargantext.Prelude
-import           Gargantext.Utils.Jobs.Monad (MonadJobStatus(..), JobHandle)
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
+import Gargantext.System.Logging
+import Gargantext.Utils.Jobs.Monad (MonadJobStatus(..), JobHandle)
+import Gargantext.Utils.Jobs.Monad qualified as Jobs
 import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
-import qualified Servant.Job.Types as SJ
-import Gargantext.System.Logging
+import Servant.Job.Types qualified as SJ
+import qualified Data.Text as Text
 
 class HasJoseError e where
   _JoseError :: Prism' e Jose.Error

@@ -36,7 +36,7 @@ import Gargantext.API.Prelude
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Node
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (Cmd)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.Node.User
 import Gargantext.Database.Schema.Node

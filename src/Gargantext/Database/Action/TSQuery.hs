@@ -1,3 +1,16 @@
+{-|
+Module      : Gargantext.Database.Action.TSQuery
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+
+Here is a longer description of this module, containing some
+commentary with @some markup@.
+-}
+
 module Gargantext.Database.Action.TSQuery where
 
 import Data.Aeson
@@ -8,11 +21,11 @@ import Data.Text (Text, words)
 import Database.PostgreSQL.Simple (Query)
 import Database.PostgreSQL.Simple.ToField
 import Gargantext.Core
+import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
-import Gargantext.Database.Prelude (Cmd, runPGSQuery)
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Prelude
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 
 
 newtype TSQuery = UnsafeTSQuery [Text]
@@ -71,7 +84,7 @@ textSearchQuery = "SELECT n.id, n.hyperdata->'publication_year'     \
 textSearch :: HasDBid NodeType
            => TSQuery -> ParentId
            -> Limit -> Offset -> Order
-           -> Cmd err [(Int,Value,Value,Value, Value, Maybe Int)]
+           -> DBCmd err [(Int,Value,Value,Value, Value, Maybe Int)]
 textSearch q p l o ord = runPGSQuery textSearchQuery (q,p,p,typeId,ord,o,l)
   where
     typeId = toDBid NodeDocument

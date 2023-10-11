@@ -17,7 +17,7 @@ import Control.Lens (view)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Tree
 import Gargantext.Database.Query.Tree.Root (getRootId)
