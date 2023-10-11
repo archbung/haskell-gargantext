@@ -25,10 +25,8 @@ import Control.Lens (set, view)
 import Data.Aeson
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
-import Opaleye hiding (FromField)
-import Prelude hiding (null, id, map, sum)
-
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
@@ -39,8 +37,8 @@ import Gargantext.Database.Query.Filter (limit', offset')
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude hiding (sum, head)
-
-import qualified Database.PostgreSQL.Simple as PGS
+import Opaleye hiding (FromField)
+import Prelude hiding (null, id, map, sum)
 
 
 queryNodeSearchTable :: Select NodeSearchRead

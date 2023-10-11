@@ -36,7 +36,7 @@ import Gargantext.Database.Query.Table.NodeNode
 
 
 class InsertDB a where
-  insertDB :: a -> Cmd err Int
+  insertDB :: a -> DBCmd err Int
 
 {-
 class DeleteDB a where

@@ -70,7 +70,7 @@ runViewAuthorsDoc :: HasDBid NodeType
                   -> Maybe Offset
                   -> Maybe Limit
                   -> Maybe OrderBy
-                  -> Cmd err [FacetDoc]
+                  -> DBCmd err [FacetDoc]
 runViewAuthorsDoc cId t o l order = runOpaQuery $ filterWith o l order $ viewAuthorsDoc cId t ntId
   where
     ntId = NodeDocument
@@ -125,11 +125,11 @@ runViewDocuments :: (HasDBid NodeType, HasNodeError err)
                  -> Maybe OrderBy
                  -> Maybe Text
                  -> Maybe Text
-                 -> Cmd err [FacetDoc]
+                 -> DBCmd err [FacetDoc]
 runViewDocuments cId t o l order query year = do
     listId <- defaultList cId
 
-    res <- runOpaQuery $ filterWith' o l order (sqlQuery listId) :: Cmd err [FacetDocAgg']
+    res <- runOpaQuery $ filterWith' o l order (sqlQuery listId) :: DBCmd err [FacetDocAgg']
     pure $ remapNgramsCount <$> res
   where
     sqlQuery lId = viewDocuments cId lId t (toDBid NodeDocument) query year
@@ -140,7 +140,7 @@ runViewDocuments cId t o l order query year = do
                , .. }
 
 runCountDocuments :: (HasDBid NodeType, HasNodeError err)
-                  => CorpusId -> IsTrash -> Maybe Text -> Maybe Text -> Cmd err Int
+                  => CorpusId -> IsTrash -> Maybe Text -> Maybe Text -> DBCmd err Int
 runCountDocuments cId t mQuery mYear = do
   listId <- defaultList cId
   runCountOpaQuery (sqlQuery listId)

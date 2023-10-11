@@ -19,7 +19,7 @@ import Database.PostgreSQL.Simple
 
 import Gargantext.Prelude
 import Gargantext.Core.Types (Name)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Admin.Types.Node (NodeId, ParentId)
 
 -- import Data.ByteString
@@ -39,7 +39,7 @@ unOnly :: Only a -> a
 unOnly (Only a) = a
 
 -- TODO-ACCESS
-update :: Update -> Cmd err [Int]
+update :: Update -> DBCmd err [Int]
 update (Rename nId name) = map unOnly <$> runPGSQuery "UPDATE nodes SET name=? where id=? returning id"
                                            (DT.take 255 name,nId)
 update (Move nId pId)    = map unOnly <$> runPGSQuery "UPDATE nodes SET parent_id= ? where id=? returning id"

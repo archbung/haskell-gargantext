@@ -135,12 +135,12 @@ _updateUsersPassword us = do
   pure 1
 
 ------------------------------------------------------------------------
-_rmUser :: HasNodeError err => User -> Cmd err Int64
+_rmUser :: HasNodeError err => User -> DBCmd err Int64
 _rmUser (UserName un) = deleteUsers [un]
 _rmUser _ = nodeError NotImplYet
 
 ------------------------------------------------------------------------
 -- TODO
-_rmUsers :: HasNodeError err => [User] -> Cmd err Int64
+_rmUsers :: HasNodeError err => [User] -> DBCmd err Int64
 _rmUsers [] = pure 0
 _rmUsers _  = undefined

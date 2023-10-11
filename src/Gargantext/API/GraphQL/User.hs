@@ -4,24 +4,21 @@
 module Gargantext.API.GraphQL.User where
 
 import Data.Maybe (listToMaybe)
-import Data.Morpheus.Types
-  ( GQLType
-  , lift
-  )
+import Data.Morpheus.Types ( GQLType , lift )
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck
 import Gargantext.API.GraphQL.Types
+import Gargantext.Core.Types.Individu qualified as Individu
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..))
 import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (CmdCommon)
+import Gargantext.Database.Query.Table.User qualified as DBUser
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
-import qualified Gargantext.Core.Types.Individu as Individu
-import qualified Gargantext.Database.Query.Table.User as DBUser
-import Gargantext.API.Admin.Auth.Types
-import Gargantext.API.Auth.PolicyCheck
-import Gargantext.API.GraphQL.PolicyCheck
 
 data User m = User
   { u_email     :: Text
@@ -54,9 +51,8 @@ resolveUsers autUser mgr UserArgs { user_id } = do
   withPolicy autUser mgr alwaysAllow $ dbUsers user_id
 
 -- | Inner function to fetch the user from DB.
-dbUsers
-  :: (CmdCommon env)
-  => Int -> GqlM e env [User (GqlM e env)]
+dbUsers :: (CmdCommon env)
+        => Int -> GqlM e env [User (GqlM e env)]
 dbUsers user_id = lift (map toUser <$> DBUser.getUsersWithId (Individu.RootId $ NodeId user_id))
 
 toUser

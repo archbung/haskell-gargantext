@@ -24,7 +24,7 @@ import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Gargantext.Core
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, runPGSQuery_, DBCmd)
+import Gargantext.Database.Prelude (runPGSQuery, runPGSQuery_, DBCmd)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Database.Query.Table.Ngrams
@@ -180,7 +180,7 @@ querySelectLems = [sql|
   |]
 
 -- | Insert Table
-createTable_NgramsPostag :: Cmd err [Int]
+createTable_NgramsPostag :: DBCmd err [Int]
 createTable_NgramsPostag = map (\(PGS.Only a) -> a)
                         <$> runPGSQuery_ queryCreateTable
   where

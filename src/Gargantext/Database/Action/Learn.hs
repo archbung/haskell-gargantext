@@ -15,19 +15,19 @@ Portability : POSIX
 module Gargantext.Database.Action.Learn
   where
 
+import Data.List qualified as List
 import Data.Maybe
 import Data.Text (Text)
+import Data.Text qualified as Text
 import Gargantext.Core
+import Gargantext.Core.Text.Learn
 import Gargantext.Core.Types.Query (Offset, Limit(..))
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Facet
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
-import Gargantext.Database.Prelude (Cmd)
 import Gargantext.Prelude
-import Gargantext.Core.Text.Learn
-import qualified Data.List as List
-import qualified Data.Text as Text
 
 data FavOrTrash = IsFav | IsTrash
   deriving (Eq)
@@ -35,14 +35,14 @@ data FavOrTrash = IsFav | IsTrash
 
 moreLike :: (HasDBid NodeType, HasNodeError err)
          => CorpusId   -> Maybe Offset -> Maybe Limit -> Maybe OrderBy
-         -> FavOrTrash -> Cmd err [FacetDoc]
+         -> FavOrTrash -> DBCmd err [FacetDoc]
 moreLike cId o _l order ft = do
   priors <- getPriors ft cId
   moreLikeWith cId o (Just 3) order ft priors
 
 ---------------------------------------------------------------------------
 getPriors :: (HasDBid NodeType, HasNodeError err)
-          => FavOrTrash -> CorpusId -> Cmd err (Events Bool)
+          => FavOrTrash -> CorpusId -> DBCmd err (Events Bool)
 getPriors ft cId = do
 
   docs_fav   <- filter (\(FacetDoc _ _ _ _ f _ _) -> f == Just 2)
@@ -60,7 +60,7 @@ getPriors ft cId = do
 
 moreLikeWith :: (HasDBid NodeType, HasNodeError err)
              => CorpusId   -> Maybe Offset -> Maybe Limit -> Maybe OrderBy
-             -> FavOrTrash -> Events Bool  -> Cmd err [FacetDoc]
+             -> FavOrTrash -> Events Bool  -> DBCmd err [FacetDoc]
 moreLikeWith cId o l order ft priors = do
 
   docs_test  <- filter (\(FacetDoc _ _ _ _ f _ _) -> f == Just 1)

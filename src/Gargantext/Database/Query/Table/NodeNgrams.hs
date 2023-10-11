@@ -62,11 +62,9 @@ getCgramsId mapId nt t = case Map.lookup nt mapId of
   Just mapId' -> Map.lookup t mapId'
 
 
--- insertDb :: ListId -> Map NgramsType [NgramsElement] -> Cmd err [Result]
 listInsertDb :: Show a => ListId
              -> (ListId -> a -> [NodeNgramsW])
              -> a
-             -- -> Cmd err [Returning]
              -> DBCmd err (Map NgramsType (Map Text Int))
 listInsertDb l f ngs = Map.map Map.fromList
                     <$> Map.fromListWith (<>)

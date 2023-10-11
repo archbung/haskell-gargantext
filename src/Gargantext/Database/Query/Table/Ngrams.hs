@@ -28,7 +28,7 @@ import Data.HashMap.Strict (HashMap)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (runOpaQuery, Cmd, formatPGSQuery, runPGSQuery, DBCmd)
+import Gargantext.Database.Prelude (runOpaQuery, formatPGSQuery, runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Join (leftJoin3)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.NodeNgrams (queryNodeNgramsTable)
@@ -45,7 +45,7 @@ import qualified Database.PostgreSQL.Simple as PGS
 queryNgramsTable :: Select NgramsRead
 queryNgramsTable = selectTable ngramsTable
 
-selectNgramsByDoc :: [ListId] -> DocId -> NgramsType -> Cmd err [Text]
+selectNgramsByDoc :: [ListId] -> DocId -> NgramsType -> DBCmd err [Text]
 selectNgramsByDoc lIds dId nt = runOpaQuery (query lIds dId nt)
   where
 
@@ -65,10 +65,10 @@ selectNgramsByDoc lIds dId nt = runOpaQuery (query lIds dId nt)
       returnA  -< ng^.ngrams_terms
 
 
-_postNgrams :: CorpusId -> DocId -> [Text] -> Cmd err Int
+_postNgrams :: CorpusId -> DocId -> [Text] -> DBCmd err Int
 _postNgrams = undefined
 
-_dbGetNgramsDb :: Cmd err [NgramsDB]
+_dbGetNgramsDb :: DBCmd err [NgramsDB]
 _dbGetNgramsDb = runOpaQuery queryNgramsTable
 
 
@@ -85,7 +85,7 @@ insertNgrams' ns = runPGSQuery queryInsertNgrams (PGS.Only $ Values fields ns)
   where
     fields = map (\t -> QualifiedIdentifier Nothing t) ["text", "int4"]
 
-_insertNgrams_Debug :: [(Text, Size)] -> Cmd err ByteString
+_insertNgrams_Debug :: [(Text, Size)] -> DBCmd err ByteString
 _insertNgrams_Debug ns = formatPGSQuery queryInsertNgrams (PGS.Only $ Values fields ns)
   where
     fields = map (\t -> QualifiedIdentifier Nothing t) ["text", "int4"]
@@ -111,13 +111,13 @@ queryInsertNgrams = [sql|
 
 
 --------------------------------------------------------------------------
-selectNgramsId :: [Text] -> Cmd err (Map NgramsId Text)
+selectNgramsId :: [Text] -> DBCmd err (Map NgramsId Text)
 selectNgramsId ns =
   if List.null ns
      then pure Map.empty
      else Map.fromList <$> map (\(Indexed i t) -> (i, t)) <$> (selectNgramsId' ns)
 
-selectNgramsId' :: [Text] -> Cmd err [Indexed Int Text]
+selectNgramsId' :: [Text] -> DBCmd err [Indexed Int Text]
 selectNgramsId' ns = runPGSQuery querySelectNgramsId ( PGS.Only
                                                      $ Values fields ns
                                                      )
