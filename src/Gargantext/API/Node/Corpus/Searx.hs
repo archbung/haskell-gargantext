@@ -31,7 +31,7 @@ import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ListId, NodeType(NodeTexts))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (defaultListMaybe, getOrMkList)
+import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
@@ -160,12 +160,12 @@ triggerSearxSearch :: ( MonadBase IO m
                       , HasTreeError err
                       , HasInvalidError err 
                       , MonadJobStatus m )
-            => User
-            -> CorpusId
-            -> API.RawQuery
-            -> Lang
-            -> JobHandle m
-            -> m ()
+                   => User
+                   -> CorpusId
+                   -> API.RawQuery
+                   -> Lang
+                   -> JobHandle m
+                   -> m ()
 triggerSearxSearch user cId q l jobHandle = do
   userId <- getUserId user
 
@@ -181,12 +181,7 @@ triggerSearxSearch user cId q l jobHandle = do
   uId <- getUserId user
   let surl = _gc_frame_searx_url cfg
   -- printDebug "[triggerSearxSearch] surl" surl
-  mListId <- defaultListMaybe cId
-  listId <- case mListId of
-    Nothing -> do
-      listId <- getOrMkList cId uId
-      pure listId
-    Just listId -> pure listId
+  listId <- getOrMkList cId uId
 
   -- printDebug "[triggerSearxSearch] listId" listId
 

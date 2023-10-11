@@ -36,7 +36,7 @@ import qualified Data.Text as Text
 
 ------------------------------------------------------------------------
 getNgramsList :: HasNodeStory env err m
-    => ListId -> m NgramsList
+              => ListId -> m NgramsList
 getNgramsList lId = fromList
        <$> zip ngramsTypes
        <$> mapM (getNgramsTableMap lId) ngramsTypes

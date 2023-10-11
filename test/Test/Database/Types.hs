@@ -34,6 +34,7 @@ import Gargantext.API.Prelude
 import Gargantext.Core.Mail.Types (HasMail(..))
 import Gargantext.Core.NLP (HasNLPServer(..))
 import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Prelude (HasConfig(..), HasConnectionPool(..))
 import Gargantext.Prelude.Config
 import Gargantext.Prelude.Mail.Types (MailConfig(..), LoginType(NoAuth))
 import Gargantext.System.Logging (HasLogger(..), Logger, MonadLogger(..))

@@ -281,11 +281,14 @@ type GraphVersionsAPI = Summary "Graph versions"
 
 graphVersionsAPI :: UserId -> NodeId -> GargServer GraphVersionsAPI
 graphVersionsAPI u n =
-           graphVersions 0 n
+           graphVersions u n
       :<|> recomputeVersions u n
 
-graphVersions :: Int -> NodeId -> GargNoServer GraphVersions
-graphVersions n nId = do
+graphVersions :: (HasNodeStory env err m)
+              => UserId
+              -> NodeId
+              -> m GraphVersions
+graphVersions u nId = do
   nodeGraph <- getNodeWith nId (Proxy :: Proxy HyperdataGraph)
   let
     graph =  nodeGraph
@@ -302,21 +305,14 @@ graphVersions n nId = do
   mcId <- getClosestParentIdByType nId NodeCorpus
   let cId = maybe (panic "[G.V.G.API] Node has no parent") identity mcId
 
-  maybeListId <- defaultListMaybe cId
-  case maybeListId of
-    Nothing     -> if n <= 2
-                      then graphVersions (n+1) cId
-                      else panic "[G.V.G.API] list not found after iterations"
+  listId <- getOrMkList cId u
+  repo <- getRepo [listId]
+  let v = repo ^. unNodeStory . at listId . _Just . a_version
+  -- printDebug "graphVersions" v
 
-    Just listId -> do
-      repo <- getRepo [listId]
-      let v = repo ^. unNodeStory . at listId . _Just . a_version
-      -- printDebug "graphVersions" v
+  pure $ GraphVersions { gv_graph = listVersion
+                       , gv_repo = v }
 
-      pure $ GraphVersions { gv_graph = listVersion
-                           , gv_repo = v }
-
---recomputeVersions :: UserId -> NodeId -> GargNoServer Graph
 recomputeVersions :: HasNodeStory env err m
                   => UserId
                   -> NodeId
@@ -324,10 +320,11 @@ recomputeVersions :: HasNodeStory env err m
 recomputeVersions uId nId = recomputeGraph uId nId Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
 
 ------------------------------------------------------------
-graphClone :: UserId
+graphClone :: HasNodeError err
+           => UserId
            -> NodeId
            -> HyperdataGraphAPI
-           -> GargNoServer NodeId
+           -> DBCmd err NodeId
 graphClone uId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
                                       , _hyperdataAPICamera = camera }) = do
   let nodeType = NodeGraph

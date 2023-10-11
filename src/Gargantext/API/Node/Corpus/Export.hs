@@ -16,24 +16,21 @@ Main exports of Gargantext:
 module Gargantext.API.Node.Corpus.Export
   where
 
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text, pack)
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import qualified Data.HashMap.Strict as HashMap
-import Servant (Headers, Header, addHeader)
-
-import Gargantext.API.Node.Corpus.Export.Types
-import qualified Gargantext.API.Node.Document.Export.Types as DocumentExport
-import Gargantext.API.Ngrams.Types
 import Gargantext.API.Ngrams.Tools (filterListWithRoot, mapTermListRoot, getRepo)
+import Gargantext.API.Ngrams.Types
+import Gargantext.API.Node.Corpus.Export.Types
+import Gargantext.API.Node.Document.Export.Types qualified as DocumentExport
 import Gargantext.API.Prelude (GargNoServer)
-import Gargantext.Prelude.Crypto.Hash (hash)
-import Gargantext.Core.Types
 import Gargantext.Core.NodeStory
+import Gargantext.Core.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext (getNgramsByContextOnlyUser)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
@@ -42,9 +39,11 @@ import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Context (_context_id, _context_hyperdata)
+import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
+import Gargantext.Prelude.Crypto.Hash (hash)
+import Servant (Headers, Header, addHeader)
 
 --------------------------------------------------
 -- | Hashes are ordered by Set
