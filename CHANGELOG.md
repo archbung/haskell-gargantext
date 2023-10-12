@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.8.3.1
+
+* [BACK][FIX] Disabling policy check
+
 ## Version 0.0.6.9.9.8.3
 
 * [BACK][FIX][Docs Node: Score (#272)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/272)
