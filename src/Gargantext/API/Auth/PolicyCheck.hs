@@ -147,9 +147,11 @@ nodeSuper = BConst . Positive . AC_master_user
 nodeDescendant :: NodeId -> BoolExpr AccessCheck
 nodeDescendant = BConst . Positive . AC_node_descendant
 
+-- FIXME(adinapoli) Checks temporarily disabled.
 nodeChecks :: NodeId -> BoolExpr AccessCheck
-nodeChecks nid =
-  nodeUser nid `BOr` nodeSuper nid `BOr` nodeDescendant nid
+nodeChecks _nid = alwaysAllow
+  where
+    _disabled = nodeUser _nid `BOr` nodeSuper _nid `BOr` nodeDescendant _nid
 
 alwaysAllow :: BoolExpr AccessCheck
 alwaysAllow = BConst . Positive $ AC_always_allow
