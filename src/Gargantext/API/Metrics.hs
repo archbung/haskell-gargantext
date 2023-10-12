@@ -35,7 +35,7 @@ import Gargantext.Core.Viz.Types
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataList(..), hl_chart, hl_pie, hl_scatter, hl_tree)
 import Gargantext.Database.Admin.Types.Metrics (ChartMetrics(..), Metric(..), Metrics(..))
 import Gargantext.Database.Admin.Types.Node (NodeId)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
@@ -185,12 +185,12 @@ getChart cId _start _end maybeListId tabType = do
 
   pure $ constructHashedResponse chart
 
-updateChart :: HasNodeError err =>
-  CorpusId
-  -> Maybe ListId
-  -> TabType
-  -> Maybe Limit
-  -> DBCmd err ()
+updateChart :: HasNodeError err
+            => CorpusId
+            -> Maybe ListId
+            -> TabType
+            -> Maybe Limit
+            -> DBCmd err ()
 updateChart cId maybeListId tabType maybeLimit = do
   listId <- case maybeListId of
     Just lid -> pure lid
@@ -202,12 +202,12 @@ updateChart cId maybeListId tabType maybeLimit = do
   _ <- updateChart' cId listId tabType maybeLimit
   pure ()
 
-updateChart' :: HasNodeError err =>
-  CorpusId
-  -> ListId
-  -> TabType
-  -> Maybe Limit
-  -> DBCmd err (ChartMetrics Histo)
+updateChart' :: HasNodeError err
+             => CorpusId
+             -> ListId
+             -> TabType
+             -> Maybe Limit
+             -> DBCmd err (ChartMetrics Histo)
 updateChart' cId listId tabType _maybeLimit = do
   node <- getNodeWith listId (Proxy :: Proxy HyperdataList)
   let hl = node ^. node_hyperdata
@@ -267,7 +267,7 @@ getPie cId _start _end maybeListId tabType = do
   chart <- case mChart of
     Just chart -> pure chart
     Nothing    -> do
-      updatePie' cId maybeListId tabType Nothing
+      updatePie' cId listId tabType Nothing
 
   pure $ constructHashedResponse chart
 
@@ -278,23 +278,23 @@ updatePie :: HasNodeStory env err m
           -> Maybe Limit
           -> m ()
 updatePie cId maybeListId tabType maybeLimit = do
+  listId <- case maybeListId of
+    Just lid -> pure lid
+    Nothing  -> defaultList cId
   printDebug "[updatePie] cId" cId
   printDebug "[updatePie] maybeListId" maybeListId
   printDebug "[updatePie] tabType" tabType
   printDebug "[updatePie] maybeLimit" maybeLimit
-  _ <- updatePie' cId maybeListId tabType maybeLimit
+  _ <- updatePie' cId listId tabType maybeLimit
   pure ()
 
 updatePie' :: (HasNodeStory env err m, HasNodeError err)
            => CorpusId
-           -> Maybe ListId
+           -> ListId
            -> TabType
            -> Maybe Limit
            -> m (ChartMetrics Histo)
-updatePie' cId maybeListId tabType _maybeLimit = do
-  listId <- case maybeListId of
-    Just lid -> pure lid
-    Nothing  -> defaultList cId
+updatePie' cId listId tabType _maybeLimit = do
   node <- getNodeWith listId (Proxy :: Proxy HyperdataList)
   let hl = node ^. node_hyperdata
       pieMap = hl ^. hl_pie

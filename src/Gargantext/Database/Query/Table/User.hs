@@ -58,7 +58,7 @@ import Gargantext.Core.Types.Individu
 import qualified Gargantext.Prelude.Crypto.Auth as Auth
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, mkCmd, runOpaQuery)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
 import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)
 import Gargantext.Database.Schema.User
@@ -76,14 +76,14 @@ insertUsers us = mkCmd $ \c -> runInsert c insert
   where
     insert = Insert userTable us rCount Nothing
 
-deleteUsers :: [Username] -> Cmd err Int64
+deleteUsers :: [Username] -> DBCmd err Int64
 deleteUsers us = mkCmd $ \c -> runDelete_ c
                        $ Delete userTable
                                 (\user -> in_ (map sqlStrictText us) (user_username user))
                                 rCount
 
 -- Updates email or password only (for now)
-updateUserDB :: UserWrite -> Cmd err Int64
+updateUserDB :: UserWrite -> DBCmd err Int64
 updateUserDB us = mkCmd $ \c -> runUpdate_ c (updateUserQuery us)
   where
     updateUserQuery :: UserWrite -> Update Int64
@@ -119,7 +119,7 @@ toUserWrite (NewUser u m (Auth.PasswordHash p)) =
          , user_forgot_password_uuid = Nothing }
 
 ------------------------------------------------------------------
-getUsersWith :: Username -> Cmd err [UserLight]
+getUsersWith :: Username -> DBCmd err [UserLight]
 getUsersWith u = map toUserLight <$> runOpaQuery (selectUsersLightWith u)
 
 selectUsersLightWith :: Username -> Select UserRead
@@ -128,7 +128,7 @@ selectUsersLightWith u = proc () -> do
       restrict -< user_username row .== sqlStrictText u
       returnA  -< row
 
-getUsersWithEmail :: Text -> Cmd err [UserLight]
+getUsersWithEmail :: Text -> DBCmd err [UserLight]
 getUsersWithEmail e = map toUserLight <$> runOpaQuery (selectUsersLightWithEmail e)
 
 selectUsersLightWithEmail :: Text -> Select UserRead
@@ -137,7 +137,7 @@ selectUsersLightWithEmail e = proc () -> do
       restrict -< user_email row .== sqlStrictText e
       returnA  -< row
 
-getUsersWithForgotPasswordUUID :: UUID.UUID -> Cmd err [UserLight]
+getUsersWithForgotPasswordUUID :: UUID.UUID -> DBCmd err [UserLight]
 getUsersWithForgotPasswordUUID uuid = map toUserLight <$> runOpaQuery (selectUsersLightWithForgotPasswordUUID uuid)
 
 selectUsersLightWithForgotPasswordUUID :: UUID.UUID -> Select UserRead
@@ -173,7 +173,7 @@ queryUserTable = selectTable userTable
 
 ----------------------------------------------------------------------
 -- | Get hyperdata associated with user node.
-getUserHyperdata :: User -> Cmd err [HyperdataUser]
+getUserHyperdata :: User -> DBCmd err [HyperdataUser]
 getUserHyperdata (RootId uId) = do
   runOpaQuery (selectUserHyperdataWithId uId)
   where
@@ -195,7 +195,7 @@ getUserHyperdata _ = undefined
 
 
 -- | Same as `getUserHyperdata` but returns a `Node` type.
-getUserNodeHyperdata :: User -> Cmd err [Node HyperdataUser]
+getUserNodeHyperdata :: User -> DBCmd err [Node HyperdataUser]
 getUserNodeHyperdata (RootId uId) = do
   runOpaQuery (selectUserHyperdataWithId uId)
   where
@@ -215,14 +215,14 @@ getUserNodeHyperdata (UserDBId uId) = do
       returnA  -< row
 getUserNodeHyperdata _ = undefined
 
-getUsersWithHyperdata :: User -> Cmd err [(UserLight, HyperdataUser)]
+getUsersWithHyperdata :: User -> DBCmd err [(UserLight, HyperdataUser)]
 getUsersWithHyperdata i = do
   u <- getUsersWithId i
   h <- getUserHyperdata i
   -- printDebug "[getUsersWithHyperdata]" (u,h)
   pure $ zip u h
 
-getUsersWithNodeHyperdata :: User -> Cmd err [(UserLight, Node HyperdataUser)]
+getUsersWithNodeHyperdata :: User -> DBCmd err [(UserLight, Node HyperdataUser)]
 getUsersWithNodeHyperdata i = do
   u <- getUsersWithId i
   h <- getUserNodeHyperdata i
@@ -230,7 +230,7 @@ getUsersWithNodeHyperdata i = do
   pure $ zip u h
 
 
-updateUserEmail :: UserLight -> Cmd err Int64
+updateUserEmail :: UserLight -> DBCmd err Int64
 updateUserEmail (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
   where
     updateUserQuery :: Update Int64
@@ -240,7 +240,7 @@ updateUserEmail (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
       , uWhere      = (\row -> user_id row .== (sqlInt4 userLight_id))
       , uReturning  = rCount }
 
-updateUserPassword :: UserLight -> Cmd err Int64
+updateUserPassword :: UserLight -> DBCmd err Int64
 updateUserPassword (UserLight { userLight_password = GargPassword password, .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
   where
     updateUserQuery :: Update Int64
@@ -250,7 +250,7 @@ updateUserPassword (UserLight { userLight_password = GargPassword password, .. }
       , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
       , uReturning  = rCount }
 
-updateUserForgotPasswordUUID :: UserLight -> Cmd err Int64
+updateUserForgotPasswordUUID :: UserLight -> DBCmd err Int64
 updateUserForgotPasswordUUID (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
   where
     pass = sqlStrictText $ fromMaybe "" userLight_forgot_password_uuid
@@ -261,7 +261,7 @@ updateUserForgotPasswordUUID (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c upd
       , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
       , uReturning  = rCount }
 
-getUserPubmedAPIKey :: User -> Cmd err (Maybe PUBMED.APIKey)
+getUserPubmedAPIKey :: User -> DBCmd err (Maybe PUBMED.APIKey)
 getUserPubmedAPIKey user = do
   hs <- getUserHyperdata user
   case hs of
@@ -269,7 +269,7 @@ getUserPubmedAPIKey user = do
     (x:_) -> pure $ _hu_pubmed_api_key x
 
 updateUserPubmedAPIKey :: (HasDBid NodeType, HasNodeError err)
-                        => User -> PUBMED.APIKey -> Cmd err Int64
+                        => User -> PUBMED.APIKey -> DBCmd err Int64
 updateUserPubmedAPIKey (RootId uId) apiKey = do
   _ <- updateNodeWithType uId NodeUser (Proxy :: Proxy HyperdataUser) (\h -> h & hu_pubmed_api_key ?~ apiKey)
   pure 1
@@ -303,7 +303,7 @@ getUser :: Username -> DBCmd err (Maybe UserLight)
 getUser u = userLightWithUsername u <$> usersLight
 
 ----------------------------------------------------------------------
-insertNewUsers :: [NewUser GargPassword] -> Cmd err Int64
+insertNewUsers :: [NewUser GargPassword] -> DBCmd err Int64
 insertNewUsers newUsers = do
   users' <- liftBase $ mapM toUserHash newUsers
   insertUsers $ map toUserWrite users'

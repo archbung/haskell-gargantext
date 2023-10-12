@@ -22,7 +22,7 @@ import Gargantext.Prelude
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, mkCmd, DBCmd)
+import Gargantext.Database.Prelude (mkCmd, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 
@@ -49,7 +49,7 @@ updateHyperdataQuery i h = seq h' $ {- trace "updateHyperdataQuery: encoded JSON
 updateNodesWithType :: ( HasNodeError err
                        , HasDBid NodeType
                        , HyperdataC a
-                       ) => NodeType -> proxy a -> (a -> a) -> Cmd err [Int64]
+                       ) => NodeType -> proxy a -> (a -> a) -> DBCmd err [Int64]
 updateNodesWithType nt p f = do
   ns <- getNodesWithType nt p
   mapM (\n -> updateHyperdata (_node_id n) (f $ _node_hyperdata n)) ns
@@ -61,7 +61,7 @@ updateNodeWithType :: ( HasNodeError err
                         -> NodeType
                         -> proxy a
                         -> (a -> a)
-                        -> Cmd err [Int64]
+                        -> DBCmd err [Int64]
 updateNodeWithType nId nt p f = do
   ns <- getNodeWithType nId nt p
   mapM (\n -> updateHyperdata (_node_id n) (f $ _node_hyperdata n)) ns
@@ -71,7 +71,7 @@ updateNodeWithType nId nt p f = do
 updateNodesWithType_ :: ( HasNodeError err
                         , HyperdataC a
                         , HasDBid NodeType
-                        ) => NodeType -> a -> Cmd err [Int64]
+                        ) => NodeType -> a -> DBCmd err [Int64]
 updateNodesWithType_ nt h = do
   ns <- getNodesIdWithType nt
   mapM (\n -> updateHyperdata n h) ns

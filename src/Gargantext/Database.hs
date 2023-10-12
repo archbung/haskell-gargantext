@@ -26,7 +26,7 @@ module Gargantext.Database ( module Gargantext.Database.Prelude
     where
 
 import Gargantext.Prelude
-import Gargantext.Database.Prelude -- (connectGargandb)
+import Gargantext.Database.Prelude (DBCmd) -- (connectGargandb)
 
 -- import Gargantext.Database.Schema.Node
 -- import Gargantext.Database.Query.Table.Node
@@ -36,11 +36,11 @@ import Gargantext.Database.Query.Table.NodeNode
 
 
 class InsertDB a where
-  insertDB :: a -> Cmd err Int
+  insertDB :: a -> DBCmd err Int
 
 {-
 class DeleteDB a where
-  deleteDB :: a -> Cmd err Int
+  deleteDB :: a -> DBCmd err Int
 -}
 
 instance InsertDB [NodeNode] where

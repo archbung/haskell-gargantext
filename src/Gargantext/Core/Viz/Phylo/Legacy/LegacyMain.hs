@@ -16,42 +16,34 @@ Portability : POSIX
 module Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
   where
 
--- import Data.GraphViz
--- import qualified Data.ByteString as DB
 import Control.Lens hiding (Level)
-import qualified Data.List as List
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
 import Data.Maybe
 import Data.Proxy
+import Data.Set qualified as Set
 import Data.Text (Text)
+import Data.Text qualified as Text
 import Debug.Trace (trace)
 import GHC.IO (FilePath)
 import Gargantext.API.Ngrams.Tools (getTermsWith)
 import Gargantext.API.Ngrams.Types
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Core (HasDBid, withDefaultLanguage)
+import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Context (TermList)
 import Gargantext.Core.Text.Terms.WithList
-import Gargantext.Database.Query.Table.Node(defaultList, getNodeWith)
-import Gargantext.Prelude
-import Gargantext.Database.Action.Flow.Types
+import Gargantext.Core.Types
 import Gargantext.Core.Viz.LegacyPhylo hiding (Svg, Dot)
 import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Query.Table.Node(defaultList, getNodeWith)
+import Gargantext.Database.Query.Table.NodeContext (selectDocs)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Database.Query.Table.NodeContext (selectDocs)
-import Gargantext.Core.Types
-import Gargantext.Core (HasDBid, withDefaultLanguage)
-
--- import Gargantext.Core.Viz.Phylo.LevelMaker (toPhylo)
--- import Gargantext.Core.Viz.Phylo.Tools
--- import Gargantext.Core.Viz.Phylo.View.Export
--- import Gargantext.Core.Viz.Phylo.View.ViewMaker    -- TODO Just Maker is fine
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
+import Gargantext.Prelude
 
 type MinSizeBranch = Int
 
-flowPhylo :: (FlowCmdM env err m, HasDBid NodeType)
+flowPhylo :: (HasNodeStory env err m, HasDBid NodeType)
           => CorpusId
           -> m Phylo
 flowPhylo cId = do

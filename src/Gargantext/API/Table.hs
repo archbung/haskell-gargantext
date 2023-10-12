@@ -35,12 +35,8 @@ import Data.Aeson.TH (deriveJSON)
 import Data.Maybe
 import Data.Swagger
 import Data.Text (Text())
+import Data.Text qualified as T
 import GHC.Generics (Generic)
-import Prelude
-import Servant
-import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-
 import Gargantext.API.HashedResponse
 import Gargantext.API.Ngrams.Types (TabType(..))
 import Gargantext.API.Prelude (GargServer)
@@ -51,12 +47,15 @@ import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Action.Learn (FavOrTrash(..), moreLike)
 import Gargantext.Database.Action.Search
 import Gargantext.Database.Admin.Types.Node hiding (ERROR, DEBUG)
-import Gargantext.Database.Prelude -- (Cmd, CmdM)
+import Gargantext.Database.Prelude (CmdM, DbCmd', DBCmd)
 import Gargantext.Database.Query.Facet (FacetDoc , runViewDocuments, runCountDocuments, OrderBy(..), runViewAuthorsDoc)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Prelude
 import Gargantext.System.Logging
-import qualified Data.Text as T
+import Prelude
+import Servant
+import Test.QuickCheck (elements)
+import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 
 ------------------------------------------------------------------------
 
@@ -156,7 +155,7 @@ getTableHashApi cId tabType = do
   HashedResponse { hash = h } <- getTableApi cId tabType Nothing Nothing Nothing Nothing Nothing
   pure h
 
-searchInCorpus' :: (CmdM env err m, MonadLogger m)
+searchInCorpus' :: (DbCmd' env err m, MonadLogger m)
                 => CorpusId
                 -> Bool
                 -> RawQuery
@@ -185,7 +184,7 @@ getTable :: HasNodeError err
          -> Maybe OrderBy
          -> Maybe RawQuery
          -> Maybe Text
-         -> Cmd err FacetTableResult
+         -> DBCmd err FacetTableResult
 getTable cId ft o l order raw_query year = do
   docs      <- getTable' cId ft o l order query year
   docsCount <- runCountDocuments cId (ft == Just Trash) query year
@@ -201,7 +200,7 @@ getTable' :: HasNodeError err
           -> Maybe OrderBy
           -> Maybe Text
           -> Maybe Text
-          -> Cmd err [FacetDoc]
+          -> DBCmd err [FacetDoc]
 getTable' cId ft o l order query year =
   case ft of
     (Just Docs)      -> runViewDocuments cId False o l order query year
@@ -213,7 +212,7 @@ getTable' cId ft o l order query year =
 
 getPair :: ContactId -> Maybe TabType
          -> Maybe Offset  -> Maybe Limit
-         -> Maybe OrderBy -> Cmd err [FacetDoc]
+         -> Maybe OrderBy -> DBCmd err [FacetDoc]
 getPair cId ft o l order =
   case ft of
     (Just Docs)  -> runViewAuthorsDoc cId False o l order

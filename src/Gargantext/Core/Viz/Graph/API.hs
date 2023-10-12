@@ -108,7 +108,7 @@ getGraph _uId nId = do
         let defaultEdgesStrength   = Strong
         let defaultBridgenessMethod = BridgenessMethod_Basic
         graph' <- computeGraph cId defaultPartitionMethod defaultBridgenessMethod (withMetric defaultMetric) defaultEdgesStrength (NgramsTerms, NgramsTerms) repo
-        mt     <- defaultGraphMetadata cId "Title" repo defaultMetric defaultEdgesStrength
+        mt     <- defaultGraphMetadata cId listId "Title" repo defaultMetric defaultEdgesStrength
         let
           graph'' = set graph_metadata (Just mt) graph'
           hg = HyperdataGraphAPI graph'' camera
@@ -167,7 +167,7 @@ recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStreng
 
   case graph of
     Nothing     -> do
-      mt     <- defaultGraphMetadata cId "Title" repo (fromMaybe Order1 maybeSimilarity) strength
+      mt     <- defaultGraphMetadata cId listId "Title" repo (fromMaybe Order1 maybeSimilarity) strength
       g <- computeG $ Just mt
       pure $ trace "[G.V.G.API.recomputeGraph] Graph empty, computed" g
     Just graph' -> if (listVersion == Just v) && (not force)
@@ -225,14 +225,13 @@ computeGraph corpusId partitionMethod bridgeMethod similarity strength (nt1,nt2)
 
 defaultGraphMetadata :: HasNodeError err
                      => CorpusId
+                     -> ListId
                      -> Text
                      -> NodeListStory
                      -> GraphMetric
                      -> Strength
                      -> DBCmd err GraphMetadata
-defaultGraphMetadata cId t repo gm str = do
-  lId  <- defaultList cId
-
+defaultGraphMetadata cId lId t repo gm str = do
   pure $ GraphMetadata { _gm_title         = t
                        , _gm_metric        = gm
                        , _gm_edgesStrength = Just str
@@ -282,11 +281,14 @@ type GraphVersionsAPI = Summary "Graph versions"
 
 graphVersionsAPI :: UserId -> NodeId -> GargServer GraphVersionsAPI
 graphVersionsAPI u n =
-           graphVersions 0 n
+           graphVersions u n
       :<|> recomputeVersions u n
 
-graphVersions :: Int -> NodeId -> GargNoServer GraphVersions
-graphVersions n nId = do
+graphVersions :: (HasNodeStory env err m)
+              => UserId
+              -> NodeId
+              -> m GraphVersions
+graphVersions u nId = do
   nodeGraph <- getNodeWith nId (Proxy :: Proxy HyperdataGraph)
   let
     graph =  nodeGraph
@@ -303,21 +305,14 @@ graphVersions n nId = do
   mcId <- getClosestParentIdByType nId NodeCorpus
   let cId = maybe (panic "[G.V.G.API] Node has no parent") identity mcId
 
-  maybeListId <- defaultListMaybe cId
-  case maybeListId of
-    Nothing     -> if n <= 2
-                      then graphVersions (n+1) cId
-                      else panic "[G.V.G.API] list not found after iterations"
+  listId <- getOrMkList cId u
+  repo <- getRepo [listId]
+  let v = repo ^. unNodeStory . at listId . _Just . a_version
+  -- printDebug "graphVersions" v
 
-    Just listId -> do
-      repo <- getRepo [listId]
-      let v = repo ^. unNodeStory . at listId . _Just . a_version
-      -- printDebug "graphVersions" v
+  pure $ GraphVersions { gv_graph = listVersion
+                       , gv_repo = v }
 
-      pure $ GraphVersions { gv_graph = listVersion
-                           , gv_repo = v }
-
---recomputeVersions :: UserId -> NodeId -> GargNoServer Graph
 recomputeVersions :: HasNodeStory env err m
                   => UserId
                   -> NodeId
@@ -325,10 +320,11 @@ recomputeVersions :: HasNodeStory env err m
 recomputeVersions uId nId = recomputeGraph uId nId Spinglass BridgenessMethod_Basic Nothing Nothing NgramsTerms NgramsTerms False
 
 ------------------------------------------------------------
-graphClone :: UserId
+graphClone :: HasNodeError err
+           => UserId
            -> NodeId
            -> HyperdataGraphAPI
-           -> GargNoServer NodeId
+           -> DBCmd err NodeId
 graphClone uId pId (HyperdataGraphAPI { _hyperdataAPIGraph = graph
                                       , _hyperdataAPICamera = camera }) = do
   let nodeType = NodeGraph

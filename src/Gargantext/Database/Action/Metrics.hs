@@ -184,15 +184,13 @@ updateContextScore cId lId = do
 
 
 -- Used for scores in Doc Table
-getContextsNgramsScore :: --(FlowCmdM env err m)
-                          (HasNodeStory env err m)
+getContextsNgramsScore :: (HasNodeStory env err m)
                        => CorpusId -> ListId -> TabType -> ListType -> Maybe Limit
                        -> m (Map ContextId Int)
 getContextsNgramsScore cId lId tabType listType maybeLimit
  = Map.map Set.size <$> getContextsNgrams cId lId tabType listType maybeLimit
 
-getContextsNgrams :: --(FlowCmdM env err m)
-                     (HasNodeStory env err m)
+getContextsNgrams :: (HasNodeStory env err m)
                   => CorpusId -> ListId -> TabType -> ListType -> Maybe Limit
                   -> m (Map ContextId (Set NgramsTerm))
 getContextsNgrams cId lId tabType listType maybeLimit = do

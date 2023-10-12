@@ -8,7 +8,7 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.Types
 import Gargantext.API.Prelude
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (HasConnectionPool, HasConfig)
 
 withPolicy :: (HasConnectionPool env, HasConfig env)
            => AuthenticatedUser

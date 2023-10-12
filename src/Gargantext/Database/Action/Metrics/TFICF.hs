@@ -23,7 +23,7 @@ import Gargantext.Core
 import Gargantext.Core.Text.Metrics.TFICF
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, {-getOccByNgramsOnlyFast,-} getOccByNgramsOnlyFast_withSample)
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
-import Gargantext.Database.Prelude (Cmd)
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.NodeContext (selectCountDocs)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.API.Ngrams.Types
@@ -58,10 +58,10 @@ getTficf cId mId nt = do
 -}
 
 getTficf_withSample :: HasDBid NodeType
-         => UserCorpusId
-         -> MasterCorpusId
-         -> NgramsType
-         -> Cmd err (HashMap NgramsTerm Double)
+                    => UserCorpusId
+                    -> MasterCorpusId
+                    -> NgramsType
+                    -> DBCmd err (HashMap NgramsTerm Double)
 getTficf_withSample cId mId nt = do
   mapTextDoubleLocal <- HM.filter (> 1)
      <$> HM.map (fromIntegral . Set.size)

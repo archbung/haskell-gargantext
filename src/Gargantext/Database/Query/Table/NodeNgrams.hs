@@ -26,20 +26,20 @@ module Gargantext.Database.Query.Table.NodeNgrams
   )
   where
 
+import Data.List qualified as List
 import Data.List.Extra (nubOrd)
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Database.PostgreSQL.Simple qualified as PGS (Query, Only(..))
 import Gargantext.Core
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Schema.Ngrams (NgramsType, ngramsTypeId, fromNgramsTypeId)
 import Gargantext.Database.Schema.NodeNgrams
 import Gargantext.Database.Schema.Prelude (Select, FromRow, sql, fromRow, toField, field, Values(..), QualifiedIdentifier(..), selectTable)
 import Gargantext.Prelude
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Database.PostgreSQL.Simple as PGS (Query, Only(..))
 
 
 queryNodeNgramsTable :: Select NodeNgramsRead
@@ -62,11 +62,9 @@ getCgramsId mapId nt t = case Map.lookup nt mapId of
   Just mapId' -> Map.lookup t mapId'
 
 
--- insertDb :: ListId -> Map NgramsType [NgramsElement] -> Cmd err [Result]
 listInsertDb :: Show a => ListId
              -> (ListId -> a -> [NodeNgramsW])
              -> a
-             -- -> Cmd err [Returning]
              -> DBCmd err (Map NgramsType (Map Text Int))
 listInsertDb l f ngs = Map.map Map.fromList
                     <$> Map.fromListWith (<>)

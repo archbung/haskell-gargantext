@@ -23,7 +23,7 @@ module Gargantext.Database.Query.Table.NodeNodeNgrams
   where
 
 import Gargantext.Database.Admin.Types.Node (pgNodeId)
-import Gargantext.Database.Prelude (Cmd, mkCmd)
+import Gargantext.Database.Prelude (DBCmd, mkCmd)
 import Gargantext.Database.Schema.Ngrams (pgNgramsTypeId)
 import Gargantext.Database.Schema.NodeNodeNgrams
 import Gargantext.Database.Schema.Prelude
@@ -34,7 +34,7 @@ queryNodeNodeNgramsTable :: Query NodeNodeNgramsRead
 queryNodeNodeNgramsTable = selectTable nodeNodeNgramsTable
 
 -- | Insert utils
-insertNodeNodeNgrams :: [NodeNodeNgrams] -> Cmd err Int
+insertNodeNodeNgrams :: [NodeNodeNgrams] -> DBCmd err Int
 insertNodeNodeNgrams = insertNodeNodeNgramsW
                      . map (\(NodeNodeNgrams n1 n2 ng nt w) ->
                               NodeNodeNgrams (pgNodeId n1)
@@ -44,7 +44,7 @@ insertNodeNodeNgrams = insertNodeNodeNgramsW
                                              (sqlDouble w)
                                                   )
 
-insertNodeNodeNgramsW :: [NodeNodeNgramsWrite] -> Cmd err Int
+insertNodeNodeNgramsW :: [NodeNodeNgramsWrite] -> DBCmd err Int
 insertNodeNodeNgramsW nnnw =
   mkCmd $ \c -> fromIntegral <$> runInsert_ c insertNothing
     where

@@ -16,12 +16,18 @@ Portability : POSIX
 module Gargantext.API.Ngrams.List
   where
 
+import Data.ByteString.Lazy qualified as BSL
+import Data.Csv qualified as Csv
 import Data.Either (Either(..))
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict (Map, toList)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.Set qualified as Set
 import Data.Text (Text, concat, pack, splitOn)
 import Data.Vector (Vector)
+import Data.Vector qualified as Vec
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams (setListNgrams)
@@ -34,25 +40,18 @@ import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (reIndexWith)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
--- import Gargantext.Database.Action.Metrics.NgramsByContext (refreshNgramsMaterialized)
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Node (_node_parent_id)
 import Gargantext.Database.Types (Indexed(..))
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Gargantext.Utils.Servant qualified as GUS
+import Prelude qualified
+import Protolude qualified as P
 import Servant
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.Csv as Csv
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Map.Strict     as Map
-import qualified Data.Set            as Set
-import qualified Data.Vector         as Vec
-import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
-import qualified Gargantext.Utils.Servant as GUS
-import qualified Prelude
-import qualified Protolude           as P
 ------------------------------------------------------------------------
 type GETAPI = Summary "Get List"
             :> "lists"
@@ -120,10 +119,10 @@ getCsv lId = do
 ------------------------------------------------------------------------
 -- TODO : purge list
 -- TODO talk
-setList :: FlowCmdM env err m
-    => ListId
-    -> NgramsList
-    -> m Bool
+setList :: HasNodeStory env err m
+        => ListId
+        -> NgramsList
+        -> m Bool
 setList l m  = do
   -- TODO check with Version for optim
   -- printDebug "New list as file" l
@@ -197,7 +196,7 @@ parseCsvData lst = Map.fromList $ conv <$> lst
                                              }
          )
 
-csvPost :: FlowCmdM env err m
+csvPost :: HasNodeStory env err m
         => ListId
         -> Text
         -> m (Either Text ())
@@ -236,7 +235,7 @@ csvPostAsync lId =
 
 
 -- | This is for debugging the CSV parser in the REPL
-importCsvFile :: FlowCmdM env err m
+importCsvFile :: (HasNodeStory env err m)
               => ListId -> P.FilePath -> m (Either Text ())
 importCsvFile lId fp = do
   contents <- liftBase $ P.readFile fp

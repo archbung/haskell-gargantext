@@ -77,7 +77,7 @@ import Gargantext.Core (Lang(..), PosTagAlgo(..), NLPServerConfig)
 import Gargantext.Core (withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.Flow.Types
-import Gargantext.Core.NLP (nlpServerGet)
+import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
 import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text
 import Gargantext.Core.Text.Corpus.API qualified as API
@@ -88,7 +88,7 @@ import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatternsWith, termsInText)
-import Gargantext.Core.Types (POS(NP), TermsCount)
+import Gargantext.Core.Types (HasInvalidError, POS(NP), TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main
 import Gargantext.Core.Types.Query (Limit)
@@ -103,7 +103,7 @@ import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DbCmd', DBCmd)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node
@@ -127,7 +127,7 @@ import PUBMED.Types qualified as PUBMED
 ------------------------------------------------------------------------
 -- Imports for upgrade function
 import Gargantext.Database.Query.Tree.Root (getRootId)
-import Gargantext.Database.Query.Tree (findNodesId)
+import Gargantext.Database.Query.Tree (findNodesId, HasTreeError)
 
 ------------------------------------------------------------------------
 -- TODO use internal with API name (could be old data)
@@ -157,13 +157,13 @@ printDataText (DataNew (maybeInt, conduitData)) = do
   putText $ show (maybeInt, res)
 
 -- TODO use the split parameter in config file
-getDataText :: FlowCmdM env err m
+getDataText :: (HasNodeError err)
             => DataOrigin
             -> TermType Lang
             -> API.RawQuery
             -> Maybe PUBMED.APIKey
             -> Maybe API.Limit
-            -> m (Either API.GetCorpusError DataText)
+            -> DBCmd err (Either API.GetCorpusError DataText)
 getDataText (ExternalOrigin api) la q mPubmedAPIKey li = do
   eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey li
   pure $ DataNew <$> eRes
@@ -175,12 +175,12 @@ getDataText (InternalOrigin _) _la q _ _li = do
   ids <-  map fst <$> searchDocInDatabase cId (stemIt $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
-getDataText_Debug :: FlowCmdM env err m
-            => DataOrigin
-            -> TermType Lang
-            -> API.RawQuery
-            -> Maybe API.Limit
-            -> m ()
+getDataText_Debug :: (HasNodeError err)
+                  => DataOrigin
+                  -> TermType Lang
+                  -> API.RawQuery
+                  -> Maybe API.Limit
+                  -> DBCmd err ()
 getDataText_Debug a l q li = do
   result <- getDataText a l q Nothing li
   case result of
@@ -190,7 +190,12 @@ getDataText_Debug a l q li = do
 
 -------------------------------------------------------------------------------
 flowDataText :: forall env err m.
-                ( FlowCmdM env err m
+                ( DbCmd' env err m
+                , HasNodeStory env err m
+                , MonadLogger m
+                , HasNLPServer env
+                , HasTreeError err
+                , HasInvalidError err
                 , MonadJobStatus m
                 )
                 => User
@@ -214,7 +219,13 @@ flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle = do
 
 ------------------------------------------------------------------------
 -- TODO use proxy
-flowAnnuaire :: (FlowCmdM env err m, MonadJobStatus m)
+flowAnnuaire :: ( DbCmd' env err m
+                , HasNodeStory env err m
+                , MonadLogger m
+                , HasNLPServer env
+                , HasTreeError err
+                , HasInvalidError err
+                , MonadJobStatus m )
              => User
              -> Either CorpusName [CorpusId]
              -> (TermType Lang)
@@ -227,7 +238,13 @@ flowAnnuaire u n l filePath jobHandle = do
   flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (fromIntegral $ length docs, yieldMany docs) jobHandle
 
 ------------------------------------------------------------------------
-flowCorpusFile :: (FlowCmdM env err m, MonadJobStatus m)
+flowCorpusFile :: ( DbCmd' env err m
+                  , HasNodeStory env err m
+                  , MonadLogger m
+                  , HasNLPServer env
+                  , HasTreeError err
+                  , HasInvalidError err
+                  , MonadJobStatus m )
            => User
            -> Either CorpusName [CorpusId]
            -> Limit -- Limit the number of docs (for dev purpose)
@@ -250,7 +267,14 @@ flowCorpusFile u n _l la ft ff fp mfslw jobHandle = do
 ------------------------------------------------------------------------
 -- | TODO improve the needed type to create/update a corpus
 -- (For now, Either is enough)
-flowCorpus :: (FlowCmdM env err m, FlowCorpus a, MonadJobStatus m)
+flowCorpus :: ( DbCmd' env err m
+              , HasNodeStory env err m
+              , MonadLogger m
+              , HasNLPServer env
+              , HasTreeError err
+              , HasInvalidError err
+              , FlowCorpus a
+              , MonadJobStatus m )
            => User
            -> Either CorpusName [CorpusId]
            -> TermType Lang
@@ -262,7 +286,12 @@ flowCorpus = flow (Nothing :: Maybe HyperdataCorpus)
 
 
 flow :: forall env err m a c.
-        ( FlowCmdM env err m
+        ( DbCmd' env err m
+        , HasNodeStory env err m
+        , MonadLogger m
+        , HasNLPServer env
+        , HasTreeError err
+        , HasInvalidError err
         , FlowCorpus a
         , MkCorpus c
         , MonadJobStatus m
@@ -338,7 +367,11 @@ createNodes user corpusName ctype = do
   pure (userId, userCorpusId, listId)
 
 
-flowCorpusUser :: ( FlowCmdM env err m
+flowCorpusUser :: ( HasNodeError err
+                  , HasInvalidError err
+                  , HasNLPServer env
+                  , HasTreeError err
+                  , HasNodeStory env err m
                   , MkCorpus c
                   )
                => Lang
@@ -589,7 +622,8 @@ instance HasText a => HasText (Node a)
 -- | TODO putelsewhere
 -- | Upgrade function
 -- Suppose all documents are English (this is the case actually)
-indexAllDocumentsWithPosTag :: FlowCmdM env err m
+indexAllDocumentsWithPosTag :: ( HasNodeStory env err m
+                               , HasNLPServer env )
                             => m ()
 indexAllDocumentsWithPosTag = do
   rootId    <- getRootId (UserName userMaster)
@@ -598,7 +632,8 @@ indexAllDocumentsWithPosTag = do
   _ <- mapM extractInsert (splitEvery 1000 docs)
   pure ()
 
-extractInsert :: FlowCmdM env err m
+extractInsert :: ( HasNodeStory env err m
+                 , HasNLPServer env )
               => [Node HyperdataDocument] -> m ()
 extractInsert docs = do
   let documentsWithId = map (\doc -> Indexed (doc ^. node_id) doc) docs

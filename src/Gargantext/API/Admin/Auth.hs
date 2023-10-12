@@ -58,7 +58,7 @@ import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Node (NodeId(..))
-import Gargantext.Database.Prelude (Cmd', CmdM, CmdCommon)
+import Gargantext.Database.Prelude (Cmd', CmdCommon, DbCmd')
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree (isDescendantOf, isIn)
 import Gargantext.Database.Query.Tree.Root (getRoot)
@@ -79,7 +79,8 @@ import Gargantext.API.Auth.PolicyCheck
 
 -- | Main functions of authorization
 
-makeTokenForUser :: (HasSettings env, HasJoseError err)
+makeTokenForUser :: ( HasSettings env
+                    , HasJoseError err )
                  => NodeId -> Cmd' env err Token
 makeTokenForUser uid = do
   jwtS <- view $ settings . jwtSettings
@@ -88,10 +89,10 @@ makeTokenForUser uid = do
   either joseError (pure . toStrict . LE.decodeUtf8) e
   -- TODO not sure about the encoding...
 
-checkAuthRequest :: ( HasSettings env, CmdCommon env, HasJoseError err)
+checkAuthRequest :: ( HasSettings env, HasJoseError err, DbCmd' env err m )
                  => Username
                  -> GargPassword
-                 -> Cmd' env err CheckAuth
+                 -> m CheckAuth
 checkAuthRequest couldBeEmail (GargPassword p) = do
   -- Sometimes user put email instead of username
   -- hence we have to check before
@@ -113,8 +114,8 @@ checkAuthRequest couldBeEmail (GargPassword p) = do
               token <- makeTokenForUser uid
               pure $ Valid token uid userLight_id
 
-auth :: (HasSettings env, CmdCommon env, HasJoseError err)
-     => AuthRequest -> Cmd' env err AuthResponse
+auth :: (HasSettings env, HasJoseError err, DbCmd' env err m)
+     => AuthRequest -> m AuthResponse
 auth (AuthRequest u p) = do
   checkAuthRequest' <- checkAuthRequest u p
   case checkAuthRequest' of
@@ -135,7 +136,7 @@ authCheck _env (BasicAuthData login password) = pure $
   maybe Indefinite Authenticated $ TODO
 -}
 
-withAccessM :: (CmdM env err m, HasServerError err)
+withAccessM :: ( DbCmd' env err m )
             => AuthenticatedUser
             -> PathId
             -> m a
@@ -143,7 +144,6 @@ withAccessM :: (CmdM env err m, HasServerError err)
 withAccessM (AuthenticatedUser uId) (PathNode id) m = do
   d <- id `isDescendantOf` uId
   if d then m else m -- serverError err401
-
 withAccessM (AuthenticatedUser uId) (PathNodeNode cId docId) m = do
   _a <- isIn cId docId -- TODO use one query for all ?
   _d <- cId `isDescendantOf` uId

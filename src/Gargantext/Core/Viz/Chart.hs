@@ -25,7 +25,7 @@ import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
 import Gargantext.Core.Types.Main
 import Gargantext.Database.Admin.Config
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.NodeContext (selectDocsDates)

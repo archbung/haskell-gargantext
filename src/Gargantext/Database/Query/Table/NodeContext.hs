@@ -46,25 +46,23 @@ module Gargantext.Database.Query.Table.NodeContext
 import Control.Arrow (returnA)
 import Control.Lens (view, (^.))
 import Data.Maybe (catMaybes)
-import Data.Time (UTCTime)
 import Data.Text (Text, splitOn)
+import Data.Time (UTCTime)
+import Database.PostgreSQL.Simple qualified as PGS (In(..), Query, Only(..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import Opaleye
-import qualified Database.PostgreSQL.Simple as PGS (In(..), Query, Only(..))
-import qualified Opaleye as O
-
 import Gargantext.Core
 import Gargantext.Core.Types
--- import Gargantext.Core.Types.Search (HyperdataRow(..), toHyperdataRow)
 import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Prelude (DBCmd, execPGSQuery, mkCmd, restrictMaybe, runCountOpaQuery, runPGSQuery, runOpaQuery)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError, NodeError(DoesNotExist), nodeError)
-import Gargantext.Database.Prelude
-import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.NodeContext
 import Gargantext.Prelude
+import Gargantext.Prelude.Crypto.Hash (Hash)
+import Opaleye
+import Opaleye qualified as O
 
 queryNodeContextTable :: Select NodeContextRead
 queryNodeContextTable = selectTable nodeContextTable

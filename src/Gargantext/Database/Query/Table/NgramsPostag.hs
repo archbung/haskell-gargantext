@@ -24,7 +24,7 @@ import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Gargantext.Core
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, runPGSQuery_, DBCmd)
+import Gargantext.Database.Prelude (runPGSQuery, runPGSQuery_, DBCmd)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Database.Query.Table.Ngrams
@@ -155,7 +155,7 @@ SELECT terms,id FROM ins_form_ret
 
 -- TODO add lang and postag algo
 -- TODO remove when form == lem in insert
-selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> Cmd err [(Form, Lem)]
+selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> DBCmd err [(Form, Lem)]
 selectLems l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems (PGS.Only $ Values fields datas)
   where
     fields = map (\t -> QualifiedIdentifier Nothing t) ["int4","int4","text", "int4"]
@@ -180,7 +180,7 @@ querySelectLems = [sql|
   |]
 
 -- | Insert Table
-createTable_NgramsPostag :: Cmd err [Int]
+createTable_NgramsPostag :: DBCmd err [Int]
 createTable_NgramsPostag = map (\(PGS.Only a) -> a)
                         <$> runPGSQuery_ queryCreateTable
   where

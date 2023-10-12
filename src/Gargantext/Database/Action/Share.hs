@@ -25,17 +25,17 @@ import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Config (hasNodeType, isInNodeTypes)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataAny(..))
 import Gargantext.Database.Admin.Types.Node
--- import Gargantext.Database.Query.Join (leftJoin3')
 import Gargantext.Database.Query.Table.Node (getNode, getNodesWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError, errorWith)
 import Gargantext.Database.Query.Table.NodeNode (deleteNodeNode, queryNodeNodeTable)
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree.Root (getRootId)
+import Gargantext.Database.Prelude (Cmd, runOpaQuery)
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Utils.Tuple (uncurryMaybe)
 import Opaleye hiding (not)
-import qualified Opaleye as O
+import Opaleye qualified as O
 
 -- | TODO move in PhyloConfig of Gargantext
 publicNodeTypes :: [NodeType]

@@ -30,7 +30,7 @@ import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (hash)
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, HasConfig(..))
 import Control.Lens (view)
 import Gargantext.Prelude.Config (GargConfig(..))
 

@@ -28,7 +28,7 @@ import Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import GHC.Generics (Generic)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude (Cmd, runPGSQuery, formatPGSQuery, DBCmd)
+import Gargantext.Database.Prelude (runPGSQuery, formatPGSQuery, DBCmd)
 import Gargantext.Prelude
 
 ---------------------------------------------------------------------------
@@ -41,12 +41,12 @@ add pId ns = runPGSQuery queryAdd (Only $ Values fields inputData)
 
 -- | Adds a single document. Useful for debugging purposes, but
 -- not as efficient as adding documents in bulk via 'add'.
-add_one :: CorpusId -> ContextId -> Cmd err [Only Int]
+add_one :: CorpusId -> ContextId -> DBCmd err [Only Int]
 add_one pId ctxId = runPGSQuery queryAdd (Only $ Values fields [InputData pId ctxId])
   where
     fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes
 
-add_debug :: CorpusId -> [ContextId] -> Cmd err ByteString
+add_debug :: CorpusId -> [ContextId] -> DBCmd err ByteString
 add_debug pId ns = formatPGSQuery queryAdd (Only $ Values fields inputData)
   where
     fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes

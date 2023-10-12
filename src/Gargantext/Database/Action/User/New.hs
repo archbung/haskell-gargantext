@@ -29,7 +29,7 @@ import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.Flow (getOrMkRoot)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (Cmd, DBCmd, CmdM)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..), nodeError, NodeError(..))
 import Gargantext.Database.Query.Table.User
 import Gargantext.Prelude
@@ -135,12 +135,12 @@ _updateUsersPassword us = do
   pure 1
 
 ------------------------------------------------------------------------
-_rmUser :: HasNodeError err => User -> Cmd err Int64
+_rmUser :: HasNodeError err => User -> DBCmd err Int64
 _rmUser (UserName un) = deleteUsers [un]
 _rmUser _ = nodeError NotImplYet
 
 ------------------------------------------------------------------------
 -- TODO
-_rmUsers :: HasNodeError err => [User] -> Cmd err Int64
+_rmUsers :: HasNodeError err => [User] -> DBCmd err Int64
 _rmUsers [] = pure 0
 _rmUsers _  = undefined

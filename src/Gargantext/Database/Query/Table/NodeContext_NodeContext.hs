@@ -20,12 +20,12 @@ module Gargantext.Database.Query.Table.NodeContext_NodeContext
   where
 
 import Data.Text (Text)
+import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core.Types
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Schema.NodeContext_NodeContext
 import Gargantext.Database.Schema.Prelude hiding (sum)
 import Gargantext.Prelude
-import qualified Database.PostgreSQL.Simple as PGS
 
 {-
 queryNodeContext_NodeContextTable :: Select NodeContext_NodeContextRead

@@ -14,22 +14,22 @@ module Gargantext.API.Dev where
 
 import Control.Exception (finally)
 import Control.Monad (fail)
-import Control.Monad.Reader (runReaderT)
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Settings
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Core.NodeStory
-import Gargantext.Database.Prelude
+import Gargantext.Database.Prelude (Cmd', Cmd'', databaseParameters, runCmd)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (readConfig)
-import qualified Gargantext.Prelude.Mail as Mail
-import qualified Gargantext.Prelude.NLP as NLP
+import Gargantext.Prelude.Mail qualified as Mail
+import Gargantext.Prelude.NLP qualified as NLP
+import Gargantext.System.Logging
 import Servant
 import System.IO (FilePath)
-import Gargantext.System.Logging
 
 type IniPath  = FilePath
 -------------------------------------------------------------------

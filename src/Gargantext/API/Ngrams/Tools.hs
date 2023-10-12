@@ -25,7 +25,7 @@ import Data.Validity
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types (ListType(..), NodeId, NodeType(..), ListId)
-import Gargantext.Database.Prelude (CmdM, HasConnectionPool(..))
+import Gargantext.Database.Prelude (HasConnectionPool(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 import qualified Data.HashMap.Strict as HM
@@ -229,7 +229,7 @@ getCoocByNgrams'' (Diagonal diag) (f1,f2) (m1,m2) =
 ------------------------------------------
 
 
-migrateFromDirToDb :: (CmdM env err m) -- , HasNodeStory env err m)
+migrateFromDirToDb :: (HasNodeStory env err m) -- , HasNodeStory env err m)
                    => m ()
 migrateFromDirToDb = do
   pool <- view connPool

@@ -17,14 +17,14 @@ import Gargantext.Core
 import Gargantext.Core.Types (Name)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), defaultHyperdataUser)
 import Gargantext.Database.Admin.Types.Node (Node, NodeId(..), UserId, NodeType(..), pgNodeId)
-import Gargantext.Database.Prelude -- (fromField', Cmd)
+import Gargantext.Database.Prelude (DBCmd, runOpaQuery)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Schema.Node -- (Node(..))
 import Gargantext.Prelude
 import Opaleye (limit)
 
 
-getNodeUser :: NodeId -> Cmd err (Node HyperdataUser)
+getNodeUser :: NodeId -> DBCmd err (Node HyperdataUser)
 getNodeUser nId = do
     fromMaybe (panic $ "Node does not exist: " <> (cs $ show nId)) . headMay
              <$> runOpaQuery (limit 1 $ selectNode (pgNodeId nId))

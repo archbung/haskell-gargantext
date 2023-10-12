@@ -89,47 +89,46 @@ module Gargantext.API.Ngrams
 import Control.Concurrent
 import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, ifolded, to, withIndex, over)
 import Control.Monad.Reader
+import Data.Aeson.Text qualified as DAT
 import Data.Foldable
+import Data.List qualified as List
 import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PM
 import Data.Maybe (fromMaybe)
 import Data.Monoid
 import Data.Ord (Down(..))
 import Data.Patch.Class (Action(act), Transformable(..), ours)
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text, isInfixOf, toLower, unpack)
 import Data.Text.Lazy.IO as DTL
 import Formatting (hprint, int, (%))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Metrics qualified as Metrics
+import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasInvalidError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
-import Gargantext.API.Ngrams.Tools
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Node (NodeType(..))
-import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Ngrams hiding (NgramsType(..), ngramsType, ngrams_terms)
+import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
 import Gargantext.Prelude hiding (log)
 import Gargantext.Prelude.Clock (hasTime, getTime)
+import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (error)
 import Servant hiding (Patch)
-import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import System.IO (stderr)
-import qualified Data.Aeson.Text as DAT
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Map.Strict.Patch as PM
-import qualified Data.Set as Set
-import qualified Gargantext.API.Metrics as Metrics
-import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
 
 {-
 -- TODO sequences of modifications (Patchs)
@@ -179,7 +178,7 @@ mkChildrenGroups addOrRem nt patches =
 ------------------------------------------------------------------------
 
 saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStorySaver env )
-         => m ()
+              => m ()
 saveNodeStory = do
   saver <- view hasNodeStorySaver
   liftBase $ do
@@ -189,7 +188,7 @@ saveNodeStory = do
 
 
 saveNodeStoryImmediate :: ( MonadReader env m, MonadBase IO m, HasNodeStoryImmediateSaver env )
-         => m ()
+                       => m ()
 saveNodeStoryImmediate = do
   saver <- view hasNodeStoryImmediateSaver
   liftBase $ do
@@ -201,10 +200,9 @@ listTypeConflictResolution :: ListType -> ListType -> ListType
 listTypeConflictResolution _ _ = undefined -- TODO Use Map User ListType
 
 
-ngramsStatePatchConflictResolution
-  :: TableNgrams.NgramsType
-  -> NgramsTerm
-  -> ConflictResolutionNgramsPatch
+ngramsStatePatchConflictResolution :: TableNgrams.NgramsType
+                                   -> NgramsTerm
+                                   -> ConflictResolutionNgramsPatch
 ngramsStatePatchConflictResolution _ngramsType _ngramsTerm
    = (ours, (const ours, ours), (False, False))
                              -- (False, False) mean here that Mod has always priority.
@@ -256,7 +254,7 @@ addListNgrams listId ngramsType nes = do
 -- && should use patch
 -- UNSAFE
 
-setListNgrams ::  HasNodeStory env err m
+setListNgrams :: HasNodeStory env err m
               => NodeId
               -> TableNgrams.NgramsType
               -> Map NgramsTerm NgramsRepoElement
@@ -290,8 +288,7 @@ newNgramsFromNgramsStatePatch p =
 
 commitStatePatch :: ( HasNodeStory env err m
                     , HasNodeStoryImmediateSaver env
-                    , HasNodeArchiveStoryImmediateSaver env
-                    , CmdCommon env )
+                    , HasNodeArchiveStoryImmediateSaver env )
                  => ListId
                  ->    Versioned NgramsStatePatch'
                  -> m (Versioned NgramsStatePatch')
@@ -390,7 +387,6 @@ tableNgramsPut :: ( HasNodeStory    env err m
                   , HasNodeStoryImmediateSaver env
                   , HasNodeArchiveStoryImmediateSaver env
                   , HasInvalidError     err
-                  , CmdCommon     env
                   )
                  => TabType
                  -> ListId
@@ -418,8 +414,7 @@ tableNgramsPut tabType listId (Versioned p_version p_table)
 
 tableNgramsPostChartsAsync :: ( HasNodeStory env err m
                               , HasSettings env
-                              , MonadJobStatus m
-                              )
+                              , MonadJobStatus m )
                             => UpdateTableNgramsCharts
                             -> JobHandle m
                             -> m ()
@@ -608,7 +603,8 @@ searchTableNgrams versionedTableMap NgramsSearchQuery{..} =
 
 
 getTableNgrams :: forall env err m.
-                  (HasNodeStory env err m, HasNodeError err, CmdCommon env)
+                  ( HasNodeStory env err m
+                  , HasNodeError err )
                => NodeId
                -> ListId
                -> TabType
@@ -623,8 +619,7 @@ getTableNgrams nodeId listId tabType searchQuery = do
 -- | Helper function to get the ngrams table with scores.
 getNgramsTable' :: forall env err m.
                    ( HasNodeStory env err m
-                   , HasNodeError err
-                   , CmdCommon env)
+                   , HasNodeError err )
                 => NodeId
                 -> ListId
                 -> TableNgrams.NgramsType
@@ -638,8 +633,7 @@ getNgramsTable' nId listId ngramsType = do
 setNgramsTableScores :: forall env err m t.
                         ( Each t t NgramsElement NgramsElement
                         , HasNodeStory env err m
-                        , HasNodeError err
-                        , CmdCommon env )
+                        , HasNodeError err )
                      => NodeId
                      -> ListId
                      -> TableNgrams.NgramsType
@@ -667,8 +661,8 @@ setNgramsTableScores nId listId ngramsType table = do
 
 
 scoresRecomputeTableNgrams :: forall env err m.
-  (HasNodeStory env err m, HasNodeError err, CmdCommon env)
-  => NodeId -> TabType -> ListId -> m Int
+                              ( HasNodeStory env err m, HasNodeError err )
+                           => NodeId -> TabType -> ListId -> m Int
 scoresRecomputeTableNgrams nId tabType listId = do
   tableMap <- getNgramsTableMap listId ngramsType
   _ <- tableMap & v_data %%~ (setNgramsTableScores nId listId ngramsType)
@@ -728,17 +722,18 @@ type TableNgramsAsyncApi = Summary "Table Ngrams Async API"
                            :> "update"
                            :> AsyncJobs JobLog '[JSON] UpdateTableNgramsCharts JobLog
 
-getTableNgramsCorpus :: (HasNodeStory env err m, HasNodeError err, CmdCommon env)
-               => NodeId
-               -> TabType
-               -> ListId
-               -> Limit
-               -> Maybe Offset
-               -> Maybe ListType
-               -> Maybe MinSize -> Maybe MaxSize
-               -> Maybe OrderBy
-               -> Maybe Text -- full text search
-               -> m (VersionedWithCount NgramsTable)
+getTableNgramsCorpus :: ( HasNodeStory env err m
+                        , HasNodeError err )
+                     => NodeId
+                     -> TabType
+                     -> ListId
+                     -> Limit
+                     -> Maybe Offset
+                     -> Maybe ListType
+                     -> Maybe MinSize -> Maybe MaxSize
+                     -> Maybe OrderBy
+                     -> Maybe Text -- full text search
+                     -> m (VersionedWithCount NgramsTable)
 getTableNgramsCorpus nId tabType listId limit_ offset listType minSize maxSize orderBy mt =
   getTableNgrams nId listId tabType searchQuery
     where
@@ -756,11 +751,12 @@ getTableNgramsCorpus nId tabType listId limit_ offset listType minSize maxSize o
 
 
 
-getTableNgramsVersion :: (HasNodeStory env err m, HasNodeError err, CmdCommon env)
-               => NodeId
-               -> TabType
-               -> ListId
-               -> m Version
+getTableNgramsVersion :: ( HasNodeStory env err m
+                         , HasNodeError err )
+                      => NodeId
+                      -> TabType
+                      -> ListId
+                      -> m Version
 getTableNgramsVersion _nId _tabType listId = currentVersion listId
 
 
@@ -772,14 +768,15 @@ getTableNgramsVersion _nId _tabType listId = currentVersion listId
 
 
 -- | Text search is deactivated for now for ngrams by doc only
-getTableNgramsDoc :: ( HasNodeStory env err m, HasNodeError err, CmdCommon env)
-               => DocId -> TabType
-               -> ListId -> Limit -> Maybe Offset
-               -> Maybe ListType
-               -> Maybe MinSize -> Maybe MaxSize
-               -> Maybe OrderBy
-               -> Maybe Text -- full text search
-               -> m (VersionedWithCount NgramsTable)
+getTableNgramsDoc :: ( HasNodeStory env err m
+                     , HasNodeError err )
+                  => DocId -> TabType
+                  -> ListId -> Limit -> Maybe Offset
+                  -> Maybe ListType
+                  -> Maybe MinSize -> Maybe MaxSize
+                  -> Maybe OrderBy
+                  -> Maybe Text -- full text search
+                  -> m (VersionedWithCount NgramsTable)
 getTableNgramsDoc dId tabType listId limit_ offset listType minSize maxSize orderBy _mt = do
   ns <- selectNodesWithUsername NodeList userMaster
   let ngramsType = ngramsTypeFromTabType tabType

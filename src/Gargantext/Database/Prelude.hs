@@ -144,17 +144,15 @@ runCountOpaQuery q = do
   -- countRows is guaranteed to return a list with exactly one row so DL.head is safe here
   pure $ fromInt64ToInt $ DL.head counts
 
-formatPGSQuery :: PGS.ToRow a => PGS.Query -> a -> Cmd err DB.ByteString
+formatPGSQuery :: PGS.ToRow a => PGS.Query -> a -> DBCmd err DB.ByteString
 formatPGSQuery q a = mkCmd $ \conn -> PGS.formatQuery conn q a
 
 -- TODO use runPGSQueryDebug everywhere
-runPGSQuery' :: (PGS.ToRow a, PGS.FromRow b) => PGS.Query -> a -> Cmd err [b]
+runPGSQuery' :: (PGS.ToRow a, PGS.FromRow b) => PGS.Query -> a -> DBCmd err [b]
 runPGSQuery' q a = mkCmd $ \conn -> PGS.query conn q a
 
-runPGSQuery :: ( DbCmd' env err m
-               , PGS.FromRow r, PGS.ToRow q
-               )
-               => PGS.Query -> q -> m [r]
+runPGSQuery :: ( PGS.FromRow r, PGS.ToRow q )
+            => PGS.Query -> q -> DBCmd err [r]
 runPGSQuery q a = mkCmd $ \conn -> catch (PGS.query conn q a) (printError conn)
   where
     printError c (SomeException e) = do
@@ -179,10 +177,8 @@ runPGSQueryFold q initialState consume = mkCmd $ \conn -> catch (PGS.fold_ conn 
 
 
 -- | TODO catch error
-runPGSQuery_ :: ( CmdM env err m
-               , PGS.FromRow r
-               )
-               => PGS.Query -> m [r]
+runPGSQuery_ :: ( PGS.FromRow r )
+             => PGS.Query -> DBCmd err [r]
 runPGSQuery_ q = mkCmd $ \conn -> catch (PGS.query_ conn q) printError
   where
     printError (SomeException e) = do
@@ -227,7 +223,7 @@ fromField' field mb = do
 printSqlOpa :: Default Unpackspec a a => Select a -> IO ()
 printSqlOpa = putStrLn . maybe "Empty query" identity . showSql
 
-dbCheck :: CmdM env err m => m Bool
+dbCheck :: DBCmd err Bool
 dbCheck = do
   r :: [PGS.Only Text] <- runPGSQuery_ "select username from public.auth_user"
   case r of
