@@ -14,11 +14,10 @@ Portability : POSIX
 module Gargantext.Database.Action.Metrics.TFICF
   where
 
--- import Debug.Trace (trace)
--- import Gargantext.Core (Lang(..))
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import Data.Maybe (fromMaybe)
+import Data.HashMap.Strict qualified as HM
+import Data.Set qualified as Set
+import Gargantext.API.Ngrams.Types
 import Gargantext.Core
 import Gargantext.Core.Text.Metrics.TFICF
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, {-getOccByNgramsOnlyFast,-} getOccByNgramsOnlyFast_withSample)
@@ -26,9 +25,7 @@ import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.NodeContext (selectCountDocs)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.API.Ngrams.Types
 import Gargantext.Prelude
-import qualified Data.Set as Set
 
 {-
 getTficf :: HasDBid NodeType 

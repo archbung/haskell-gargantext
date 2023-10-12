@@ -17,12 +17,11 @@ import Data.Either
 import Data.LanguageCodes qualified as ISO639
 import Data.Map.Strict qualified as Map
 import Data.Maybe
-import Data.Text (Text, pack, intercalate)
--- import Gargantext.Core (Lang(..), toISO639Lang)
+import Data.Text (pack, intercalate)
 import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Defaults qualified as Defaults
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (intercalate)
 import HAL qualified as HAL
 import HAL.Client qualified as HAL
 import HAL.Doc.Corpus qualified as HAL
@@ -58,14 +57,14 @@ toDoc' la (HAL.Corpus { .. }) = do
                          , _hd_page = Nothing
                          , _hd_title = Just $ intercalate " " _corpus_title
                          , _hd_authors = Just $ foldl (\x y -> x <> ", " <> y) "" _corpus_authors_names
-                         , _hd_institutes = Just $ foldl (\x y -> x <> ", " <> y) "" $ _corpus_authors_affiliations <> map (cs . show) _corpus_struct_id
+                         , _hd_institutes = Just $ foldl (\x y -> x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
                          , _hd_source = Just $ maybe "Nothing" identity _corpus_source
                          , _hd_abstract = Just abstract
-                         , _hd_publication_date = fmap (pack . show) utctime
+                         , _hd_publication_date = fmap show utctime
                          , _hd_publication_year = pub_year
                          , _hd_publication_month = pub_month
                          , _hd_publication_day = pub_day
                          , _hd_publication_hour = Nothing
                          , _hd_publication_minute = Nothing
                          , _hd_publication_second = Nothing
-                         , _hd_language_iso2 = Just $ (pack . show) la }
+                         , _hd_language_iso2 = Just $ show la }

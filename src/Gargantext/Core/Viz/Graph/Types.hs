@@ -15,13 +15,13 @@ module Gargantext.Core.Viz.Graph.Types
   where
 
 import Control.Lens (makeLenses)
-import Database.PostgreSQL.Simple.FromField (FromField(..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
 import Data.HashSet (HashSet)
-import qualified Data.HashSet as HashSet
+import Data.HashSet qualified as HashSet
 import Data.Swagger (ToSchema(..), genericDeclareNamedSchema)
-import Data.Text (Text, pack)
+import Data.Text (pack)
+import Database.PostgreSQL.Simple.FromField (FromField(..))
 import Gargantext.API.Ngrams.Types (NgramsTerm)
 import Gargantext.Core.Methods.Similarities (GraphMetric)
 import Gargantext.Core.Types (ListId)
@@ -31,7 +31,6 @@ import Gargantext.Database.Admin.Types.Node (NodeId)
 import Gargantext.Database.Prelude (fromField')
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
-import GHC.Generics (Generic)
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)

@@ -12,10 +12,9 @@ Portability : POSIX
 module Gargantext.Core.Mail where
 
 import Control.Lens (view)
-import Control.Monad.Reader (MonadReader)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.List qualified as List
-import Data.Text (Text, unlines, splitOn)
+import Data.Text (splitOn)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Database.Schema.User (UserLight(..))

@@ -10,19 +10,16 @@ Portability : POSIX
 
 module Gargantext.API.GraphQL.Utils where
 
-import Data.Morpheus.Types (GQLTypeOptions, fieldLabelModifier)
-import qualified Data.Text as T
-import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
-import Gargantext.Prelude
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
-import Gargantext.API.Admin.Types (jwtSettings, HasSettings (settings))
-import Servant.Auth.Server (verifyJWT, JWTSettings)
 import Control.Lens.Getter (view)
-import Gargantext.Database.Prelude (Cmd')
+import Data.Morpheus.Types (GQLTypeOptions, fieldLabelModifier)
+import Data.Text qualified as T
 import Gargantext.API.Admin.Auth.Types (AuthenticatedUser (AuthenticatedUser, _authUser_id))
-import Data.ByteString (ByteString)
+import Gargantext.API.Admin.Types (jwtSettings, HasSettings (settings))
+import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Admin.Types.Node (NodeId)
+import Gargantext.Database.Prelude (Cmd')
+import Gargantext.Prelude
+import Servant.Auth.Server (verifyJWT, JWTSettings)
 
 unPrefix :: T.Text -> GQLTypeOptions -> GQLTypeOptions
 unPrefix prefix options = options { fieldLabelModifier = nflm }

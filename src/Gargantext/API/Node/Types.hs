@@ -1,26 +1,31 @@
+{-|
+Module      : Gargantext.API.Node.Types
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# LANGUAGE TemplateHaskell    #-}
 
 module Gargantext.API.Node.Types where
 
 import Control.Lens hiding (elements, Empty)
 import Data.Aeson
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base64 as BSB64
-import Data.Either
+import Data.ByteString qualified as BS
+import Data.ByteString.Base64 qualified as BSB64
 import Data.Swagger
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import GHC.Generics (Generic)
+import Data.Text qualified as T
+import Gargantext.API.Node.Corpus.New.Types (FileType, FileFormat)
+import Gargantext.Core (Lang(..))
+import Gargantext.Core.Text.List.Social (FlowSocialListWith)
+import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
+import Gargantext.Database.GargDB qualified as GargDB
+import Gargantext.Prelude
 import Servant.Job.Utils (jsonOptions)
 import Web.FormUrlEncoded          (FromForm, ToForm)
-
-import Gargantext.Core (Lang(..))
-import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
-import Gargantext.Prelude
-import qualified Gargantext.Database.GargDB as GargDB
-import Gargantext.API.Node.Corpus.New.Types (FileType, FileFormat)
-import Gargantext.Core.Text.List.Social (FlowSocialListWith)
 
 -------------------------------------------------------
 data NewWithForm = NewWithForm
@@ -64,7 +69,7 @@ instance ToSchema NewWithFile where
 
 instance GargDB.SaveFile NewWithFile where
   saveFile' fp (NewWithFile b64d _ _) = do
-    let eDecoded = BSB64.decode $ TE.encodeUtf8 b64d
+    let eDecoded = BSB64.decode $ encodeUtf8 b64d
     case eDecoded of
       Left err -> panic $ T.pack $ "Error decoding: " <> err
       Right decoded -> BS.writeFile fp decoded

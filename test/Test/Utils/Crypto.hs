@@ -11,10 +11,9 @@ Portability : POSIX
 
 module Test.Utils.Crypto where
 
-import Data.Text (Text)
 import Test.Hspec
 
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Crypto.Hash
 
 -- | Crypto Hash tests

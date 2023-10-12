@@ -22,26 +22,23 @@ module Gargantext.Database.Schema.Ngrams
 
 import Codec.Serialise (Serialise())
 import Control.Lens (over)
-import Control.Monad (mzero)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
+import Data.ByteString.Char8 qualified as B
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
+import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict (fromList, lookup)
-import Data.Maybe (fromMaybe)
-import Data.Text (Text, splitOn, pack, strip)
+import Data.Text (splitOn, pack, strip)
+import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.FromField (returnError, ResultError(..))
 import Gargantext.Core (HasDBid(..))
 import Gargantext.Core.Types (TODO(..), Typed(..))
 import Gargantext.Database.Schema.Prelude hiding (over)
 import Gargantext.Database.Types
 import Gargantext.Prelude
-import Servant (FromHttpApiData(..), Proxy(..), ToHttpApiData(..))
+import Servant (FromHttpApiData(..), ToHttpApiData(..))
 import Test.QuickCheck (elements)
 import Text.Read (read)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.HashMap.Strict as HashMap
-import qualified Database.PostgreSQL.Simple as PGS
 
 
 type NgramsId  = Int
@@ -223,7 +220,7 @@ instance Functor NgramsT where
 
 -----------------------------------------------------------------------
 withMap :: HashMap Text NgramsId -> Text -> NgramsId
-withMap m n = maybe (panic $ "[G.D.S.Ngrams.withMap] Should not happen" <> (cs $ show n))
+withMap m n = maybe (panic $ "[G.D.S.Ngrams.withMap] Should not happen" <> (show n))
                     identity (HashMap.lookup n m)
 
 indexNgramsT :: HashMap Text NgramsId -> NgramsT Ngrams -> NgramsT (Indexed Int Ngrams)

@@ -20,11 +20,10 @@ that could be the incarnation of the mythic Gargantua.
 module Gargantext.Core.Text.Prepare
   where
 
-import Data.Text (Text)
+import Data.List qualified as List
+import Data.Text qualified as Text
 import Gargantext.Core.Text (sentences)
 import Gargantext.Prelude
-import qualified Data.List as List
-import qualified Data.Text as Text
 
 
 ---------------------------------------------------------------------

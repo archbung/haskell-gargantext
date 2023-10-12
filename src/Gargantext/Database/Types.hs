@@ -15,12 +15,10 @@ Portability : POSIX
 module Gargantext.Database.Types
   where
 
-import Data.Text (Text)
-import Data.Hashable (Hashable)
+import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Prelude
-import qualified Database.PostgreSQL.Simple as PGS
 
 
 -- | Index memory of any type in Gargantext

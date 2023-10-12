@@ -35,18 +35,11 @@ module Gargantext.API
       where
 
 import Control.Concurrent
-import Control.Exception (catch, finally, SomeException{-, displayException, IOException-})
 import Control.Lens hiding (Level)
-import Control.Monad.Except
-import Control.Monad.Reader (runReaderT)
-import Data.Either
-import Data.Foldable (foldlM)
 import Data.List (lookup)
 import Data.Text (pack)
-import Data.Text.Encoding (encodeUtf8)
 import Data.Text.IO (putStrLn)
 import Data.Validity
-import GHC.Base (Applicative)
 import Gargantext.API.Admin.Auth.Types (AuthContext)
 import Gargantext.API.Admin.EnvTypes (Env, Mode(..))
 import Gargantext.API.Admin.Settings (newEnv)

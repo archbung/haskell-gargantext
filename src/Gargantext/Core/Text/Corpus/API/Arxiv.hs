@@ -18,19 +18,16 @@ module Gargantext.Core.Text.Corpus.API.Arxiv
     , convertQuery
     ) where
 
+import Arxiv qualified as Arxiv
 import Conduit
-import Data.Maybe
-import Data.Text (Text, unpack)
-import qualified Data.Text as Text
-
-import Gargantext.Prelude
+import Data.Text (unpack)
+import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
 import Gargantext.Core.Types (Term(..))
-
-import qualified Arxiv as Arxiv
-import qualified Network.Api.Arxiv as Ax
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Prelude hiding (get)
+import Network.Api.Arxiv qualified as Ax
 
 
 -- | Converts a Gargantext's generic boolean query into an Arxiv Query.

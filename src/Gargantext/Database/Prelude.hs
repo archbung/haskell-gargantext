@@ -15,7 +15,6 @@ Portability : POSIX
 
 module Gargantext.Database.Prelude where
 
---import Control.Monad.Logger (MonadLogger)
 import Control.Exception
 import Control.Lens (Getter, view)
 import Control.Monad.Except
@@ -23,13 +22,13 @@ import Control.Monad.Random
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Aeson (Result(Error,Success), fromJSON, FromJSON)
-import Data.ByteString.Char8 (hPutStrLn)
-import Data.Either.Extra (Either)
+import Data.ByteString qualified as DB
+import Data.List qualified as DL
 import Data.Pool (Pool, withResource)
 import Data.Profunctor.Product.Default (Default)
-import Data.Text (pack, unpack, Text)
-import Data.Word (Word16)
+import Data.Text (pack, unpack)
 import Database.PostgreSQL.Simple (Connection, connect)
+import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.FromField ( Conversion, ResultError(ConversionFailed), fromField, returnError)
 import Database.PostgreSQL.Simple.Internal  (Field)
 import Database.PostgreSQL.Simple.Types (Query(..))
@@ -39,13 +38,8 @@ import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(), readIniFile', val)
 import Opaleye (Unpackspec, showSql, FromFields, Select, runSelect, SqlJsonb, DefaultFromField, toFields, matchMaybe, MaybeFields)
 import Opaleye.Aggregate (countRows)
-import System.IO (FilePath, stderr)
-import Text.Read (readMaybe)
-import qualified Data.ByteString      as DB
-import qualified Data.List as DL
-import qualified Database.PostgreSQL.Simple as PGS
-import qualified Opaleye.Internal.Constant
-import qualified Opaleye.Internal.Operators
+import Opaleye.Internal.Constant qualified
+import Opaleye.Internal.Operators qualified
 
 -------------------------------------------------------
 class HasConnectionPool env where

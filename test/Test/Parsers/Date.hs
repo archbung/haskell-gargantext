@@ -18,9 +18,8 @@ module Test.Parsers.Date where
 import Test.Hspec
 import Test.QuickCheck
 
-import Data.Either (Either(..))
 import Data.Time (ZonedTime(..))
-import Data.Text (pack, Text)
+import Data.Text (pack)
 
 import Text.Parsec.Error (ParseError)
 import Duckling.Time.Types (toRFC3339)

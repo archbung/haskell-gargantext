@@ -18,16 +18,14 @@ module Gargantext.Core.Text.List.Group.Prelude
 
 import Control.Lens (makeLenses, view, set, over)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe (fromMaybe)
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
 import Data.Monoid
 import Data.Semigroup
-import Data.Set (Set)
+import Data.Set qualified as Set
 import Gargantext.API.Ngrams.Types (NgramsElement, mkNgramsElement, NgramsTerm(..), RootParent(..), mSetFromList)
 import Gargantext.Core.Types (ListType(..))
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.List as List
-import qualified Data.Set  as Set
 import Prelude (foldl1)
 
 type Stem = NgramsTerm

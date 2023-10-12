@@ -1,17 +1,22 @@
+{-|
+Module      : Gargantext.API.GraphQL.UserInfo
+Description : 
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.UserInfo where
 
 import Control.Lens
-import Data.Maybe (fromMaybe)
-import Data.Morpheus.Types
-  ( GQLType
-  , description
-  , lift
-  )
-import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Morpheus.Types ( GQLType, description )
+import Data.Text qualified as T
 import Gargantext.Database.Admin.Types.Hyperdata
   ( HyperdataUser(..)
   , hc_source
@@ -35,20 +40,19 @@ import Gargantext.Database.Admin.Types.Hyperdata.Contact
   , ct_phone
   , hc_who
   , hc_where)
+import Gargantext.API.Admin.Auth.Types hiding (Valid)
+import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.PolicyCheck
+import Gargantext.API.GraphQL.Types
+import Gargantext.API.GraphQL.Utils (AuthStatus(Invalid, Valid), authUser)
+import Gargantext.Core.Types.Individu qualified as Individu
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Query.Table.User (getUsersWithHyperdata, getUsersWithNodeHyperdata, updateUserEmail)
-import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Database.Schema.Node (node_id, node_hyperdata, NodePoly (Node, _node_id))
+import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
-import GHC.Generics (Generic)
-import Gargantext.API.GraphQL.Utils (AuthStatus(Invalid, Valid), authUser)
-import Gargantext.API.Admin.Types (HasSettings)
-import qualified Gargantext.Core.Types.Individu as Individu
-import Gargantext.API.GraphQL.Types
-import Gargantext.API.Admin.Auth.Types hiding (Valid)
-import Gargantext.API.Auth.PolicyCheck
-import Gargantext.API.GraphQL.PolicyCheck
 
 data UserInfo = UserInfo
   { ui_id             :: Int

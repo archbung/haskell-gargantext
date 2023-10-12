@@ -18,12 +18,12 @@ Portability : POSIX
 module Gargantext.Core.Viz.Graph.GEXF
   where
 
+import Data.HashMap.Lazy qualified as HashMap
+import Gargantext.Core.Viz.Graph.Types qualified as G
 import Gargantext.Prelude
-import qualified Data.HashMap.Lazy as HashMap
-import qualified Gargantext.Prelude as P
-import qualified Gargantext.Core.Viz.Graph.Types as G
-import qualified Xmlbf as Xmlbf
-import Prelude (error)
+import Gargantext.Prelude qualified as P
+import Prelude qualified
+import Xmlbf qualified as Xmlbf
 
 -- Converts to GEXF format
 -- See https://gephi.org/gexf/format/
@@ -59,7 +59,7 @@ instance Xmlbf.ToXml G.Graph where
         where
           params = HashMap.fromList [ ("id", nId)
                                     , ("label", l) ]
-          sizeParams = HashMap.fromList [ ("value", (cs . show) w) ]
+          sizeParams = HashMap.fromList [ ("value", show w) ]
       edges :: [G.Edge] -> [Xmlbf.Node]
       edges gn = Xmlbf.element "edges" HashMap.empty $ P.concatMap edge gn
       edge :: G.Edge -> [Xmlbf.Node]
@@ -72,9 +72,9 @@ instance Xmlbf.ToXml G.Graph where
           params = HashMap.fromList [ ("id", eId)
                                     , ("source", es)
                                     , ("target", et)
-                                    , ("weight", (cs . show) ew)]
+                                    , ("weight", show ew)]
 
 -- just to be able to derive a client for the entire gargantext API,
 -- we however want to avoid sollicitating this instance
 instance Xmlbf.FromXml G.Graph where
-  fromXml = error "FromXml Graph: not defined, just a placeholder"
+  fromXml = Prelude.error "FromXml Graph: not defined, just a placeholder"

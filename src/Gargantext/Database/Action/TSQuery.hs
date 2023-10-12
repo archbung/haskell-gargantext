@@ -14,10 +14,8 @@ commentary with @some markup@.
 module Gargantext.Database.Action.TSQuery where
 
 import Data.Aeson
-import Data.List (intersperse)
 import Data.Maybe
 import Data.String (IsString(..))
-import Data.Text (Text, words)
 import Database.PostgreSQL.Simple (Query)
 import Database.PostgreSQL.Simple.ToField
 import Gargantext.Core
@@ -85,6 +83,6 @@ textSearch :: HasDBid NodeType
            => TSQuery -> ParentId
            -> Limit -> Offset -> Order
            -> DBCmd err [(Int,Value,Value,Value, Value, Maybe Int)]
-textSearch q p l o ord = runPGSQuery textSearchQuery (q,p,p,typeId,ord,o,l)
+textSearch q p l o ord' = runPGSQuery textSearchQuery (q,p,p,typeId,ord',o,l)
   where
     typeId = toDBid NodeDocument

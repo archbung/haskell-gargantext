@@ -11,6 +11,8 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 ------------------------------------------------------------------------
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE DerivingStrategies   #-}
@@ -30,25 +32,22 @@ module Gargantext.Core.Types ( module Gargantext.Core.Types.Main
                              ) where
 
 import Control.Lens (Prism', (#), makeLenses, over)
-import Control.Monad.Except (MonadError(throwError))
-import Debug.Trace (trace)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
-import Data.Hashable (Hashable)
 import Data.Maybe
 import Data.Monoid
 import Data.Semigroup
-import Data.Set (Set, empty)
+import Data.Set (empty)
 import Data.String
 import Data.Swagger (ToParamSchema)
 import Data.Swagger (ToSchema(..))
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
 import Data.Validity
 import GHC.Generics
 import Gargantext.Core.Types.Main
 import Gargantext.Core.Utils.Prefix (unPrefix, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (Ordering, empty)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 
 ------------------------------------------------------------------------
@@ -56,7 +55,7 @@ import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 data DebugMode = DebugMode { activated :: Bool }
 
 withDebugMode :: (Show a) => DebugMode -> Text -> a -> b -> b
-withDebugMode (DebugMode True ) msg var a = trace (cs $ "DEBUG" <> msg <> (cs $ show var)) a
+withDebugMode (DebugMode True ) msg var a = trace ("DEBUG" <> msg <> (show var) :: Text) a
 withDebugMode (DebugMode False) _   _ a = a
 
 ------------------------------------------------------------------------

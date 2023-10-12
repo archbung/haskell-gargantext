@@ -18,26 +18,22 @@ filters inter-communities links.
 TODO use Map LouvainNodeId (Map LouvainNodeId)
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE BangPatterns #-}
 
 module Gargantext.Core.Viz.Graph.Bridgeness -- (bridgeness)
   where
 
-import Data.Map.Strict (Map, fromListWith, lookup, toList, mapWithKey, elems)
-import Data.Maybe (catMaybes)
-import Data.Ord (Down(..))
-import Data.Set (Set)
-import Data.Tuple.Extra (swap)
-import Debug.Trace (trace)
+import Data.IntMap qualified as Dico
+import Data.List qualified as List
+import Data.Map.Strict (fromListWith, lookup, toList, mapWithKey, elems)
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
+import Data.Tuple.Extra qualified as Tuple
 import Gargantext.Core.Methods.Similarities (Similarity(..))
-import Gargantext.Prelude
-import Prelude (pi)
+import Gargantext.Prelude hiding (toList)
 import Graph.Types (ClusterNode(..))
-import qualified Data.List        as List
-import qualified Data.Map.Strict  as Map
-import qualified Data.Set         as Set
-import qualified Data.Tuple.Extra as Tuple
-import qualified Data.IntMap      as Dico
 ----------------------------------------------------------------------
 
 type Partitions = Map (Int, Int) Double -> IO [ClusterNode]
@@ -142,7 +138,7 @@ bridgeness (Bridgeness_Advanced sim c) m = Map.fromList
                 $ map (\(ks, (v1,_v2)) -> (ks,v1))
                 $ Map.toList
                 $ Map.intersectionWithKey
-                      (\k v1 v2 -> trace ("intersectionWithKey " <> (show (k, v1, v2))) (v1, v2)) m c
+                      (\k v1 v2 -> trace ("intersectionWithKey " <> (show (k, v1, v2)) :: Text) (v1, v2)) m c
 
 
 bridgeness (Bridgeness_Basic ns b) m = Map.fromList

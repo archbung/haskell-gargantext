@@ -1,11 +1,20 @@
+{-|
+Module      : Gargantext.API.GraphQL.TreeFirstLevel
+Description : 
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.TreeFirstLevel where
 
-import Data.Morpheus.Types (GQLType, lift)
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Morpheus.Types (GQLType)
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck
@@ -14,13 +23,13 @@ import Gargantext.Core.Types (Tree, NodeTree, NodeType)
 import Gargantext.Core.Types.Main ( Tree(TreeN), _tn_node, _tn_children, NodeTree(NodeTree, _nt_id, _nt_type), _nt_name )
 import Gargantext.Database.Admin.Config (fromNodeTypeId)
 import Gargantext.Database.Admin.Types.Node (allNodeTypes, NodeId (NodeId))
+import Gargantext.Database.Admin.Types.Node qualified as NN
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNode)
+import Gargantext.Database.Query.Tree qualified as T
 import Gargantext.Database.Schema.Node (NodePoly(_node_parent_id))
+import Gargantext.Database.Schema.Node qualified as N
 import Gargantext.Prelude
-import qualified Gargantext.Database.Admin.Types.Node as NN
-import qualified Gargantext.Database.Query.Tree as T
-import qualified Gargantext.Database.Schema.Node as N
 
 data TreeArgs = TreeArgs
   {

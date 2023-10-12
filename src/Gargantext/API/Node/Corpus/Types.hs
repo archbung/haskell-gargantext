@@ -1,3 +1,14 @@
+{-|
+Module      : Gargantext.API.Node.Corpus.Types
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE TemplateHaskell    #-}
 
 module Gargantext.API.Node.Corpus.Types where
@@ -6,17 +17,13 @@ import Control.Lens hiding (elements, Empty)
 import Control.Monad.Fail (fail)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
-import Data.Monoid (mempty)
 import Data.Swagger
-import GHC.Generics (Generic)
-import Test.QuickCheck
-import qualified Data.Text as T
-
-import Gargantext.Prelude
-
-import qualified Gargantext.API.Admin.Orchestrator.Types as Types
+import Data.Text qualified as T
+import Gargantext.API.Admin.Orchestrator.Types qualified as Types
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (DataOrigin(..))
+import Gargantext.Prelude
+import Test.QuickCheck
 
 data Database = Empty
               | OpenAlex
@@ -62,7 +69,7 @@ instance FromJSON Datafield where
 
 instance ToJSON Datafield where
   toJSON (External db) = toJSON $ object [ ("External", toJSON db) ]
-  toJSON s = toJSON $ show s
+  toJSON s = toJSON (show s :: Text)
 
 instance Arbitrary Datafield where
   arbitrary = oneof [pure Gargantext, pure Web, pure Files, External <$> arbitrary]

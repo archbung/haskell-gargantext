@@ -15,19 +15,14 @@ Mono-terms are Nterms where n == 1.
 module Gargantext.Core.Text.Terms.Mono (monoTerms, monoTexts, monoTextsBySentence, words)
   where
 
-import Prelude (String)
-
-import Data.Text (Text)
-import qualified Data.Text as T
-
-import qualified Data.List as L
-import qualified Data.Set as S
-
+import Data.List qualified as L
+import Data.Set qualified as S
+import Data.Text qualified as T
 import Gargantext.Core
-import Gargantext.Core.Types
 import Gargantext.Core.Text.Terms.Mono.Stem (stem)
-
-import Gargantext.Prelude
+import Gargantext.Core.Types
+import Gargantext.Prelude hiding (words)
+import Prelude (String)
 --import Data.Char (isAlphaNum, isSpace)
 
 -- | TODO remove Num ?

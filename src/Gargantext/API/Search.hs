@@ -10,6 +10,8 @@ Portability : POSIX
 Count API part of Gargantext.
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
 {-# LANGUAGE DeriveAnyClass     #-}
@@ -17,11 +19,9 @@ Count API part of Gargantext.
 module Gargantext.API.Search
       where
 
--- import Data.List (concat)
 import Data.Aeson hiding (defaultTaggedObject)
 import Data.Swagger hiding (fieldLabelModifier, Contact)
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Text qualified as T
 import Gargantext.API.Prelude (GargServer)
 import Gargantext.Core.Text.Corpus.Query (RawQuery (..), parseQuery)
 import Gargantext.Core.Types.Query (Limit, Offset)
@@ -37,8 +37,6 @@ import Gargantext.Utils.Aeson (defaultTaggedObject)
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
-import qualified Data.Text as T
-import Data.Either
 
 -----------------------------------------------------------------------
 -- TODO-ACCESS: CanSearch? or is it part of CanGetNode

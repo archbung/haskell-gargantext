@@ -22,6 +22,8 @@ Implementation use Accelerate library which enables GPU and CPU computation:
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ScopedTypeVariables #-}

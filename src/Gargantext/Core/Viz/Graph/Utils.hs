@@ -17,18 +17,14 @@ These functions are used for Vector.Matrix only.
 module Gargantext.Core.Viz.Graph.Utils
   where
 
-import Data.List (unzip)
-import Data.Map.Strict (Map)
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
 import Data.Matrix hiding (identity)
-import Data.Maybe (catMaybes)
-import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Vector (Vector)
+import Data.Vector qualified as Vector
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
 import Gargantext.Prelude
-import qualified Data.List    as List
-import qualified Data.Map.Strict     as Map
-import qualified Data.Set     as Set
-import qualified Data.Vector  as Vector
 
 ------------------------------------------------------------------------
 -- | Some utils to build the matrix from cooccurrence results

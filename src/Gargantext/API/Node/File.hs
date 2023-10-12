@@ -1,24 +1,30 @@
+{-|
+Module      : Gargantext.API.Node.File
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-unused-matches #-}
 
 {-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE TypeOperators     #-}
 
 {-# LANGUAGE IncoherentInstances #-}
+
 module Gargantext.API.Node.File where
 
 import Control.Lens ((^.))
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
+import Data.MIME.Types qualified as DMT
 import Data.Swagger
-import Data.Text
-import GHC.Generics (Generic)
-import Servant
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.MIME.Types as DMT
-import qualified Gargantext.Database.GargDB as GargDB
-import qualified Network.HTTP.Media as M
-
-import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
+import Data.Text qualified as T
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
+import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Node.Types
 import Gargantext.API.Prelude
@@ -27,12 +33,14 @@ import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Admin.Types.Hyperdata.File
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.GargDB qualified as GargDB
 import Gargantext.Database.Query.Table.Node (getNodeWith)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Data.Either
+import Network.HTTP.Media qualified as M
+import Servant
 
 data RESPONSE deriving Typeable
 
@@ -77,14 +85,14 @@ fileDownload uId nId = do
   let (HyperdataFile { _hff_name = name'
                      , _hff_path = path }) = node ^. node_hyperdata
 
-  Contents c <- GargDB.readGargFile $ unpack path
+  Contents c <- GargDB.readGargFile $ T.unpack path
 
-  let (mMime, _) = DMT.guessType DMT.defaultmtd False $ unpack name'
+  let (mMime, _) = DMT.guessType DMT.defaultmtd False $ T.unpack name'
       mime = case mMime of
         Just m  -> m
         Nothing -> "text/plain"
 
-  pure $ addHeader (pack mime) $ BSResponse c
+  pure $ addHeader (T.pack mime) $ BSResponse c
  
   --pure c
 
@@ -127,7 +135,7 @@ addWithFile uId nId nwf@(NewWithFile _d _l fName) jobHandle = do
         node <- getNodeWith nId' (Proxy :: Proxy HyperdataFile)
         let hl = node ^. node_hyperdata
         _ <- updateHyperdata nId' $ hl { _hff_name = fName
-                                       , _hff_path = pack fPath }
+                                       , _hff_path = T.pack fPath }
 
         -- printDebug "[addWithFile] Created node with id: " nId'
         pure ()

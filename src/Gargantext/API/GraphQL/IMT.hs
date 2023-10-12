@@ -9,7 +9,6 @@ module Gargantext.API.GraphQL.IMT
   where
 
 import Data.Morpheus.Types (GQLType)
-import GHC.Generics (Generic)
 import Gargantext.API.GraphQL.Types
 import Gargantext.Core.Ext.IMT (School(..), schools)
 import Gargantext.Prelude

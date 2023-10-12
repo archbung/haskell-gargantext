@@ -13,7 +13,6 @@ Portability : POSIX
 module Gargantext.Database.Action.User
     where
 
-import Data.Text (Text)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (DBCmd)

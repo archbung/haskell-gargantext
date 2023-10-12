@@ -12,18 +12,15 @@ Motivation and definition of the @Conditional@ distance.
 
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE Strict            #-}
+
 module Gargantext.Core.Methods.Similarities.Conditional
   where
 
-import Control.DeepSeq (NFData)
 import Control.Parallel.Strategies (parList, rdeepseq, using)
-import Data.Hashable (Hashable)
-import Data.List (unzip)
-import Data.Maybe (catMaybes)
-import Gargantext.Prelude
+import Data.HashMap.Strict qualified as Map
+import Data.Set qualified as Set
 import Gargantext.Core.Viz.Graph.Utils (getMax)
-import qualified Data.HashMap.Strict as Map
-import qualified Data.Set            as Set
+import Gargantext.Prelude
 
 
 type HashMap = Map.HashMap

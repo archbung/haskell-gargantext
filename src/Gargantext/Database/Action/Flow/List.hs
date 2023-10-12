@@ -17,15 +17,13 @@ Portability : POSIX
 module Gargantext.Database.Action.Flow.List
     where
 
--- import Gargantext.Database.Query.Table.Node_NodeNgramsNodeNgrams
 import Control.Concurrent
 import Control.Lens ((^.), (+~), (%~), at, (.~), _Just)
 import Control.Monad.Reader
 import Data.List qualified as List
-import Data.Map.Strict (Map, toList)
+import Data.Map.Strict (toList)
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Text (Text)
 import Gargantext.API.Ngrams (saveNodeStory)
 import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.API.Ngrams.Types
@@ -36,7 +34,7 @@ import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.NodeNgrams (NodeNgramsPoly(..), NodeNgramsW, listInsertDb,{- getCgramsId -})
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (toList)
 
 -- FLOW LIST
 -- 1. select specific terms of the corpus when compared with others langs

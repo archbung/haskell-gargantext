@@ -41,39 +41,36 @@ module Gargantext.API.Admin.Auth
   )
   where
 
---import Control.Monad.Logger.Aeson
---import qualified Text.Blaze.Html5.Attributes as HA
 import Control.Lens (view, (#))
 import Data.Aeson
 import Data.Swagger (ToSchema(..))
+import Data.Text qualified as Text
+import Data.Text.Lazy.Encoding qualified as LE
 import Data.UUID (UUID, fromText, toText)
 import Data.UUID.V4 (nextRandom)
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
+import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError (..))
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
+import Gargantext.Database.Action.User.New (guessUserName)
 import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (Cmd', CmdCommon, DbCmd')
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree (isDescendantOf, isIn)
 import Gargantext.Database.Query.Tree.Root (getRoot)
-import Gargantext.Database.Action.User.New (guessUserName)
 import Gargantext.Database.Schema.Node (NodePoly(_node_id))
-import Gargantext.Prelude hiding (reverse)
+import Gargantext.Prelude hiding (Handler, reverse, to)
+import Gargantext.Prelude.Crypto.Auth qualified as Auth
 import Gargantext.Prelude.Crypto.Pass.User (gargPass)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Protolude hiding (Handler, to)
 import Servant
 import Servant.Auth.Server
-import qualified Data.Text as Text
-import qualified Data.Text.Lazy.Encoding as LE
-import qualified Gargantext.Prelude.Crypto.Auth as Auth
-import Gargantext.API.Auth.PolicyCheck
 
 ---------------------------------------------------
 

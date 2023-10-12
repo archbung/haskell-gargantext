@@ -30,5 +30,5 @@ main = do
 
   withDevEnv iniPath $ \env -> do
     x <- runCmdDev env ((newUsers $ map cs mails) :: Cmd'' DevEnv GargError [UserId])
-    putStrLn $ show x
+    putStrLn (show x :: Text)
   pure ()

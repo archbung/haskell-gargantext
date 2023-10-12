@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Arrows      #-}
 
@@ -20,14 +22,9 @@ import Control.Lens (_Just, (^.), view)
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HM
 import Data.HashMap.Strict qualified as HashMap
-import Data.Hashable (Hashable)
 import Data.List qualified as List
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text)
 import Data.Text qualified as Text
-import Debug.Trace (trace)
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core
@@ -147,7 +144,7 @@ getContactIds mapContactNames contactNames =
      else Set.unions $ catMaybes $ map (\contactName -> HM.lookup contactName mapContactNames) $ Set.toList contactNames
 
 getClosest' :: Set DocAuthor -> [ContactName] -> Set ContactName
-getClosest' setAuthors contactNames = trace (show (setAuthors, setContactNames)) $ setContactNames
+getClosest' setAuthors contactNames = trace (show (setAuthors, setContactNames) :: Text) $ setContactNames
   where
     setContactNames = if Set.null xs then ys else xs
     xs = Set.fromList $ catMaybes $ map (\author -> getClosest Text.toLower author contactNames) $ Set.toList setAuthors
@@ -158,11 +155,11 @@ getClosest' setAuthors contactNames = trace (show (setAuthors, setContactNames))
 
 
 getClosest :: (Text -> Text) -> NgramsTerm -> [NgramsTerm] -> Maybe NgramsTerm
-getClosest f (NgramsTerm from) candidates = fst <$> head scored
+getClosest f (NgramsTerm from') candidates = fst <$> head scored
   where
     scored   = List.sortOn snd
              $ List.filter (\(_,score) -> score <= 2)
-             $ map (\cand@(NgramsTerm candidate) -> (cand, levenshtein (f from) (f candidate))) candidates
+             $ map (\cand@(NgramsTerm candidate) -> (cand, levenshtein (f from') (f candidate))) candidates
 
 
 ------------------------------------------------------------------------

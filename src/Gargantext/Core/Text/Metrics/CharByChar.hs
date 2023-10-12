@@ -22,10 +22,7 @@ module Gargantext.Core.Text.Metrics.CharByChar (levenshtein
                                       ) where
 
 
-import Data.Text (Text)
-import GHC.Real (Ratio)
-import qualified Data.Text.Metrics as DTM
-
+import Data.Text.Metrics qualified as DTM
 import Gargantext.Prelude
 
 --noApax :: Ord a => Map a Occ -> Map a Occ

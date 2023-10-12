@@ -15,7 +15,6 @@ Mainly copied from Servant.Job.Utils (Thanks)
 module Gargantext.API.Admin.Utils
   where
 
-import Data.Maybe (fromMaybe)
 import Gargantext.Prelude
 import Prelude (String)
 import qualified Data.Text as T

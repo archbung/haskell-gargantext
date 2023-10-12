@@ -23,17 +23,14 @@ module Gargantext.Core.Utils (
                            , addTuples
                           ) where
 
-import Data.Char (chr, ord)
-import qualified Data.List as List
+import Data.List qualified as List
 import Data.Maybe
 import Data.Monoid
-import Data.Text (Text, pack)
-import Prelude ((!!))
-import System.Random (initStdGen, uniformR)
-
--- import Gargantext.Utils.Chronos
+import Data.Text qualified as T
 import Gargantext.Core.Utils.Prefix
 import Gargantext.Prelude
+import Prelude ((!!))
+import System.Random (initStdGen, uniformR)
 
 
 something :: Monoid a => Maybe a -> a
@@ -59,7 +56,7 @@ choices num lst = do
 randomString :: Int -> IO Text
 randomString num = do
   str <- choices num alphanum
-  pure $ pack str
+  pure $ T.pack str
 
 
 -- | Given a list of items of type 'a', return list with unique items

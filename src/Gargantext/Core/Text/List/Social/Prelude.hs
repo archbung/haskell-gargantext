@@ -19,19 +19,15 @@ module Gargantext.Core.Text.List.Social.Prelude
   where
 
 import Control.Lens
-import Data.Map.Strict (Map)
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PatchMap
 import Data.Monoid
-import Data.Semigroup (Semigroup(..))
-import GHC.Generics (Generic)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types.Main
+import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Prelude
-import qualified Gargantext.Data.HashMap.Strict.Utils as HashMap
-import qualified Data.Map.Strict       as Map
-import qualified Data.HashMap.Strict   as HashMap
-import qualified Data.Map.Strict.Patch as PatchMap
 
 ------------------------------------------------------------------------
 type Parent = NgramsTerm

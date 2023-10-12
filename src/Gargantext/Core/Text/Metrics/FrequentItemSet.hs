@@ -26,17 +26,11 @@ module Gargantext.Core.Text.Metrics.FrequentItemSet
   )
   where
 
-import Data.List (concat, null)
-import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes, isNothing)
-import Data.Set (Set)
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
+import Data.Vector qualified as V
 import Gargantext.Prelude
 import HLCM
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import qualified Data.Vector as V
-
-import Control.Monad (sequence)
 
 data Size = Point Int | Segment Int Int
 

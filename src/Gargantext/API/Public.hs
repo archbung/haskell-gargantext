@@ -15,34 +15,27 @@ Portability : POSIX
 module Gargantext.API.Public
       where
 
-import Data.Set (Set)
 import Control.Lens ((^?), (^.), _Just)
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
-import Data.List (replicate, null)
 import Data.Aeson
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import Data.Swagger hiding (title, url)
-import GHC.Generics (Generic)
-import Servant
-import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
-
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-
-import Gargantext.API.Prelude
 import Gargantext.API.Node.File
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
-import Gargantext.Database.Prelude (Cmd, DBCmd)
+import Gargantext.API.Prelude
+import Gargantext.Core.Utils.DateUtils (utc2year)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Hyperdata.CorpusField
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Prelude (Cmd, DBCmd)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.NodeNode (selectPublicNodes)
-import Gargantext.Core.Utils.DateUtils (utc2year)
 import Gargantext.Database.Schema.Node -- (NodePoly(..))
 import Gargantext.Prelude
-import qualified Gargantext.Utils.Aeson as GUA
+import Gargantext.Utils.Aeson qualified as GUA
+import Servant
+import Test.QuickCheck (elements)
+import Test.QuickCheck.Arbitrary
 
 ------------------------------------------------------------------------
 type API =  API_Home
@@ -113,7 +106,7 @@ toPublicData base (n , mn) = do
   abstract <- (hd ^? (_Just . hf_data . cf_desc ))
   img <- (Just $ url' mn) -- "images/Gargantextuel-212x300.jpg"
   url <- (Just $ url' mn)
-  date <- Just (cs $ show $ utc2year (n^.node_date))
+  date <- Just (show $ utc2year (n^.node_date))
   database <- (hd ^? (_Just . hf_data . cf_query))
   author <- (hd ^? (_Just . hf_data . cf_authors))
   pure $ PublicData { .. }
@@ -124,7 +117,7 @@ toPublicData base (n , mn) = do
     url' :: [NodeId] -> Text
     url' mn' = base
            <>   "/public/"
-           <> (cs $ show $ (maybe 0 unNodeId $ head mn'))
+           <> (show $ (maybe 0 unNodeId $ head mn'))
            <> "/file/download"
 
 

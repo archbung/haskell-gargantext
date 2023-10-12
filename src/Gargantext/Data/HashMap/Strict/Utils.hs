@@ -1,9 +1,19 @@
+{-|
+Module      : Gargantext.Data.HashMap.Strict.Utils
+Description : 
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+
+-}
+
 module Gargantext.Data.HashMap.Strict.Utils where
 
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
+import Data.HashMap.Strict qualified as HashMap
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict as HashMap
 
 ------------------------------------------------------------------------
 unionsWith :: (Foldable f, Eq k, Hashable k) => (a->a->a) -> f (HashMap k a) -> HashMap k a

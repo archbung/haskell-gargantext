@@ -61,12 +61,10 @@ import Data.Conduit qualified as C
 import Data.Conduit.Internal (zipSources)
 import Data.Conduit.List qualified as CL
 import Data.Conduit.List qualified as CList
-import Data.Either
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Map.Strict (lookup)
 import Data.Map.Strict qualified as Map
-import Data.Monoid
 import Data.Proxy
 import Data.Set qualified as Set
 import Data.Swagger
@@ -117,11 +115,10 @@ import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node (NodePoly(..), node_id)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Database.Types
-import Gargantext.Prelude hiding (show)
+import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
-import Protolude hiding (to)
 import PUBMED.Types qualified as PUBMED
 
 ------------------------------------------------------------------------

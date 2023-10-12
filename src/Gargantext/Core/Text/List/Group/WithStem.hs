@@ -19,9 +19,14 @@ module Gargantext.Core.Text.List.Group.WithStem
 
 import Control.Lens (makeLenses)
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
-import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes)
+import Data.HashSet qualified as Set
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PatchMap
+import Data.Patch.Class qualified as Patch (Replace(..))
+import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (Lang(..), Form, Lem, NLPServerConfig)
 import Gargantext.Core.Text.List.Group.Prelude
@@ -29,13 +34,6 @@ import Gargantext.Core.Text.List.Social.Patch
 import Gargantext.Core.Text.List.Social.Prelude
 import Gargantext.Core.Text.Terms.Mono.Stem (stem)
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict   as HashMap
-import qualified Data.HashSet          as Set
-import qualified Data.List             as List
-import qualified Data.Map.Strict       as Map
-import qualified Data.Map.Strict.Patch as PatchMap
-import qualified Data.Patch.Class      as Patch (Replace(..))
-import qualified Data.Text             as Text
 
 ------------------------------------------------------------------------
 addScoreStem :: GroupParams

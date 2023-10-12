@@ -12,7 +12,6 @@ Portability : POSIX
 module Gargantext.Database.Query.Table.Node.User
   where
 
-import Data.Maybe (fromMaybe)
 import Gargantext.Core
 import Gargantext.Core.Types (Name)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), defaultHyperdataUser)
@@ -26,7 +25,7 @@ import Opaleye (limit)
 
 getNodeUser :: NodeId -> DBCmd err (Node HyperdataUser)
 getNodeUser nId = do
-    fromMaybe (panic $ "Node does not exist: " <> (cs $ show nId)) . headMay
+    fromMaybe (panic $ "Node does not exist: " <> (show nId)) . headMay
              <$> runOpaQuery (limit 1 $ selectNode (pgNodeId nId))
 
 nodeUserW :: HasDBid NodeType => Maybe Name -> Maybe HyperdataUser -> UserId -> NodeWrite

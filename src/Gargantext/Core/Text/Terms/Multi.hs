@@ -18,19 +18,18 @@ module Gargantext.Core.Text.Terms.Multi (multiterms, multiterms_rake, tokenTagsW
 
 import Control.Applicative
 import Data.Attoparsec.Text                               as DAT
-import Data.List (concat)
 import Data.Text hiding (map, group, filter, concat)
 import Gargantext.Core (Lang(..), NLPServerConfig(..), PosTagAlgo(..))
+import Gargantext.Core.Text.Terms.Multi.Lang.En qualified as En
+import Gargantext.Core.Text.Terms.Multi.Lang.Fr qualified as Fr
 import Gargantext.Core.Text.Terms.Multi.PosTagging
 import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Text.Terms.Multi.RAKE (multiterms_rake)
 import Gargantext.Core.Types
 import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Prelude
+import Gargantext.Utils.SpacyNLP qualified as SpacyNLP
 import Replace.Attoparsec.Text                            as RAT
-import qualified Gargantext.Core.Text.Terms.Multi.Lang.En as En
-import qualified Gargantext.Core.Text.Terms.Multi.Lang.Fr as Fr
-import qualified Gargantext.Utils.SpacyNLP                as SpacyNLP
 
 -------------------------------------------------------------------
 type NLP_API = Lang -> Text -> IO PosSentences
@@ -68,7 +67,7 @@ tokenTags (NLPServerConfig { server = Spacy, url }) l txt = do
 --   if txt == ""
 --      then pure [[]]
 --      else tokenTagsWith FR txt SpacyNLP.nlp
-tokenTags _ l  _   = panic $ "[G.C.T.T.Multi] Lang NLP API not implemented yet " <> (cs $ show l)
+tokenTags _ l  _   = panic $ "[G.C.T.T.Multi] Lang NLP API not implemented yet " <> (show l)
 
 tokenTagsWith :: Lang -> Text -> NLP_API -> IO [[TokenTag]]
 tokenTagsWith lang txt nlp = map (groupTokens lang)

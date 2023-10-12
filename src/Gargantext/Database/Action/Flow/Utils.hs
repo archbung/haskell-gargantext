@@ -13,8 +13,10 @@ Portability : POSIX
 module Gargantext.Database.Action.Flow.Utils
     where
 
-import Data.Map.Strict (Map)
+import Control.Lens ((^.))
 import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Map.Strict qualified as DM
 import Gargantext.Core.Types (TermsCount)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (DBCmd)
@@ -22,9 +24,6 @@ import Gargantext.Database.Query.Table.ContextNodeNgrams
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Types
 import Gargantext.Prelude
-import Control.Lens ((^.))
-import qualified Data.Map.Strict as DM
-import qualified Data.HashMap.Strict as HashMap
 
 
 data DocumentIdWithNgrams a b =

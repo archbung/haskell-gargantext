@@ -22,7 +22,7 @@ import Data.Conduit
 import Data.Either
 import Data.Text as T
 import Data.XML.Types (Event, Name)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (force)
 import Text.Pandoc
 import Text.XML.Stream.Parse
 

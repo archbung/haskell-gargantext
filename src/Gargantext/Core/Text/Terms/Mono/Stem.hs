@@ -21,12 +21,10 @@ Source : https://en.wikipedia.org/wiki/Stemming
 module Gargantext.Core.Text.Terms.Mono.Stem (stem, Lang(..))
   where
 
-import Data.Text (Text)
-import qualified Data.Text   as DT
-import qualified NLP.Stemmer as N
-
-import Gargantext.Prelude
+import Data.Text qualified as DT
 import Gargantext.Core (Lang(..))
+import Gargantext.Prelude
+import NLP.Stemmer qualified as N
 
 -- (stem, Stemmer(..))
 

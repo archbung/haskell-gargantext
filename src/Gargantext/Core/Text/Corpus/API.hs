@@ -20,23 +20,20 @@ module Gargantext.Core.Text.Corpus.API
 
 import Conduit
 import Control.Monad.Except
-import Data.Bifunctor
-import Data.Either (Either(..))
-import Data.Maybe
+import Data.Text qualified as T
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
 import Gargantext.Core (Lang(..), toISO639)
+import Gargantext.Core.Text.Corpus.API.Arxiv qualified as Arxiv
+import Gargantext.Core.Text.Corpus.API.Hal qualified as HAL
+import Gargantext.Core.Text.Corpus.API.Isidore qualified as ISIDORE
+import Gargantext.Core.Text.Corpus.API.Istex qualified as ISTEX
+import Gargantext.Core.Text.Corpus.API.OpenAlex qualified as OpenAlex
+import Gargantext.Core.Text.Corpus.API.Pubmed qualified as PUBMED
+import Gargantext.Core.Text.Corpus.Query qualified as Corpus
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (get)
+import PUBMED.Types qualified as PUBMED
 import Servant.Client (ClientError)
-import qualified Data.Text as T
-import qualified Gargantext.Core.Text.Corpus.API.Arxiv   as Arxiv
-import qualified Gargantext.Core.Text.Corpus.API.Hal     as HAL
-import qualified Gargantext.Core.Text.Corpus.API.Isidore as ISIDORE
-import qualified Gargantext.Core.Text.Corpus.API.Istex   as ISTEX
-import qualified Gargantext.Core.Text.Corpus.API.OpenAlex as OpenAlex
-import qualified Gargantext.Core.Text.Corpus.API.Pubmed  as PUBMED
-import qualified Gargantext.Core.Text.Corpus.Query as Corpus
-import qualified PUBMED.Types as PUBMED
 
 data GetCorpusError
   = -- | We couldn't parse the user input query into something meaningful.

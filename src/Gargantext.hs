@@ -21,5 +21,5 @@ module Gargantext ( module Gargantext.API
 import Gargantext.API
 import Gargantext.Core
 import Gargantext.Database
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (All)
 --import Gargantext.Core.Viz

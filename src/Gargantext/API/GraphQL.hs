@@ -1,3 +1,13 @@
+{-|
+Module      : Gargantext.API.GraphQL
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# OPTIONS_GHC -fprint-potential-instances #-}
 
 {-# LANGUAGE DeriveAnyClass #-}
@@ -8,49 +18,32 @@
 
 module Gargantext.API.GraphQL where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString
-  )
-import Data.Map.Strict (Map)
-import Data.Morpheus
-  ( App
-  , deriveApp )
-import Data.Morpheus.Server
-  ( httpPlayground
-  )
-import Data.Morpheus.Subscriptions
-  ( Event (..)
-  , Hashable
-  , httpPubApp
-  )
-import Data.Morpheus.Types
-  ( GQLRequest
-  , GQLResponse
-  , GQLType
-  , RootResolver(..)
-  , Undefined(..)
-  )
+import Data.ByteString.Lazy.Char8 ( ByteString )
+import Data.Morpheus ( App, deriveApp )
+import Data.Morpheus.Server ( httpPlayground )
+import Data.Morpheus.Subscriptions ( Event (..), httpPubApp )
+import Data.Morpheus.Types ( GQLRequest, GQLResponse, GQLType, RootResolver(..), Undefined(..) )
 import Data.Proxy
-import Data.Text (Text)
 import Gargantext.API.Admin.Auth.Types (AuthenticatedUser)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog)
-import Gargantext.API.Prelude (HasJobEnv')
-import qualified Gargantext.API.GraphQL.Annuaire as GQLA
-import qualified Gargantext.API.GraphQL.AsyncTask as GQLAT
-import qualified Gargantext.API.GraphQL.Context as GQLCTX
-import qualified Gargantext.API.GraphQL.IMT as GQLIMT
-import qualified Gargantext.API.GraphQL.NLP as GQLNLP
-import qualified Gargantext.API.GraphQL.Node as GQLNode
-import qualified Gargantext.API.GraphQL.User as GQLUser
-import qualified Gargantext.API.GraphQL.UserInfo as GQLUserInfo
-import qualified Gargantext.API.GraphQL.TreeFirstLevel as GQLTree
-import qualified Gargantext.API.GraphQL.Team as GQLTeam
+import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.GraphQL.Annuaire qualified as GQLA
+import Gargantext.API.GraphQL.AsyncTask qualified as GQLAT
+import Gargantext.API.GraphQL.Context qualified as GQLCTX
+import Gargantext.API.GraphQL.IMT qualified as GQLIMT
+import Gargantext.API.GraphQL.NLP qualified as GQLNLP
+import Gargantext.API.GraphQL.Node qualified as GQLNode
+import Gargantext.API.GraphQL.Team qualified as GQLTeam
+import Gargantext.API.GraphQL.TreeFirstLevel qualified as GQLTree
+import Gargantext.API.GraphQL.User qualified as GQLUser
+import Gargantext.API.GraphQL.UserInfo qualified as GQLUserInfo
 import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Prelude (HasJobEnv')
 import Gargantext.API.Types
 import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Database.Prelude (CmdCommon)
-import Gargantext.Prelude
-import GHC.Generics (Generic)
+import Gargantext.Prelude hiding (ByteString)
 import Servant
   ( (:<|>) (..)
   , (:>)
@@ -60,10 +53,8 @@ import Servant
   , ReqBody
   ,  ServerT
   )
-import qualified Servant.Auth as SA
-import qualified Servant.Auth.Server as SAS
-import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Auth.PolicyCheck
+import Servant.Auth qualified as SA
+import Servant.Auth.Server qualified as SAS
 
 
 -- | Represents possible GraphQL queries.

@@ -14,10 +14,7 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec
   where
 
-import Control.Applicative ((<*))
 import Data.Attoparsec.ByteString (Parser, take)
-import Data.ByteString (ByteString)
-import Data.Tuple.Extra (first)
 import Gargantext.Prelude hiding (takeWhile, take)
 
 -------------------------------------------------------------

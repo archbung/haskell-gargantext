@@ -13,22 +13,19 @@ Portability : POSIX
 
 module Gargantext.Utils.JohnSnowNLP where
 
-import Control.Concurrent (threadDelay)
 import Control.Lens
 import Data.Aeson (encode, ToJSON, toJSON, FromJSON, parseJSON, Value(..), (.:), (.:?))
 import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types (prependFailure, typeMismatch)
-import Data.Map.Strict (Map)
-import Data.Maybe (fromMaybe)
+import Data.List.Safe qualified as LS
+import Data.Map.Strict qualified as Map
 import Data.Text hiding (map, group, filter, concat, zip)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Types (POS(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (All)
 import Network.HTTP.Simple (parseRequest, httpJSON, setRequestBodyLBS, getResponseBody, Response)
-import qualified Data.List.Safe as LS
-import qualified Data.Map.Strict as Map
 
 
 data JSSpell = JSPOS Lang | JSLemma Lang

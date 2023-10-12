@@ -1,3 +1,14 @@
+{-|
+Module      : Gargantext.API.Node.FrameCalcUpload
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MonoLocalBinds      #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -6,24 +17,19 @@ module Gargantext.API.Node.FrameCalcUpload where
 
 import Control.Lens ((^.))
 import Data.Aeson
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString.UTF8 as BSU8
+import Data.ByteString.Lazy qualified as BSL
+import Data.ByteString.UTF8 qualified as BSU8
 import Data.Swagger
-import qualified Data.Text as T
-import GHC.Generics (Generic)
-import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
-import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Servant
-import Web.FormUrlEncoded (FromForm)
-
+import Data.Text qualified as T
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Node.Corpus.New (addToCorpusWithForm)
 import Gargantext.API.Node.Corpus.New.Types (FileFormat(..), FileType(..))
 import Gargantext.API.Node.Types (NewWithForm(..))
 import Gargantext.API.Prelude
-import Gargantext.Core.Types.Individu (User(..))
+import Gargantext.Core (Lang)
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
+import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Frame
 import Gargantext.Database.Admin.Types.Node
@@ -32,7 +38,10 @@ import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNodeWi
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Gargantext.Core (Lang)
+import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Servant
+import Web.FormUrlEncoded (FromForm)
 
 data FrameCalcUpload = FrameCalcUpload {
   _wf_lang      :: !(Maybe Lang)

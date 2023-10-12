@@ -20,19 +20,16 @@ module Gargantext.Database.Query.Table.NgramsPostag
 
 import Control.Lens (view, (^.))
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
-import Data.Text (Text)
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
+import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (runPGSQuery, runPGSQuery_, DBCmd)
-import Gargantext.Database.Schema.Ngrams
-import Gargantext.Database.Schema.Prelude
 import Gargantext.Database.Query.Table.Ngrams
+import Gargantext.Database.Schema.Prelude
 import Gargantext.Database.Types
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict        as HashMap
-import qualified Data.List                  as List
-import qualified Database.PostgreSQL.Simple as PGS
 
 data NgramsPostag = NgramsPostag { _np_lang   :: !Lang
                                  , _np_algo   :: !PosTagAlgo
@@ -58,7 +55,7 @@ toInsert :: NgramsPostag -> NgramsPostagInsert
 toInsert (NgramsPostag l a p form lem) =
   ( toDBid l
   , toDBid a
-  , cs $ show p
+  , show p
   , view ngramsTerms form
   , view ngramsSize  form
   , view ngramsTerms lem

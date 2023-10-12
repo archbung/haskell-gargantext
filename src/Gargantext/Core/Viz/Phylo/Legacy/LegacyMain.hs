@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE ViewPatterns      #-}
@@ -19,13 +21,9 @@ module Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
 import Control.Lens hiding (Level)
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
-import Data.Maybe
 import Data.Proxy
 import Data.Set qualified as Set
-import Data.Text (Text)
 import Data.Text qualified as Text
-import Debug.Trace (trace)
-import GHC.IO (FilePath)
 import Gargantext.API.Ngrams.Tools (getTermsWith)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (HasDBid, withDefaultLanguage)
@@ -39,7 +37,7 @@ import Gargantext.Database.Query.Table.Node(defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.NodeContext (selectDocs)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (to)
 
 type MinSizeBranch = Int
 
@@ -50,8 +48,8 @@ flowPhylo cId = do
 
   corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
   let lang = withDefaultLanguage $ view (node_hyperdata . to _hc_lang) corpus_node
-  list     <- defaultList cId
-  termList <- HashMap.toList <$> getTermsWith (Text.words . unNgramsTerm) [list] NgramsTerms (Set.singleton MapTerm)
+  list'    <- defaultList cId
+  termList <- HashMap.toList <$> getTermsWith (Text.words . unNgramsTerm) [list'] NgramsTerms (Set.singleton MapTerm)
 
   docs' <- catMaybes
         <$> map (\h -> (,) <$> _hd_publication_year h
@@ -91,7 +89,7 @@ defaultQuery = undefined
 --   "Default Description"
 
 buildPhylo :: [Document] -> TermList -> Phylo
-buildPhylo = trace (show defaultQuery) $ buildPhylo' defaultQuery
+buildPhylo = trace (show defaultQuery :: Text) $ buildPhylo' defaultQuery
 
 buildPhylo' :: PhyloQueryBuild -> [Document] -> TermList -> Phylo
 buildPhylo' _ _ _ = undefined

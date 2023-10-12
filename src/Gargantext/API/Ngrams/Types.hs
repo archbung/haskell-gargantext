@@ -19,45 +19,36 @@ module Gargantext.API.Ngrams.Types where
 
 import Codec.Serialise (Serialise())
 import Control.Category ((>>>))
-import Control.DeepSeq (NFData)
 import Control.Lens (makeLenses, makePrisms, Iso', iso, from, (.~), (.=), (?=), (#), to, folded, {-withIndex, ifolded,-} view, use, (^.), (^?), (%~), (.~), (%=), at, _Just, Each(..), itraverse_, both, forOf_, (?~), over)
 import Control.Monad.State
 import Data.Aeson hiding ((.=))
 import Data.Aeson.TH (deriveJSON)
-import Data.Either (Either(..))
 import Data.Foldable
-import Data.Hashable (Hashable)
-import Data.Map.Strict (Map)
-import Data.Maybe (fromMaybe)
+import Data.HashMap.Strict.InsOrd qualified as InsOrdHashMap
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PM
 import Data.Monoid
 import Data.Patch.Class (Replace, replace, Action(act), Group, Applicable(..), Composable(..), Transformable(..), PairPatch(..), Patched, ConflictResolution, ConflictResolutionReplace, MaybePatch(Mod), unMod, old, new)
-import Data.Set (Set)
-import Data.String (IsString, fromString)
+import Data.Set qualified as Set
+import Data.String (IsString(..))
 import Data.Swagger hiding (version, patch)
-import Data.Text (Text, pack, strip)
+import Data.Text (pack, strip)
 import Data.Validity
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toJSONField, toField)
-import GHC.Generics (Generic)
 import Gargantext.Core.Text (size)
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, TODO)
 import Gargantext.Core.Types.Query (Limit, Offset, MaxSize, MinSize)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixUntagged, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node (ContextId)
 import Gargantext.Database.Prelude (fromField', HasConnectionPool, HasConfig, CmdM')
-import Gargantext.Prelude
+import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
+import Gargantext.Prelude hiding (IsString, hash, from, replace, to)
 import Gargantext.Prelude.Crypto.Hash (IsHashable(..))
-import Protolude (maybeToEither)
 import Servant hiding (Patch)
 import Servant.Job.Utils (jsonOptions)
--- import System.FileLock (FileLock)
 import Test.QuickCheck (elements, frequency)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-import qualified Data.HashMap.Strict.InsOrd             as InsOrdHashMap
-import qualified Data.Map.Strict                        as Map
-import qualified Data.Map.Strict.Patch                  as PM
-import qualified Data.Set                               as Set
-import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
 
 ------------------------------------------------------------------------
 
@@ -195,8 +186,8 @@ mkNgramsElement :: NgramsTerm
                 -> Maybe RootParent
                 -> MSet NgramsTerm
                 -> NgramsElement
-mkNgramsElement ngrams list rp children =
-  NgramsElement ngrams (size (unNgramsTerm ngrams)) list mempty (_rp_root <$> rp) (_rp_parent <$> rp) children
+mkNgramsElement ngrams list' rp children =
+  NgramsElement ngrams (size (unNgramsTerm ngrams)) list' mempty (_rp_root <$> rp) (_rp_parent <$> rp) children
 
 newNgramsElement :: Maybe ListType -> NgramsTerm -> NgramsElement
 newNgramsElement mayList ngrams =

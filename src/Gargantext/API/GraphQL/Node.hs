@@ -1,28 +1,35 @@
+{-|
+Module      : Gargantext.API.GraphQL.Node
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.Node where
 
 import Data.Aeson
-import Data.Either (Either(..))
-import Data.Morpheus.Types ( GQLType, lift )
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Morpheus.Types ( GQLType )
+import Data.Text qualified as T
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck (withPolicy)
 import Gargantext.API.GraphQL.Types
 import Gargantext.Database.Admin.Types.Node (NodeId(..), NodeType)
+import Gargantext.Database.Admin.Types.Node qualified as NN
 import Gargantext.Database.Prelude (CmdCommon)  -- , JSONB)
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNode)
+import Gargantext.Database.Schema.Node qualified as N
 import Gargantext.Prelude
-import Text.Read (readEither)
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Text as T
-import qualified Gargantext.Database.Admin.Types.Node as NN
-import qualified Gargantext.Database.Schema.Node as N
-import qualified PUBMED.Types as PUBMED
-import qualified Prelude
+import PUBMED.Types qualified as PUBMED
+import Prelude qualified
 
 data Corpus = Corpus
   { id           :: Int

@@ -19,7 +19,7 @@ module Gargantext.API.Metrics
     where
 
 import Control.Lens
-import Data.Text (Text)
+import Data.HashMap.Strict qualified as HashMap
 import Data.Time (UTCTime)
 import Data.Vector (Vector)
 import Gargantext.API.HashedResponse
@@ -32,6 +32,7 @@ import Gargantext.Core.Types (CorpusId, ListId, ListType(..))
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Core.Viz.Chart
 import Gargantext.Core.Viz.Types
+import Gargantext.Database.Action.Metrics qualified as Metrics
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataList(..), hl_chart, hl_pie, hl_scatter, hl_tree)
 import Gargantext.Database.Admin.Types.Metrics (ChartMetrics(..), Metric(..), Metrics(..))
 import Gargantext.Database.Admin.Types.Node (NodeId)
@@ -40,10 +41,8 @@ import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Node (node_hyperdata)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash)
 import Servant
-import qualified Data.HashMap.Strict                as HashMap
-import qualified Gargantext.Database.Action.Metrics as Metrics
 
 -------------------------------------------------------------
 -- | Scatter metrics API

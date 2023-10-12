@@ -52,20 +52,17 @@ def fast_maximal_cliques(g):
 module Gargantext.Core.Methods.Graph.MaxClique
   where
 
-import Data.Maybe (catMaybes)
-import Gargantext.Prelude
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.List (sortOn, nub, concat)
-import Data.Set (Set)
-import Data.Set (fromList, toList, isSubsetOf)
 import Data.Graph.Inductive hiding (Graph, neighbors, subgraph, (&))
-import Gargantext.Core.Viz.Graph.FGL (Graph_Undirected, degree, neighbors, mkGraphUfromEdges)
-import Gargantext.Core.Viz.Graph.Tools (cooc2graph',cooc2graph'', Threshold)
+import Data.List (nub)
+import Data.Map.Strict qualified as Map
+import Data.Set (fromList, isSubsetOf)
 import Gargantext.Core.Methods.Similarities (Similarity)
+import Gargantext.Core.Viz.Graph.FGL (Graph_Undirected, degree, neighbors, mkGraphUfromEdges)
 import Gargantext.Core.Viz.Graph.Index (createIndices, toIndex)
+import Gargantext.Core.Viz.Graph.Tools (cooc2graph',cooc2graph'', Threshold)
 import Gargantext.Core.Viz.Phylo
--- import Debug.Trace (trace)
+import Gargantext.Prelude
+
 type Graph = Graph_Undirected
 type Neighbor = Node
 
@@ -75,9 +72,9 @@ type Neighbor = Node
 getMaxCliques :: Ord a => MaxCliqueFilter -> Similarity -> Threshold -> Map (a, a) Int -> [[a]]
 getMaxCliques f d t m = map fromIndices $ getMaxCliques' t m'
   where
-    m'          = toIndex to m
-    (to,from)   = createIndices m
-    fromIndices = catMaybes . map (\n -> Map.lookup n from)
+    m'          = toIndex to' m
+    (to', from')   = createIndices m
+    fromIndices = catMaybes . map (\n -> Map.lookup n from')
 
     getMaxCliques' :: Threshold -> Map (Int, Int) Int -> [[Int]]
     getMaxCliques' t' n = maxCliques graph

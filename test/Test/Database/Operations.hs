@@ -11,6 +11,7 @@ module Test.Database.Operations (
 
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Text qualified as T
 import Database.PostgreSQL.Simple
 import Gargantext.API.Node.Corpus.Update
 import Gargantext.Core
@@ -23,10 +24,7 @@ import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
-import Prelude
 import Test.API.Setup (setupEnvironment)
-import qualified Data.Text as T
-
 import Test.Database.Operations.DocumentSearch
 import Test.Database.Setup (withTestDB)
 import Test.Database.Types
@@ -39,7 +37,7 @@ import Test.Tasty.QuickCheck
 -- roundtrip tests won't fail.
 uniqueArbitraryNewUser :: Int -> Gen (NewUser GargPassword)
 uniqueArbitraryNewUser currentIx = do
-  ur <- (`mappend` (T.pack (show currentIx) <> "-")) <$> ascii_txt
+  ur <- (`mappend` ((show currentIx :: Text) <> "-")) <$> ascii_txt
   let email = ur <> "@foo.com"
   NewUser <$> pure ur <*> pure email <*> elements arbitraryPassword
   where

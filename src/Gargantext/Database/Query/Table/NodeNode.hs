@@ -35,8 +35,7 @@ module Gargantext.Database.Query.Table.NodeNode
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
-import Data.Maybe (catMaybes)
-import Data.Text (Text, splitOn)
+import Data.Text (splitOn)
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))

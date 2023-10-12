@@ -16,16 +16,13 @@ Portability : POSIX
 module Gargantext.Utils.UTCTime where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Either (Either(..))
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types (GQLType(..), DecodeScalar(..), EncodeScalar(..))
-import qualified Data.Morpheus.Types as DMT
+import Data.Morpheus.Types qualified as DMT
 import Data.Swagger (ToSchema)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Time (UTCTime)
 import Gargantext.Prelude
-import GHC.Generics (Generic)
-import Text.Read (readEither)
 
 
 newtype NUTCTime = NUTCTime UTCTime

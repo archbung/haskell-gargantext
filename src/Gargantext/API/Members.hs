@@ -1,16 +1,24 @@
+{-|
+Module      : Gargantext.API.Members
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 module Gargantext.API.Members where
 
-import Gargantext.Prelude
-import Gargantext.API.Prelude
-import Servant
-import Data.Text (Text)
 import Gargantext.API.Admin.EnvTypes (Env)
+import Gargantext.API.Prelude
 import Gargantext.Core.Types (UserId)
-import Gargantext.Database.Admin.Types.Node (NodeType(NodeTeam))
-import Gargantext.Database.Query.Table.Node (getNodesIdWithType)
 import Gargantext.Database.Action.Share (membersOf)
+import Gargantext.Database.Admin.Types.Node (NodeType(NodeTeam))
 import Gargantext.Database.Prelude (CmdCommon)
-import Control.Monad.Extra (concatMapM)
+import Gargantext.Database.Query.Table.Node (getNodesIdWithType)
+import Gargantext.Prelude
+import Servant
 
 type MembersAPI = Get '[JSON] [Text]
 

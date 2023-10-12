@@ -15,31 +15,25 @@ module Gargantext.Core.Viz.Chart
   where
 
 import Data.HashMap.Strict qualified as HashMap
-import Data.List (sortOn)
 import Data.List qualified as List
 import Data.Map.Strict (toList)
-import Data.Maybe (catMaybes)
 import Data.Vector qualified as V
-
+import Gargantext.API.Ngrams.NgramsTree
+import Gargantext.API.Ngrams.Tools
+import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
-import Gargantext.Core.Types.Main
+import Gargantext.Core.Types
+import Gargantext.Core.Viz.Types
+import Gargantext.Database.Action.Metrics.NgramsByContext
 import Gargantext.Database.Admin.Config
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.NodeContext (selectDocsDates)
-import Gargantext.Database.Schema.Node
-import Gargantext.Prelude
-
--- Pie Chart
-import Gargantext.API.Ngrams.NgramsTree
-import Gargantext.API.Ngrams.Tools
-import Gargantext.API.Ngrams.Types
-import Gargantext.Core.Types
-import Gargantext.Database.Action.Metrics.NgramsByContext
 import Gargantext.Database.Schema.Ngrams
-import Gargantext.Core.Viz.Types
+import Gargantext.Database.Schema.Node
+import Gargantext.Prelude hiding (toList)
 
 
 histoData :: CorpusId -> DBCmd err Histo
@@ -63,11 +57,11 @@ chartData cId nt lt = do
   let
     dico = filterListWithRoot [lt] ts
     terms = catMaybes $ List.concat $ map (\(a,b) -> [Just a, b]) $ HashMap.toList dico
-    group dico' x = case HashMap.lookup x dico' of
+    group' dico' x = case HashMap.lookup x dico' of
         Nothing -> x
         Just x' -> maybe x identity x'
 
-  (_total,mapTerms) <- countContextsByNgramsWith (group dico)
+  (_total,mapTerms) <- countContextsByNgramsWith (group' dico)
                     <$> getContextsByNgramsOnlyUser cId (ls' <> ls) nt terms
   let (dates, count) = V.unzip $
                        V.fromList $

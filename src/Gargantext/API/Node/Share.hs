@@ -16,9 +16,9 @@ module Gargantext.API.Node.Share
       where
 
 import Data.Aeson
+import Data.List qualified as List
 import Data.Swagger
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Text qualified as Text
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.Types.Individu (User(..), arbitraryUsername)
@@ -31,12 +31,10 @@ import Gargantext.Database.Prelude (CmdRandom)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Tree (findNodesWithType)
 import Gargantext.Prelude
+import Gargantext.Utils.Aeson qualified as GUA
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
-import qualified Data.List as List
-import qualified Data.Text as Text
-import qualified Gargantext.Utils.Aeson as GUA
 
 ------------------------------------------------------------------------
 data ShareNodeParams = ShareTeamParams   { username :: Text  }

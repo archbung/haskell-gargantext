@@ -15,23 +15,23 @@ Portability : POSIX
 module Gargantext.Database.Query.Table.Node.UpdateOpaleye
   where
 
-import Opaleye
 import Data.Aeson (encode)
 import Gargantext.Core
-import Gargantext.Prelude
-import Gargantext.Database.Schema.Node
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (mkCmd, DBCmd)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Schema.Node
+import Gargantext.Prelude
+import Opaleye
 
 -- import Debug.Trace (trace)
 
 updateHyperdata :: HyperdataC a => NodeId -> a -> DBCmd err Int64
-updateHyperdata i h = mkCmd $ \c -> putStrLn "before runUpdate_" >>
+updateHyperdata i h = mkCmd $ \c -> putStrLn ("before runUpdate_" :: Text) >>
                                     runUpdate_ c (updateHyperdataQuery i h) >>= \res ->
-                                    putStrLn "after runUpdate_" >> pure res
+                                    putStrLn ("after runUpdate_" :: Text) >> pure res
 
 updateHyperdataQuery :: HyperdataC a => NodeId -> a -> Update Int64
 updateHyperdataQuery i h = seq h' $ {- trace "updateHyperdataQuery: encoded JSON" $ -} Update

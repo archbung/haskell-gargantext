@@ -14,14 +14,14 @@ Presse RIS format parser for Europresse Database.
 
 module Gargantext.Core.Text.Corpus.Parsers.RIS.Presse (presseEnrich) where
 
-import Data.List (lookup)
-import Data.Tuple.Extra (first, both)
 import Data.Attoparsec.ByteString (parseOnly)
-import Data.ByteString (ByteString, length)
-import Gargantext.Prelude hiding (takeWhile, take, length)
-import Gargantext.Core.Text.Corpus.Parsers.RIS (onField)
+import Data.ByteString (length)
+import Data.List (lookup)
+import Data.Tuple.Extra (both)
 import Gargantext.Core (Lang(..))
-import qualified Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec as Date
+import Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec qualified as Date
+import Gargantext.Core.Text.Corpus.Parsers.RIS (onField)
+import Gargantext.Prelude hiding (takeWhile, take, length)
 
 
 
@@ -35,8 +35,8 @@ parseDate :: ByteString -> [(ByteString, ByteString)]
 parseDate str = either (const []) identity $ parseOnly (Date.parserWith "/")  str
 
 parseLang :: ByteString -> [(ByteString, ByteString)]
-parseLang "Français" = [(langField, cs $ show FR)]
-parseLang "English"  = [(langField, cs $ show EN)]
+parseLang "Français" = [(langField, cs $ (show FR :: Text))]
+parseLang "English"  = [(langField, cs $ (show EN :: Text))]
 parseLang x = [(langField, x)]
 
 langField :: ByteString

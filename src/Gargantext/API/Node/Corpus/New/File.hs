@@ -19,22 +19,17 @@ module Gargantext.API.Node.Corpus.New.File
   where
 
 import Control.Lens ((.~), (?~))
-import Control.Monad (forM)
 import Data.Maybe
-import Data.Monoid (mempty)
 import Data.Swagger
-import Data.Text (Text())
-
-import Servant
-import Servant.Multipart
-import Servant.Swagger.Internal
-
 import Gargantext.API.Node.Corpus.New.Types
 import Gargantext.Core.Types (TODO)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Crypto.Hash (hash)
+import Servant
+import Servant.Multipart
+import Servant.Swagger.Internal
 
 -------------------------------------------------------------
 type Hash = Text

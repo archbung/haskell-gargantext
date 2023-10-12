@@ -18,10 +18,8 @@ module Gargantext.API.Node.Update
 
 import Control.Lens (view)
 import Data.Aeson
-import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set qualified as Set
 import Data.Swagger
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
@@ -45,10 +43,9 @@ import Gargantext.Database.Query.Table.Node (defaultList, getNode)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
-import Gargantext.Prelude (Bool(..), Ord, Eq, (<$>), ($), {-printDebug,-} pure, show, cs, (<>), panic, (<*>))
+import Gargantext.Prelude
 import Gargantext.Utils.Aeson qualified as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Prelude (Enum, Bounded, minBound, maxBound)
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
@@ -116,7 +113,7 @@ updateNode _uId nid1 (LinkNodeReq nt nid2) jobHandle = do
     NodeAnnuaire -> pairing nid2 nid1 Nothing -- defaultList
     NodeCorpus   -> pairing nid1 nid2 Nothing -- defaultList
     _            -> panic $ "[G.API.N.Update.updateNode] NodeType not implemented"
-                          <> cs (show nt <> " nid1: " <> show nid1 <> " nid2: " <> show nid2)
+                          <> show nt <> " nid1: " <> show nid1 <> " nid2: " <> show nid2
 
   markComplete jobHandle
 

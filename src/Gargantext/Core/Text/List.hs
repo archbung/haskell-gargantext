@@ -22,11 +22,7 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
 import Data.HashSet qualified as HashSet
 import Data.List qualified as List
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Monoid (mempty)
-import Data.Ord (Down(..))
-import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Tuple.Extra (both)
 import Gargantext.API.Ngrams.Types (NgramsElement, NgramsTerm(..))
@@ -209,13 +205,13 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
     !monoSize = 0.4  :: Double
     !multSize = 1 - monoSize
 
-    splitAt n' ns = both (HashMap.fromListWith (<>))
-                     $ List.splitAt (round $ n' * listSizeGlobal)
-                     $ List.sortOn (viewScore . snd)
-                     $ HashMap.toList ns
+    splitAt' n' ns = both (HashMap.fromListWith (<>))
+                      $ List.splitAt (round $ n' * listSizeGlobal)
+                      $ List.sortOn (viewScore . snd)
+                      $ HashMap.toList ns
 
-    !(groupedMonoHead, _groupedMonoTail) = splitAt monoSize groupedMono
-    !(groupedMultHead, groupedMultTail)  = splitAt multSize groupedMult
+    !(groupedMonoHead, _groupedMonoTail) = splitAt' monoSize groupedMono
+    !(groupedMultHead, groupedMultTail)  = splitAt' multSize groupedMult
 
 -------------------------
 -- Filter 1 With Set NodeId and SpeGen
@@ -290,25 +286,25 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
     !inclSize = 0.4  :: Double
     !exclSize = 1 - inclSize
 
-    splitAt' max' n' = (both (HashMap.fromList)) . (List.splitAt (round $ n' * max'))
-    sortOn   f       = (List.sortOn (Down . (view (gts'_score . f)) . snd)) . HashMap.toList
+    splitAt'' max' n' = (both (HashMap.fromList)) . (List.splitAt (round $ n' * max'))
+    sortOn'   f       = (List.sortOn (Down . (view (gts'_score . f)) . snd)) . HashMap.toList
 
-    monoInc_size n = splitAt' n $ monoSize * inclSize / 2
-    multExc_size n = splitAt' n $ multSize * exclSize / 2
-
-
-    !(mapMonoScoredInclHead, monoScoredInclTail) = monoInc_size mapSize $ (sortOn scored_genInc) monoScoredIncl
-    !(mapMonoScoredExclHead, monoScoredExclTail) = monoInc_size mapSize $ (sortOn scored_speExc) monoScoredExcl
-
-    !(mapMultScoredInclHead, multScoredInclTail) = multExc_size mapSize $ (sortOn scored_genInc) multScoredIncl
-    !(mapMultScoredExclHead, multScoredExclTail) = multExc_size mapSize $ (sortOn scored_speExc) multScoredExcl
+    monoInc_size n = splitAt'' n $ monoSize * inclSize / 2
+    multExc_size n = splitAt'' n $ multSize * exclSize / 2
 
 
-    !(canMonoScoredIncHead , _) = monoInc_size canSize $ (sortOn scored_genInc) monoScoredInclTail
-    !(canMonoScoredExclHead, _) = monoInc_size canSize $ (sortOn scored_speExc) monoScoredExclTail
+    !(mapMonoScoredInclHead, monoScoredInclTail) = monoInc_size mapSize $ (sortOn' scored_genInc) monoScoredIncl
+    !(mapMonoScoredExclHead, monoScoredExclTail) = monoInc_size mapSize $ (sortOn' scored_speExc) monoScoredExcl
 
-    !(canMulScoredInclHead, _)  = multExc_size canSize $ (sortOn scored_genInc) multScoredInclTail
-    !(canMultScoredExclHead, _) = multExc_size canSize $ (sortOn scored_speExc) multScoredExclTail
+    !(mapMultScoredInclHead, multScoredInclTail) = multExc_size mapSize $ (sortOn' scored_genInc) multScoredIncl
+    !(mapMultScoredExclHead, multScoredExclTail) = multExc_size mapSize $ (sortOn' scored_speExc) multScoredExcl
+
+
+    !(canMonoScoredIncHead , _) = monoInc_size canSize $ (sortOn' scored_genInc) monoScoredInclTail
+    !(canMonoScoredExclHead, _) = monoInc_size canSize $ (sortOn' scored_speExc) monoScoredExclTail
+
+    !(canMulScoredInclHead, _)  = multExc_size canSize $ (sortOn' scored_genInc) multScoredInclTail
+    !(canMultScoredExclHead, _) = multExc_size canSize $ (sortOn' scored_speExc) multScoredExclTail
 
 ------------------------------------------------------------
     -- Final Step building the Typed list

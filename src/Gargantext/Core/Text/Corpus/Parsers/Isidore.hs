@@ -14,6 +14,7 @@ TODO:
 - use more ontologies to help building corpora
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -22,24 +23,24 @@ module Gargantext.Core.Text.Corpus.Parsers.Isidore where
 import Control.Lens hiding (contains)
 import Data.ByteString.Lazy (ByteString)
 import Data.RDF hiding (triple, Query)
-import Data.Text hiding (groupBy, map)
+import Data.Text qualified as T
 import Database.HSparql.Connection
 import Database.HSparql.QueryGenerator
 import Gargantext.Core (Lang)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (ByteString)
 import Network.Wreq (getWith, Response, defaults, header, param, responseStatus, responseBody)
-import Prelude (String)
+import Prelude qualified
 
 route :: EndPoint
 route = "https://isidore.science/sparql/"
 
-selectQueryRaw' :: String -> String -> IO (Response ByteString)
+selectQueryRaw' :: Prelude.String -> Prelude.String -> IO (Response ByteString)
 selectQueryRaw' uri q = getWith opts uri
   where
     opts = defaults & header "Accept"     .~ ["application/sparql-results+xml"]
                     & header "User-Agent" .~ ["gargantext-hsparql-client"]
-                    & param  "query"      .~ [Data.Text.pack q]
+                    & param  "query"      .~ [T.pack q]
 
 isidoreGet :: Lang -> Int -> Text -> IO (Maybe [HyperdataDocument])
 isidoreGet la li q = do
@@ -53,7 +54,7 @@ isidoreGet' l q = do
   let s = createSelectQuery $ isidoreSelect l q
   putStrLn s
   r <- selectQueryRaw' route s
-  putStrLn $ show $ r ^. responseStatus
+  putStrLn (show $ r ^. responseStatus :: Text)
   pure $ structureContent $ r ^. responseBody
  -- res <- selectQuery route $ simpleSelect q
  -- pure res
@@ -70,7 +71,7 @@ isidoreSelect lim q = do
   --ore     <- prefix "ore"    (iriRef "http://www.openarchives.org/ore/terms/")
   --bif     <- prefix "bif"    (iriRef "bif:")
 
-  link     <- var
+  link'    <- var
   title    <- var
   date     <- var
   abstract <- var
@@ -80,17 +81,17 @@ isidoreSelect lim q = do
   publisher <- var
   --agg       <- var
 
-  triple_ link (rdf     .:. "type")     (isidore .:. "Document")
-  triple_ link (dcterms .:. "title")    title
-  triple_ link (dcterms .:. "date")     date
-  triple_ link (dcterms .:. "creator")  authors
+  triple_ link' (rdf     .:. "type")     (isidore .:. "Document")
+  triple_ link' (dcterms .:. "title")    title
+  triple_ link' (dcterms .:. "date")     date
+  triple_ link' (dcterms .:. "creator")  authors
   --triple_ link (dcterms .:. "language") langDoc
-  triple_ link (dc      .:. "description") abstract
+  triple_ link' (dc      .:. "description") abstract
   --triple_ link (ore .:. "isAggregatedBy") agg
   --triple_ agg (dcterms .:. "title") title
 
-  optional_ $ triple_ link (dcterms .:. "source")      source
-  optional_ $ triple_ link (dcterms .:. "publisher")   publisher
+  optional_ $ triple_ link' (dcterms .:. "source")      source
+  optional_ $ triple_ link' (dcterms .:. "publisher")   publisher
 
   -- TODO FIX BUG with (.||.) operator
   --filterExpr_ $ (.||.) (contains title q) (contains abstract q)
@@ -106,7 +107,7 @@ isidoreSelect lim q = do
   orderNextDesc date
   limit_ lim
   distinct_
-  selectVars [link, date, langDoc, authors, source, publisher, title, abstract]
+  selectVars [link', date, langDoc, authors, source, publisher, title, abstract]
 
 -- | TODO : check if all cases are taken into account
 unbound :: Lang -> BindingValue -> Maybe Text
@@ -114,14 +115,14 @@ unbound _ Unbound         = Nothing
 unbound _ (Bound (UNode x)) = Just x
 unbound _ (Bound (LNode (TypedL x _))) = Just x
 unbound _ (Bound (LNode (PlainL x)))   = Just x
-unbound l (Bound (LNode (PlainLL x l')))   = if l' == (toLower $ cs $ show l) then Just x else Nothing
+unbound l (Bound (LNode (PlainLL x l')))   = if l' == (T.toLower $ show l) then Just x else Nothing
 unbound _ _ = Nothing
 
 bind2doc :: Lang -> [BindingValue] -> HyperdataDocument
-bind2doc l [ link, date, langDoc, authors, _source, publisher, title, abstract ] =
+bind2doc l [ link', date, langDoc, authors, _source, publisher, title, abstract ] =
   HyperdataDocument { _hd_bdd = Just "Isidore"
                     , _hd_doi = Nothing
-                    , _hd_url = unbound l link
+                    , _hd_url = unbound l link'
                     , _hd_uniqId = Nothing
                     , _hd_uniqIdBdd = Nothing
                     , _hd_page = Nothing

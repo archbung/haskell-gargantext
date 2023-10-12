@@ -19,17 +19,16 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.Parsers.Wikidata where
 
 import Control.Lens (makeLenses, (^.) )
-import Data.Maybe (catMaybes)
-import Data.Text (Text, concat)
+import Data.List qualified as List
+import Data.Text (concat)
 import Database.HSparql.Connection
 import Gargantext.Core (Lang(..))
-import Gargantext.Core.Text.Corpus.Parsers.Isidore (unbound)
-import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import Gargantext.Prelude
-import Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
-import Prelude (String)
-import qualified Data.List as List
 import Gargantext.Core.Text.Corpus.Parsers.Date (dateSplit)
+import Gargantext.Core.Text.Corpus.Parsers.Isidore (unbound)
+import Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
+import Gargantext.Prelude hiding (concat)
+import Prelude qualified
 
 
 
@@ -78,12 +77,12 @@ wikiPageToDocument m wr = do
 
   let hour = Nothing
       minute = Nothing
-      second = Nothing
-      iso2   = Just $ cs $ show EN
+      sec = Nothing
+      iso2   = Just $ show EN
 
   pure $ HyperdataDocument bdd doi url uniqId uniqIdBdd
                            page title authors institutes source
-                           abstract ((cs . show) <$> date) year month day hour minute second iso2
+                           abstract (show <$> date) year month day hour minute sec iso2
 
 
 wikidataSelect :: Int -> IO [WikiResult]
@@ -104,7 +103,7 @@ toWikiResult _                  = panic "[G.C.T.C.Parsers.Wikidata.toWikiResult]
 wikidataRoute :: EndPoint
 wikidataRoute = "https://query.wikidata.org/sparql"
 
-wikidataQuery :: Int -> String
+wikidataQuery :: Int -> Prelude.String
 wikidataQuery n = List.unlines
       ["     PREFIX wd:       <http://www.wikidata.org/entity/>"
       ,"     PREFIX wdt:      <http://www.wikidata.org/prop/direct/>"
@@ -128,5 +127,5 @@ wikidataQuery n = List.unlines
       ,"       OPTIONAL {?cid (wdt:P582) ?dateEnd     .}"
       ,"       OPTIONAL {?cid (wdt:P571) ?dateFlorish .}"
       ,"     }"
-      ,"       LIMIT " <> (cs $ show n)
+      ,"       LIMIT " <> show n
       ]

@@ -16,20 +16,16 @@ module Gargantext.API.Ngrams.NgramsTree
 
 import Data.Aeson.TH (deriveJSON)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe (catMaybes)
-import Data.Set (Set)
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
+import Data.Set qualified as Set
 import Data.Swagger
-import Data.Text (Text)
 import Data.Tree
-import GHC.Generics (Generic)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types (ListType(..), NodeId)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Prelude
 import Test.QuickCheck
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.List as List
-import qualified Data.Set as Set
 
 type Children = Text
 type Root = Text

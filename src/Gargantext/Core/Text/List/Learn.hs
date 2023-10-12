@@ -17,18 +17,16 @@ CSV parser for Gargantext corpus files.
 module Gargantext.Core.Text.List.Learn
   where
 
-import qualified Data.IntMap as IntMap
-import qualified Data.List   as List
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict    as Map
-import qualified Data.SVM    as SVM
-import qualified Data.Vector as Vec
-
+import Data.IntMap qualified as IntMap
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.SVM qualified as SVM
+import Data.Vector qualified as Vec
 import Gargantext.Core
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
 import Gargantext.Core.Types.Main (ListType(..))
-import Gargantext.Prelude
 import Gargantext.Database.GargDB
+import Gargantext.Prelude
 
 ------------------------------------------------------------------------
 train :: Double -> Double -> SVM.Problem -> IO SVM.Model

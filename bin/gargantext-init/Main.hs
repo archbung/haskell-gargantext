@@ -15,7 +15,6 @@ Import a corpus binary.
 
 module Main where
 
-import Data.Either (Either(..))
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
 import Gargantext.API.Node () -- instances only
 import Gargantext.API.Prelude (GargError)
@@ -30,7 +29,6 @@ import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.User (insertNewUsers, )
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
-import Prelude (getLine)
 import System.Environment (getArgs)
 
 
@@ -42,10 +40,10 @@ main = do
       then panic "USAGE: ./gargantext-init gargantext.ini"
       else pure ()
 
-  putStrLn "Enter master user (gargantua) _password_ :"
+  putStrLn ("Enter master user (gargantua) _password_ :" :: Text)
   password  <- getLine
 
-  putStrLn "Enter master user (gargantua) _email_ :"
+  putStrLn ("Enter master user (gargantua) _email_ :" :: Text)
   email     <- getLine
 
   cfg       <- readConfig         iniPath
@@ -77,5 +75,5 @@ main = do
     _ <- runCmdDev env createUsers
     x <- runCmdDev env initMaster
     _ <- runCmdDev env mkRoots
-    putStrLn $ show x
+    putStrLn (show x :: Text)
     pure ()

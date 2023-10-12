@@ -11,23 +11,23 @@ Polymorphic Get Node API
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Gargantext.API.Node.Get
       where
 
 import Data.Aeson
 import Data.Swagger
-import GHC.Generics (Generic)
-import Servant
-import Test.QuickCheck.Arbitrary
-
 import Gargantext.API.Prelude
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (JSONB)
 import Gargantext.Prelude
+import Servant
+import Test.QuickCheck.Arbitrary
 
 ------------------------------------------------------------------------
 type API a = Summary "Polymorphic Get Node Endpoint"

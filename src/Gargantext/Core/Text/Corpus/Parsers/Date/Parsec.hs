@@ -13,20 +13,18 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
   where
 
-import Data.Either (Either)
 import Data.Fixed (Fixed (MkFixed))
 import Data.String (String)
-import Data.Text (Text, unpack)
+import Data.Text qualified as T
 import Data.Time (ZonedTime(..), LocalTime(..), TimeZone(..), TimeOfDay(..))
 import Data.Time.Calendar (Day, fromGregorian)
 import Gargantext.Prelude
-import Prelude (toInteger, (++))
 import Text.Parsec.Error (ParseError)
 import Text.Parsec.Prim (Stream, ParsecT)
 import Text.Parsec.String (Parser)
 import Text.ParserCombinators.Parsec (many1, noneOf, anyChar, char, oneOf)
+import Text.ParserCombinators.Parsec qualified (parse)
 import Text.XML.HXT.DOM.Util (decimalStringToInt)
-import qualified Text.ParserCombinators.Parsec (parse)
 
 -- | Permit to transform a String to an Int in a monadic context
 wrapDST :: Monad m => String -> m Int
@@ -88,4 +86,4 @@ parseZonedTime= do
 ---- | Opposite of toRFC3339
 fromRFC3339 :: Text -> Either ParseError ZonedTime
 fromRFC3339 t = Text.ParserCombinators.Parsec.parse parseZonedTime "ERROR: Couldn't parse zoned time." input
-        where input = unpack t
+        where input = T.unpack t

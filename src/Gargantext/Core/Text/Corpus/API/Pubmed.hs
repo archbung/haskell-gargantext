@@ -21,26 +21,18 @@ module Gargantext.Core.Text.Corpus.API.Pubmed
     where
 
 import Conduit
-import Control.Monad.Reader (runReaderT)
-import Data.Either (Either)
-import Data.Maybe
-import Data.Semigroup
-import Data.Monoid
-import Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as TE
-import Network.HTTP.Types.URI (EscapeItem(..), renderQueryPartialEscape)
-import Servant.Client (ClientError)
-
-import Gargantext.Prelude
+import Data.Text qualified as Text
+import Data.Text.Encoding qualified as TE
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
 import Gargantext.Core.Types (Term(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-
-import qualified PUBMED as PubMed
-import qualified PUBMED.Parser as PubMedDoc
+import Gargantext.Prelude hiding (get)
+import Network.HTTP.Types.URI (EscapeItem(..), renderQueryPartialEscape)
+import PUBMED qualified as PubMed
+import PUBMED.Parser qualified as PubMedDoc
 import PUBMED.Types (Config(..))
+import Servant.Client (ClientError)
 
 
 -- | A pubmed query.

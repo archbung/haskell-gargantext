@@ -19,14 +19,9 @@ module Gargantext.Core.Types.Main where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
-import Data.Either (Either(..))
-import Data.Hashable (Hashable)
 import Data.Map.Strict (fromList, lookup)
-import Data.Maybe (fromMaybe)
-import Data.Semigroup (Semigroup(..))
 import Data.Swagger
-import Data.Text (Text, unpack, pack)
-import GHC.Generics (Generic)
+import Data.Text (unpack, pack)
 import Gargantext.Core
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node  -- (NodeType(..), Node, Hyperdata(..))
@@ -34,7 +29,6 @@ import Gargantext.Prelude
 import Servant.API (FromHttpApiData(..), ToHttpApiData(..))
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-import Text.Read (readMaybe)
 
 type CorpusName = Text
 ------------------------------------------------------------------------

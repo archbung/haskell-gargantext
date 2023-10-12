@@ -18,15 +18,14 @@ Individu defintions
 module Gargantext.Core.Types.Individu
   where
 
-import Control.Monad.IO.Class (MonadIO)
 import Data.Aeson
 import Data.Swagger
-import Data.Text (Text, pack, reverse)
-import GHC.Generics (Generic)
+import Data.Text (pack, reverse)
+import Data.Text qualified as T
 import Gargantext.Database.Admin.Types.Node (NodeId, UserId)
 import Gargantext.Prelude hiding (reverse)
-import qualified Gargantext.Prelude.Crypto.Auth as Auth
-import qualified Data.Text as T
+import Gargantext.Prelude.Crypto.Auth qualified as Auth
+import Prelude qualified
 
 -- FIXME UserName used twice
 data User = UserDBId UserId | UserName Text | RootId NodeId | UserPublic
@@ -48,7 +47,7 @@ newtype GargPassword = GargPassword Text
 toGargPassword :: Text -> GargPassword
 toGargPassword x = GargPassword x
 
-instance Show GargPassword where
+instance Prelude.Show GargPassword where
   show (GargPassword _) = "*GargPassword*"
 
 instance ToJSON GargPassword

@@ -17,20 +17,17 @@ module Gargantext.API.Node.Corpus.Annuaire
 import Control.Lens hiding (elements)
 import Data.Aeson
 import Data.Swagger
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Servant
-import Servant.Job.Utils (jsonOptions)
-import Web.FormUrlEncoded (FromForm)
-
-import qualified Gargantext.API.Node.Corpus.New.Types as NewTypes
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Node.Corpus.New.Types qualified as NewTypes
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)  -- flowAnnuaire
 import Gargantext.Database.Admin.Types.Node (AnnuaireId)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (MonadJobStatus(..))
+import Servant
+import Servant.Job.Utils (jsonOptions)
+import Web.FormUrlEncoded (FromForm)
 
 
 type Api = Summary "New Annuaire endpoint"

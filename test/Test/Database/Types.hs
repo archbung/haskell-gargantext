@@ -21,32 +21,31 @@ import Control.Monad.Reader
 import Control.Monad.Trans.Control
 import Data.IORef
 import Data.Map qualified as Map
-import Data.Maybe (fromMaybe)
 import Data.Pool
 import Data.Text qualified as T
 import Database.PostgreSQL.Simple qualified as PG
 import Database.Postgres.Temp qualified as Tmp
-import Gargantext
+import Gargantext hiding (to)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.EnvTypes qualified as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.Mail.Types (HasMail(..))
 import Gargantext.Core.NLP (HasNLPServer(..))
-import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Prelude (HasConfig(..), HasConnectionPool(..))
+import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Prelude.Config
 import Gargantext.Prelude.Mail.Types (MailConfig(..), LoginType(NoAuth))
 import Gargantext.System.Logging (HasLogger(..), Logger, MonadLogger(..))
 import Gargantext.Utils.Jobs
 import Network.URI (parseURI)
-import Prelude
+import Prelude qualified
 import System.Log.FastLogger qualified as FL
 
 newtype Counter = Counter { _Counter :: IORef Int }
   deriving Eq
 
-instance Show Counter where
+instance Prelude.Show Counter where
   show (Counter _) = "Counter"
 
 emptyCounter :: IO Counter
@@ -92,7 +91,7 @@ data DBHandle = DBHandle {
   }
 
 instance HasNodeError IOException where
-  _NodeError = prism' (userError . show) (const Nothing)
+  _NodeError = prism' (Prelude.userError . show) (const Nothing)
 
 instance HasConnectionPool TestEnv where
   connPool = to (_DBHandle . test_db)
@@ -111,7 +110,7 @@ instance HasMail TestEnv where
 coreNLPConfig :: NLPServerConfig
 coreNLPConfig =
   let uri = parseURI "http://localhost:9000"
-  in NLPServerConfig CoreNLP (fromMaybe (error "parseURI for nlpServerConfig failed") uri)
+  in NLPServerConfig CoreNLP (fromMaybe (Prelude.error "parseURI for nlpServerConfig failed") uri)
 
 
 instance HasNLPServer TestEnv where
@@ -133,7 +132,7 @@ instance HasLogger (GargM TestEnv GargError) where
     pure $ GargTestLogger mode test_logger_set
   destroyLogger             = \GargTestLogger{..}  -> liftIO $ FL.rmLoggerSet test_logger_set
   logMsg = \(GargTestLogger mode logger_set) lvl msg -> do
-    let pfx = "[" <> show lvl <> "] "
+    let pfx = "[" <> show lvl <> "] " :: Text
     when (lvl `elem` (modeToLoggingLevels mode)) $
       liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
   logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)

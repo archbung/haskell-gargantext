@@ -12,21 +12,17 @@ module Gargantext.Core.Text.List.Social.Patch
   where
 
 import Control.Lens hiding (cons)
-import Data.Map.Strict (Map)
-import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
-import Data.Monoid
-import Data.Semigroup
-import Gargantext.API.Ngrams.Types
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.Patch.Class qualified as Patch (Replace(..))
 import Gargantext.API.Ngrams.Prelude (unMSet, patchMSet_toList)
+import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Text.List.Social.Prelude
 import Gargantext.Core.Types (ListId)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
-import qualified Data.Map.Strict as Map
-import qualified Data.List as List
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Patch.Class    as Patch (Replace(..))
 
 addScorePatches :: NgramsType -> [ListId]
                 -> FlowCont NgramsTerm FlowListScores
@@ -138,10 +134,10 @@ doLink n parent child fl' = fl' & flc_scores . at child %~ (score fls_parents pa
 score :: (Monoid a, At m, Semigroup (IxValue m))
       => ((m -> Identity m) -> a -> Identity b)
       -> Index m -> IxValue m -> Maybe a -> Maybe b
-score field list n m = (Just mempty <> m)
-                     & _Just
-                     . field
-                     . at list
-                     %~ (<> Just n)
+score field list' n m = (Just mempty <> m)
+                        & _Just
+                        . field
+                        . at list'
+                        %~ (<> Just n)
 
 ------------------------------------------------------------------------

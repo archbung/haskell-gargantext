@@ -22,10 +22,10 @@ module Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Control.Monad
 import Data.Either
 import Data.List ((!!))
+import Data.List qualified as List hiding (map, head)
 import Data.Maybe
-import Data.Text (Text(), pack, unpack)
+import Data.Text (pack, unpack)
 import Gargantext.Prelude
-import qualified Data.List as List hiding (map, head)
 
 vowels :: [Char]
 vowels = ['a','e','i','o','u']

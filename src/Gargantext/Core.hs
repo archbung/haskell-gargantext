@@ -15,19 +15,14 @@ module Gargantext.Core
   where
 
 import Data.Aeson
-import Data.Either(Either(Left))
-import Data.Hashable (Hashable)
 import Data.LanguageCodes qualified as ISO639
-import Data.Maybe (fromMaybe)
+import Data.Map qualified as Map
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
-import Data.Text (Text, pack)
-import Data.Tuple.Extra (swap)
-import GHC.Generics (Generic)
-import Gargantext.Prelude
+import Data.Text (pack)
+import Gargantext.Prelude hiding (All)
 import Servant.API
 import Test.QuickCheck
-import qualified Data.Map as Map
 
 ------------------------------------------------------------------------
 -- | Language of a Text

@@ -20,8 +20,7 @@ Portability : POSIX
 
 module Gargantext.Database.Admin.Types.Hyperdata.Document where
 
-import Data.Maybe (catMaybes)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (ByteString)
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude

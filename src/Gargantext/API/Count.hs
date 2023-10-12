@@ -10,6 +10,8 @@ Portability : POSIX
 Count API part of Gargantext.
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
 {-# LANGUAGE DeriveAnyClass     #-}
@@ -20,10 +22,8 @@ module Gargantext.API.Count
 import Data.Aeson hiding (Error)
 import Data.Aeson.TH (deriveJSON)
 import Data.Either
-import Data.List (permutations)
 import Data.Swagger
-import Data.Text (Text, pack)
-import GHC.Generics (Generic)
+import Data.Text (pack)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Prelude
 import Servant

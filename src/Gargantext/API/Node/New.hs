@@ -23,13 +23,6 @@ module Gargantext.API.Node.New
 import Control.Lens hiding (elements, Empty)
 import Data.Aeson
 import Data.Swagger
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Servant
-import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
-import Web.FormUrlEncoded          (FromForm, ToForm)
-
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Prelude
@@ -42,6 +35,10 @@ import Gargantext.Database.Query.Table.Node.User
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Servant
+import Test.QuickCheck (elements)
+import Test.QuickCheck.Arbitrary
+import Web.FormUrlEncoded (FromForm, ToForm)
 
 ------------------------------------------------------------------------
 data PostNode = PostNode { pn_name     :: Text

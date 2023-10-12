@@ -45,8 +45,7 @@ module Gargantext.Database.Query.Table.NodeContext
 
 import Control.Arrow (returnA)
 import Control.Lens (view, (^.))
-import Data.Maybe (catMaybes)
-import Data.Text (Text, splitOn)
+import Data.Text (splitOn)
 import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple qualified as PGS (In(..), Query, Only(..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)

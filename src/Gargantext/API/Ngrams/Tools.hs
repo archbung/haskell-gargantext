@@ -18,20 +18,18 @@ import Control.Concurrent
 import Control.Lens (_Just, (^.), at, view, At, Index, IxValue)
 import Control.Monad.Reader
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as Map
 import Data.Pool (withResource)
-import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Validity
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
+import Gargantext.Core.NodeStoryFile qualified as NSF
 import Gargantext.Core.Types (ListType(..), NodeId, NodeType(..), ListId)
 import Gargantext.Database.Prelude (HasConnectionPool(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map.Strict     as Map
-import qualified Data.Set            as Set
-import qualified Gargantext.Core.NodeStoryFile as NSF
 
 
 mergeNgramsElement :: NgramsRepoElement -> NgramsRepoElement -> NgramsRepoElement
@@ -52,11 +50,11 @@ getRepo listIds = do
 repoSize :: Ord k1 => NodeStory (Map.Map k1 (Map.Map k2 a)) p
                    -> NodeId
                    -> Map.Map k1 Int
-repoSize repo node_id = Map.map Map.size state
+repoSize repo node_id = Map.map Map.size state'
   where
-    state = repo ^. unNodeStory
-                  . at node_id . _Just
-                  . a_state
+    state' = repo ^. unNodeStory
+                   . at node_id . _Just
+                   . a_state
 
 
 getNodeStoryVar :: HasNodeStory env err m

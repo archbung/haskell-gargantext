@@ -12,10 +12,7 @@ Portability : POSIX
 -- Use only for dev/repl
 module Gargantext.API.Dev where
 
-import Control.Exception (finally)
 import Control.Monad (fail)
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Reader (runReaderT)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Settings
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
@@ -29,7 +26,6 @@ import Gargantext.Prelude.Mail qualified as Mail
 import Gargantext.Prelude.NLP qualified as NLP
 import Gargantext.System.Logging
 import Servant
-import System.IO (FilePath)
 
 type IniPath  = FilePath
 -------------------------------------------------------------------

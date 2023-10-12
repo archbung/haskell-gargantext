@@ -34,9 +34,7 @@ module Gargantext.API.Table
 import Data.Aeson.TH (deriveJSON)
 import Data.Maybe
 import Data.Swagger
-import Data.Text (Text())
 import Data.Text qualified as T
-import GHC.Generics (Generic)
 import Gargantext.API.HashedResponse
 import Gargantext.API.Ngrams.Types (TabType(..))
 import Gargantext.API.Prelude (GargServer)
@@ -52,7 +50,6 @@ import Gargantext.Database.Query.Facet (FacetDoc , runViewDocuments, runCountDoc
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Prelude
 import Gargantext.System.Logging
-import Prelude
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
@@ -145,7 +142,7 @@ postTableApi cId tq = case tq of
      $(logLocM) DEBUG $ "New search with query " <> getRawQuery q
      searchInCorpus' cId False q (Just o) (Just l) (Just order)
    Trash -> searchInCorpus' cId True  q (Just o) (Just l) (Just order)
-   x     -> panic $ "not implemented in tableApi " <> (cs $ show x)
+   x     -> panic $ "not implemented in tableApi " <> (show x)
 
 getTableHashApi :: (CmdM env err m, HasNodeError err, MonadLogger m)
                 => NodeId
@@ -207,7 +204,7 @@ getTable' cId ft o l order query year =
     (Just Trash)     -> runViewDocuments cId True  o l order query year
     (Just MoreFav)   -> moreLike cId o l order IsFav
     (Just MoreTrash) -> moreLike cId o l order IsTrash
-    x     -> panic $ "not implemented in getTable: " <> (cs $ show x)
+    x     -> panic $ "not implemented in getTable: " <> (show x)
 
 
 getPair :: ContactId -> Maybe TabType
@@ -217,4 +214,4 @@ getPair cId ft o l order =
   case ft of
     (Just Docs)  -> runViewAuthorsDoc cId False o l order
     (Just Trash) -> runViewAuthorsDoc cId True  o l order
-    _     -> panic $ "not implemented: get Pairing" <> (cs $ show ft)
+    _     -> panic $ "not implemented: get Pairing" <> (show ft)

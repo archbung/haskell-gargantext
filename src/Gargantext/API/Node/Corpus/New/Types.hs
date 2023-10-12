@@ -3,12 +3,10 @@ module Gargantext.API.Node.Corpus.New.Types where
 import Data.Aeson
 import Data.Swagger
 import Data.Text (pack)
-import GHC.Generics (Generic)
+import Gargantext.Prelude
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-
-import Gargantext.Prelude
 
 data FileType = CSV
               | CSV_HAL

@@ -15,16 +15,15 @@ module Gargantext.Database.Query.Tree.Error
   where
 
 import Control.Lens (Prism', (#))
-import Control.Monad.Except (MonadError(throwError))
-
 import Gargantext.Prelude
+import Prelude qualified
 
 ------------------------------------------------------------------------
 data TreeError = NoRoot
                | EmptyRoot
                | TooManyRoots
 
-instance Show TreeError
+instance Prelude.Show TreeError
   where
     show NoRoot       = "Root node not found"
     show EmptyRoot    = "Root node should not be empty"

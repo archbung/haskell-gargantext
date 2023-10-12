@@ -1,16 +1,25 @@
+{-|
+Module      : Gargantext.Core.Text.Corpus.Parsers.Gitlab
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 module Gargantext.Core.Text.Corpus.Parsers.Gitlab (
   Issue(..), gitlabIssue2hyperdataDocument, readFile_Issues, readFile_IssuesAsDocs
 ) where
 
 import Data.Aeson
+import Data.ByteString.Lazy qualified as DBL
+import Data.Text qualified as DT
 import Data.Time
-import qualified Data.Text            as DT
-import qualified Data.ByteString.Lazy as DBL
-import System.FilePath (FilePath)
-
-import Gargantext.Prelude
 import Gargantext.Core (Lang(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Prelude
 
 data Issue = Issue { _issue_id      :: !Int
                    , _issue_title   :: !DT.Text

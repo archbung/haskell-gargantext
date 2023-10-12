@@ -48,6 +48,9 @@ the concatenation of the parameters defined by @shaParameters@.
 
 -}
 ------------------------------------------------------------------------
+
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE QuasiQuotes          #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 ------------------------------------------------------------------------
@@ -58,27 +61,21 @@ import Control.Lens (set, view)
 import Control.Lens.Cons
 import Control.Lens.Prism
 import Data.Aeson (toJSON, ToJSON)
-import Data.Char (isAlphaNum)
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
--- import Data.ByteString (ByteString)
+import Data.Text qualified as DT (pack, concat, take, filter, toLower)
 import Data.Time.Segment (jour)
 import Database.PostgreSQL.Simple (FromRow, Query, Only(..))
 import Database.PostgreSQL.Simple.FromRow (fromRow, field)
--- import Database.PostgreSQL.Simple.ToRow (toRow, ToRow)
 import Database.PostgreSQL.Simple.SqlQQ
 import Database.PostgreSQL.Simple.ToField (toField, Action{-, ToField-})
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import GHC.Generics (Generic)
 import Gargantext.Core (HasDBid(toDBid))
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (runPGSQuery, DBCmd{-, formatPGSQuery-})
 import Gargantext.Database.Schema.Node (NodePoly(..))
-import qualified Gargantext.Defaults as Defaults
-import Gargantext.Prelude
+import Gargantext.Defaults qualified as Defaults
+import Gargantext.Prelude hiding (hash, toLower)
 import Gargantext.Prelude.Crypto.Hash (hash)
-import qualified Data.Text as DT (pack, concat, take, filter, toLower)
 
 {-| To Print result query
 import Data.ByteString.Internal (ByteString)

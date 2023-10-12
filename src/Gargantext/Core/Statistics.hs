@@ -14,13 +14,12 @@ module Gargantext.Core.Statistics
   where
 
 
-import Data.Map.Strict (Map)
+import Data.Array.IArray (Array, listArray, elems)
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.Vector.Storable qualified as Vec
 import Gargantext.Prelude
 import Numeric.Statistics.PCA (pcaReduceN)
-import Data.Array.IArray (Array, listArray, elems)
-import qualified Data.Vector.Storable as Vec
-import qualified Data.List as List
-import qualified Data.Map.Strict  as Map
 
 
 data Dimension = Dimension Int
