@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.8.3.2
+
+* [BACK][CODE] Type Classes improvement
+
 ## Version 0.0.6.9.9.8.3.1
 
 * [BACK][FIX] Disabling policy check
