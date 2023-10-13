@@ -20,8 +20,8 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.Async qualified as Async
 import Control.Concurrent.STM
+import Data.List (isInfixOf)
 import Data.Sequence ((|>), fromList)
-import Data.Text (isInfixOf)
 import Data.Time
 import Debug.RecoverRTTI (anythingToString)
 import Gargantext.API.Admin.EnvTypes as EnvTypes
@@ -139,7 +139,8 @@ testMaxRunners = do
   forM_ allSamples $ \runLog -> do
     annotate "predicate to satisfy: (x `isInfixOf` [\"Job #1\", \"Job #2\"] || x `isInfixOf` [\"Job #3\", \"Job #4\"]" $
       shouldSatisfy (sort runLog)
-                    (\x -> x `isInfixOf` ["Job #1", "Job #2"] || x `isInfixOf` ["Job #3", "Job #4"])
+                    (\x -> x `isInfixOf` ["Job #1", "Job #2"]
+                      || x `isInfixOf` ["Job #3", "Job #4"])
 
 testPrios :: IO ()
 testPrios = do
