@@ -1,41 +1,46 @@
+{-|
+Module      : Test.Utils.Jobs
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE NumericUnderscores  #-}
+
 module Test.Utils.Jobs (test) where
 
 import Control.Concurrent
-import qualified Control.Concurrent.Async as Async
+import Control.Concurrent.Async
+import Control.Concurrent.Async qualified as Async
 import Control.Concurrent.STM
-import Control.Exception
-import Control.Monad
-import Control.Monad.Reader
-import Control.Monad.Except
-import Data.Maybe
-import Data.Either
-import Data.List
-import Data.Sequence (Seq, (|>), fromList)
+import Data.Sequence ((|>), fromList)
+import Data.Text (isInfixOf)
 import Data.Time
 import Debug.RecoverRTTI (anythingToString)
-import Prelude
-import System.IO.Unsafe
-import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Client (Manager)
-import Test.Hspec
-import Test.Hspec.Expectations.Contrib (annotate)
-import qualified Servant.Job.Types as SJ
-import qualified Servant.Job.Core  as SJ
-
+import Gargantext.API.Admin.EnvTypes as EnvTypes
+import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Prelude
+import Gargantext.Prelude
 import Gargantext.Utils.Jobs.Internal (newJob)
 import Gargantext.Utils.Jobs.Map
 import Gargantext.Utils.Jobs.Monad hiding (withJob)
 import Gargantext.Utils.Jobs.Queue (applyPrios, defaultPrios)
 import Gargantext.Utils.Jobs.State
-import Gargantext.API.Prelude
-import Gargantext.API.Admin.EnvTypes as EnvTypes
-import Gargantext.API.Admin.Orchestrator.Types
-import Control.Concurrent.Async
+import Network.HTTP.Client (Manager)
+import Network.HTTP.Client.TLS (newTlsManager)
+import Prelude qualified
+import Servant.Job.Core qualified as SJ
+import Servant.Job.Types qualified as SJ
+import System.IO.Unsafe
+import Test.Hspec
+import Test.Hspec.Expectations.Contrib (annotate)
 
 
 data JobT = A
@@ -71,7 +76,7 @@ waitTimerSTM tv = do
 
 -- | Samples the running jobs from the first 'TVar' and write them
 -- in the queue.
-sampleRunningJobs :: Timer -> TVar [String] -> TQueue [String]-> STM ()
+sampleRunningJobs :: Timer -> TVar [Prelude.String] -> TQueue [Prelude.String]-> STM ()
 sampleRunningJobs timer runningJs samples = do
   waitTimerSTM timer
   runningNow <- readTVar runningJs
@@ -87,7 +92,7 @@ testMaxRunners = do
   let num_jobs = 4
   k <- genSecret
   let settings = defaultJobSettings 2 k
-  st :: JobsState JobT [String] () <- newJobsState settings defaultPrios
+  st :: JobsState JobT [Prelude.String] () <- newJobsState settings defaultPrios
   now <- getCurrentTime
   runningJs   <- newTVarIO []
   samples     <- newTQueueIO
@@ -143,7 +148,7 @@ testPrios = do
   -- without worrying about the runners competing with each other.
   let settings = defaultJobSettings 1 k
       prios    = [(B, 10), (C, 1), (D, 5)]
-  st :: JobsState JobT [String] () <- newJobsState settings $
+  st :: JobsState JobT [Prelude.String] () <- newJobsState settings $
     applyPrios prios defaultPrios -- B has the highest priority
   pickedSchedule <- newMVar (JobSchedule mempty)
   let j jobt _jHandle _inp _l = addJobToSchedule jobt pickedSchedule
@@ -168,7 +173,7 @@ testExceptions :: IO ()
 testExceptions = do
   k <- genSecret
   let settings = defaultJobSettings 1 k
-  st :: JobsState JobT [String] () <- newJobsState settings defaultPrios
+  st :: JobsState JobT [Prelude.String] () <- newJobsState settings defaultPrios
   jid <- pushJob A ()
     (\_jHandle _inp _log -> readFile "/doesntexist.txt" >>= putStrLn)
     settings st
@@ -176,17 +181,17 @@ testExceptions = do
   threadDelay $ 1_000_000
   mjob <- lookupJob jid (jobsData st)
   case mjob of
-    Nothing ->  fail "lookupJob failed, job not found!"
+    Nothing ->  Prelude.fail "lookupJob failed, job not found!"
     Just je ->  case jTask je of
       DoneJ _ r   -> isLeft r `shouldBe` True
-      unexpected  -> fail $ "Expected job to be done, but got: " <> anythingToString unexpected
+      unexpected  -> Prelude.fail $ "Expected job to be done, but got: " <> anythingToString unexpected
   return ()
 
 testFairness :: IO ()
 testFairness = do
   k <- genSecret
   let settings = defaultJobSettings 1 k
-  st :: JobsState JobT [String] () <- newJobsState settings defaultPrios
+  st :: JobsState JobT [Prelude.String] () <- newJobsState settings defaultPrios
   pickedSchedule <- newMVar (JobSchedule mempty)
   let j jobt _jHandle _inp _l = addJobToSchedule jobt pickedSchedule
       jobs = [ (A, j A)
@@ -260,17 +265,17 @@ newTestEnv = do
   let settings = defaultJobSettings 1 k
   myEnv <- newJobEnv settings defaultPrios testTlsManager
   pure $ Env
-       { _env_settings  = error "env_settings not needed, but forced somewhere (check StrictData)"
-       , _env_logger    = error "env_logger not needed, but forced somewhere (check StrictData)"
-       , _env_pool      = error "env_pool not needed, but forced somewhere (check StrictData)"
-       , _env_nodeStory = error "env_nodeStory not needed, but forced somewhere (check StrictData)"
+       { _env_settings  = Prelude.error "env_settings not needed, but forced somewhere (check StrictData)"
+       , _env_logger    = Prelude.error "env_logger not needed, but forced somewhere (check StrictData)"
+       , _env_pool      = Prelude.error "env_pool not needed, but forced somewhere (check StrictData)"
+       , _env_nodeStory = Prelude.error "env_nodeStory not needed, but forced somewhere (check StrictData)"
        , _env_manager   = testTlsManager
-       , _env_self_url  = error "self_url not needed, but forced somewhere (check StrictData)"
-       , _env_scrapers  = error "scrapers not needed, but forced somewhere (check StrictData)"
+       , _env_self_url  = Prelude.error "self_url not needed, but forced somewhere (check StrictData)"
+       , _env_scrapers  = Prelude.error "scrapers not needed, but forced somewhere (check StrictData)"
        , _env_jobs      = myEnv
-       , _env_config    = error "config not needed, but forced somewhere (check StrictData)"
-       , _env_mail      = error "mail not needed, but forced somewhere (check StrictData)"
-       , _env_nlp       = error "nlp not needed, but forced somewhere (check StrictData)"
+       , _env_config    = Prelude.error "config not needed, but forced somewhere (check StrictData)"
+       , _env_mail      = Prelude.error "mail not needed, but forced somewhere (check StrictData)"
+       , _env_nlp       = Prelude.error "nlp not needed, but forced somewhere (check StrictData)"
        }
 
 testFetchJobStatus :: IO ()

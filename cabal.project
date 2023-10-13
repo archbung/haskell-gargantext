@@ -167,4 +167,3 @@ package hmatrix
 
 package sparse-linear
     ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
-

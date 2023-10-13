@@ -8,24 +8,22 @@ module Test.API.Authentication (
   , auth_api
   ) where
 
-import Prelude
-import Data.Proxy
-import Gargantext.API.Routes
-import Network.HTTP.Client hiding (Proxy)
-import Servant.Client
-import Test.Hspec
-import Test.Database.Types
-import Servant.Auth.Client ()
-import Gargantext.API.Admin.Auth.Types
-import Gargantext.Core.Types.Individu
-import Control.Monad
-import Control.Monad.Reader
-import Gargantext.Database.Action.User.New
-import Gargantext.Core.Types
-import Test.API.Setup (withTestDBAndPort, setupEnvironment)
-import qualified Data.Text as T
 import Control.Lens
-import Data.Maybe
+import Data.Proxy
+import Data.Text as T
+import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Routes
+import Gargantext.Core.Types
+import Gargantext.Core.Types.Individu
+import Gargantext.Database.Action.User.New
+import Gargantext.Prelude
+import Network.HTTP.Client hiding (Proxy)
+import Prelude qualified
+import Servant.Auth.Client ()
+import Servant.Client
+import Test.API.Setup (withTestDBAndPort, setupEnvironment)
+import Test.Database.Types
+import Test.Hspec
 
 auth_api :: AuthRequest -> ClientM AuthResponse
 auth_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion AuthAPI)))
@@ -48,7 +46,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       it "requires no auth and returns the current version" $ \((_testEnv, port), _) -> do
         result <- runClientM version_api (clientEnv port)
         case result of
-          Left err -> fail (show err)
+          Left err -> Prelude.fail (show err)
           Right r  -> r `shouldSatisfy` ((>= 1) . T.length) -- we got something back
 
     describe "POST /api/v1.0/auth" $ do
