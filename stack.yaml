@@ -22,7 +22,7 @@ allow-newer: true
 
 extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-  commit: 8f97fef4dfd941d773914ad058d8e02ce2bb1a3e
+  commit: 40135d166830690b1101180b79e9fd3663284b2b
 - git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
   commit: 588e104fe7593210956610cab0041fd16584a4ce
   # Data Mining Libs
@@ -52,7 +52,7 @@ extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
   commit: 234ad423fa682307ff4843ae4acd725dcc6ffc55
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
-  commit: a34bb341236d82cf3d488210bc1d8448a98f5808
+  commit: 9b1bd17f3ed38eab83e675bb68278922217a9c73
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
   commit: 25a1e9558075462a82660987920a698b8863dd63
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git
