@@ -143,7 +143,8 @@ formatPGSQuery q a = mkCmd $ \conn -> PGS.formatQuery conn q a
 
 -- TODO use runPGSQueryDebug everywhere
 runPGSQuery' :: (PGS.ToRow a, PGS.FromRow b) => PGS.Query -> a -> DBCmd err [b]
-runPGSQuery' q a = mkCmd $ \conn -> PGS.query conn q a
+runPGSQuery' q a = mkCmd $ \conn -> do
+  PGS.query conn q a
 
 runPGSQuery :: ( PGS.FromRow r, PGS.ToRow q )
             => PGS.Query -> q -> DBCmd err [r]
