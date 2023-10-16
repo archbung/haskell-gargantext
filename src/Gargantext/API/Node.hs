@@ -30,10 +30,7 @@ module Gargantext.API.Node
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
-import Data.Maybe
 import Data.Swagger
-import Data.Text (Text())
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth (withAccess, withPolicy)
 import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..))
 import Gargantext.API.Admin.EnvTypes

@@ -15,10 +15,11 @@ Text gathers terms in unit of contexts.
 module Gargantext.Core.Text
   where
 
-import Data.Text (Text, split)
+import Data.Text (split)
+import Data.Text qualified as DT
 import Gargantext.Prelude hiding (filter)
 import NLP.FullStop (segment)
-import qualified Data.Text as DT
+import Prelude qualified
 
 -----------------------------------------------------------------
 class HasText h
@@ -39,22 +40,22 @@ type    Titre      = Phrase
 
 -----------------------------------------------------------------
 
-instance Show Texte where
+instance Prelude.Show Texte where
   show (Texte t) = show t
 
-instance Show Paragraphe where
+instance Prelude.Show Paragraphe where
   show (Paragraphe p) = show p
 
-instance Show Phrase where
+instance Prelude.Show Phrase where
   show (Phrase p) = show p
 
-instance Show MultiTerme where
+instance Prelude.Show MultiTerme where
   show (MultiTerme mt) = show mt
 
-instance Show Mot where
+instance Prelude.Show Mot where
   show (Mot t) = show t
 
-instance Show Lettre where
+instance Prelude.Show Lettre where
   show (Lettre l) = show l
 
 -----------------------------------------------------------------

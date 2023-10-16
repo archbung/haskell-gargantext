@@ -17,12 +17,12 @@ Portability : POSIX
 module Gargantext.Core.Viz.Phylo.API
   where
 
-import GHC.Generics (Generic)
 import Data.Aeson
 import Data.Aeson.Types (parseEither)
-import Data.Either
-import Data.Maybe (fromMaybe)
+import Data.ByteString qualified as DB
+import Data.ByteString.Lazy qualified as DBL
 import Data.Swagger
+import Data.Text qualified as T
 import Gargantext.API.Prelude
 import Gargantext.Core.Types (TODO(..))
 import Gargantext.Core.Types.Phylo (GraphData(..))
@@ -37,13 +37,11 @@ import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, defaultLi
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Prelude
 import Network.HTTP.Media ((//), (/:))
+import Prelude qualified
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Web.HttpApiData (readTextData)
-import qualified Data.ByteString as DB
-import qualified Data.ByteString.Lazy as DBL
-import qualified Data.Text as T
 
 ------------------------------------------------------------------------
 type PhyloAPI = Summary "Phylo API"
@@ -63,7 +61,7 @@ newtype SVG = SVG DB.ByteString
 instance Accept SVG where contentType _ = "SVG" // "image/svg+xml" /: ("charset", "utf-8")
 instance MimeRender SVG SVG where mimeRender _ (SVG s) = DBL.fromStrict s
 instance MimeUnrender SVG SVG where mimeUnrender _ lbs = Right $ SVG (DBL.toStrict lbs)
-instance Show SVG where show (SVG a) = show a
+instance Prelude.Show SVG where show (SVG a) = show a
 instance ToSchema SVG where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy TODO)
 
 ------------------------------------------------------------------------
@@ -127,7 +125,7 @@ type GetPhylo =  QueryParam "listId"      ListId
 -- TODO fix parameters to default config that should be in Node
 getPhylo :: PhyloId -> GargServer GetPhylo
 getPhylo phyloId lId _level _minSizeBranch = do
-  corpusId <- fromMaybe (panic $ "[G.C.V.Phylo.API] no parent for NodeId " <> (cs $ show phyloId))
+  corpusId <- fromMaybe (panic $ "[G.C.V.Phylo.API] no parent for NodeId " <> (show phyloId))
           <$> getClosestParentIdByType phyloId NodeCorpus
   listId   <- case lId of
                 Nothing -> defaultList corpusId

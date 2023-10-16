@@ -11,16 +11,12 @@ Portability : POSIX
 module Gargantext.Database.Query.Table.Node.Error where
 
 import Control.Lens (Prism', (#), (^?))
-import Control.Monad.Except (MonadError(..))
 import Data.Aeson
-import Data.Text (Text, pack)
-import qualified Data.Text as T
-
-import Prelude hiding (null, id, map, sum)
-
+import Data.Text qualified as T
+import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
 import Gargantext.Prelude hiding (sum, head)
-import Gargantext.Core.Types.Individu
+import Prelude qualified
 
 ------------------------------------------------------------------------
 data NodeError = NoListFound { listId :: ListId }
@@ -39,7 +35,7 @@ data NodeError = NoListFound { listId :: ListId }
                | NodeError Text
                | QueryNoParse Text
 
-instance Show NodeError
+instance Prelude.Show NodeError
   where
     show (NoListFound {})   = "No list   found"
     show NoRootFound   = "No Root   found"
@@ -63,7 +59,7 @@ instance ToJSON NodeError where
     object [ ( "error", "No list found" )
            , ( "listId", Number $ fromIntegral listId ) ]
   toJSON err =
-    object [ ( "error", String $ pack $ show err ) ]
+    object [ ( "error", String $ T.pack $ show err ) ]
 
 class HasNodeError e where
   _NodeError :: Prism' e NodeError

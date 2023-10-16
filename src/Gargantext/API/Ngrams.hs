@@ -16,6 +16,7 @@ add get
 -}
 
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 {-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -92,16 +93,12 @@ import Control.Monad.Reader
 import Data.Aeson.Text qualified as DAT
 import Data.Foldable
 import Data.List qualified as List
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Maybe (fromMaybe)
 import Data.Monoid
-import Data.Ord (Down(..))
 import Data.Patch.Class (Action(act), Transformable(..), ours)
-import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text, isInfixOf, toLower, unpack)
+import Data.Text (isInfixOf, toLower, unpack)
 import Data.Text.Lazy.IO as DTL
 import Formatting (hprint, int, (%))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
@@ -123,12 +120,11 @@ import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
-import Gargantext.Prelude hiding (log)
+import Gargantext.Prelude hiding (log, to, toLower, (%))
 import Gargantext.Prelude.Clock (hasTime, getTime)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Prelude (error)
 import Servant hiding (Patch)
-import System.IO (stderr)
 
 {-
 -- TODO sequences of modifications (Patchs)

@@ -28,12 +28,9 @@ import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.ByteString.Base64 qualified as BSB64
 import Data.Conduit.Internal (zipSources)
-import Data.Either
 import Data.Swagger
-import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
@@ -65,7 +62,6 @@ import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_parsers)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
-import Protolude (mempty)
 import Servant
 import Servant.Job.Utils (jsonOptions)
 import Test.QuickCheck.Arbitrary

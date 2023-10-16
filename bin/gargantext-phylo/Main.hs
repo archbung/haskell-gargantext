@@ -16,22 +16,23 @@ Adaptative Phylo binaries
 
 module Main where
 
--- import Debug.Trace (trace)
 import Control.Concurrent.Async (mapConcurrently)
 import Crypto.Hash.SHA256 (hash)
 import Data.Aeson
-import Data.Either (Either(..), fromRight)
-import Data.List  (concat, nub, isSuffixOf,sort,tail)
+import Data.ByteString.Char8 qualified as C8
+import Data.List  (nub, isSuffixOf, tail)
 import Data.List.Split
-import Data.Maybe (fromMaybe)
-import Data.String (String)
-import Data.Text  (Text, unwords, unpack, replace, pack)
+import Data.Maybe (fromJust)
+import Data.Text  (unwords, unpack, replace, pack)
+import Data.Text qualified as T
+import Data.Vector qualified as Vector
 import GHC.IO (FilePath)
 import Gargantext.API.Ngrams.Prelude (toTermList)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Text.Context (TermList)
 import Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..), parseFile)
 import Gargantext.Core.Text.Corpus.Parsers.CSV (csv_title, csv_abstract, csv_publication_year, csv_publication_month, csv_publication_day, csv'_source, csv'_title, csv'_abstract, csv'_publication_year, csv'_publication_month, csv'_publication_day, csv'_weight)
+import Gargantext.Core.Text.Corpus.Parsers.CSV qualified as Csv
 import Gargantext.Core.Text.List.Formats.CSV (csvMapTermList)
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, extractTermsWithList)
 import Gargantext.Core.Types.Main (ListType(..))
@@ -42,13 +43,10 @@ import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
 import Gargantext.Core.Viz.Phylo.PhyloTools  (printIOMsg, printIOComment, setConfig, toPeriods, getTimePeriod, getTimeStep)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash, replace)
+import Prelude qualified
 import System.Directory (listDirectory,doesFileExist)
 import System.Environment
-import qualified Data.ByteString.Char8                   as C8
-import qualified Data.Text                               as T
-import qualified Data.Vector                             as Vector
-import qualified Gargantext.Core.Text.Corpus.Parsers.CSV as Csv
 
 data Backup = BackupPhyloWithoutLink | BackupPhylo deriving (Show)
 
@@ -110,7 +108,7 @@ csvToDocs parser patterns time path =
                                        Nothing
                                        []
                                        time
-                     ) <$> snd <$> either (\err -> panic $ cs $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
+                     ) <$> snd <$> either (\err -> panic $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
     Csv' limit -> Vector.toList
       <$> Vector.take limit
       <$> Vector.map (\row -> Document (toPhyloDate  (csv'_publication_year row) (csv'_publication_month row) (csv'_publication_day row) time)
@@ -232,7 +230,7 @@ configToSha stage config = unpack
 
 readListV4 :: [Char] -> IO NgramsList
 readListV4 path = do
-  listJson <- (eitherDecode <$> readJson path) :: IO (Either String NgramsList)
+  listJson <- (eitherDecode <$> readJson path) :: IO (Either Prelude.String NgramsList)
   case listJson of
     Left err -> do
       putStrLn err
@@ -261,7 +259,7 @@ main = do
 
     printIOMsg "Read the configuration file"
     [args]   <- getArgs
-    jsonArgs <- (eitherDecode <$> readJson args) :: IO (Either String PhyloConfig)
+    jsonArgs <- (eitherDecode <$> readJson args) :: IO (Either Prelude.String PhyloConfig)
 
     case jsonArgs of
         Left err     -> putStrLn err

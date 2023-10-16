@@ -14,37 +14,36 @@ import Gargantext.Core.Text.Corpus.Parsers.Date as DGP
 DGP.parseDateRaw DGP.FR "12 avril 2010" == "2010-04-12T00:00:00.000+00:00"
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TypeFamilies #-}
 
 module Gargantext.Core.Text.Corpus.Parsers.Date
 {-(parse, parseRaw, dateSplit, Year, Month, Day)-}
   where
 
---import qualified Control.Exception as CE
 import Data.Aeson (toJSON, Value)
-import Data.Either (Either(..))
+import Data.Aeson qualified as Json
 import Data.HashMap.Strict as HM hiding (map)
-import Data.Maybe (fromMaybe)
-import Data.Text (Text, unpack, splitOn, replace)
+import Data.HashSet qualified as HashSet
+import Data.List qualified as List
+import Data.Text (unpack, splitOn, replace)
 import Data.Time (defaultTimeLocale, iso8601DateFormat, parseTimeM, toGregorian)
+import Data.Time.Calendar qualified as DTC
 import Data.Time.Clock ( secondsToDiffTime)
 import Data.Time.Clock (UTCTime(..), getCurrentTime)
 import Data.Time.LocalTime (utc)
 import Data.Time.LocalTime.TimeZone.Series (zonedTimeToZoneSeriesTime)
 import Duckling.Api (analyze)
 import Duckling.Core (makeLocale, Dimension(Time))
+import Duckling.Core qualified as DC
 import Duckling.Resolve (fromUTC, Context(Context, referenceTime, locale), DucklingTime(DucklingTime), Options(..))
 import Duckling.Types (ResolvedToken(..), ResolvedVal(..))
 import Duckling.Types (Seal(..))
 import Gargantext.Core (Lang(FR,EN))
 import Gargantext.Core.Types (DebugMode(..), withDebugMode)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (replace)
 import System.Environment (getEnv)
-import qualified Data.Aeson        as Json
-import qualified Data.HashSet      as HashSet
-import qualified Data.Time.Calendar as DTC
-import qualified Duckling.Core     as DC
-import qualified Data.List         as List
 ------------------------------------------------------------------------
 -- | Parse date to Ints
 -- TODO add hours, minutes and seconds
@@ -131,7 +130,7 @@ readDate txt = do
 parserLang :: Lang -> DC.Lang
 parserLang FR    = DC.FR
 parserLang EN    = DC.EN
-parserLang lang  = panic $ "[G.C.T.C.P.Date] Lang not implemented" <> (cs $ show lang)
+parserLang lang  = panic $ "[G.C.T.C.P.Date] Lang not implemented" <> (show lang)
 
 -- | Final Date parser API
 -- IO can be avoided here:
@@ -163,7 +162,7 @@ parseRaw lang text = do -- case result
       Just result -> Right result
       Nothing     -> do
         -- printDebug ("[G.C.T.C.P.D.parseRaw] ERROR " <> (cs . show) lang) text
-        Left $ "[G.C.T.C.P.D.parseRaw ERROR] " <> (cs . show) lang <> " :: " <> text
+        Left $ "[G.C.T.C.P.D.parseRaw ERROR] " <> show lang <> " :: " <> text
 
 getTimeValue :: [ResolvedToken] -> Maybe Value
 getTimeValue rt = case head rt of

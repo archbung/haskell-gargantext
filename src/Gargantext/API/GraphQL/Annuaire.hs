@@ -4,12 +4,8 @@
 module Gargantext.API.GraphQL.Annuaire where
 
 import Control.Lens
-import Data.Morpheus.Types
-  ( GQLType
-  , lift
-  )
+import Data.Morpheus.Types ( GQLType )
 import Data.Proxy
-import Data.Text (Text)
 import Gargantext.Database.Admin.Types.Hyperdata.Contact
   ( HyperdataContact
   , ContactWho
@@ -21,7 +17,6 @@ import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Context (getContextWith)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
-import GHC.Generics (Generic)
 import Gargantext.API.GraphQL.Types
 
 data AnnuaireContact = AnnuaireContact

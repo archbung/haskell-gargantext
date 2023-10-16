@@ -1,3 +1,14 @@
+{-|
+Module      : Gargantext.API.GraphQL.Context
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
@@ -10,9 +21,8 @@ import Data.Morpheus.Types
   , Resolver
   , ResolverM
   , QUERY
-  , lift
   )
-import Data.Text (Text, pack)
+import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Prelude (GargM, GargError)
@@ -21,11 +31,10 @@ import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
 import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId)
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.NodeContext (getNodeContext, getContextsForNgramsTerms, ContextForNgramsTerms(..), {- getContextNgrams, -} getContextNgramsMatchingFTS)
-import qualified Gargantext.Database.Query.Table.NodeContext as DNC
+import Gargantext.Database.Query.Table.NodeContext qualified as DNC
 import Gargantext.Database.Schema.NodeContext (NodeContext, NodeContextPoly(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)
-import GHC.Generics (Generic)
 
 data ContextGQL = ContextGQL
   { c_id        :: Int

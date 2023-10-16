@@ -17,8 +17,6 @@ module Gargantext.Database.Action.Share
 
 import Control.Arrow (returnA)
 import Control.Lens (view, (^.))
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database
 import Gargantext.Database.Action.User (getUserId)
@@ -114,7 +112,7 @@ shareNodeWith (ShareNodeWith_Node NodeFolderPublic nId) n = do
   nodeToCheck <- getNode n
   if not (isInNodeTypes nodeToCheck publicNodeTypes)
     then errorWith $ "[G.D.A.S.shareNodeWith] Can share this nodesTypes only: "
-                   <> (cs $ show publicNodeTypes)
+                   <> (show publicNodeTypes)
     else do
       folderToCheck <- getNode nId
       if hasNodeType folderToCheck NodeFolderPublic

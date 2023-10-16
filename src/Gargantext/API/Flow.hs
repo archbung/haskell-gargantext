@@ -10,6 +10,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 module Gargantext.API.Flow
   where
 

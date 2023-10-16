@@ -17,17 +17,16 @@ Json parser to export towoard CSV GargV3 format.
 module Gargantext.Core.Text.Corpus.Parsers.Json2Csv (json2csv, readPatents)
   where
 
-import Prelude (read)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.ByteString.Lazy (readFile)
-import Data.Text (Text, unpack)
-import Gargantext.Core.Utils.Prefix (unPrefix)
-import qualified Gargantext.Defaults as Defaults
-import Gargantext.Prelude
-import System.IO (FilePath)
-import Gargantext.Core.Text.Corpus.Parsers.CSV (CsvDoc(..), writeFile, headerCsvGargV3)
+import Data.Text (unpack)
 import Data.Vector (fromList)
+import Gargantext.Core.Text.Corpus.Parsers.CSV (CsvDoc(..), writeFile, headerCsvGargV3)
+import Gargantext.Core.Utils.Prefix (unPrefix)
+import Gargantext.Defaults qualified as Defaults
+import Gargantext.Prelude hiding (readFile, writeFile)
+import Prelude (read)
 
 data Patent = Patent { _patent_title    :: Text
                      , _patent_abstract :: Text

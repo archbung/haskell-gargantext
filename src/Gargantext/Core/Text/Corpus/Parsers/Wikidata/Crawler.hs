@@ -18,10 +18,9 @@ module Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
 
 import Control.Lens hiding (element, elements, children)
 import Data.ByteString.Lazy (ByteString)
-import Data.Text (Text, unpack)
-import Data.Text.Encoding.Error (lenientDecode)
+import Data.Text (unpack)
 import Data.Text.Lazy.Encoding (decodeUtf8With)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (ByteString, get, to, decodeUtf8With)
 import Network.HTTP.Client (Response)
 import Network.Wreq (responseBody, get)
 import Text.Taggy.Lens

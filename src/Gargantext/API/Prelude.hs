@@ -20,16 +20,11 @@ module Gargantext.API.Prelude
   )
   where
 
-import Control.Concurrent (threadDelay)
-import Control.Exception (Exception)
 import Control.Lens (Prism', (#))
 import Control.Lens.TH (makePrisms)
-import Control.Monad (mapM_)
-import Control.Monad.Error.Class (MonadError(..))
-import Control.Monad.Except (ExceptT)
-import Control.Monad.Reader (ReaderT)
 import Crypto.JOSE.Error as Jose
 import Data.Aeson.Types
+import Data.Text qualified as Text
 import Data.Typeable
 import Data.Validity
 import Gargantext.API.Admin.Orchestrator.Types
@@ -49,7 +44,6 @@ import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
 import Servant.Job.Types qualified as SJ
-import qualified Data.Text as Text
 
 class HasJoseError e where
   _JoseError :: Prism' e Jose.Error

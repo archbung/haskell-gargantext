@@ -18,13 +18,13 @@ citation programs to exchange data.
 
 module Gargantext.Core.Text.Corpus.Parsers.RIS (parser, onField, fieldWith, lines) where
 
-import Data.List (lookup)
 import Control.Applicative
-import Data.Attoparsec.ByteString (Parser, try, takeTill, take, many1)
+import Data.Attoparsec.ByteString (Parser, takeTill, take, try, many1)
 import Data.Attoparsec.ByteString.Char8 (isEndOfLine)
-import Data.ByteString (ByteString, intercalate)
-import Gargantext.Prelude hiding (takeWhile, take)
-import qualified Data.List as DL
+import Data.ByteString (intercalate)
+import Data.List (lookup)
+import Data.List qualified as DL
+import Gargantext.Prelude hiding (intercalate, lines, takeWhile, take, try)
 
 -------------------------------------------------------------
 parser :: Parser [[(ByteString, ByteString)]]

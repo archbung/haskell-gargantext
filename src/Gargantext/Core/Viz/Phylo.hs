@@ -26,20 +26,16 @@ one 8, e54847.
 
 module Gargantext.Core.Viz.Phylo where
 
-import Control.DeepSeq (NFData)
 import Control.Lens (makeLenses)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
-import Data.Map (Map)
 import Data.Swagger
-import Data.Text   (Text, pack)
+import Data.Text (pack)
+import Data.Text.Lazy qualified as TextLazy
 import Data.Vector (Vector)
-import GHC.Generics
-import GHC.IO (FilePath)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Prelude
-import qualified Data.Text.Lazy as TextLazy
 
 ---------------------
 -- | PhyloConfig | --

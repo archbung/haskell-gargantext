@@ -1,12 +1,20 @@
+{-|
+Module      : Gargantext.API.GraphQL.User
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.User where
 
-import Data.Maybe (listToMaybe)
-import Data.Morpheus.Types ( GQLType , lift )
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Morpheus.Types ( GQLType )
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Auth.PolicyCheck

@@ -14,18 +14,15 @@ Get Book into GarganText
 module Gargantext.Core.Text.Corpus.Parsers.Book
   where
 
-import Data.Maybe
-import Data.Text (Text)
-import GHC.IO (FilePath)
+import Data.ByteString.Lazy qualified as DBL
+import Data.List qualified as List
+import Data.Text qualified as DT
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.CSV (hyperdataDocument2csv)
 import Gargantext.Core.Text.Corpus.Parsers.FrameWrite (text2titleParagraphs)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude
 import System.Directory -- (getDirectoryContents)
-import qualified Data.ByteString.Lazy as DBL
-import qualified Data.List as List
-import qualified Data.Text as DT
 
 ------------------------------------------------------------------------
 -- Main Export Function

@@ -23,12 +23,11 @@ module Gargantext.Core.Text.Metrics.TFICF ( TFICF
                                      )
   where
 
-import Data.Map.Strict (Map, toList)
-import Data.Text (Text)
+import Data.List qualified as List
+import Data.Map.Strict (toList)
+import Data.Ord qualified as DO (Down(..))
 import Gargantext.Core.Types (Ordering(..))
-import Gargantext.Prelude
-import qualified Data.List as List
-import qualified Data.Ord as DO (Down(..))
+import Gargantext.Prelude hiding (Down, Ordering, toList)
 
 path :: Text
 path = "[G.T.Metrics.TFICF]"

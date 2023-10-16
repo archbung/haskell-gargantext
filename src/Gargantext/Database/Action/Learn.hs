@@ -17,7 +17,6 @@ module Gargantext.Database.Action.Learn
 
 import Data.List qualified as List
 import Data.Maybe
-import Data.Text (Text)
 import Data.Text qualified as Text
 import Gargantext.Core
 import Gargantext.Core.Text.Learn

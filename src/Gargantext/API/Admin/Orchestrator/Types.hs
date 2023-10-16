@@ -7,23 +7,19 @@ module Gargantext.API.Admin.Orchestrator.Types
 
 import Control.Lens hiding (elements)
 import Data.Aeson
-import Data.Morpheus.Types
-  ( GQLType
-  , typeOptions )
+import Data.Morpheus.Types ( GQLType, typeOptions )
 import Data.Proxy
 import Data.Swagger hiding (URL, url, port)
-import Data.Text (Text)
 import GHC.Generics hiding (to)
+import Gargantext.API.GraphQL.Utils qualified as GQLU
+import Gargantext.Core.Types (TODO(..))
+import Gargantext.Prelude
 import Servant
 import Servant.Job.Async
 import Servant.Job.Types
 import Servant.Job.Utils (jsonOptions)
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
-
-import qualified Gargantext.API.GraphQL.Utils as GQLU
-import Gargantext.Core.Types (TODO(..))
-import Gargantext.Prelude
 
 ------------------------------------------------------------------------
 instance Arbitrary a => Arbitrary (JobStatus 'Safe a) where

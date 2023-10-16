@@ -12,18 +12,16 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.Parsers.FrameWrite
   where
 
-import Control.Applicative ((*>))
-import Control.Monad (void)
 import Data.Either
+import Data.List qualified as List
 import Data.Maybe
 import Data.Text hiding (foldl)
+import Data.Text qualified as DT
 import Gargantext.Core.Text (sentences)
-import Gargantext.Prelude
-import Prelude ((++), read)
+import Gargantext.Prelude hiding (ByteString, (<|>), many, try)
+import Prelude (read)
 import Text.Parsec hiding (Line)
 import Text.Parsec.String
-import qualified Data.Text as DT
-import qualified Data.List as List
 
 
 -- https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/331

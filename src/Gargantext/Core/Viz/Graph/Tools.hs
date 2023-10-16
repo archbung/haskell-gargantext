@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
 
 module Gargantext.Core.Viz.Graph.Tools
@@ -16,37 +18,32 @@ module Gargantext.Core.Viz.Graph.Tools
 
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
-import Data.Map.Strict (Map)
-import Data.Maybe (fromMaybe)
+import Data.HashMap.Strict qualified as HashMap
+import Data.HashSet qualified as HashSet
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import Data.Swagger hiding (items)
-import GHC.Float (sin, cos)
-import GHC.Generics (Generic)
+import Data.Text qualified as Text
+import Data.Vector.Storable qualified as Vec
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core.Methods.Similarities (Similarity(..), measure)
--- import Gargantext.Core.Methods.Similarities.Conditional (conditional)
 import Gargantext.Core.Statistics
 import Gargantext.Core.Viz.Graph.Bridgeness (bridgeness, Bridgeness(..), Partitions, nodeId2comId, {-recursiveClustering,-} recursiveClustering', setNodes2clusterNodes)
 import Gargantext.Core.Viz.Graph.Index (createIndices, toIndex, map2mat, mat2map, Index, MatrixShape(..))
 import Gargantext.Core.Viz.Graph.Tools.IGraph (mkGraphUfromEdges, spinglass, spinglass')
 import Gargantext.Core.Viz.Graph.Tools.Infomap (infomap)
 import Gargantext.Core.Viz.Graph.Types (Attributes(..), Edge(..), Graph(..), MultiPartite(..), Node(..), Partite(..), Strength(..))
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Core.Viz.Graph.Utils (edgesFilter, nodesFilter)
+import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
+import Graph.BAC.ProxemyOptim qualified as BAC
 import Graph.Types (ClusterNode)
+import IGraph qualified as Igraph
+import IGraph.Algorithms.Layout qualified as Layout
 import IGraph.Random -- (Gen(..))
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
-import qualified Data.HashMap.Strict      as HashMap
-import qualified Data.List                as List
-import qualified Data.Map.Strict          as Map
-import qualified Data.Set                 as Set
-import qualified Data.HashSet             as HashSet
-import qualified Data.Text                as Text
-import qualified Data.Vector.Storable     as Vec
-import qualified Graph.BAC.ProxemyOptim   as BAC
-import qualified IGraph                   as Igraph
-import qualified IGraph.Algorithms.Layout as Layout
 
 data PartitionMethod = Spinglass | Confluence | Infomap
     deriving (Generic, Eq, Ord, Enum, Bounded, Show)
@@ -249,7 +246,7 @@ data2graph multi labels' occurences bridge conf partitions =
     nodes = map (setCoord ForceAtlas labels bridge)
           [ (n, Node { node_size    = maybe 0 identity (Map.lookup (n,n) occurences)
                      , node_type    = nodeTypeWith multi label
-                     , node_id      = (cs . show) n
+                     , node_id      = show n
                      , node_label   = unNgramsTerm label
                      , node_x_coord = 0
                      , node_y_coord = 0
@@ -266,12 +263,12 @@ data2graph multi labels' occurences bridge conf partitions =
 
     (bridge', toKeep) = nodesFilter (\v -> v > 1) bridge
 
-    edges = [ Edge { edge_source = cs (show s)
+    edges = [ Edge { edge_source = show s
                    , edge_hidden = Nothing
-                   , edge_target = cs (show t)
+                   , edge_target = show t
                    , edge_weight = weight
                    , edge_confluence = maybe 0 identity $ Map.lookup (s,t) conf
-                   , edge_id     = cs (show i)
+                   , edge_id     = show i
                    }
             | (i, ((s,t), weight)) <- zip ([0..]::[Integer] ) $ Map.toList bridge'
             , s /= t
@@ -377,6 +374,6 @@ filterByNeighbours threshold distanceMap = filteredMap
                                        $ List.sortOn snd
                                        $ Map.toList
                                        $ Map.filter (> 0)
-                                       $ Map.filterWithKey (\(from,_) _ -> idx == from) distanceMap
+                                       $ Map.filterWithKey (\(from', _) _ -> idx == from') distanceMap
                            in List.take (round threshold) selected
                       ) indexes

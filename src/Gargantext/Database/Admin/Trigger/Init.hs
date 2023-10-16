@@ -16,7 +16,6 @@ Ngrams by node enable contextual metrics.
 module Gargantext.Database.Admin.Trigger.Init
   where
 
-import Data.Text (Text)
 import Gargantext.Database.Admin.Trigger.ContextNodeNgrams (triggerCountInsert, triggerCountInsert2)
 import Gargantext.Database.Admin.Trigger.Contexts (triggerSearchUpdate, triggerUpdateHash)
 import Gargantext.Database.Admin.Trigger.NodesContexts ({-triggerDeleteCount,-} triggerInsertCount, triggerUpdateAdd, triggerUpdateDel, MasterListId) -- , triggerCoocInsert)

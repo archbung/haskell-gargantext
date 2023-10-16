@@ -31,11 +31,9 @@ list quality in time.
 module Gargantext.Core.Text.Terms.Multi.RAKE (multiterms_rake, select, hardStopList)
   where
 
-import Data.Text (Text)
-import NLP.RAKE.Text
-
 import Gargantext.Core.Text.Samples.EN (stopList)
 import Gargantext.Prelude
+import NLP.RAKE.Text
 
 select :: Double -> [a] -> [a]
 select part ns = take n ns

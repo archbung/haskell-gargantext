@@ -1,21 +1,29 @@
+{-|
+Module      : Gargantext.Core.Types.Search
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass           #-}
 
 module Gargantext.Core.Types.Search where
 
 import Data.Aeson hiding (defaultTaggedObject)
-import Data.Maybe (fromMaybe)
 import Data.Swagger hiding (fieldLabelModifier, Contact)
-import Data.Text (Text)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Data.Time (UTCTime)
 import Gargantext.Core.Utils.Prefix (dropPrefix, unCapitalize, unPrefixSwagger)
 import Gargantext.Database.Admin.Types.Hyperdata (ContactWhere(..), HyperdataContact(..), HyperdataDocument(..), ContactWho(..))
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Facet.Types (Facet(..), FacetDoc, FacetPaired(..))
-import qualified Gargantext.Defaults as Defaults
+import Gargantext.Defaults qualified as Defaults
 import Gargantext.Prelude
 import Gargantext.Utils.Aeson (defaultTaggedObject)
-import GHC.Generics (Generic)
 import Test.QuickCheck.Arbitrary
 
 

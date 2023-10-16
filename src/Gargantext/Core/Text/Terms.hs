@@ -28,6 +28,8 @@ compute graph
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -37,18 +39,13 @@ module Gargantext.Core.Text.Terms
 
 import Control.Lens
 import Data.HashMap.Strict (HashMap)
-import Data.Hashable (Hashable)
-import Data.Map.Strict (Map)
-import Data.Text (Text)
+import Data.HashMap.Strict qualified as HashMap
+import Data.List qualified as List
+import Data.Set qualified as Set
+import Data.Text qualified as Text
 import Data.Traversable
 import GHC.Base (String)
-import GHC.Generics (Generic)
-import qualified Data.List           as List
-import qualified Data.Set            as Set
-import qualified Data.Text           as Text
-import qualified Data.HashMap.Strict as HashMap
 import Gargantext.Core
-import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Core.Text (sentences, HasText(..))
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)
@@ -56,6 +53,7 @@ import Gargantext.Core.Text.Terms.Mono.Stem (stem)
 import Gargantext.Core.Text.Terms.Mono.Token.En (tokenize)
 import Gargantext.Core.Text.Terms.Multi (multiterms)
 import Gargantext.Core.Types
+import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (insertNgrams)
 import Gargantext.Database.Query.Table.NgramsPostag (NgramsPostag(..), insertNgramsPostag, np_form, np_lem)

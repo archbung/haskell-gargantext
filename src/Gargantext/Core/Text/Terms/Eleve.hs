@@ -31,6 +31,9 @@ Notes for current implementation:
                         $ Gargantext.map _hyperdataDocument_abstract docs
 
 -}
+
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -42,18 +45,14 @@ module Gargantext.Core.Text.Terms.Eleve where
 -- import Debug.SimpleReflect
 
 import Control.Lens hiding (levels, children)
-import Control.Monad (forM_)
-import qualified Data.List as L
+import Data.List qualified as L
+import Data.Map.Strict qualified as Map
 import Data.Monoid
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Map.Strict (Map)
-import Data.Maybe (fromMaybe)
-import qualified Data.Map.Strict as Map
-import Gargantext.Prelude hiding (cs)
-import qualified Data.Tree as Tree
+import Data.Text qualified as T
 import Data.Tree (Tree)
-import qualified Prelude as P (putStrLn, logBase, isNaN, RealFloat)
+import Data.Tree qualified as Tree
+import Gargantext.Prelude hiding (cs)
+import Prelude qualified as P
 
 nan :: Floating e => e
 nan = 0 / 0
@@ -88,7 +87,7 @@ data I e = I
   , _info_autonomy   :: e
   }
 
-instance Show e => Show (I e) where
+instance P.Show e => Show (I e) where
   show (I e ev a) = show (e, ev, a)
 
 makeLenses ''I
@@ -211,14 +210,15 @@ class IsTrie trie where
 instance IsTrie Trie where
 
   entropyTrie _    (Leaf c)             = Leaf c
-  entropyTrie pred (Node c () children) = Node c e (map (entropyTrie pred) children)
+  entropyTrie pred' (Node c () children) = Node c e (map (entropyTrie pred') children)
     where
       children' = Map.toList children
       sum_count = sum $ _node_count . snd <$> children'
       e | sum_count == 0 = nan
         | otherwise      = sum $ f <$> children'
-      f (k, child) = if pred k then   chc * P.logBase 2 (fromIntegral c)
-                              else - chc * P.logBase 2 chc
+      f (k, child) = if pred' k
+                     then   chc * P.logBase 2 (fromIntegral c)
+                     else - chc * P.logBase 2 chc
         where
           chc = fromIntegral (_node_count child) / fromIntegral c
 
@@ -419,7 +419,7 @@ testEleve debug n output checks = do
        . entropyTrie isTerminal
        $ buildTries n input
 
-    check f msg ref my =
+    check' f msg ref my =
       if f ref my
         then P.putStrLn $ "    \ESC[32mPASS\ESC[m " <> msg <> " " <> show ref
         else P.putStrLn $ "    \ESC[31mFAIL\ESC[m " <> msg <> " ref=" <> show ref <> " my=" <> show my
@@ -429,19 +429,19 @@ testEleve debug n output checks = do
           nt' = findTrie ns nt
 
       P.putStrLn $ "  " <> T.unpack ngram <> ":"
-      check (==) "count"        count        (_node_count                  (_fwd nt'))
+      check' (==) "count"        count        (_node_count                  (_fwd nt'))
 
-      check sim  "entropy"      entropy      (nodeEntropy info_entropy           nt' )
-      check sim  "ev"           ev           (nodeEntropy info_entropy_var       nt' )
-      check sim  "autonomy"     autonomy     (nodeEntropy info_autonomy          nt' )
+      check' sim  "entropy"      entropy      (nodeEntropy info_entropy           nt' )
+      check' sim  "ev"           ev           (nodeEntropy info_entropy_var       nt' )
+      check' sim  "autonomy"     autonomy     (nodeEntropy info_autonomy          nt' )
 
-      check sim  "fwd_entropy"  fwd_entropy  (nodeEntropy info_entropy     (_fwd nt'))
-      check sim  "fwd_ev"       fwd_ev       (nodeEntropy info_entropy_var (_fwd nt'))
-      check sim  "fwd_autonomy" fwd_autonomy (nodeEntropy info_autonomy    (_fwd nt'))
+      check' sim  "fwd_entropy"  fwd_entropy  (nodeEntropy info_entropy     (_fwd nt'))
+      check' sim  "fwd_ev"       fwd_ev       (nodeEntropy info_entropy_var (_fwd nt'))
+      check' sim  "fwd_autonomy" fwd_autonomy (nodeEntropy info_autonomy    (_fwd nt'))
 
-      check sim  "bwd_entropy"  bwd_entropy  (nodeEntropy info_entropy     (_bwd nt'))
-      check sim  "bwd_ev"       bwd_ev       (nodeEntropy info_entropy_var (_bwd nt'))
-      check sim  "bwd_autonomy" bwd_autonomy (nodeEntropy info_autonomy    (_bwd nt'))
+      check' sim  "bwd_entropy"  bwd_entropy  (nodeEntropy info_entropy     (_bwd nt'))
+      check' sim  "bwd_ev"       bwd_ev       (nodeEntropy info_entropy_var (_bwd nt'))
+      check' sim  "bwd_autonomy" bwd_autonomy (nodeEntropy info_autonomy    (_bwd nt'))
 
 -- | TODO real data is a list of tokenized sentences
 example0, example1, example2, example3, example4, example5, example6, example7, example8, example9 :: [Text]

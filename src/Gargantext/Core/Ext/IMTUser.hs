@@ -17,19 +17,14 @@ module Gargantext.Core.Ext.IMTUser -- (deserialiseImtUsersFromFile)
   where
 
 import Codec.Serialise
+import Data.ByteString.Lazy qualified as BL
 import Data.Csv
-import Data.Either
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
 import Data.Vector (Vector)
-import GHC.Generics (Generic)
+import Data.Vector qualified as Vector
 import Gargantext.Core.Text.Corpus.Parsers.CSV
 import Gargantext.Database.Admin.Types.Hyperdata.Contact
 import Gargantext.Prelude
 import System.FilePath.Posix (takeExtension)
-import System.IO (FilePath)
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.Vector          as Vector
 
 ------------------------------------------------------------------------
 readFile_Annuaire :: FilePath -> IO [HyperdataContact]
@@ -171,8 +166,8 @@ imtUser2gargContact (IMTUser { id
                      , _cw_keywords = catMaybes [service]
                      , _cw_freetags = []
                      , _cw_description = Nothing }
-    ou  = ContactWhere { _cw_organization = toList entite
-                       , _cw_labTeamDepts = toList service
+    ou  = ContactWhere { _cw_organization = toList' entite
+                       , _cw_labTeamDepts = toList' service
                        , _cw_role = fonction
                        , _cw_office = bureau
                        , _cw_country = Just "France"
@@ -184,8 +179,8 @@ imtUser2gargContact (IMTUser { id
                                   , _ct_phone = tel
                                   , _ct_url = url }
     -- meta    = ContactMetaData (Just "IMT annuaire") date_modification'
-    toList Nothing  = []
-    toList (Just x) = [x]
+    toList' Nothing  = []
+    toList' (Just x) = [x]
   
 
 

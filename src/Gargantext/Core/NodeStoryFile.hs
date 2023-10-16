@@ -15,24 +15,22 @@ NOTE This is legacy code. It keeps node stories in a directory
 
 module Gargantext.Core.NodeStoryFile where
 
-import Control.Lens (view)
-import Control.Monad (foldM)
 import Codec.Serialise (serialise, deserialise)
 import Codec.Serialise.Class
-import Control.Concurrent (MVar(), modifyMVar_, newMVar, readMVar, withMVar)
 import Control.Debounce (mkDebounce, defaultDebounceSettings, debounceFreq, debounceAction)
+import Control.Lens (view)
+import Data.ByteString.Lazy qualified as DBL
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
 import Gargantext.Core.NodeStory hiding (readNodeStoryEnv)
 import Gargantext.Core.Types (ListId, NodeId(..))
 import Gargantext.Database.Prelude (hasConfig)
+import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_repofilepath)
 import System.Directory (renameFile, createDirectoryIfMissing, doesFileExist, removeFile)
-import System.IO (FilePath, hClose)
+import System.IO (hClose)
 import System.IO.Temp (withTempFile)
-import qualified Data.ByteString.Lazy                   as DBL
-import qualified Data.List                              as List
-import qualified Data.Map.Strict                        as Map
-import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
 
 
 getRepo :: HasNodeStory env err m
@@ -85,8 +83,8 @@ mkNodeStorySaver nsd mvns = mkDebounce settings
                  , debounceFreq = 1 * minute
 --                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
                  }
-    minute = 60 * second
-    second = 10^(6 :: Int)
+    minute = 60 * sec
+    sec = 10^(6 :: Int)
 
 nodeStoryVar :: NodeStoryDir
              -> Maybe (MVar NodeListStory)
@@ -180,7 +178,7 @@ splitByNode (NodeStory m) =
 
 saverAction' :: Serialise a => NodeStoryDir -> NodeId -> a -> IO ()
 saverAction' repoDir nId a = do
-  withTempFile repoDir ((cs $ show nId) <> "-tmp-repo.cbor") $ \fp h -> do
+  withTempFile repoDir ((show nId) <> "-tmp-repo.cbor") $ \fp h -> do
     -- printDebug "[repoSaverAction]" fp
     DBL.hPut h $ serialise a
     hClose h
@@ -189,7 +187,7 @@ saverAction' repoDir nId a = do
 nodeStoryPath :: NodeStoryDir -> NodeId -> FilePath
 nodeStoryPath repoDir nId = repoDir <> "/" <> filename
   where
-    filename = "repo" <> "-" <> (cs $ show nId) <> ".cbor"
+    filename = "repo" <> "-" <> (show nId) <> ".cbor"
 
 
 ------------------------------------------------------------------------

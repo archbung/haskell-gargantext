@@ -19,11 +19,10 @@ module Gargantext.Core.Text.List.Merge
   where
 
 import Control.Lens (view)
-import Data.Map.Strict (Map)
+import Data.Map.Strict.Patch hiding (PatchMap)
 import Gargantext.API.Ngrams
 import Gargantext.API.Ngrams.Types
-import Gargantext.Prelude
-import Data.Map.Strict.Patch hiding (PatchMap)
+import Gargantext.Prelude hiding (diff)
 
 type List = Map NgramsTerm NgramsRepoElement
 type Patch = PatchMap NgramsTerm (Replace (Maybe NgramsRepoElement))

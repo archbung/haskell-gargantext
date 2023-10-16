@@ -17,22 +17,19 @@ TODO_2: quantitative tests (coded)
 module Gargantext.Database.GargDB
   where
 
-import Control.Exception
 import Control.Lens (view)
-import Control.Monad.Reader (MonadReader)
 import Data.Aeson (ToJSON, toJSON)
-import Data.Text (Text)
+import Data.Text qualified as Text
 import Data.Tuple.Extra (both)
-import GHC.IO (FilePath)
 import Gargantext.Database.Prelude (HasConfig(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Config
 import Gargantext.Prelude.Crypto.Hash
+import Prelude qualified
 import System.Directory (createDirectoryIfMissing)
+import System.Directory qualified as SD
 import System.IO.Error
 import System.Random (newStdGen)
-import qualified Data.Text             as Text
-import qualified System.Directory      as SD
 
 -------------------------------------------------------------------
 -- | Main Class to use (just declare needed functions)
@@ -70,7 +67,7 @@ type FileName   = FilePath
            --------------------------------
 
 dataFilePath :: (ToJSON a) => a -> GargFilePath
-dataFilePath = toPath . hash . show . toJSON
+dataFilePath = toPath . hash . Prelude.show . toJSON
 
 randomFilePath :: ( MonadReader  env m
                   , MonadBase IO     m
@@ -80,7 +77,7 @@ randomFilePath = do
   (foldPath, fileName)  <- liftBase
                          $ toPath
                          . hash
-                         . show
+                         . Prelude.show
                          <$> newStdGen
   pure (foldPath, fileName)
 

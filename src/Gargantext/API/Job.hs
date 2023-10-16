@@ -1,20 +1,28 @@
+{-|
+Module      : Gargantext.API.Job
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 module Gargantext.API.Job where
 
 import Control.Lens (over, _Just)
-import Data.Maybe
-import qualified Data.Text as T
-
-import Gargantext.Prelude
-
+import Data.Text qualified as T
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.Prelude
 
 newtype RemainingSteps = RemainingSteps { _RemainingSteps :: Int }
   deriving (Show, Eq, Num)
 
 jobLogStart :: RemainingSteps -> JobLog
-jobLogStart rem =
+jobLogStart rem' =
   JobLog { _scst_succeeded = Just 0
-         , _scst_remaining = Just (_RemainingSteps rem)
+         , _scst_remaining = Just (_RemainingSteps rem')
          , _scst_failed = Just 0
          , _scst_events = Just [] }
 
@@ -60,7 +68,7 @@ jobLogFailTotal (JobLog { _scst_succeeded = mSucc
   where
     (newRem, newFail) = case mRem of
       Nothing -> (Nothing, mFail)
-      Just rem -> (Just 0, (+ rem) <$> mFail)
+      Just rem' -> (Just 0, (+ rem') <$> mFail)
 
 jobLogFailTotalWithMessage :: T.Text -> JobLog -> JobLog
 jobLogFailTotalWithMessage message jl = addErrorEvent message $ jobLogFailTotal jl

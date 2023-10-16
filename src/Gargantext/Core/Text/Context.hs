@@ -23,12 +23,10 @@ How to split contexts is describes in this module.
 module Gargantext.Core.Text.Context
   where
 
-import Data.Text (Text, pack, unpack)
-import Data.String (IsString)
-
-import Text.HTML.TagSoup (parseTags, isTagText, Tag(..))
+import Data.Text (pack, unpack)
 import Gargantext.Core.Text
 import Gargantext.Prelude hiding (length)
+import Text.HTML.TagSoup (parseTags, isTagText, Tag(..))
 
 ------------------------------------------------------------------------
 type Term = Text

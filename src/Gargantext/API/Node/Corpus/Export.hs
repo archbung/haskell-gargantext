@@ -18,12 +18,9 @@ module Gargantext.API.Node.Corpus.Export
 
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
-import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text, pack)
+import Data.Text (pack)
 import Gargantext.API.Ngrams.Tools (filterListWithRoot, mapTermListRoot, getRepo)
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Node.Corpus.Export.Types
@@ -41,7 +38,7 @@ import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context (_context_id, _context_hyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Crypto.Hash (hash)
 import Servant (Headers, Header, addHeader)
 

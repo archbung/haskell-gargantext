@@ -26,27 +26,20 @@ Phylomemy was first described in Chavalarias, D., Cointet, J.-P., 2013. Phylomem
 
 module Gargantext.Core.Types.Phylo where
 
-import Control.Monad.Fail (fail)
 import Control.Lens (makeLenses)
-import Control.Applicative ((<|>))
-
+import Control.Monad.Fail (fail)
 import Data.Aeson
-import Data.Aeson.Types
 import Data.Aeson.TH (deriveJSON)
+import Data.Aeson.Types
 import Data.Maybe
 import Data.Monoid
 import Data.Swagger
-import Data.Text    (Text)
+import Data.Text qualified as T
 import Data.Time.Clock.POSIX  (POSIXTime)
-import qualified Data.Text as T
+import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
+import Gargantext.Prelude
 import Test.QuickCheck
 import Test.QuickCheck.Instances.Text()
-import Prelude (Either(..))
-
-import GHC.Generics (Generic)
-
-import Gargantext.Prelude
-import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 
 ------------------------------------------------------------------------
 -- | Phylo datatype descriptor of a phylomemy

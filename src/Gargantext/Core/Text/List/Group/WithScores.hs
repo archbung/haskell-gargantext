@@ -17,14 +17,12 @@ module Gargantext.Core.Text.List.Group.WithScores
 
 import Control.Lens (view, set, over)
 import Data.HashMap.Strict (HashMap)
-import Data.Maybe (fromMaybe)
-import Data.Monoid (Monoid, mempty)
+import Data.HashMap.Strict qualified as HashMap
 import Data.Semigroup
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core.Text.List.Group.Prelude
 import Gargantext.Core.Text.List.Social.Prelude
 import Gargantext.Prelude
-import qualified Data.HashMap.Strict as HashMap
 
 ------------------------------------------------------------------------
 -- | Main function

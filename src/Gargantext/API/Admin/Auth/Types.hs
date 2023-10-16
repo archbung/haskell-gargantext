@@ -16,16 +16,13 @@ module Gargantext.API.Admin.Auth.Types
 import Control.Lens hiding (elements, to)
 import Data.Aeson.TH (deriveJSON)
 import Data.Swagger
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Servant.Auth.Server
-import Test.QuickCheck (elements, oneof)
-import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
-
 import Gargantext.Core.Types.Individu (Username, GargPassword(..), arbitraryUsername, arbitraryPassword)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Admin.Types.Node (NodeId(..), ListId, DocId, UserId)
 import Gargantext.Prelude hiding (reverse)
+import Servant.Auth.Server
+import Test.QuickCheck (elements, oneof)
+import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 
 ---------------------------------------------------
 
@@ -101,8 +98,8 @@ $(deriveJSON (unPrefix "_authVal_") ''AuthValid)
 instance ToSchema AuthValid where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authVal_")
 instance Arbitrary AuthValid where
-  arbitrary = elements [ AuthValid to tr u
-                       | to <- ["token0", "token1"]
+  arbitrary = elements [ AuthValid to' tr u
+                       | to' <- ["token0", "token1"]
                        , tr <- [1..3]
                        , u <-  [1..3]
                        ]

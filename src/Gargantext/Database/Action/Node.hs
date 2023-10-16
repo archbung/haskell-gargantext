@@ -20,19 +20,19 @@ Portability : POSIX
 module Gargantext.Database.Action.Node
   where
 
+import Control.Lens (view)
 import Gargantext.Core
 import Gargantext.Core.Types (Name)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Hyperdata.Default
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Prelude (DBCmd, HasConfig(..))
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Prelude
-import Gargantext.Prelude.Crypto.Hash (hash)
-import Gargantext.Database.Prelude (DBCmd, HasConfig(..))
-import Control.Lens (view)
+import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Config (GargConfig(..))
+import Gargantext.Prelude.Crypto.Hash (hash)
 
 ------------------------------------------------------------------------
 -- | TODO mk all others nodes
@@ -118,7 +118,7 @@ mkNodeWithParent_ConfigureHyperdata' nt (Just i) uId name = do
             _              -> nodeError NeedsConfiguration
       let
         s = _gc_secretkey cfg
-        hd = HyperdataFrame u (hash $ s <> (cs $ show n))
+        hd = HyperdataFrame u (hash $ s <> (show n))
       _ <- updateHyperdata n hd
       pure [n]
     (_:_:_)  -> nodeError MkNode

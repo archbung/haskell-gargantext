@@ -16,17 +16,12 @@ Portability : POSIX
 module Gargantext.API.Node.DocumentsFromWriteNodes
       where
 
--- import Data.Maybe (fromMaybe)
 import Conduit
 import Control.Lens ((^.))
 import Data.Aeson
-import Data.Either (Either(..), rights)
 import Data.List qualified as List
-import Data.Maybe (fromMaybe)
 import Data.Swagger
-import Data.Text (Text)
 import Data.Text qualified as T
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
@@ -48,10 +43,7 @@ import Gargantext.Database.Query.Table.Node (getChildrenByType, getClosestParent
 import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Protolude (mempty)
 import Servant
-import Text.Read (readMaybe)
--- import qualified Gargantext.Defaults as Defaults
 
 ------------------------------------------------------------------------
 type API = Summary " Documents from Write nodes."
@@ -154,7 +146,7 @@ hyperdataDocumentFromFrameWrite lang paragraphSize (node, contents) =
           day' = maybe Defaults.day (\(Date { day }) -> fromIntegral day) date
 --}
           in
-      Right (List.map (\(t, ctxt) ->  HyperdataDocument { _hd_bdd = Just $ cs $ show Notes
+      Right (List.map (\(t, ctxt) ->  HyperdataDocument { _hd_bdd = Just $ show Notes
                               , _hd_doi = Nothing
                               , _hd_url = Nothing
                               , _hd_uniqId = Nothing

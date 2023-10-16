@@ -14,17 +14,14 @@ compress the contexts around the main terms of the query.
 
 module CleanCsvCorpus  where
 
---import GHC.IO (FilePath)
-import Data.Either (Either(..))
-import Data.SearchEngine as S
-import qualified Data.Set as S
+import Data.SearchEngine qualified as S
+import Data.Set qualified as S
 import Data.Text (pack)
 import Data.Vector (Vector)
-import qualified Data.Vector as V
-
-import Gargantext.Prelude
+import Data.Vector qualified as V
+import Gargantext.Core.Text.Corpus.Parsers.CSV qualified as CSV
 import Gargantext.Core.Text.Search
-import qualified Gargantext.Core.Text.Corpus.Parsers.CSV as CSV
+import Gargantext.Prelude
 ------------------------------------------------------------------------
 
 type Query = [S.Term]
@@ -43,16 +40,16 @@ main = do
   eDocs <- CSV.readCSVFile rPath
   case eDocs of
     Right (h, csvDocs) -> do
-      putStrLn $ "Number of documents before:" <> show (V.length csvDocs)
-      putStrLn $ "Mean size of docs:" <> show ( CSV.docsSize csvDocs)
+      putStrLn ("Number of documents before:" <> show (V.length csvDocs) :: Text)
+      putStrLn ("Mean size of docs:" <> show ( CSV.docsSize csvDocs) :: Text)
 
       let docs   = CSV.toDocs csvDocs
-      let engine = insertDocs docs initialDocSearchEngine
+      let engine = S.insertDocs docs initialDocSearchEngine
       let docIds = S.query engine (map pack q)
       let docs'  = CSV.fromDocs $ filterDocs docIds (V.fromList docs)
 
-      putStrLn $ "Number of documents after:" <> show (V.length docs')
-      putStrLn $ "Mean size of docs:" <> show (CSV.docsSize docs')
+      putStrLn ("Number of documents after:" <> show (V.length docs') :: Text)
+      putStrLn ("Mean size of docs:" <> show (CSV.docsSize docs') :: Text)
 
       CSV.writeFile wPath (h, docs')
     Left e -> panic $ "Error: " <> e

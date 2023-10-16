@@ -18,14 +18,12 @@ module Gargantext.API.Ngrams.List
 
 import Data.ByteString.Lazy qualified as BSL
 import Data.Csv qualified as Csv
-import Data.Either (Either(..))
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
-import Data.Map.Strict (Map, toList)
+import Data.Map.Strict (toList)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
 import Data.Set qualified as Set
-import Data.Text (Text, concat, pack, splitOn)
+import Data.Text (concat, pack, splitOn)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vec
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
@@ -46,7 +44,7 @@ import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.Node (_node_parent_id)
 import Gargantext.Database.Types (Indexed(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (concat, toList)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Gargantext.Utils.Servant qualified as GUS
 import Prelude qualified

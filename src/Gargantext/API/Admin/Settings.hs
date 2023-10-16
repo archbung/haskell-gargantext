@@ -19,42 +19,36 @@ TODO-SECURITY: Critical
 module Gargantext.API.Admin.Settings
     where
 
--- import Control.Debounce (mkDebounce, defaultDebounceSettings, debounceFreq, debounceAction)
 import Codec.Serialise (Serialise(), serialise)
 import Control.Lens
 import Control.Monad.Logger (LogLevel(..))
 import Control.Monad.Reader
-import Data.Maybe (fromMaybe)
+import Data.ByteString.Lazy qualified as L
 import Data.Pool (Pool, createPool)
 import Database.PostgreSQL.Simple (Connection, connect, close, ConnectInfo)
+import Gargantext.API.Admin.EnvTypes
+import Gargantext.API.Admin.Types
+import Gargantext.API.Prelude
+import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Core.NodeStory
+import Gargantext.Database.Prelude (databaseParameters, hasConfig)
+import Gargantext.Prelude
+import Gargantext.Prelude.Config (gc_js_job_timeout, gc_js_id_timeout)
 import Gargantext.Prelude.Config ({-GargConfig(..),-} {-gc_repofilepath,-} readConfig)
+import Gargantext.Prelude.Mail qualified as Mail
+import Gargantext.Prelude.NLP qualified as NLP
+import Gargantext.System.Logging
+import Gargantext.Utils.Jobs qualified as Jobs
+import Gargantext.Utils.Jobs.Monad qualified as Jobs
+import Gargantext.Utils.Jobs.Queue qualified as Jobs
+import Gargantext.Utils.Jobs.Settings qualified as Jobs
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant.Auth.Server (defaultJWTSettings, CookieSettings(..), XsrfCookieSettings(..), defaultCookieSettings, defaultXsrfCookieSettings, readKey, writeKey)
 import Servant.Client (parseBaseUrl)
 import Servant.Job.Async (newJobEnv, defaultSettings)
 import System.Directory
--- import System.FileLock (tryLockFile, unlockFile, SharedExclusive(Exclusive))
-import System.IO (FilePath, hClose)
+import System.IO (hClose)
 import System.IO.Temp (withTempFile)
-import qualified Data.ByteString.Lazy as L
-
-
-import Gargantext.API.Admin.EnvTypes
-import Gargantext.API.Admin.Types
-import Gargantext.API.Prelude
--- import Gargantext.API.Ngrams.Types (NgramsRepo, HasRepo(..), RepoEnv(..), r_version, initRepo, renv_var, renv_lock)
-import Gargantext.Core.NLP (nlpServerMap)
-import Gargantext.Database.Prelude (databaseParameters, hasConfig)
-import Gargantext.Prelude
-import Gargantext.Prelude.Config (gc_js_job_timeout, gc_js_id_timeout)
-import qualified Gargantext.Prelude.Mail as Mail
-import qualified Gargantext.Prelude.NLP as NLP
-import qualified Gargantext.Utils.Jobs       as Jobs
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
-import qualified Gargantext.Utils.Jobs.Queue as Jobs
-import qualified Gargantext.Utils.Jobs.Settings as Jobs
-import Gargantext.System.Logging
 
 devSettings :: FilePath -> IO Settings
 devSettings jwkFile = do
@@ -187,8 +181,8 @@ newEnv logger port file = do
   !config_env   <- readConfig file
   prios         <- withLogger () $ \ioLogger -> Jobs.readPrios ioLogger (file <> ".jobs")
   let prios' = Jobs.applyPrios prios Jobs.defaultPrios
-  putStrLn $ "Overrides: " <> show prios
-  putStrLn $ "New priorities: " <> show prios'
+  putStrLn ("Overrides: " <> show prios :: Text)
+  putStrLn ("New priorities: " <> show prios' :: Text)
   !self_url_env  <- parseBaseUrl $ "http://0.0.0.0:" <> show port
   dbParam        <- databaseParameters file
   !pool          <- newPool dbParam

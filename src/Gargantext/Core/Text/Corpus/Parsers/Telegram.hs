@@ -1,15 +1,20 @@
+{-|
+Module      : Gargantext.Core.Text.Corpus.Parsers.Telegram
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+
+-}
+
 module Gargantext.Core.Text.Corpus.Parsers.Telegram
   where
 
 import Data.Aeson
-import Data.Text (Text)
---import Data.Time
-import GHC.Generics (Generic)
---import Gargantext.Core (Lang(..))
---import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Data.ByteString.Lazy qualified as DBL
 import Gargantext.Prelude
-import System.FilePath (FilePath)
-import qualified Data.ByteString.Lazy as DBL
 
 readFile_Telegram :: FilePath -> IO [TelegramMsg]
 readFile_Telegram fp = do

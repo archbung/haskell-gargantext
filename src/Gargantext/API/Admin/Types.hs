@@ -6,9 +6,7 @@ module Gargantext.API.Admin.Types where
 
 import Control.Lens
 import Control.Monad.Logger (LogLevel)
-import Data.ByteString (ByteString)
 import GHC.Enum
-import GHC.Generics (Generic)
 import Gargantext.Prelude
 import Servant.Auth.Server (JWTSettings, CookieSettings(..))
 import Servant.Client (BaseUrl)

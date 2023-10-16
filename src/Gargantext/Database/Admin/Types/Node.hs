@@ -19,34 +19,32 @@ Portability : POSIX
 module Gargantext.Database.Admin.Types.Node
   where
 
-import Database.PostgreSQL.Simple.ToRow (ToRow, toRow)
 import Codec.Serialise (Serialise())
-import Control.Monad (mzero)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
-import qualified Data.Csv as Csv
+import Data.Csv qualified as Csv
 import Data.Either
-import Data.Hashable (Hashable)
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
-import Data.Text (Text, unpack, pack)
+import Data.Text (unpack, pack)
 import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toField, toJSONField)
-import GHC.Generics (Generic)
+import Database.PostgreSQL.Simple.ToRow (ToRow, toRow)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)
 import Opaleye (DefaultFromField, defaultFromField, SqlInt4, SqlText, SqlTSVector, Nullable, fromPGSFromField)
+import Opaleye qualified as O
+import Prelude qualified
 import Servant hiding (Context)
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
 import Text.Read (read)
-import qualified Opaleye as O
 
 
 
@@ -213,7 +211,7 @@ pgContextId = pgNodeId
 newtype NodeId = NodeId { _NodeId :: Int }
   deriving (Read, Generic, Num, Eq, Ord, Enum, ToJSONKey, FromJSONKey, ToJSON, FromJSON, Hashable, Csv.ToField)
 instance GQLType NodeId
-instance Show NodeId where
+instance Prelude.Show NodeId where
   show (NodeId n) = "nodeId-" <> show n
 instance Serialise NodeId
 instance ToField NodeId where

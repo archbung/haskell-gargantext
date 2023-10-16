@@ -16,15 +16,13 @@ Portability : POSIX
 
 module Gargantext.API.ThrowAll where
 
-import Control.Monad.Except (MonadError(..))
 import Control.Lens ((#))
-import Servant
-import Servant.Auth.Server (AuthResult(..))
-
-import Gargantext.Prelude
 import Gargantext.API.Admin.EnvTypes (Env)
 import Gargantext.API.Prelude
 import Gargantext.API.Routes (GargPrivateAPI, serverPrivateGargAPI')
+import Gargantext.Prelude
+import Servant
+import Servant.Auth.Server (AuthResult(..))
 
 class ThrowAll' e a | a -> e where
   -- | 'throwAll' is a convenience function to throw errors across an entire

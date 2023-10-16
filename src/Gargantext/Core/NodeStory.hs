@@ -92,44 +92,37 @@ module Gargantext.Core.NodeStory
   , fixNodeStoryVersions )
 where
 
--- import Debug.Trace (traceShow)
 import Codec.Serialise.Class
-import Control.Concurrent (MVar(), newMVar, modifyMVar_)
 import Control.Debounce (mkDebounce, defaultDebounceSettings, debounceFreq, debounceAction)
-import Control.Exception (catch, throw, SomeException(..))
-import Control.Lens (makeLenses, Getter, (^.), (.~), (%~), _Just, at, traverse, view)
+import Control.Exception (throw)
+import Control.Lens (makeLenses, Getter, (^.), (.~), (%~), _Just, at, view)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson hiding ((.=), decode)
-import Data.ByteString.Char8 (hPutStrLn)
 import Data.HashMap.Strict (HashMap)
-import Data.Map.Strict (Map)
-import Data.Maybe (catMaybes)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PM
 import Data.Monoid
 import Data.Pool (Pool, withResource)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 import Data.Semigroup
+import Data.Set qualified as Set
+import Data.Text qualified as Text
+import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.FromField (FromField(fromField), fromJSONField)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import GHC.Generics (Generic)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config (nodeTypeId)
 import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
+import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
-import System.IO (stderr)
-import qualified Data.HashMap.Strict                    as HashMap
-import qualified Data.Map.Strict                        as Map
-import qualified Data.Map.Strict.Patch                  as PM
-import qualified Data.Set                               as Set
-import qualified Data.Text                              as Text
-import qualified Database.PostgreSQL.Simple             as PGS
-import qualified Gargantext.Database.Query.Table.Ngrams as TableNgrams
 
 ------------------------------------------------------------------------
 data NodeStoryEnv = NodeStoryEnv
@@ -673,8 +666,8 @@ nodeStoryVar :: Pool PGS.Connection
              -> [NodeId]
              -> IO (MVar NodeListStory)
 nodeStoryVar pool Nothing nIds = do
-  state <- withResource pool $ \c -> nodeStoryIncs c Nothing nIds
-  newMVar state
+  state' <- withResource pool $ \c -> nodeStoryIncs c Nothing nIds
+  newMVar state'
 nodeStoryVar pool (Just mv) nIds = do
   _ <- withResource pool
       $ \c -> modifyMVar_ mv
@@ -702,8 +695,8 @@ mkNodeStorySaver saver = mkDebounce settings
                      --withMVar mvns (\ns -> printDebug "[mkNodeStorySaver] debounce nodestory" ns)
                , debounceFreq = 1*minute
                }
-    minute = 60*second
-    second = 10^(6 :: Int)
+    minute = 60*sec
+    sec = 10^(6 :: Int)
 
 clearHistory :: NodeListStory -> NodeListStory
 clearHistory (NodeStory ns) = NodeStory $ ns & (traverse . a_history) .~ emptyHistory

@@ -14,17 +14,16 @@ Portability : POSIX
 module Gargantext.Core.Viz.Graph
   where
 
+import Data.Aeson qualified as DA
 import Data.ByteString.Lazy as DBL (readFile, writeFile)
 import Data.HashMap.Strict (HashMap, lookup)
-import GHC.IO (FilePath)
+import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types (NgramsTerm(..), NgramsRepoElement(..), mSetToList)
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
-import qualified Data.Aeson   as DA
-import qualified Data.Text    as Text
-import qualified Text.Read    as Text
+import Text.Read qualified as Text
 
 -----------------------------------------------------------
 graphV3ToGraph :: GraphV3 -> Graph
@@ -36,7 +35,7 @@ graphV3ToGraph (GraphV3 links nodes) = Graph { _graph_nodes = map nodeV32node no
     nodeV32node (NodeV3 no_id' (AttributesV3 cl') no_s' no_lb')
                 = Node { node_size = no_s'
                        , node_type = NgramsTerms
-                       , node_id = cs $ show no_id'
+                       , node_id = show no_id'
                        , node_label = no_lb'
                        , node_x_coord = 0
                        , node_y_coord = 0
@@ -46,12 +45,12 @@ graphV3ToGraph (GraphV3 links nodes) = Graph { _graph_nodes = map nodeV32node no
 
     linkV32edge :: Int -> EdgeV3 -> Edge
     linkV32edge n (EdgeV3 eo_s' eo_t' eo_w') =
-      Edge { edge_source = cs $ show eo_s'
+      Edge { edge_source = show eo_s'
            , edge_hidden = Just False
-           , edge_target = cs $ show eo_t'
+           , edge_target = show eo_t'
            , edge_weight = (Text.read $ Text.unpack eo_w') :: Double
            , edge_confluence = 0.5
-           , edge_id = cs $ show n }
+           , edge_id = show n }
 
 
 graphV3ToGraphWithFiles :: FilePath -> FilePath -> IO ()

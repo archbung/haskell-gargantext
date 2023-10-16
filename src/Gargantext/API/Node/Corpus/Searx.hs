@@ -1,3 +1,14 @@
+{-|
+Module      : Gargantext.API.Node.Corpus.Searx
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE TemplateHaskell #-}
 
 module Gargantext.API.Node.Corpus.Searx where
@@ -5,14 +16,12 @@ module Gargantext.API.Node.Corpus.Searx where
 import Control.Lens (view)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
-import Data.Either (Either(..))
 import Data.HashMap.Strict qualified as HashMap
 import Data.Text qualified as T
 import Data.Text qualified as Text
 import Data.Time.Calendar (Day, toGregorian)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Tuple.Select (sel1, sel2, sel3)
-import GHC.Generics (Generic)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
 import Gargantext.Core.NodeStory (HasNodeStory)
@@ -36,19 +45,18 @@ import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
 import Gargantext.Database.Query.Tree.Root (getOrMk_RootWithCorpus)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (All)
 import Gargantext.Prelude.Config
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import Prelude qualified
-import Protolude (catMaybes, encodeUtf8, rightToMaybe, Text, void)
 
 langToSearx :: Lang -> Text
 langToSearx All = "en-US"
 langToSearx x   = (Text.toLower acronym) <> "-" <> acronym
   where
-    acronym = (cs $ show x)
+    acronym = show x
 
 data SearxResult = SearxResult
   { _sr_url           :: Text

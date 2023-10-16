@@ -27,15 +27,11 @@ module Gargantext.Core.Text.Terms.Mono.Token.En
     )
   where
 
-import qualified Data.Char as Char
-import Data.Maybe
 import Control.Monad
-import Control.Applicative (Applicative)
-
-import Data.Text (Text)
-import qualified Data.Text as T
-
+import Data.Char qualified as Char
 import Data.Either
+import Data.Maybe
+import Data.Text qualified as T
 import Gargantext.Prelude
 
 -- | A Tokenizer is function which takes a list and returns a list of Eithers

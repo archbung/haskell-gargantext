@@ -11,11 +11,9 @@ Portability : POSIX
 
 module Test.Core.Utils where
 
-import Test.Hspec
-
-import Gargantext.Prelude
-
 import Gargantext.Core.Utils
+import Gargantext.Prelude
+import Test.Hspec
 
 -- | Core.Utils tests
 test :: Spec

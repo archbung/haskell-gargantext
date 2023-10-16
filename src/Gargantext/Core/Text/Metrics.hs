@@ -16,23 +16,18 @@ Mainly reexport functions in @Data.Text.Metrics@
 module Gargantext.Core.Text.Metrics
   where
 
---import Data.Array.Accelerate ((:.)(..), Z(..))
---import Math.KMeans (kmeans, euclidSq, elements)
 import Control.Lens (makeLenses)
-import Data.Map.Strict (Map)
-import Data.Monoid (Monoid, mempty)
+import Data.Array.Accelerate qualified as DAA
+import Data.Array.Accelerate.Interpreter qualified as DAA
 import Data.HashMap.Strict (HashMap)
-import Data.Semigroup (Semigroup)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Map.Strict qualified as Map
+import Data.Vector qualified as V
+import Data.Vector.Storable qualified as Vec
 import Gargantext.Core.Methods.Similarities.Accelerate.SpeGen
 import Gargantext.Core.Statistics (pcaReduceTo, Dimension(..))
 import Gargantext.Core.Viz.Graph.Index
 import Gargantext.Prelude
-import qualified Data.Array.Accelerate as DAA
-import qualified Data.Array.Accelerate.Interpreter as DAA
-import qualified Data.Map.Strict  as Map
-import qualified Data.Vector as V
-import qualified Data.Vector.Storable as Vec
-import qualified Data.HashMap.Strict as HashMap
 
 
 type MapListSize = Int

@@ -13,10 +13,9 @@ Portability : POSIX
 
 module Test.Ngrams.NLP where
 
-import Data.Text (Text)
-import Test.Hspec
-import Gargantext.Prelude
 import Gargantext.Core.Text.Terms.Multi
+import Gargantext.Prelude
+import Test.Hspec
 
 
 test :: Spec

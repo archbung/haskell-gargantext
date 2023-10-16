@@ -17,10 +17,11 @@ module Gargantext.Core.Viz.Phylo.Example where
 
 import Control.Lens
 import Data.GraphViz.Types.Generalised (DotGraph)
-import Data.List (sortOn, nub, sort)
-import Data.Map (Map)
+import Data.List (nub)
+import Data.Map qualified as Map
+import Data.Text (toLower)
 import Data.Vector (Vector)
-import Data.Text (Text, toLower)
+import Data.Vector qualified as Vector
 import Gargantext.Core.Text.Terms.Mono (monoTexts)
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.PhyloExport
@@ -28,9 +29,7 @@ import Gargantext.Core.Viz.Phylo.PhyloMaker
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.SynchronicClustering (synchronicClustering)
 import Gargantext.Core.Viz.Phylo.TemporalMatching (temporalMatching)
-import Gargantext.Prelude
-import qualified Data.Vector as Vector
-import qualified Data.Map as Map
+import Gargantext.Prelude hiding (toLower)
 
 ---------------------------------
 -- | STEP 5 | -- Export the phylo

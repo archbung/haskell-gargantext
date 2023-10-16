@@ -16,11 +16,9 @@ Portability : POSIX
 module Gargantext.Core.Text.Terms.Multi.PosTagging.Types where
 
 import Data.Aeson.TH (deriveJSON)
-import Data.Text (Text)
 import Gargantext.Core.Types
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Prelude
-import GHC.Generics
 
 
 data Token = Token { _tokenIndex                :: !Int

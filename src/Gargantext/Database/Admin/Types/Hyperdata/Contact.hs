@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -26,7 +28,7 @@ module Gargantext.Database.Admin.Types.Hyperdata.Contact
 
 import Data.Morpheus.Types (GQLType(..))
 import Data.Time.Segment (jour)
-import qualified Gargantext.API.GraphQL.Utils as GAGU
+import Gargantext.API.GraphQL.Utils qualified as GAGU
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Prelude

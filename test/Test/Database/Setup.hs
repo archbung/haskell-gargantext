@@ -5,13 +5,9 @@ module Test.Database.Setup (
   , testEnvToPgConnectionInfo
   ) where
 
-import Control.Exception hiding (assert)
-import Control.Monad
-import Data.Maybe (fromMaybe)
-import Data.Monoid
 import Data.Pool hiding (withResource)
 import Data.Pool qualified as Pool
-import Data.String
+import Data.String (fromString)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
 import Database.PostgreSQL.Simple qualified as PG
@@ -19,16 +15,17 @@ import Database.PostgreSQL.Simple.Options qualified as Client
 import Database.PostgreSQL.Simple.Options qualified as Opts
 import Database.Postgres.Temp qualified as Tmp
 import Gargantext.API.Admin.EnvTypes (Mode(Mock))
+import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Gargantext.System.Logging (withLoggerHoisted)
 import Paths_gargantext
-import Prelude
+import Prelude qualified
 import Shelly hiding (FilePath, run)
 import Shelly qualified as SH
 import Test.Database.Types
 
 -- | Test DB settings.
-dbUser, dbPassword, dbName :: String
+dbUser, dbPassword, dbName :: Prelude.String
 dbUser = "gargantua"
 dbPassword = "gargantua_test"
 dbName = "gargandb_test"
@@ -53,7 +50,7 @@ bootstrapDB tmpDB pool _cfg = Pool.withResource pool $ \conn -> do
   (res,ec) <- shelly $ silently $ escaping False $ do
     result <- SH.run "psql" ["-d", "\"" <> TE.decodeUtf8 connString <> "\"", "<", fromString schemaPath]
     (result,) <$> lastExitCode
-  unless (ec == 0) $ throwIO (userError $ show ec <> ": " <> T.unpack res)
+  unless (ec == 0) $ throwIO (Prelude.userError $ show ec <> ": " <> T.unpack res)
 
 tmpPgConfig :: Tmp.Config
 tmpPgConfig = Tmp.defaultConfig <>
@@ -67,7 +64,7 @@ setup :: IO TestEnv
 setup = do
   res <- Tmp.startConfig tmpPgConfig
   case res of
-    Left err -> fail $ show err
+    Left err -> Prelude.fail $ show err
     Right db -> do
       gargConfig <- fakeIniPath >>= readConfig
       pool <- createPool (PG.connectPostgreSQL (Tmp.toConnectionString db))

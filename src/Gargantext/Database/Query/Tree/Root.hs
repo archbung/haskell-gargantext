@@ -14,7 +14,6 @@ module Gargantext.Database.Query.Tree.Root
   where
 
 import Control.Arrow (returnA)
-import Data.Either (Either, fromLeft, fromRight)
 import Gargantext.Core
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main (CorpusName)

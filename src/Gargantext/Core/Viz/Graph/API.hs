@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedLists   #-}   -- allows to write Map and HashMap as lists
 {-# LANGUAGE TypeOperators     #-}
@@ -18,11 +20,8 @@ module Gargantext.Core.Viz.Graph.API
 
 import Control.Lens (set, (^.), _Just, (^?), at)
 import Data.Aeson
-import Data.Maybe (fromMaybe)
+import Data.HashMap.Strict qualified as HashMap
 import Data.Swagger
-import Data.Text hiding (head)
-import Debug.Trace (trace)
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams.Tools
@@ -43,14 +42,13 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
 import Gargantext.Database.Query.Table.Node.User (getNodeUser)
-import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.Ngrams
+import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Servant.Job.Async (AsyncJobsAPI)
 import Servant.XML
-import qualified Data.HashMap.Strict as HashMap
 
 ------------------------------------------------------------------------
 -- | There is no Delete specific API for Graph since it can be deleted
@@ -114,9 +112,9 @@ getGraph _uId nId = do
           hg = HyperdataGraphAPI graph'' camera
        -- _      <- updateHyperdata nId hg
         _ <- updateHyperdata nId (HyperdataGraph (Just graph'') camera)
-        pure $ trace "[G.V.G.API] Graph empty, computing" hg
+        pure $ trace ("[G.V.G.API] Graph empty, computing" :: Text) hg
 
-    Just graph' -> pure $ trace "[G.V.G.API] Graph exists, returning" $
+    Just graph' -> pure $ trace ("[G.V.G.API] Graph exists, returning" :: Text) $
         HyperdataGraphAPI graph' camera
 
 
@@ -132,7 +130,7 @@ recomputeGraph :: HasNodeStory env err m
                -> NgramsType
                -> Bool
                -> m Graph
-recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStrength nt1 nt2 force = do
+recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStrength nt1 nt2 force' = do
   nodeGraph <- getNodeWith nId (Proxy :: Proxy HyperdataGraph)
   let
     graph  = nodeGraph ^. node_hyperdata . hyperdataGraph
@@ -169,12 +167,12 @@ recomputeGraph _uId nId partitionMethod bridgeMethod maybeSimilarity maybeStreng
     Nothing     -> do
       mt     <- defaultGraphMetadata cId listId "Title" repo (fromMaybe Order1 maybeSimilarity) strength
       g <- computeG $ Just mt
-      pure $ trace "[G.V.G.API.recomputeGraph] Graph empty, computed" g
-    Just graph' -> if (listVersion == Just v) && (not force)
+      pure $ trace ("[G.V.G.API.recomputeGraph] Graph empty, computed" :: Text) g
+    Just graph' -> if (listVersion == Just v) && (not force')
                      then pure graph'
                      else do
                        g <- computeG graphMetadata
-                       pure $ trace "[G.V.G.API] Graph exists, recomputing" g
+                       pure $ trace ("[G.V.G.API] Graph exists, recomputing" :: Text) g
 
 
 -- TODO remove repo

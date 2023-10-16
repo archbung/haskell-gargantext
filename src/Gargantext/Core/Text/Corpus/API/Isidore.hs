@@ -13,19 +13,17 @@ Portability : POSIX
 
 module Gargantext.Core.Text.Corpus.API.Isidore where
 
-import System.FilePath (FilePath())
-import Data.Text (Text)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
+import Gargantext.Core.Text.Corpus.Parsers (cleanText)
+import Gargantext.Core.Text.Corpus.Parsers.CSV (writeDocs2Csv)
+import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import qualified Gargantext.Defaults as Defaults
-import Gargantext.Prelude
+import Gargantext.Defaults qualified as Defaults
+import Gargantext.Prelude hiding (get)
+import Isidore qualified as Isidore
 import Isidore.Client
 import Servant.Client
-import qualified Gargantext.Core.Text.Corpus.Parsers.Date as Date
-import qualified Isidore as Isidore
-import Gargantext.Core.Text.Corpus.Parsers.CSV (writeDocs2Csv)
-import Gargantext.Core.Text.Corpus.Parsers (cleanText)
 
 -- | TODO work with the ServantErr
 get :: Lang -> Maybe Isidore.Limit
@@ -34,7 +32,7 @@ get :: Lang -> Maybe Isidore.Limit
 get la l q a = do
   let
     printErr (DecodeFailure e _) = panic e
-    printErr e                   = panic (cs $ show e)
+    printErr e                   = panic (show e)
 
     toIsidoreDocs :: Reply -> [IsidoreDoc]
     toIsidoreDocs (ReplyOnly r) = [r]

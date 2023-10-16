@@ -9,6 +9,8 @@ Portability : POSIX
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TypeApplications #-}
 
 module Gargantext.Core.Viz.Phylo.API.Tools
@@ -17,13 +19,10 @@ module Gargantext.Core.Viz.Phylo.API.Tools
 import Control.Lens hiding (Context)
 import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
 import Data.ByteString.Lazy qualified as Lazy
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
 import Data.Proxy
-import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text, pack)
+import Data.Text (pack)
 import Data.Time.Calendar (fromGregorian, diffGregorianDurationClip, cdMonths, diffDays, showGregorian)
 import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import Gargantext.API.Ngrams.Prelude (getTermList)
@@ -47,8 +46,8 @@ import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Prelude
-import Prelude hiding (map)
+import Gargantext.Prelude hiding (to)
+import Prelude qualified
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
 import System.Process qualified as Shell
@@ -193,7 +192,7 @@ writePhylo path phylo = Lazy.writeFile path $ encode phylo
 
 readPhylo :: [Char] -> IO Phylo
 readPhylo path = do
-  phyloJson <- (eitherDecode <$> readJson path) :: IO (Either String Phylo)
+  phyloJson <- (eitherDecode <$> readJson path) :: IO (Either Prelude.String Phylo)
   case phyloJson of
     Left err -> do
       putStrLn err

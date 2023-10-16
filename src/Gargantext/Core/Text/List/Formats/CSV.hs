@@ -15,19 +15,14 @@ CSV parser for Gargantext corpus files.
 module Gargantext.Core.Text.List.Formats.CSV where
 
 import Control.Applicative
-import Control.Monad (mzero)
-import Data.Char (ord)
+import Data.ByteString.Lazy qualified as BL
 import Data.Csv
-import Data.Either (Either(Left, Right))
-import Data.List (null)
-import Data.Text (Text, pack)
+import Data.Text (pack)
+import Data.Text qualified as DT
 import Data.Vector (Vector)
-import GHC.IO (FilePath)
+import Data.Vector qualified as V
 import Gargantext.Core.Text.Context
 import Gargantext.Prelude hiding (length)
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text as DT
-import qualified Data.Vector as V
 
 ------------------------------------------------------------------------
 csvMapTermList :: FilePath -> IO TermList

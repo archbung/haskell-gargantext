@@ -9,23 +9,24 @@ Portability : POSIX
 Reference   : Chavalarias, D., Lobbé, Q. & Delanoë, A. Draw me Science. Scientometrics 127, 545–575 (2022). https://doi.org/10.1007/s11192-021-04186-5 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 module Gargantext.Core.Viz.Phylo.TemporalMatching where
 
 import Control.Lens hiding (Level)
 import Control.Parallel.Strategies (parList, rdeepseq, using)
+import Data.List (tail, intersect, nub, nubBy, union, partition)
+import Data.List qualified as List
+import Data.Map  (fromList, elems, restrictKeys, unionWith, findWithDefault, keys, (!), empty, mapKeys, adjust, filterWithKey)
+import Data.Map qualified as Map
 import Data.Ord
-import Data.List (concat, splitAt, tail, sortOn, sortBy, (++), intersect, null, inits, groupBy, scanl, nub, nubBy, union, dropWhile, partition, or)
-import Data.Map  (Map, fromList, elems, restrictKeys, unionWith, findWithDefault, keys, (!), empty, mapKeys, adjust, filterWithKey)
-import Debug.Trace (trace)
+import Data.Set qualified as Set
+import Data.Text qualified as T
+import Data.Vector qualified as Vector
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.PhyloTools
-import Gargantext.Prelude
-import Prelude (tan,pi)
+import Gargantext.Prelude hiding (empty)
 import Text.Printf
-import qualified Data.Map as Map
-import qualified Data.List as List
-import qualified Data.Set as Set
-import qualified Data.Vector as Vector
 
 type Branch = [PhyloGroup]
 type FinalQuality = Double
@@ -211,9 +212,9 @@ groupsToBranches groups =
     {- run the related component algorithm -}
     let egos = groupBy (\gs gs' -> (fst $ fst $ head' "egos" gs) == (fst $ fst $ head' "egos" gs'))
              $ sortOn  (\gs -> fst $ fst $ head' "egos" gs)
-             $ map (\group -> [getGroupId group]
-                            ++ (map fst $ group ^. phylo_groupPeriodParents)
-                            ++ (map fst $ group ^. phylo_groupPeriodChilds) ) $ elems groups
+             $ map (\group' -> [getGroupId group']
+                               ++ (map fst $ group' ^. phylo_groupPeriodParents)
+                               ++ (map fst $ group' ^. phylo_groupPeriodChilds) ) $ elems groups
         --  first find the related components by inside each ego's period
         --  a supprimer
         graph' = map relatedComponents egos
@@ -222,7 +223,7 @@ groupsToBranches groups =
                $ relatedComponents $ concat (graph' `using` parList rdeepseq)
     --  update each group's branch id
     in map (\(bId,branch) ->
-                let groups'  = map (\group -> group & phylo_groupBranchId %~ (\(lvl,lst) -> (lvl,lst ++ [bId])))
+                let groups'  = map (\group' -> group' & phylo_groupBranchId %~ (\(lvl,lst) -> (lvl,lst ++ [bId])))
                                     $ elems $ restrictKeys groups (Set.fromList branch)
                  in groups' `using` parList rdeepseq 
             ) branches `using` parList rdeepseq 
@@ -448,7 +449,7 @@ toPhylomemeticNetwork timescale periods similarity thr docs coocs roots groups =
 -}
 relevantBranches :: Int -> [Branch] -> [Branch]
 relevantBranches x branches =
-    filter (\groups -> (any (\group -> elem x $ group ^. phylo_groupNgrams) groups)) branches
+    filter (\groups -> (any (\group' -> elem x $ group' ^. phylo_groupNgrams) groups)) branches
 
 
 {- 
@@ -562,11 +563,12 @@ toPhyloQuality fdt lambda freq branches =
 -}
 riseToMeta :: Double -> [Branch] -> [Branch]
 riseToMeta rise branches =
-  let break = length branches > 1
+  let break' = length branches > 1
    in map (\b ->
         map (\g ->
-          if break then g & phylo_groupMeta .~ (adjust (\lst -> lst ++ [rise]) "breaks"(g ^. phylo_groupMeta))
-                   else g) b) branches
+          if break'
+          then g & phylo_groupMeta .~ (adjust (\lst -> lst ++ [rise]) "breaks"(g ^. phylo_groupMeta))
+          else g) b) branches
 
 
 {- 
@@ -660,11 +662,11 @@ seaLevelRise fdt similarity lambda minBranch frequency ladder rise frame periods
     else
       -- start breaking up all the possible branches for the current similarity threshold
       let thr = List.head ladder
-          branches'  = trace ("threshold = " <> printf "%.3f" thr
-                                             <> " F(λ) = " <> printf "%.5f" (toPhyloQuality fdt lambda frequency (map fst branches))
-                                             <> " ξ = " <> printf "%.5f" (globalAccuracy frequency (map fst branches))
-                                             <> " ρ = " <> printf "%.5f" (globalRecall frequency (map fst branches))
-                                             <> " branches = " <> show(length branches))
+          branches'  = trace ( "threshold = " <> (T.pack $ printf "%.3f" thr)
+                               <> " F(λ) = " <> (T.pack $ printf "%.5f" (toPhyloQuality fdt lambda frequency (map fst branches)))
+                               <> " ξ = " <> (T.pack $ printf "%.5f" (globalAccuracy frequency (map fst branches)))
+                               <> " ρ = " <> (T.pack $ printf "%.5f" (globalRecall frequency (map fst branches)))
+                               <> " branches = " <> show(length branches) :: Text )
                      $ separateBranches fdt similarity lambda frequency minBranch thr rise frame docs coocs roots periods
                                      [] (List.head branches)  (List.tail branches)
        in seaLevelRise fdt similarity lambda minBranch frequency (List.tail ladder) (rise + 1) frame periods docs coocs roots branches'

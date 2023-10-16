@@ -19,7 +19,6 @@ module Gargantext.Database.Query.Table.NodeContext_NodeContext
   )
   where
 
-import Data.Text (Text)
 import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)

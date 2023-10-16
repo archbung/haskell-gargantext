@@ -19,25 +19,29 @@ Portability : POSIX
 module Gargantext.API.Routes
       where
 
-import Control.Concurrent (threadDelay)
 import Control.Lens (view)
-import Data.Text (Text)
 import Data.Validity
-import Servant
-import Servant.Auth as SA
-import Servant.Auth.Swagger ()
-import Servant.Swagger.UI
-
 import Gargantext.API.Admin.Auth (ForgotPasswordAPI, ForgotPasswordAsyncAPI, withAccess, withPolicyT)
 import Gargantext.API.Admin.Auth.Types (AuthRequest, AuthResponse, AuthenticatedUser(..), PathId(..))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.FrontEnd (FrontEndAPI)
+import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Context
 import Gargantext.API.Count  (CountAPI, count, Query)
+import Gargantext.API.GraphQL qualified as GraphQL
 import Gargantext.API.Members (MembersAPI, members)
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableDoc)
+import Gargantext.API.Ngrams.List qualified as List
 import Gargantext.API.Node
+import Gargantext.API.Node.Contact qualified as Contact
+import Gargantext.API.Node.Corpus.Annuaire qualified as Annuaire
+import Gargantext.API.Node.Corpus.Export qualified as CorpusExport
+import Gargantext.API.Node.Corpus.Export.Types qualified as CorpusExport
+import Gargantext.API.Node.Corpus.New qualified as New
+import Gargantext.API.Node.Document.Export qualified as DocumentExport
+import Gargantext.API.Node.Document.Export.Types qualified as DocumentExport
 import Gargantext.API.Prelude
+import Gargantext.API.Public qualified as Public
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Viz.Graph.API
 import Gargantext.Database.Admin.Types.Hyperdata
@@ -46,17 +50,10 @@ import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_scrapers)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import qualified Gargantext.API.GraphQL                    as GraphQL
-import qualified Gargantext.API.Ngrams.List                as List
-import qualified Gargantext.API.Node.Contact               as Contact
-import qualified Gargantext.API.Node.Corpus.Annuaire       as Annuaire
-import qualified Gargantext.API.Node.Corpus.Export         as CorpusExport
-import qualified Gargantext.API.Node.Corpus.Export.Types   as CorpusExport
-import qualified Gargantext.API.Node.Corpus.New            as New
-import qualified Gargantext.API.Node.Document.Export       as DocumentExport
-import qualified Gargantext.API.Node.Document.Export.Types as DocumentExport
-import qualified Gargantext.API.Public                     as Public
-import Gargantext.API.Auth.PolicyCheck
+import Servant
+import Servant.Auth as SA
+import Servant.Auth.Swagger ()
+import Servant.Swagger.UI
 
 
 type GargAPI = MkGargAPI (GargAPIVersion GargAPI')
@@ -293,7 +290,7 @@ waitAPI n = do
   let
     m = (10 :: Int) ^ (6 :: Int)
   _ <- liftBase $ threadDelay ( m * n)
-  pure $ "Waited: " <> (cs $ show n)
+  pure $ "Waited: " <> show n
 ----------------------------------------
 
 addCorpusWithQuery :: User -> ServerT New.AddWithQuery (GargM Env GargError)

@@ -1,16 +1,27 @@
+{-|
+Module      : Gargantext.API.GraphQL.Team
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.Team where
 
-import Data.Morpheus.Types (GQLType, ResolverM, lift)
-import Data.Text ( Text )
-import GHC.Generics (Generic)
+import Data.Morpheus.Types (GQLType, ResolverM)
+import Data.Text qualified as T
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.GraphQL.Types (GqlM)
 import Gargantext.API.GraphQL.Utils (authUser, AuthStatus (Invalid, Valid))
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core.Types (NodeId(..), unNodeId)
+import Gargantext.Core.Types.Individu qualified as Individu
 import Gargantext.Database.Action.Share (membersOf, deleteMemberShip)
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNode)
@@ -18,8 +29,6 @@ import Gargantext.Database.Query.Table.User (getUsersWithNodeHyperdata)
 import Gargantext.Database.Schema.Node (NodePoly(Node, _node_id), _node_user_id)
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
-import qualified Data.Text as T
-import qualified Gargantext.Core.Types.Individu as Individu
 
 data TeamArgs = TeamArgs
   { team_node_id :: Int } deriving (Generic, GQLType)

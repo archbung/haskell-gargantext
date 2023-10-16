@@ -8,22 +8,20 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 module Gargantext.Core.Viz.Phylo.SynchronicClustering where
 
--- import Debug.Trace (trace)
 import Control.Lens hiding (Level)
-import Control.Monad (sequence)
 import Control.Parallel.Strategies (parList, rdeepseq, using)
-import Data.List ((++), null, intersect, nub, concat, sort, sortOn, groupBy)
-import Data.Map  (Map, fromList, fromListWith, foldlWithKey, (!), insert, empty, restrictKeys, elems, mapWithKey, member, unionWith)
+import Data.List (intersect, nub)
+import Data.Map  (fromList, fromListWith, foldlWithKey, (!), insert, empty, restrictKeys, elems, mapWithKey, member, unionWith)
+import Data.Map qualified as Map
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.PhyloExport (processDynamics)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.TemporalMatching (weightedLogJaccard', filterDiago, reduceDiagos)
-import Gargantext.Prelude
--- import Debug.Trace (trace)
-import qualified Data.Map as Map
+import Gargantext.Prelude hiding (empty)
 
 
 -------------------------

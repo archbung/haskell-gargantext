@@ -12,6 +12,7 @@ Functions to deal with users, database side.
 
 
 {-# OPTIONS_GHC -fno-warn-orphans        #-}
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 {-# LANGUAGE DeriveAnyClass              #-}
 {-# LANGUAGE FunctionalDependencies      #-}
@@ -20,17 +21,15 @@ Functions to deal with users, database side.
 
 module Gargantext.Database.Schema.User where
 
+import Data.Aeson.TH (deriveJSON)
 import Data.Morpheus.Types (GQLType(typeOptions))
-import Data.Text (Text)
 import Data.Time (UTCTime)
-import qualified Gargantext.API.GraphQL.Utils as GAGU
-import Gargantext.Core.Utils.Prefix (unPrefix)
+import Database.PostgreSQL.Simple.FromField (FromField, fromField)
+import Gargantext.API.GraphQL.Utils qualified as GAGU
 import Gargantext.Core.Types.Individu (GargPassword, toGargPassword)
+import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Prelude (fromField')
 import Gargantext.Prelude
-import GHC.Generics (Generic)
-import Database.PostgreSQL.Simple.FromField (FromField, fromField)
-import Data.Aeson.TH (deriveJSON)
 
 -- FIXME PLZ : the import below leads to an error, why ?
 -- import Gargantext.Database.Schema.Prelude hiding (makeLensesWith, abbreviatedFields, makeAdaptorAndInstance)

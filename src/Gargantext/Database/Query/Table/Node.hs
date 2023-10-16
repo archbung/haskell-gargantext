@@ -23,8 +23,6 @@ module Gargantext.Database.Query.Table.Node
 import Control.Arrow (returnA)
 import Control.Lens (set, view)
 import Data.Aeson
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core

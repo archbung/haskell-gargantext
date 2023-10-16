@@ -28,10 +28,8 @@ module Gargantext.Database.Query.Table.NodeNgrams
 
 import Data.List qualified as List
 import Data.List.Extra (nubOrd)
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Maybe (fromJust)
 import Database.PostgreSQL.Simple qualified as PGS (Query, Only(..))
 import Gargantext.Core
 import Gargantext.Core.Types

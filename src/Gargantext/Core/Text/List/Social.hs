@@ -14,13 +14,10 @@ module Gargantext.Core.Text.List.Social
   where
 
 import Control.Lens (view)
-import Control.Monad (mzero)
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import Data.List qualified as List
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Monoid (mconcat)
 import Data.Pool
 import Data.Swagger
 import Data.Text qualified as T
@@ -89,7 +86,7 @@ instance FromHttpApiData FlowSocialListWith
     parseUrlPiece "My lists first"    = pure $ FlowSocialListWithPriority { fslw_priority = MySelfFirst }
     parseUrlPiece "Others lists first" = pure $ FlowSocialListWithPriority { fslw_priority = OthersFirst }
     parseUrlPiece "NoList"          = pure $ NoList True
-    parseUrlPiece x                 = panic $ "[G.C.T.L.Social] TODO FromHttpApiData FlowSocialListWith error: " <> (cs $ show x)
+    parseUrlPiece x                 = panic $ "[G.C.T.L.Social] TODO FromHttpApiData FlowSocialListWith error: " <> (show x)
 
 instance ToHttpApiData   FlowSocialListWith where
     toUrlPiece (FlowSocialListWithPriority  MySelfFirst) = "MySelfFirst"

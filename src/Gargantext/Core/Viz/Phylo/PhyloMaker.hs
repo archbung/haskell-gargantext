@@ -9,34 +9,29 @@ Portability : POSIX
 -}
 
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 module Gargantext.Core.Viz.Phylo.PhyloMaker where
 
 
-import Control.DeepSeq (NFData)
 import Control.Lens hiding (Level)
 import Control.Parallel.Strategies (parList, rdeepseq, using)
-import Data.List (concat, nub, partition, sort, (++), group, intersect, null, sortOn, groupBy, tail)
-import Data.Map (Map, fromListWith, keys, unionWith, fromList, empty, toList, elems, (!), restrictKeys, insert)
-import Data.Set (Set)
-import Data.Text (Text)
+import Data.List (nub, partition, intersect, tail)
+import Data.List qualified as List
+import Data.Map (fromListWith, keys, unionWith, fromList, empty, toList, elems, (!), restrictKeys, insert)
+import Data.Map qualified as Map
+import Data.Set qualified as Set
 import Data.Vector (Vector)
-import Debug.Trace (trace)
-import Prelude (floor)
-
-import Gargantext.Core.Methods.Similarities (Similarity(Conditional))
+import Data.Vector qualified as Vector
 import Gargantext.Core.Methods.Graph.MaxClique (getMaxCliques)
+import Gargantext.Core.Methods.Similarities (Similarity(Conditional))
 import Gargantext.Core.Text.Metrics.FrequentItemSet (fisWithSizePolyMap, fisWithSizePolyMap', Size(..))
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.PhyloExport (toHorizon)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Gargantext.Core.Viz.Phylo.SynchronicClustering (synchronicClustering)
 import Gargantext.Core.Viz.Phylo.TemporalMatching (toPhyloQuality, temporalMatching, getNextPeriods, filterDocs, filterDiago, reduceDiagos, toSimilarity)
-import Gargantext.Prelude
-
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import qualified Data.List as List
-import qualified Data.Vector as Vector
+import Gargantext.Prelude hiding (empty, toList)
 
 ------------------
 -- | To Phylo | --
@@ -193,7 +188,11 @@ findSeaLadder phylo = case getSeaElevation phylo of
                ) [] $ keys $ phylo ^. phylo_periods
 
 appendGroups :: (a -> Period -> (Text,Text) -> Scale -> Int -> [Cooc] ->  Map Int Double -> PhyloGroup) -> Scale -> Map (Date,Date) [a] -> Phylo -> Phylo
-appendGroups f lvl m phylo =  trace ("\n" <> "-- | Append " <> show (length $ concat $ elems m) <> " groups to scale " <> show (lvl) <> "\n")
+appendGroups f lvl m phylo =
+  trace ("\n" <> "-- | Append "
+         <> show (length $ concat $ elems m)
+         <> " groups to scale "
+         <> show (lvl) <> "\n" :: Text)
     $ over ( phylo_periods
            .  traverse
            . phylo_periodScales
@@ -382,7 +381,9 @@ docsToTimeScaleCooc docs fdt =
         mCooc' = fromList
                $ map (\t -> (t,empty))
                $ toTimeScale (map date docs) 1
-    in  trace ("\n" <> "-- | Build the coocurency matrix for " <> show (length $ keys mCooc') <> " unit of time" <> "\n")
+    in  trace ("\n" <> "-- | Build the coocurency matrix for "
+               <> show (length $ keys mCooc')
+               <> " unit of time" <> "\n" :: Text)
        $ unionWith sumCooc mCooc mCooc'
 
 
@@ -407,7 +408,10 @@ groupDocsByPeriod' f pds docs =
   let docs'    = groupBy (\d d' -> f d == f d') $ sortOn f docs
       periods  = map (inPeriode f docs') pds
       periods' = periods `using` parList rdeepseq
-   in trace ("\n" <> "-- | Group " <> show(length docs) <> " docs by " <> show(length pds) <> " periods" <> "\n")
+   in trace ("\n" <> "-- | Group "
+             <> show(length docs)
+             <> " docs by "
+             <> show(length pds) <> " periods" <> "\n" :: Text)
     $ fromList $ zip pds periods'
   where
     --------------------------------------
@@ -424,7 +428,9 @@ groupDocsByPeriod f pds es =
   let periods  = map (inPeriode f es) pds
       periods' = periods `using` parList rdeepseq
 
-  in  trace ("\n" <> "-- | Group " <> show(length es) <> " docs by " <> show(length pds) <> " periods" <> "\n")
+  in  trace ("\n" <> "-- | Group "
+             <> show(length es) <> " docs by "
+             <> show(length pds) <> " periods" <> "\n" :: Text)
     $ fromList $ zip pds periods'
   where
     --------------------------------------
@@ -479,7 +485,11 @@ docsToTimeScaleNb :: [Document] -> Map Date Double
 docsToTimeScaleNb docs =
     let docs' = fromListWith (+) $ map (\d -> (date d,1)) docs
         time  = fromList $ map (\t -> (t,0)) $ toTimeScale (keys docs') 1
-    in  trace ("\n" <> "-- | Group " <> show(length docs) <> " docs by " <> show(length time) <> " unit of time" <> "\n")
+    in  trace ("\n" <> "-- | Group "
+               <> show(length docs)
+               <> " docs by "
+               <> show(length time)
+               <> " unit of time" <> "\n" :: Text)
       $ unionWith (+) time docs'
 
 
@@ -531,8 +541,10 @@ initPhylo docs conf =
                  then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale (length docs) }
                  else defaultPhyloParam { _phyloParam_config = conf }
         periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
-    in trace ("\n" <> "-- | Init a phylo out of " <> show(length docs) <> " docs \n")
-       $ trace ("\n" <> "-- | lambda " <> show(_qua_granularity $ phyloQuality $ _phyloParam_config params)) 
+    in trace ("\n" <> "-- | Init a phylo out of "
+              <> show(length docs) <> " docs \n" :: Text)
+       $ trace ("\n" <> "-- | lambda "
+                <> show(_qua_granularity $ phyloQuality $ _phyloParam_config params) :: Text) 
        $ Phylo foundations
                docsSources
                docsCounts

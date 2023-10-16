@@ -16,11 +16,10 @@ module Gargantext.Database.Admin.Types.Hyperdata.Frame
 
 import Control.Lens
 import Data.ByteString.Lazy (toStrict)
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text qualified as T
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
-import Gargantext.Prelude
-import qualified Data.Text as T
-import qualified Network.Wreq as Wreq
+import Gargantext.Prelude hiding (toStrict)
+import Network.Wreq qualified as Wreq
 
 ------------------------------------------------------------------------
 data HyperdataFrame =

@@ -42,19 +42,13 @@ module Gargantext.Database.Query.Tree
   where
 
 import Control.Lens (view, toListOf, at, each, _Just, to, set, makeLenses)
-import Control.Monad.Error.Class (MonadError())
-import Data.List (tail, concat, nub)
-import qualified Data.List as List
-import qualified Data.Text as Text
-import Data.Map.Strict (Map, fromListWith, lookup)
--- import Data.Monoid (mconcat)
+import Data.List (tail, nub)
+import Data.List qualified as List
+import Data.Map.Strict (fromListWith, lookup)
 import Data.Proxy
--- import qualified Data.Set  as Set
-import Data.Text (Text)
+import Data.Text qualified as Text
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.SqlQQ
-
-import Gargantext.Prelude
 import Gargantext.Core
 import Gargantext.Core.Types.Main (NodeTree(..), Tree(..))
 import Gargantext.Database.Admin.Config (fromNodeTypeId, nodeTypeId, fromNodeTypeId)
@@ -67,6 +61,7 @@ import Gargantext.Database.Query.Table.NodeNode (getNodeNode)
 import Gargantext.Database.Query.Tree.Error
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Database.Schema.NodeNode (NodeNodePoly(..))
+import Gargantext.Prelude hiding (to)
 
 ------------------------------------------------------------------------
 data DbTreeNode = DbTreeNode { _dt_nodeId   :: NodeId

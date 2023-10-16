@@ -1,28 +1,26 @@
+{-|
+Module      : Gargantext.API.GraphQL.AsyncTask
+Description :
+Copyright   : (c) CNRS, 2017
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Gargantext.API.GraphQL.AsyncTask where
 
-import Control.Concurrent.Async (poll)
-import Control.Concurrent.MVar (readMVar)
 import Control.Lens
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Control.Monad.Reader (ask, liftIO)
-import Data.Either (Either(..))
-import qualified Data.IntMap.Strict as IntMap
-import Data.Maybe (catMaybes)
-import Data.Morpheus.Types
-  ( GQLType
-  , Resolver
-  , QUERY
-  , lift
-  )
+import Data.IntMap.Strict qualified as IntMap
+import Data.Map.Strict qualified as Map
+import Data.Morpheus.Types ( GQLType, Resolver, QUERY )
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..))
 import Gargantext.API.Prelude (GargM, GargError, HasJobEnv')
 import Gargantext.Database.Prelude (HasConnectionPool, HasConfig)
 import Gargantext.Prelude
-import GHC.Generics (Generic)
 import Servant.Job.Async (HasJobEnv(job_env), jenv_jobs, job_async)
 import Servant.Job.Core (env_item, env_map, env_state_mvar)
 

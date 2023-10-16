@@ -25,15 +25,12 @@ module Gargantext.Core.Viz.Graph.Index
   where
 
 import Data.Array.Accelerate (Matrix, Elt, Shape, (:.)(..), Z(..))
-import Data.Map.Strict (Map)
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.Set (Set)
+import Data.Array.Accelerate qualified as A
+import Data.Array.Accelerate.Interpreter qualified as A
+import Data.List qualified as L
+import Data.Map.Strict qualified as M
+import Data.Set qualified as S
 import Gargantext.Prelude
-import qualified Data.Array.Accelerate as A
-import qualified Data.Array.Accelerate.Interpreter as A
-import qualified Data.Map.Strict       as M
-import qualified Data.Set              as S
-import qualified Data.List             as L
 
 type Index    = Int
 
@@ -50,7 +47,7 @@ score s f m = fromIndex fromI . mat2map . f $ cooc2mat s toI m
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 cooc2mat :: Ord t => MatrixShape -> Map t Index -> Map (t, t) Int -> Matrix Int
-cooc2mat sym ti m = map2mat sym 0 n idx
+cooc2mat sym' ti m = map2mat sym' 0 n idx
   where
     n = M.size ti
     idx = toIndex ti m -- it is important to make sure that toIndex is ran only once.
@@ -58,10 +55,10 @@ cooc2mat sym ti m = map2mat sym 0 n idx
 data MatrixShape = Triangle | Square
 
 map2mat :: Elt a => MatrixShape -> a -> Int -> Map (Index, Index) a -> Matrix a
-map2mat sym def n m = A.fromFunction shape getData
+map2mat sym' def n m = A.fromFunction shape getData
   where
     getData = (\(Z :. x :. y) ->
-      case sym of
+      case sym' of
         Triangle -> fromMaybe def (M.lookup (x,y) m)
         Square   -> fromMaybe (fromMaybe def $ M.lookup (y,x) m)
                                              $ M.lookup (x,y) m

@@ -16,21 +16,21 @@ commentary with @some markup@.
 
 module Gargantext.Core.Text.Terms.WithList where
 
-import Data.List (null)
+import Data.Algorithms.KMP qualified as KMP
+import Data.IntMap.Strict qualified as IntMap
+import Data.List qualified as List
 import Data.Ord
-import Data.Text (Text, concat, unwords)
+import Data.Text (concat)
+import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.Prelude
 import Gargantext.Core (Lang(ZH))
 import Gargantext.Core.Text.Context
 import Gargantext.Core.Text.Terms.Mono (monoTextsBySentence)
 import Gargantext.Core.Types (TermsCount)
 import Gargantext.Core.Utils (groupWithCounts)
+import Gargantext.Prelude hiding (concat)
+import GHC.Exts (sortWith)
 import Prelude (error)
-import qualified Data.Algorithms.KMP as KMP
-import qualified Data.IntMap.Strict  as IntMap
-import qualified Data.List           as List
-import qualified Data.Text           as Text
 
 ------------------------------------------------------------------------
 

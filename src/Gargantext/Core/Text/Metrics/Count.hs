@@ -22,27 +22,19 @@ Source : https://en.wikipedia.org/wiki/Type%E2%80%93token_distinction#Occurrence
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 module Gargantext.Core.Text.Metrics.Count
   where
 
-import Debug.Trace (trace)
-import Data.Text (Text)
 import Control.Arrow (Arrow(..), (***))
-import qualified Data.List as List
-
-import qualified Data.Map.Strict as DMS
-import Data.Map.Strict  ( Map, empty, singleton
-                        , insertWith, unionWith, unionsWith
-                        , mapKeys
-                        )
-import Data.Set (Set)
+import Data.List qualified as List
+import Data.Map.Strict  ( empty, singleton , insertWith, unionWith, unionsWith , mapKeys )
+import Data.Map.Strict qualified as DMS
 import Data.Text (pack)
-
-
-------------------------------------------------------------------------
-import Gargantext.Prelude
 import Gargantext.Core.Types
+import Gargantext.Prelude hiding (empty)
+
 ------------------------------------------------------------------------
 type Occ  a = Map      a  Int
 type Cooc a = Map (a,  a) Int
@@ -145,7 +137,7 @@ occurrencesOn :: (Ord a, Ord b) => (a -> b) -> [a] -> Map b (Map a Int)
 occurrencesOn f = foldl' (\m a -> insertWith (unionWith (+)) (f a) (singleton a 1) m) empty
 
 occurrencesWith :: (Foldable list, Ord k, Num a, Show k, Show a, Show (list b)) => (b -> k) -> list b -> Map k a
-occurrencesWith f xs = trace (show (xs,m))  m
+occurrencesWith f xs = trace (show (xs,m) :: Text)  m
   where
     m = foldl' (\x y -> insertWith (+) (f y) 1 x) empty xs
 

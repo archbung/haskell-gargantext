@@ -12,21 +12,20 @@ module Test.API.Private (
   , protected
   ) where
 
-import Control.Exception
-import Control.Monad
-import Control.Monad.Reader
-import Data.ByteString (ByteString)
-import Data.Maybe
-import Data.Proxy
+import Data.ByteString.Lazy qualified as L
+import Data.Text.Encoding qualified as TE
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Routes
 import Gargantext.Core.Types.Individu
+import Gargantext.Prelude hiding (get)
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Types
+import Network.Wai.Handler.Warp qualified as Wai
 import Network.Wai.Test (SResponse)
-import Prelude
+import Prelude qualified
 import Servant
 import Servant.Auth.Client ()
+import Servant.Auth.Client qualified as SA
 import Servant.Client
 import Test.API.Authentication (auth_api)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
@@ -34,10 +33,6 @@ import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
 import Test.Utils (jsonFragment, shouldRespondWith')
-import qualified Data.ByteString.Lazy as L
-import qualified Data.Text.Encoding as TE
-import qualified Network.Wai.Handler.Warp as Wai
-import qualified Servant.Auth.Client as SA
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
 protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
@@ -59,12 +54,12 @@ withValidLogin port ur pwd act = do
   let authPayload = AuthRequest ur pwd
   result <- liftIO $ runClientM (auth_api authPayload) clientEnv
   case result of
-    Left err  -> liftIO $ throwIO $ userError (show err)
+    Left err  -> liftIO $ throwIO $ Prelude.userError (show err)
     Right res
       | Just tkn <- _authRes_valid res
       -> act (_authVal_token tkn)
       | otherwise
-      -> fail $ "No token found in " <> show res
+      -> Prelude.fail $ "No token found in " <> show res
 
 
 tests :: Spec

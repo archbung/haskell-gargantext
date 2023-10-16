@@ -8,6 +8,8 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE Arrows            #-}
 {-# LANGUAGE LambdaCase         #-}
 
@@ -21,11 +23,16 @@ module Gargantext.Database.Action.Search (
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
-import Data.Maybe
+import Data.BoolExpr
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
 import Data.Profunctor.Product (p4)
-import Data.Text (Text, unpack)
+import Data.Set qualified as Set
+import Data.Text (unpack)
+import Data.Text qualified as T
 import Data.Time (UTCTime)
 import Gargantext.Core
+import Gargantext.Core.Text.Corpus.Query qualified as API
 import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
@@ -43,15 +50,9 @@ import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.ContextNodeNgrams (ContextNodeNgramsPoly(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (groupBy)
 import Opaleye hiding (Order)
-import qualified Data.List as List
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import qualified Gargantext.Core.Text.Corpus.Query as API
-import qualified Opaleye as O hiding (Order)
-import Data.BoolExpr
-import qualified Data.Text as T
+import Opaleye qualified as O hiding (Order)
 
 --
 -- Interpreting a query into a Postgres' TSQuery

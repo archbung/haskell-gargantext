@@ -16,14 +16,12 @@ Triggers on Nodes table.
 module Gargantext.Database.Admin.Trigger.Contexts
   where
 
-import Data.Text (Text)
+import Database.PostgreSQL.Simple qualified as DPS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core (HasDBid(..))
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
--- (ListId, CorpusId, NodeId)
 import Gargantext.Database.Prelude (execPGSQuery, DBCmd)
 import Gargantext.Prelude
-import qualified Database.PostgreSQL.Simple as DPS
 
 
 triggerSearchUpdate :: HasDBid NodeType => DBCmd err Int64

@@ -15,19 +15,16 @@ Starting from this model, a specific Gargantext engine will be made
 
 module Gargantext.Core.Text.Search where
 
-import Data.SearchEngine
-
 import Data.Ix
+import Data.SearchEngine
+import Gargantext.Core.Text.Corpus.Parsers.CSV
+import Gargantext.Core.Text.Terms.Mono (monoTexts)
+import Gargantext.Core.Text.Terms.Mono.Stem as ST
+import Gargantext.Prelude
 
 -- Usefull to use stopwords
 -- import Data.Set (Set)
 -- import qualified Data.Set as Set
-import Data.Text (Text)
-
-import Gargantext.Prelude
-import Gargantext.Core.Text.Terms.Mono (monoTexts)
-import Gargantext.Core.Text.Terms.Mono.Stem as ST
-import Gargantext.Core.Text.Corpus.Parsers.CSV
 
 type DocId = Int
 

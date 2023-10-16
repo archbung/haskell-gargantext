@@ -1,3 +1,14 @@
+{-|
+Module      : Gargantext.API.Node.DocumentUpload
+Description :
+Copyright   : (c) CNRS, 2017-Present
+License     : AGPL + CECILL v3
+Maintainer  : team@gargantext.org
+Stability   : experimental
+Portability : POSIX
+-}
+
+
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MonoLocalBinds      #-}
 {-# LANGUAGE TemplateHaskell     #-}
@@ -8,10 +19,7 @@ module Gargantext.API.Node.DocumentUpload where
 import Control.Lens (makeLenses, view)
 import Data.Aeson
 import Data.Swagger (ToSchema)
-import GHC.Generics (Generic)
-import Servant
-import qualified Data.Text as T
-
+import Data.Text qualified as T
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Prelude
@@ -28,6 +36,7 @@ import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType')
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Servant
 
 
 data DocumentUpload = DocumentUpload

@@ -11,6 +11,7 @@ Functions to deal with users, database side.
 -}
 
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-# OPTIONS_GHC -fno-warn-orphans        #-}
 
 {-# LANGUAGE Arrows                      #-}
@@ -48,26 +49,23 @@ module Gargantext.Database.Query.Table.User
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), (?~))
-import Data.List (find)
-import Data.Maybe (fromMaybe)
 import Data.Proxy
-import Data.Text (Text)
 import Data.Time (UTCTime)
-import qualified Data.UUID as UUID
+import Data.UUID qualified as UUID
+import Gargantext.Core (HasDBid)
 import Gargantext.Core.Types.Individu
-import qualified Gargantext.Prelude.Crypto.Auth as Auth
+import Gargantext.Database.Admin.Config (nodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
 import Gargantext.Database.Prelude (DBCmd, mkCmd, runOpaQuery)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
 import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)
 import Gargantext.Database.Schema.User
 import Gargantext.Prelude
+import Gargantext.Prelude.Crypto.Auth qualified as Auth
 import Opaleye
-import qualified PUBMED.Types as PUBMED
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
-import Gargantext.Core (HasDBid)
-import Gargantext.Database.Admin.Config (nodeTypeId)
+import PUBMED.Types qualified as PUBMED
 
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
@@ -253,11 +251,11 @@ updateUserPassword (UserLight { userLight_password = GargPassword password, .. }
 updateUserForgotPasswordUUID :: UserLight -> DBCmd err Int64
 updateUserForgotPasswordUUID (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
   where
-    pass = sqlStrictText $ fromMaybe "" userLight_forgot_password_uuid
+    pass' = sqlStrictText $ fromMaybe "" userLight_forgot_password_uuid
     updateUserQuery :: Update Int64
     updateUserQuery = Update
       { uTable      = userTable
-      , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_forgot_password_uuid = pass, .. })
+      , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_forgot_password_uuid = pass', .. })
       , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
       , uReturning  = rCount }
 

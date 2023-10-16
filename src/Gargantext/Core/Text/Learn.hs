@@ -14,37 +14,33 @@ TODO:
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Gargantext.Core.Text.Learn -- (detectLang, detectLangs, stopList)
   where
 
 import Codec.Serialise
-import qualified Data.List as DL
-
-import Data.Map.Strict (Map, toList)
-import qualified Data.Map.Strict as DM
-
-import GHC.Generics
+import Data.ByteString.Lazy qualified as BSL
+import Data.List qualified as DL
+import Data.Map.Strict (toList)
+import Data.Map.Strict qualified as DM
 import Data.String (String)
-
-import Data.Text (Text)
 import Data.Text (pack, unpack, toLower)
 import Data.Tuple.Extra (both)
-import qualified Data.ByteString.Lazy as BSL
-
-import Gargantext.Prelude
-import Gargantext.Database.GargDB
+import GHC.Generics
 import Gargantext.Core (Lang(..), allLangs)
-import Gargantext.Core.Text.Terms.Mono (words)
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
-
-import qualified Gargantext.Core.Text.Samples.ZH as ZH
-import qualified Gargantext.Core.Text.Samples.DE as DE
-import qualified Gargantext.Core.Text.Samples.EN as EN
-import qualified Gargantext.Core.Text.Samples.ES as ES
-import qualified Gargantext.Core.Text.Samples.FR as FR
-import qualified Gargantext.Core.Text.Samples.PL as PL
+import Gargantext.Core.Text.Samples.DE qualified as DE
+import Gargantext.Core.Text.Samples.EN qualified as EN
+import Gargantext.Core.Text.Samples.ES qualified as ES
+import Gargantext.Core.Text.Samples.FR qualified as FR
+import Gargantext.Core.Text.Samples.PL qualified as PL
+import Gargantext.Core.Text.Samples.ZH qualified as ZH
+import Gargantext.Core.Text.Terms.Mono (words)
+import Gargantext.Database.GargDB
+import Gargantext.Prelude hiding (Word, toList, toLower, words)
 
 ------------------------------------------------------------------------
 data Candidate = Candidate { stop :: Double

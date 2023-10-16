@@ -11,36 +11,30 @@ Portability : POSIX
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 
----------------------------------------------------------------------
 module Gargantext.API.Server where
----------------------------------------------------------------------
+
 import Control.Lens ((^.))
-import Control.Monad.Except (withExceptT)
-import Control.Monad.Reader (runReaderT)
-import qualified Data.Aeson as Aeson
-import Data.Text (Text)
+import Data.Aeson qualified as Aeson
+import Data.ByteString.Lazy.Char8 qualified as BL8
 import Data.Version (showVersion)
-import Servant
-import Servant.Swagger.UI (swaggerSchemaUIServer)
-import qualified Data.ByteString.Lazy.Char8 as BL8
-import qualified Paths_gargantext           as PG -- cabal magic build module
-
-import qualified Gargantext.API.Public      as Public
-
-import Gargantext.API.Admin.Auth.Types (AuthContext)
 import Gargantext.API.Admin.Auth (auth, forgotPassword, forgotPasswordAsync)
+import Gargantext.API.Admin.Auth.Types (AuthContext)
 import Gargantext.API.Admin.EnvTypes (Env)
 import Gargantext.API.Admin.FrontEnd (frontEndServer)
-import qualified Gargantext.API.GraphQL as GraphQL
+import Gargantext.API.Auth.PolicyCheck ()
+import Gargantext.API.GraphQL qualified as GraphQL
 import Gargantext.API.Prelude
+import Gargantext.API.Public qualified as Public
 import Gargantext.API.Routes
 import Gargantext.API.Swagger (swaggerDoc)
 import Gargantext.API.ThrowAll (serverPrivateGargAPI)
-import Gargantext.Database.Query.Table.Node.Error (NodeError(..))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Prelude
+import Gargantext.Database.Query.Table.Node.Error (NodeError(..))
+import Gargantext.Prelude hiding (Handler)
 import Gargantext.Prelude.Config (gc_url_backend_api)
-import Gargantext.API.Auth.PolicyCheck ()
+import Paths_gargantext qualified as PG -- cabal magic build module
+import Servant
+import Servant.Swagger.UI (swaggerSchemaUIServer)
 
 
 serverGargAPI :: Text -> ServerT GargAPI (GargM Env GargError)

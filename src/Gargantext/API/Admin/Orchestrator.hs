@@ -13,14 +13,13 @@ module Gargantext.API.Admin.Orchestrator where
 
 import Control.Lens hiding (elements)
 import Data.Aeson
+import Data.ByteString.Lazy.Char8 qualified as LBS
+import Gargantext.API.Admin.Orchestrator.Scrapy.Schedule
+import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.Prelude hiding (to)
 import Servant
 import Servant.Job.Async
 import Servant.Job.Client
-import qualified Data.ByteString.Lazy.Char8 as LBS
-
-import Gargantext.API.Admin.Orchestrator.Scrapy.Schedule
-import Gargantext.API.Admin.Orchestrator.Types
-import Gargantext.Prelude
 
 callJobScrapy :: (ToJSON e, FromJSON e, FromJSON o, MonadClientJob m)
               => JobServerURL e Schedule o
@@ -64,7 +63,7 @@ pipeline :: FromJSON e => URL -> ClientEnv -> ScraperInput
                        -> (e -> IO ()) -> IO JobLog
 pipeline scrapyurl client_env input log_status = do
   e <- runJobMLog client_env log_status $ callScraper scrapyurl input
-  either (panic . cs . show) pure e -- TODO throwError
+  either (panic . show) pure e -- TODO throwError
 
 -- TODO integrate to ServerT
 --  use:

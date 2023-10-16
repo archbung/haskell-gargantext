@@ -8,6 +8,10 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
+
 module Gargantext.Database.Action.User.New
   (
     -- * Creating users
@@ -23,7 +27,8 @@ module Gargantext.Database.Action.User.New
 
 import Control.Lens (view)
 import Control.Monad.Random
-import Data.Text (Text, splitOn)
+import Data.Text (splitOn)
+import Data.Text qualified as Text
 import Gargantext.Core.Mail
 import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.Types.Individu
@@ -35,7 +40,6 @@ import Gargantext.Database.Query.Table.User
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Pass.User (gargPass)
 import Gargantext.Prelude.Mail.Types (MailConfig)
-import qualified Data.Text as Text
 
 ------------------------------------------------------------------------
 -- | Creates a new 'User' from the input 'EmailAddress', which needs to
@@ -89,11 +93,11 @@ newUsers us = do
 
 ------------------------------------------------------------------------
 mkNewUser :: EmailAddress -> GargPassword -> NewUser GargPassword
-mkNewUser emailAddress pass =
+mkNewUser emailAddress pass' =
   let  username = case guessUserName emailAddress of
         Just  (u', _m) -> u'
         Nothing        -> panic "[G.D.A.U.N.newUserQuick]: Email invalid"
-  in (NewUser username (Text.toLower emailAddress) pass)
+  in (NewUser username (Text.toLower emailAddress) pass')
 
 ------------------------------------------------------------------------
 -- | guessUserName

@@ -19,22 +19,23 @@ words as nouns, verbs, adjectives, adverbs, etc.
 Source: https://en.wikipedia.org/wiki/Part-of-speech_tagging
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
 
 module Gargantext.Core.Text.Terms.Multi.PosTagging where
 
-import Control.Exception (catch, throwIO)
 import Data.Aeson
 import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Map qualified as Map
 import Data.Set (fromList)
-import Data.Text (Text, splitOn, pack, toLower)
+import Data.Text (splitOn, pack, toLower)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Types
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (ByteString, toLower)
 import Network.HTTP.Simple
 import Network.URI (URI(..))
 
@@ -53,7 +54,8 @@ tokenTag (Token { .. }) = TokenTag { _my_token_word = w'
   where
     w' = split _tokenWord
     l' = fromList (split _tokenLemma)
-    split = splitOn (pack " ") . toLower
+    split :: Text -> [Text]
+    split = splitOn " " . toLower
 
 filter' :: [TokenTag] -> [TokenTag]
 filter' xs = filter isNgrams xs

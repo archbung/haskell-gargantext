@@ -25,18 +25,11 @@ module Gargantext.API.Admin.EnvTypes (
 import Control.Lens hiding (Level, (:<))
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Pool (Pool)
-import Data.Sequence (Seq, ViewL(..), viewl)
-import Database.PostgreSQL.Simple (Connection)
-import GHC.Generics (Generic)
-import Network.HTTP.Client (Manager)
-import Servant.Client (BaseUrl)
-import Servant.Job.Async (HasJobEnv(..), Job)
-import qualified Servant.Job.Async as SJ
-import qualified Servant.Job.Core
-
 import Data.List ((\\))
-import qualified Data.Text as T
+import Data.Pool (Pool)
+import Data.Sequence (ViewL(..), viewl)
+import Data.Text qualified as T
+import Database.PostgreSQL.Simple (Connection)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
 import Gargantext.API.Job
@@ -49,10 +42,14 @@ import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..))
 import Gargantext.Prelude.Mail.Types (MailConfig)
 import Gargantext.System.Logging
-import qualified System.Log.FastLogger as FL
-
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import Gargantext.Utils.Jobs.Map (LoggerM, J(..), jTask, rjGetLog)
+import Gargantext.Utils.Jobs.Monad qualified as Jobs
+import Network.HTTP.Client (Manager)
+import Servant.Client (BaseUrl)
+import Servant.Job.Async (HasJobEnv(..), Job)
+import Servant.Job.Async qualified as SJ
+import Servant.Job.Core qualified
+import System.Log.FastLogger qualified as FL
 
 data Mode = Dev | Mock | Prod
   deriving (Show, Read, Generic)
@@ -83,7 +80,7 @@ instance HasLogger (GargM Env GargError) where
     pure $ GargLogger mode logger_set
   destroyLogger             = \GargLogger{..}  -> liftIO $ FL.rmLoggerSet logger_set
   logMsg = \(GargLogger mode logger_set) lvl msg -> do
-    let pfx = "[" <> show lvl <> "] "
+    let pfx = "[" <> show lvl <> "] " :: Text
     when (lvl `elem` (modeToLoggingLevels mode)) $
       liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
   logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)
@@ -253,7 +250,7 @@ instance HasLogger (GargM DevEnv GargError) where
     pure $ GargDevLogger mode dev_logger_set
   destroyLogger             = \GargDevLogger{..}  -> liftIO $ FL.rmLoggerSet dev_logger_set
   logMsg = \(GargDevLogger mode logger_set) lvl msg -> do
-    let pfx = "[" <> show lvl <> "] "
+    let pfx = "[" <> show lvl <> "] " :: Text
     when (lvl `elem` (modeToLoggingLevels mode)) $
       liftIO $ FL.pushLogStrLn logger_set $ FL.toLogStr pfx <> msg
   logTxt lgr lvl msg = logMsg lgr lvl (FL.toLogStr $ T.unpack msg)

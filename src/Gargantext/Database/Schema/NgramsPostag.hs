@@ -21,10 +21,9 @@ module Gargantext.Database.Schema.NgramsPostag
   where
 
 import Control.Lens
-import Data.Text (Text)
+import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Prelude
-import qualified Database.PostgreSQL.Simple as PGS
 
 
 data NgramsPostagPoly id

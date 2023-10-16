@@ -13,18 +13,15 @@ Références:
 
 -}
 
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 module Gargantext.Core.Methods.Graph.BAC.Proxemy
   where
 
---import Debug.SimpleReflect
-import Gargantext.Prelude
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.List as List
---import Gargantext.Core.Viz.Graph.IGraph
+import Data.List qualified as List
+import Data.Map.Strict qualified as Map
 import Gargantext.Core.Viz.Graph.FGL
--- import qualified Graph.BAC.ProxemyOptim   as BAC
+import Gargantext.Prelude
 
 type Length = Int
 type FalseReflexive = Bool
@@ -42,10 +39,10 @@ similarity_conf_x_y :: Graph_Undirected -> (Node,Node) -> Length -> FalseReflexi
 similarity_conf_x_y g (x,y) l r rm_e = similarity
   where
     similarity :: Double
-    similarity | denominator == 0 = 0
-               | otherwise        = prox_x_y / denominator
+    similarity | denominator' == 0 = 0
+               | otherwise        = prox_x_y / denominator'
        where
-         denominator = prox_x_y + lim_SC
+         denominator' = prox_x_y + lim_SC
 
     prox_x_y :: Double
     prox_x_y = maybe 0 identity $ Map.lookup y xline
@@ -62,14 +59,14 @@ similarity_conf_x_y g (x,y) l r rm_e = similarity
 
     lim_SC :: Double
     lim_SC
-          | denominator == 0 = 0
+          | denominator' == 0 = 0
           | otherwise  = if pair_is_edge
-                             then (degree g y + 1-1)  / denominator
-                             else (degree g y + 1  ) / denominator
+                             then (degree g y + 1-1)  / denominator'
+                             else (degree g y + 1  ) / denominator'
             where
-              denominator = if pair_is_edge
-                              then (2 * (ecount g) + (vcount g) - 2)
-                              else (2 * (ecount g) + (vcount g)    )
+              denominator' = if pair_is_edge
+                               then (2 * (ecount g) + (vcount g) - 2)
+                               else (2 * (ecount g) + (vcount g)    )
 
 
 rm_edge_neighbors :: (Node, Node) -> Graph_Undirected -> Node -> [Node]

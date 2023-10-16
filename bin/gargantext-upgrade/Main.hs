@@ -16,24 +16,22 @@ Import a corpus binary.
 
 module Main where
 
+import Data.List qualified as List (cycle, concat, take, unlines)
 import Gargantext.API.Dev (withDevEnv)
 import Gargantext.API.Node () -- instances only
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
-import Prelude (getLine)
-import System.Environment (getArgs)
-import qualified Data.List as List (cycle, concat, take, unlines)
+import Prelude qualified
 
 main :: IO ()
 main = do
 
-  let ___ = putStrLn
-          $ List.concat
-          $ List.take 72
-          $ List.cycle ["_"]
+  let ___ = putStrLn ((List.concat
+                       $ List.take 72
+                       $ List.cycle ["_"]) :: Prelude.String)
 
   ___
-  putStrLn "GarganText upgrade to version 0.0.6.9.9.4.4"
+  putStrLn ("GarganText upgrade to version 0.0.6.9.9.4.4" :: Text)
   ___
 
   params@[iniPath] <- getArgs
@@ -53,13 +51,13 @@ main = do
   cfg       <- readConfig         iniPath
   let _secret = _gc_secretkey cfg
 
-  withDevEnv iniPath $ \env -> do
+  withDevEnv iniPath $ \_env -> do
     -- _ <- runCmdDev env addIndex
     -- _ <- runCmdDev env refreshIndex
 
 
     ___
-    putStrLn "Uprade done with success !"
+    putStrLn ("Uprade done with success !" :: Text)
     ___
     pure ()
 

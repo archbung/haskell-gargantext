@@ -22,12 +22,8 @@ module Gargantext.Database.Action.Metrics.NgramsByContext
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified as List
-import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Set (Set)
 import Data.Set qualified as Set
-import Data.Text (Text)
-import Data.Tuple.Extra (first, second, swap)
 import Database.PostgreSQL.Simple qualified as DPS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))

@@ -16,11 +16,9 @@ Format Converter.
 module Gargantext.Core.Text.Convert (risPress2csvWrite)
     where
 
-import Data.Either (Either(..))
 import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat(..), FileType(..))
 import Gargantext.Core.Text.Corpus.Parsers.CSV (writeDocs2Csv)
 import Gargantext.Prelude
-import System.FilePath (FilePath()) -- , takeExtension)
 
 
 risPress2csvWrite :: FilePath -> IO ()
