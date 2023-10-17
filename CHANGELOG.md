@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.8.3.4
+
+* [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
+* [FRONT][FIX][[Node options (flower)] Standardise upload and download buttons (order) (#587)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/587)
+
 ## Version 0.0.6.9.9.8.3.3
 
 * [BACK][REFACT][`AuthenticatedUser` should store the `NodeId` _and_ `UserId` (#276)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/276)
