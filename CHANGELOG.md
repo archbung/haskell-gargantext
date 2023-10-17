@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.8.3.3
+
+* [BACK][REFACT][`AuthenticatedUser` should store the `NodeId` _and_ `UserId` (#276)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/276)
+* [BACK][REFACT][Extend `gargantext-prelude` with the whole of `Protolude` (#274)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/274)
+* [FRONT][FIX][[Node Terms] On clicking on a term association (+/-) the scroll position is lost (#546)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/546)
+
 ## Version 0.0.6.9.9.8.3.2
 
 * [BACK][CODE] Type Classes improvement
