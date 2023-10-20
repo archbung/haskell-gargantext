@@ -11,43 +11,50 @@ Portability : POSIX
 module Gargantext.API.Node.Document.Export
   where
 
-import qualified Data.ByteString.Lazy.Char8 as BSC
+-- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Control.Lens (view)
 import Data.Csv (encodeDefaultOrderedByName)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 import Data.Version (showVersion)
 import Gargantext.API.Node.Document.Export.Types
 import Gargantext.API.Prelude (GargNoServer, GargServer)
 import Gargantext.Core (toDBid)
 import Gargantext.Core.Types
--- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Query.Facet (runViewDocuments, Facet(..))
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType)
-import Gargantext.Database.Schema.Node (NodePoly(..))
+import Gargantext.Database.Query.Table.Node.User
+import Gargantext.Database.Schema.Node (NodePoly(..), node_user_id)
 import Gargantext.Prelude
-import qualified Paths_gargantext as PG -- cabal magic build module
 import Servant
+import qualified Data.ByteString.Lazy.Char8 as BSC
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Paths_gargantext as PG -- cabal magic build module
 
-api :: UserId -> DocId -> GargServer API
-api uid dId = getDocumentsJSON uid dId
-     :<|> getDocumentsCSV uid dId
+api :: NodeId
+    -- ^ The ID of the target user
+    -> DocId
+    -> GargServer API
+api userNodeId dId = getDocumentsJSON userNodeId dId
+                :<|> getDocumentsCSV userNodeId dId
 
 --------------------------------------------------
 -- | Hashes are ordered by Set
-getDocumentsJSON :: UserId
+getDocumentsJSON :: NodeId
+                 -- ^ The ID of the target user
                  -> DocId
                  -> GargNoServer (Headers '[Header "Content-Disposition" T.Text] DocumentExport)
-getDocumentsJSON uId pId = do
+getDocumentsJSON nodeUserId pId = do
+  uId <- view node_user_id <$> getNodeUser nodeUserId
   mcId <- getClosestParentIdByType pId NodeCorpus
   let cId = maybe (panic "[G.A.N.D.Export] Node has no parent") identity mcId
   docs <- runViewDocuments cId False Nothing Nothing Nothing Nothing Nothing
   pure $ addHeader (T.concat [ "attachment; filename=GarganText_DocsList-"
                              , T.pack $ show pId
                              , ".json"])
-    DocumentExport { _de_documents = mapFacetDoc <$> docs
+    DocumentExport { _de_documents = mapFacetDoc uId <$> docs
                         , _de_garg_version = T.pack $ showVersion PG.version }
   where
-    mapFacetDoc (FacetDoc { .. }) =
+    mapFacetDoc uId (FacetDoc { .. }) =
       Document { _d_document =
                  Node { _node_id = facetDoc_id
                       , _node_hash_id = Nothing
@@ -65,11 +72,12 @@ getDocumentsJSON uId pId = do
                                                 , _ng_hash = "" }
                          , _d_hash     = ""}
 
-getDocumentsCSV :: UserId
+getDocumentsCSV :: NodeId
+                -- ^ The Node ID of the target user
                 -> DocId
                 -> GargNoServer (Headers '[Header "Content-Disposition" T.Text] T.Text) -- [Document]
-getDocumentsCSV uId pId = do
-  dJSON <- getDocumentsJSON uId pId
+getDocumentsCSV userNodeId pId = do
+  dJSON <- getDocumentsJSON userNodeId pId
   let DocumentExport { _de_documents } = getResponse dJSON
   let ret = TE.decodeUtf8 $ BSC.toStrict $ encodeDefaultOrderedByName _de_documents
 

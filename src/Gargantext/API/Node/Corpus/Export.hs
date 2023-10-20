@@ -59,8 +59,10 @@ getCorpus cId lId nt' = do
     Nothing -> defaultList cId
     Just l  -> pure l
 
+  -- FIXME(adn) Audit the usage of this, we are converting from a node
+  -- to a context id.
   ns   <- Map.fromList
-       <$> map (\n -> (_context_id n, n))
+       <$> map (\n -> (nodeId2ContextId $ _context_id n, n))
        <$> selectDocNodes cId
 
   repo <- getRepo [listId]

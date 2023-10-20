@@ -30,7 +30,7 @@ import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core (withDefaultLanguage, Lang)
 import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
-import Gargantext.Core.Types (Context)
+import Gargantext.Core.Types (Context, nodeId2ContextId)
 import Gargantext.Core.Types.Main (ListType(MapTerm))
 import Gargantext.Core.Viz.Phylo (TimeUnit(..), Date, Document(..), PhyloConfig(..), Phylo)
 import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
@@ -143,8 +143,8 @@ context2phyloDocument timeUnit context (ngs_terms, ngs_sources) = do
   let
     toText x = Set.toList $ Set.map unNgramsTerm x
 
-    text'    = maybe [] toText $ Map.lookup contextId ngs_terms
-    sources' = maybe [] toText $ Map.lookup contextId ngs_sources
+    text'    = maybe [] toText $ Map.lookup (nodeId2ContextId contextId) ngs_terms
+    sources' = maybe [] toText $ Map.lookup (nodeId2ContextId contextId) ngs_sources
 
   pure $ Document date date' text' Nothing sources' (Year 3 1 5)
 

@@ -13,13 +13,14 @@ module Gargantext.API.GraphQL.Utils where
 import Control.Lens.Getter (view)
 import Data.Morpheus.Types (GQLTypeOptions, fieldLabelModifier)
 import Data.Text qualified as T
-import Gargantext.API.Admin.Auth.Types (AuthenticatedUser (AuthenticatedUser, _authUser_id))
+import Gargantext.API.Admin.Auth.Types (AuthenticatedUser (..), auth_node_id)
 import Gargantext.API.Admin.Types (jwtSettings, HasSettings (settings))
 import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Admin.Types.Node (NodeId)
 import Gargantext.Database.Prelude (Cmd')
 import Gargantext.Prelude
 import Servant.Auth.Server (verifyJWT, JWTSettings)
+import Control.Lens ((^.))
 
 unPrefix :: T.Text -> GQLTypeOptions -> GQLTypeOptions
 unPrefix prefix options = options { fieldLabelModifier = nflm }
@@ -36,11 +37,9 @@ authUser ui_id token = do
   case u of
     Nothing -> pure Invalid
     Just au ->
-      if nId au == ui_id
+      if au ^. auth_node_id == ui_id
         then pure Valid
         else pure Invalid
-        where
-          nId AuthenticatedUser {_authUser_id} = _authUser_id
 
 getUserFromToken :: JWTSettings -> ByteString -> IO (Maybe AuthenticatedUser)
 getUserFromToken = verifyJWT

@@ -39,8 +39,9 @@ import Control.Lens.TH (makeLensesWith, abbreviatedFields)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 import Opaleye hiding (FromField)
 import Opaleye.Internal.Table (Table(..))
+import Gargantext.Core.Types
 ------------------------------------------------------------------------
-data UserLight = UserLight { userLight_id                   :: !Int
+data UserLight = UserLight { userLight_id                   :: !UserId
                            , userLight_username             :: !Text
                            , userLight_email                :: !Text
                            , userLight_password             :: !GargPassword
@@ -98,7 +99,7 @@ type UserRead  = UserPoly        (Column SqlInt4)         (Column SqlText)
                                  (Column SqlTimestamptz)
                                  (Column SqlText)
 
-type UserDB = UserPoly Int Text (Maybe UTCTime) Bool Text Text Text Text Bool Bool UTCTime (Maybe Text)
+type UserDB = UserPoly UserId Text (Maybe UTCTime) Bool Text Text Text Text Bool Bool UTCTime (Maybe Text)
 
 $(makeAdaptorAndInstance "pUserDB"   ''UserPoly)
 $(makeLensesWith abbreviatedFields   ''UserPoly)

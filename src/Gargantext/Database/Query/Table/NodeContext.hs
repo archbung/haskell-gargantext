@@ -53,8 +53,8 @@ import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Prelude (DBCmd, execPGSQuery, mkCmd, restrictMaybe, runCountOpaQuery, runPGSQuery, runOpaQuery)
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError, NodeError(DoesNotExist), nodeError)
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError, NodeError(..), nodeError)
+import Gargantext.Database.Prelude
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.NodeContext
@@ -84,9 +84,9 @@ getNodeContexts n = runOpaQuery (selectNodeContexts $ pgNodeId n)
 
 getNodeContext :: HasNodeError err => ContextId -> NodeId -> DBCmd err NodeContext
 getNodeContext c n = do
-  maybeNodeContext <- headMay <$> runOpaQuery (selectNodeContext (pgNodeId c) (pgNodeId n))
+  maybeNodeContext <- headMay <$> runOpaQuery (selectNodeContext (pgContextId c) (pgNodeId n))
   case maybeNodeContext of
-    Nothing -> nodeError (DoesNotExist c)
+    Nothing -> nodeError (NoContextFound c)
     Just  r -> pure r
   where
     selectNodeContext :: Field SqlInt4 -> Field SqlInt4 -> Select NodeContextRead
@@ -222,7 +222,7 @@ getContextNgrams contextId listId = do
 -- more permissive (i.e. ignores word ordering). See
 -- https://www.peterullrich.com/complete-guide-to-full-text-search-with-postgres-and-ecto
 getContextNgramsMatchingFTS :: HasNodeError err
-                            => NodeId
+                            => ContextId
                             -> NodeId
                             -> DBCmd err [Text]
 getContextNgramsMatchingFTS contextId listId = do

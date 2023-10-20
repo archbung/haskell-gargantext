@@ -29,7 +29,6 @@ import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.User (insertNewUsers, )
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
-import System.Environment (getArgs)
 
 
 main :: IO ()

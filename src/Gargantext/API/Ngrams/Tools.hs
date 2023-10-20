@@ -150,13 +150,14 @@ filterListWithRoot lt m = snd <$> HM.filter isMapTerm m
         Nothing -> panic $ "[Garg.API.Ngrams.Tools] filterListWithRoot, unknown key: " <> unNgramsTerm r
         Just  (l',_) -> elem l' lt
 
-groupNodesByNgrams :: ( At root_map
+groupNodesByNgrams :: ( Ord a
+                      , At root_map
                       , Index root_map ~ NgramsTerm
                       , IxValue root_map ~ Maybe RootTerm
                       )
                    => root_map
-                   -> HashMap NgramsTerm (Set NodeId)
-                   -> HashMap NgramsTerm (Set NodeId)
+                   -> HashMap NgramsTerm (Set a)
+                   -> HashMap NgramsTerm (Set a)
 groupNodesByNgrams syn occs = HM.fromListWith (<>) occs'
   where
     occs' = map toSyn (HM.toList occs)

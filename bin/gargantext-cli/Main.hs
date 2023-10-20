@@ -60,13 +60,13 @@ filterTermsAndCooc
      -> (Int, [Text])
      -> IO CoocByYear -- (Int, (Map (Text, Text) Coocs))
 filterTermsAndCooc patterns (year, ts) = do
-  log "start"
+  logWork "start"
   r <- coocOnContexts identity <$> mapM (\x -> {-log "work" >>-} terms' patterns x) ts
-  log "stop"
+  logWork "stop"
   pure $ CoocByYear year (length ts) (DM.mapKeys (both DT.unwords) r)
   where
 
-    log m = do
+    logWork m = do
       tid    <- myThreadId
       (p, _) <- threadCapability tid
       putText . unwords $

@@ -21,7 +21,6 @@ import Gargantext.Database.Action.User.New (newUsers)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd'')
 import Gargantext.Prelude
-import System.Environment (getArgs)
 import Gargantext.API.Admin.EnvTypes (DevEnv)
 
 main :: IO ()

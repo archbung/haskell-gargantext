@@ -28,7 +28,7 @@ import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Prelude (GargM, GargError)
 import Gargantext.Core.Types.Search (HyperdataRow(..), toHyperdataRow)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
-import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId)
+import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId, ContextId (..))
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.NodeContext (getNodeContext, getContextsForNgramsTerms, ContextForNgramsTerms(..), {- getContextNgrams, -} getContextNgramsMatchingFTS)
 import Gargantext.Database.Query.Table.NodeContext qualified as DNC
@@ -144,7 +144,7 @@ dbNodeContext context_id node_id = do
 --  user <- getUsersWithId user_id
 --  hyperdata <- getUserHyperdata user_id
 --  lift (map toUser <$> zip user hyperdata)
-  c <- lift $ getNodeContext (NodeId context_id) (NodeId node_id)
+  c <- lift $ getNodeContext (UnsafeMkContextId context_id) (UnsafeMkNodeId node_id)
   pure $ toNodeContextGQL <$> [c]
 
 -- | Returns list of `ContextGQL` for given ngrams in given corpus id.
@@ -152,7 +152,7 @@ dbContextForNgrams
   :: (CmdCommon env)
   => Int -> [Text] -> GqlM e env [ContextGQL]
 dbContextForNgrams node_id ngrams_terms = do
-  contextsForNgramsTerms <- lift $ getContextsForNgramsTerms (NodeId node_id) ngrams_terms
+  contextsForNgramsTerms <- lift $ getContextsForNgramsTerms (UnsafeMkNodeId node_id) ngrams_terms
   --lift $ printDebug "[dbContextForNgrams] contextsForNgramsTerms" contextsForNgramsTerms
   pure $ toContextGQL <$> contextsForNgramsTerms
 
@@ -161,13 +161,13 @@ dbContextNgrams
   :: (CmdCommon env)
   => Int -> Int -> GqlM e env [Text]
 dbContextNgrams context_id list_id = do
-  lift $ getContextNgramsMatchingFTS (NodeId context_id) (NodeId list_id)
+  lift $ getContextNgramsMatchingFTS (UnsafeMkContextId context_id) (UnsafeMkNodeId list_id)
 
 -- Conversion functions
 
 toNodeContextGQL :: NodeContext -> NodeContextGQL
-toNodeContextGQL (NodeContext { _nc_node_id = NodeId nc_node_id
-                              , _nc_context_id = NodeId nc_context_id
+toNodeContextGQL (NodeContext { _nc_node_id = UnsafeMkNodeId nc_node_id
+                              , _nc_context_id = UnsafeMkNodeId nc_context_id
                               , .. }) =
   NodeContextGQL { nc_id = _nc_id
                  , nc_node_id
@@ -223,6 +223,6 @@ toHyperdataRowDocumentGQL hyperdata =
 updateNodeContextCategory :: (CmdCommon env, HasSettings env)
                           => NodeContextCategoryMArgs -> GqlM' e env [Int]
 updateNodeContextCategory NodeContextCategoryMArgs { context_id, node_id, category } = do
-  _ <- lift $ DNC.updateNodeContextCategory (NodeId context_id) (NodeId node_id) category
+  _ <- lift $ DNC.updateNodeContextCategory (UnsafeMkContextId context_id) (UnsafeMkNodeId node_id) category
 
   pure [1]

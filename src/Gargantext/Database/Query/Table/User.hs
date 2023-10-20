@@ -57,8 +57,9 @@ import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config (nodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
-import Gargantext.Database.Prelude (DBCmd, mkCmd, runOpaQuery)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
+import Gargantext.Database.Admin.Types.Node (UserId(..))
+import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
 import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)
 import Gargantext.Database.Schema.User
@@ -146,7 +147,7 @@ selectUsersLightWithForgotPasswordUUID uuid = proc () -> do
 
 ----------------------------------------------------------
 getUsersWithId :: User -> DBCmd err [UserLight]
-getUsersWithId (UserDBId i) = map toUserLight <$> runOpaQuery (selectUsersLightWithId i)
+getUsersWithId (UserDBId i) = map toUserLight <$> runOpaQuery (selectUsersLightWithId $ _UserId i)
   where
     selectUsersLightWithId :: Int -> Select UserRead
     selectUsersLightWithId i' = proc () -> do
@@ -181,7 +182,7 @@ getUserHyperdata (RootId uId) = do
       restrict -< row^.node_id .== pgNodeId i'
       returnA  -< row^.node_hyperdata
 getUserHyperdata (UserDBId uId) = do
-  runOpaQuery (selectUserHyperdataWithId uId)
+  runOpaQuery (selectUserHyperdataWithId $ _UserId uId)
   where
     selectUserHyperdataWithId :: Int -> Select (Field SqlJsonb)
     selectUserHyperdataWithId i' = proc () -> do
@@ -203,7 +204,7 @@ getUserNodeHyperdata (RootId uId) = do
       restrict -< row^.node_id .== pgNodeId i'
       returnA  -< row
 getUserNodeHyperdata (UserDBId uId) = do
-  runOpaQuery (selectUserHyperdataWithId uId)
+  runOpaQuery (selectUserHyperdataWithId $ _UserId uId)
   where
     selectUserHyperdataWithId :: Int -> Select NodeRead
     selectUserHyperdataWithId i' = proc () -> do
@@ -235,7 +236,7 @@ updateUserEmail (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c updateUserQuery
     updateUserQuery = Update
       { uTable      = userTable
       , uUpdateWith = updateEasy (\ (UserDB { .. }) -> UserDB { user_email = sqlStrictText userLight_email, .. } )
-      , uWhere      = (\row -> user_id row .== (sqlInt4 userLight_id))
+      , uWhere      = (\row -> user_id row .== (sqlInt4 $ _UserId userLight_id))
       , uReturning  = rCount }
 
 updateUserPassword :: UserLight -> DBCmd err Int64
@@ -245,7 +246,7 @@ updateUserPassword (UserLight { userLight_password = GargPassword password, .. }
     updateUserQuery = Update
       { uTable      = userTable
       , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_password = sqlStrictText password, .. } )
-      , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
+      , uWhere      = \row -> user_id row .== (sqlInt4 $ _UserId userLight_id)
       , uReturning  = rCount }
 
 updateUserForgotPasswordUUID :: UserLight -> DBCmd err Int64
@@ -256,7 +257,7 @@ updateUserForgotPasswordUUID (UserLight { .. }) = mkCmd $ \c -> runUpdate_ c upd
     updateUserQuery = Update
       { uTable      = userTable
       , uUpdateWith = updateEasy (\(UserDB { .. }) -> UserDB { user_forgot_password_uuid = pass', .. })
-      , uWhere      = \row -> user_id row .== sqlInt4 userLight_id
+      , uWhere      = \row -> user_id row .== (sqlInt4 $ _UserId userLight_id)
       , uReturning  = rCount }
 
 getUserPubmedAPIKey :: User -> DBCmd err (Maybe PUBMED.APIKey)
@@ -282,13 +283,13 @@ userWith f t xs = find (\x -> f x == t) xs
 userWithUsername :: Text -> [UserDB] -> Maybe UserDB
 userWithUsername t xs = userWith user_username t xs
 
-userWithId :: Int -> [UserDB] -> Maybe UserDB
+userWithId :: UserId -> [UserDB] -> Maybe UserDB
 userWithId t xs = userWith user_id t xs
 
 userLightWithUsername :: Text -> [UserLight] -> Maybe UserLight
 userLightWithUsername t xs = userWith userLight_username t xs
 
-userLightWithId :: Int -> [UserLight] -> Maybe UserLight
+userLightWithId :: UserId -> [UserLight] -> Maybe UserLight
 userLightWithId t xs = userWith userLight_id t xs
 ----------------------------------------------------------------------
 users :: DBCmd err [UserDB]

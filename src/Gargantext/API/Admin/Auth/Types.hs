@@ -15,10 +15,12 @@ module Gargantext.API.Admin.Auth.Types
 
 import Control.Lens hiding (elements, to)
 import Data.Aeson.TH (deriveJSON)
+import qualified Data.Aeson.TH as JSON
+import Data.List (tail)
 import Data.Swagger
 import Gargantext.Core.Types.Individu (Username, GargPassword(..), arbitraryUsername, arbitraryPassword)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
-import Gargantext.Database.Admin.Types.Node (NodeId(..), ListId, DocId, UserId)
+import Gargantext.Database.Admin.Types.Node (NodeId(..), ListId, DocId, UserId (..))
 import Gargantext.Prelude hiding (reverse)
 import Servant.Auth.Server
 import Test.QuickCheck (elements, oneof)
@@ -53,11 +55,14 @@ type TreeId = NodeId
 data CheckAuth = InvalidUser | InvalidPassword | Valid Token TreeId UserId
   deriving (Eq)
 
-newtype AuthenticatedUser = AuthenticatedUser
-  { _authUser_id :: NodeId
+data AuthenticatedUser = AuthenticatedUser
+  { _auth_node_id :: NodeId
+  , _auth_user_id :: UserId
   } deriving (Generic)
 
-$(deriveJSON (unPrefix "_authUser_") ''AuthenticatedUser)
+$(deriveJSON (JSON.defaultOptions { JSON.fieldLabelModifier = tail . dropWhile ((/=) '_') . tail }) ''AuthenticatedUser)
+
+makeLenses ''AuthenticatedUser
 
 instance ToSchema AuthenticatedUser where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authUser_")
@@ -90,7 +95,7 @@ $(deriveJSON (unPrefix "_authInv_") ''AuthInvalid)
 instance ToSchema AuthInvalid where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authInv_")
 instance Arbitrary AuthInvalid where
-  arbitrary = elements [ AuthInvalid m 
+  arbitrary = elements [ AuthInvalid m
                        | m <- [ "Invalid user", "Invalid password"]
                        ]
 
@@ -100,8 +105,8 @@ instance ToSchema AuthValid where
 instance Arbitrary AuthValid where
   arbitrary = elements [ AuthValid to' tr u
                        | to' <- ["token0", "token1"]
-                       , tr <- [1..3]
-                       , u <-  [1..3]
+                       , tr <- map UnsafeMkNodeId [1..3]
+                       , u <-  map UnsafeMkUserId [1..3]
                        ]
 
 data PathId = PathNode NodeId | PathNodeNode ListId DocId

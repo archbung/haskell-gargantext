@@ -39,13 +39,14 @@ insertDocNgrams lId m = do
   -- printDebug "[insertDocNgrams] ns" ns
   insertContextNodeNgrams ns
   where
-    ns = [ ContextNodeNgrams docId lId (ng^.index)
-                                   (ngramsTypeId t)
-                                   (fromIntegral i)
-                                   cnt
-         | (ng, t2n2i) <- HashMap.toList m
-         , (t,  n2i)   <- DM.toList t2n2i
-         , (docId,  (i, cnt))     <- DM.toList n2i
+    ns = [ ContextNodeNgrams (nodeId2ContextId docId)
+                             lId (ng^.index)
+                             (ngramsTypeId t)
+                             (fromIntegral i)
+                             cnt
+         | (ng, t2n2i)       <- HashMap.toList m
+         , (t,  n2i)         <- DM.toList t2n2i
+         , (docId, (i, cnt)) <- DM.toList n2i
          ]
 
 -- [(NodeId, {Ngrams: ({NgramsType: Int}, TermsCount)})]

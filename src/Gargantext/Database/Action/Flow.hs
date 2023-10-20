@@ -120,6 +120,7 @@ import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
 import PUBMED.Types qualified as PUBMED
+import qualified Data.Bifunctor    as B
 
 ------------------------------------------------------------------------
 -- Imports for upgrade function
@@ -205,7 +206,7 @@ flowDataText :: forall env err m.
 flowDataText u (DataOld ids) tt cid mfslw _ = do
   $(logLocM) DEBUG $ T.pack $ "Found " <> show (length ids) <> " old node IDs"
   (_userId, userCorpusId, listId) <- createNodes u (Right [cid]) corpusType
-  _ <- Doc.add userCorpusId ids
+  _ <- Doc.add userCorpusId (map nodeId2ContextId ids)
   flowCorpusUser (_tt_lang tt) u userCorpusId listId corpusType mfslw
   where
     corpusType = (Nothing :: Maybe HyperdataCorpus)
@@ -336,7 +337,7 @@ addDocumentsToHyperCorpus :: ( DbCmd' env err m
                              -> m [DocId]
 addDocumentsToHyperCorpus ncs mb_hyper la corpusId docs = do
   ids <- insertMasterDocs ncs mb_hyper la docs
-  void $ Doc.add corpusId ids
+  void $ Doc.add corpusId (map nodeId2ContextId ids)
   pure ids
 
 ------------------------------------------------------------------------
@@ -434,14 +435,14 @@ insertMasterDocs ncs c lang hs  =  do
                 <- mapNodeIdNgrams
                 <$> documentIdWithNgrams
                       (extractNgramsT ncs $ withLang lang documentsWithId)
-                      documentsWithId
+                      (map (B.first contextId2NodeId) documentsWithId)
 
   lId      <- getOrMkList masterCorpusId masterUserId
   -- _ <- saveDocNgramsWith lId mapNgramsDocs'
   _ <- saveDocNgramsWith lId mapNgramsDocs'
 
   -- _cooc <- insertDefaultNode NodeListCooc lId masterUserId
-  pure ids'
+  pure $ map contextId2NodeId ids'
 
 saveDocNgramsWith :: (DbCmd' env err m)
                   => ListId
@@ -461,7 +462,7 @@ saveDocNgramsWith lId mapNgramsDocs' = do
 
   --printDebug "saveDocNgramsWith" mapCgramsId
   -- insertDocNgrams
-  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 <$> Just nId
+  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 <$> Just (nodeId2ContextId nId)
                                             <*> (getCgramsId mapCgramsId ngrams_type (_ngramsTerms terms''))
                                             <*> Just (fromIntegral w :: Double)
                        | (terms'', mapNgramsTypes)      <- HashMap.toList mapNgramsDocs
@@ -493,10 +494,10 @@ insertDocs uId cId hs = do
   newIds <- insertDb uId Nothing docs
   -- printDebug "newIds" newIds
   let
-    newIds' = map reId newIds
+    newIds' = map (nodeId2ContextId . reId) newIds
     documentsWithId = mergeData (toInserted newIds) (Map.fromList $ map viewUniqId' docs)
   _ <- Doc.add cId newIds'
-  pure (newIds', documentsWithId)
+  pure (newIds', map (B.first nodeId2ContextId) documentsWithId)
 
 
 ------------------------------------------------------------------------

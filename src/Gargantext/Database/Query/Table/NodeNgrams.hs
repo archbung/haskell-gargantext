@@ -78,7 +78,7 @@ insertNodeNgrams nns = runPGSQuery query (PGS.Only $ Values fields nns')
                                                       ,"int4","int4","int4","int4"
                                                       ,"float8"]
     -- nns' :: [(Int, ListTypeId, NgramsText, NgramsTypeId ,NgramsField, NgramsTag, NgramsClass, Double)]
-    nns' = map (\(NodeNgrams _id (NodeId node_id'') node_subtype ngrams_terms ngrams_type ngrams_field ngrams_tag ngrams_class weight)
+    nns' = map (\(NodeNgrams _id node_id'' node_subtype ngrams_terms ngrams_type ngrams_field ngrams_tag ngrams_class weight)
                               -> [ toField node_id''
                                  , toField $ toDBid node_subtype
                                  , toField $ ngrams_terms

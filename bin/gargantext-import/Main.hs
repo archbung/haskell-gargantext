@@ -16,10 +16,7 @@ Import a corpus binary.
 module Main where
 
 import Data.Either
-import Data.Text (Text)
-import System.Environment (getArgs)
 import qualified Data.Text as Text
-import Text.Read (readMaybe)
 
 import Gargantext.API.Dev (withDevEnv, runCmdGargDev)
 import Gargantext.API.Admin.EnvTypes (DevEnv(..), DevJobHandle(..))

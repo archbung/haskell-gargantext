@@ -53,6 +53,7 @@ import Gargantext.Database.Query.Table.User (getUsersWithHyperdata, getUsersWith
 import Gargantext.Database.Schema.Node (node_id, node_hyperdata, NodePoly (Node, _node_id))
 import Gargantext.Database.Schema.User (UserLight(..))
 import Gargantext.Prelude
+import Gargantext.Core.Types
 
 data UserInfo = UserInfo
   { ui_id             :: Int
@@ -112,7 +113,7 @@ resolveUserInfos
   -> UserInfoArgs -> GqlM e env [UserInfo]
 resolveUserInfos autUser mgr UserInfoArgs { user_id } =
   -- FIXME(adn) we should use a proper policy, not 'alwaysAllow'.
-  withPolicy autUser mgr alwaysAllow $ dbUsers user_id
+  withPolicy autUser mgr alwaysAllow $ dbUsers (UnsafeMkUserId user_id)
 
 -- | Mutation for user info
 updateUserInfo
@@ -121,7 +122,7 @@ updateUserInfo
   => UserInfoMArgs -> GqlM' e env Int
 updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
   -- lift $ printDebug "[updateUserInfo] ui_id" ui_id
-  users <- lift (getUsersWithNodeHyperdata (Individu.UserDBId ui_id))
+  users <- lift (getUsersWithNodeHyperdata (Individu.UserDBId $ UnsafeMkUserId ui_id))
   case users of
     [] -> panic $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
     ((UserLight { .. }, node_u):_) -> do
@@ -166,7 +167,7 @@ updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
 -- | Inner function to fetch the user from DB.
 dbUsers
   :: (CmdCommon env)
-  => Int -> GqlM e env [UserInfo]
+  => UserId -> GqlM e env [UserInfo]
 dbUsers user_id = do
   -- lift $ printDebug "[dbUsers]" user_id
 --  user <- getUsersWithId user_id
@@ -176,7 +177,7 @@ dbUsers user_id = do
 
 toUser :: (UserLight, HyperdataUser) -> UserInfo
 toUser (UserLight { .. }, u_hyperdata) =
-  UserInfo { ui_id             = userLight_id
+  UserInfo { ui_id             = _UserId userLight_id
            , ui_username       = userLight_username
            , ui_email          = userLight_email
            , ui_title          = u_hyperdata ^. ui_titleL

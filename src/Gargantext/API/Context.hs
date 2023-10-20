@@ -18,6 +18,8 @@ Portability : POSIX
 module Gargantext.API.Context
   where
 
+import Prelude
+
 import Data.Aeson (FromJSON, ToJSON)
 import Servant
 
@@ -42,7 +44,7 @@ contextAPI :: forall proxy a.
          -> AuthenticatedUser
          -> ContextId
          -> GargServer (ContextAPI a)
-contextAPI p uId id' = withAccess (Proxy :: Proxy (ContextAPI a)) Proxy uId (PathNode id') contextAPI'
+contextAPI p uId id' = withAccess (Proxy :: Proxy (ContextAPI a)) Proxy uId (PathNode $ contextId2NodeId id') contextAPI'
   where
     contextAPI' :: GargServer (ContextAPI a)
     contextAPI' = getContextWith   id' p

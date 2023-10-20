@@ -29,7 +29,7 @@ import Gargantext.Core.Text.List.Social.Find (findListsId)
 import Gargantext.Core.Text.List.Social.Patch (addScorePatches)
 import Gargantext.Core.Text.List.Social.Prelude (FlowCont, FlowListScores)
 import Gargantext.Core.Types.Individu (User)
-import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..))
+import Gargantext.Database.Admin.Types.Node (ListId)
 import Gargantext.Database.Prelude (DBCmd, connPool)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree (NodeMode(Private), HasTreeError)
@@ -70,7 +70,7 @@ instance ToJSON FlowSocialListWith where
   toJSON (NoList v) = object [ ("type", String "NoList"), ("makeList", toJSON v) ]
   toJSON (FlowSocialListWithLists { fslw_lists = ids }) =
     object [ ("type", String "SelectedLists")
-           , ("value", Array $ V.fromList (map (\(NodeId id) -> toJSON id) ids)) ]
+           , ("value", Array $ V.fromList (map toJSON ids)) ]
 
 instance Arbitrary FlowSocialListWith where
   arbitrary = oneof [

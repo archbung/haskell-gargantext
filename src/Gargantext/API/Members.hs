@@ -12,19 +12,17 @@ module Gargantext.API.Members where
 
 import Gargantext.API.Admin.EnvTypes (Env)
 import Gargantext.API.Prelude
-import Gargantext.Core.Types (UserId)
-import Gargantext.Database.Action.Share (membersOf)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeTeam))
-import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNodesIdWithType)
+import Gargantext.Database.Action.Share (membersOf)
+import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Prelude
 import Servant
 
 type MembersAPI = Get '[JSON] [Text]
 
-members :: UserId -> ServerT MembersAPI (GargM Env GargError)
-members _ = do
-  getMembers
+members :: ServerT MembersAPI (GargM Env GargError)
+members = getMembers
 
 getMembers :: (CmdCommon env) =>
               GargM env GargError [Text]

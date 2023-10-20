@@ -123,6 +123,7 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
+import qualified Database.PostgreSQL.Simple.ToField     as PGS
 
 ------------------------------------------------------------------------
 data NodeStoryEnv = NodeStoryEnv
@@ -334,7 +335,7 @@ nodeExists c nId = (== [PGS.Only True])
 getNodesIdWithType :: PGS.Connection -> NodeType -> IO [NodeId]
 getNodesIdWithType c nt = do
   ns <- runPGSQuery c query (PGS.Only $ nodeTypeId nt)
-  pure $ map (\(PGS.Only nId) -> NodeId nId) ns
+  pure $ map (\(PGS.Only nId) -> UnsafeMkNodeId nId) ns
   where
     query :: PGS.Query
     query = [sql| SELECT id FROM nodes WHERE typename = ? |]
@@ -352,7 +353,7 @@ getNodesArchiveHistory c nodesId = do
                             :: IO [(Int, TableNgrams.NgramsType, NgramsTerm, NgramsPatch)]
 
   pure $ map (\(nId, ngramsType, terms, patch)
-               -> ( NodeId nId
+               -> ( UnsafeMkNodeId nId
                   , Map.singleton ngramsType [HashMap.singleton terms patch]
                   )
              ) as
@@ -398,9 +399,9 @@ insertNodeArchiveHistory c nodeId version (h:hs) = do
                 )|]
 
 getNodeStory :: PGS.Connection -> NodeId -> IO NodeListStory
-getNodeStory c nId@(NodeId nodeId) = do
+getNodeStory c nId = do
   --res <- withResource pool $ \c -> runSelect c query :: IO [NodeStoryPoly NodeId Version Int Int NgramsRepoElement]
-  res <- runPGSQuery c nodeStoriesQuery (PGS.Only nodeId) :: IO [(Version, TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
+  res <- runPGSQuery c nodeStoriesQuery (PGS.Only $ PGS.toField nId) :: IO [(Version, TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
   -- We have multiple rows with same node_id and different (ngrams_type_id, ngrams_id).
   -- Need to create a map: {<node_id>: {<ngrams_type_id>: {<ngrams_id>: <data>}}}
   let dbData = map (\(version, ngramsType, ngrams, ngrams_repo_element) ->
@@ -453,12 +454,12 @@ archiveStateListFilterFromSet set =
 
 -- | This function inserts whole new node story and archive for given node_id.
 insertNodeStory :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
-insertNodeStory c (NodeId nId) a = do
+insertNodeStory c nId a = do
   mapM_ (\(ngramsType, ngrams, ngramsRepoElement) -> do
             termIdM <- runPGSQuery c ngramsIdQuery (PGS.Only ngrams) :: IO [PGS.Only Int64]
             case headMay termIdM of
               Nothing -> pure 0
-              Just (PGS.Only termId) -> runPGSExecuteMany c query [(nId, a ^. a_version, ngramsType, termId, ngramsRepoElement)]) $ archiveStateToList $ a ^. a_state
+              Just (PGS.Only termId) -> runPGSExecuteMany c query [(PGS.toField nId, a ^. a_version, ngramsType, termId, ngramsRepoElement)]) $ archiveStateToList $ a ^. a_state
              -- runInsert c $ insert ngramsType ngrams ngramsRepoElement) $ archiveStateToList _a_state
 
   where
@@ -514,7 +515,7 @@ updateArchiveStateList c nodeId version as = do
 
 -- | This function updates the node story and archive for given node_id.
 updateNodeStory :: PGS.Connection -> NodeId -> ArchiveList -> ArchiveList -> IO ()
-updateNodeStory c nodeId@(NodeId _nId) currentArchive newArchive = do
+updateNodeStory c nodeId currentArchive newArchive = do
   -- STEPS
 
   -- 0. We assume we're inside an advisory lock
@@ -570,11 +571,11 @@ updateNodeStory c nodeId@(NodeId _nId) currentArchive newArchive = do
 --                     , dReturning = rCount }
 
 upsertNodeStories :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
-upsertNodeStories c nodeId@(NodeId nId) newArchive = do
+upsertNodeStories c nodeId newArchive = do
   -- printDebug "[upsertNodeStories] START nId" nId
   PGS.withTransaction c $ do
     -- printDebug "[upsertNodeStories] locking nId" nId
-    runPGSAdvisoryXactLock c nId
+    runPGSAdvisoryXactLock c (_NodeId nodeId)
 
     (NodeStory m) <- getNodeStory c nodeId
     case Map.lookup nodeId m of

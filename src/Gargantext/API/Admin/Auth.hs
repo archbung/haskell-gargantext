@@ -61,6 +61,7 @@ import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Action.User.New (guessUserName)
 import Gargantext.Database.Admin.Types.Node (NodeId(..))
 import Gargantext.Database.Prelude (Cmd', CmdCommon, DbCmd')
+import Gargantext.Database.Admin.Types.Node (UserId)
 import Gargantext.Database.Query.Table.User
 import Gargantext.Database.Query.Tree (isDescendantOf, isIn)
 import Gargantext.Database.Query.Tree.Root (getRoot)
@@ -76,12 +77,13 @@ import Servant.Auth.Server
 
 -- | Main functions of authorization
 
-makeTokenForUser :: ( HasSettings env
-                    , HasJoseError err )
-                 => NodeId -> Cmd' env err Token
-makeTokenForUser uid = do
+makeTokenForUser :: (HasSettings env, HasJoseError err)
+                 => NodeId
+                 -> UserId
+                 -> Cmd' env err Token
+makeTokenForUser nodeId userId = do
   jwtS <- view $ settings . jwtSettings
-  e <- liftBase $ makeJWT (AuthenticatedUser uid) jwtS Nothing
+  e <- liftBase $ makeJWT (AuthenticatedUser nodeId userId) jwtS Nothing
   -- TODO-SECURITY here we can implement token expiration ^^.
   either joseError (pure . toStrict . LE.decodeUtf8) e
   -- TODO not sure about the encoding...
@@ -107,9 +109,9 @@ checkAuthRequest couldBeEmail (GargPassword p) = do
           muId <- head <$> getRoot (UserName usrname)
           case _node_id <$> muId of
             Nothing  -> pure InvalidUser
-            Just uid -> do
-              token <- makeTokenForUser uid
-              pure $ Valid token uid userLight_id
+            Just nodeId -> do
+              token <- makeTokenForUser nodeId userLight_id
+              pure $ Valid token nodeId userLight_id
 
 auth :: (HasSettings env, HasJoseError err, DbCmd' env err m)
      => AuthRequest -> m AuthResponse
@@ -138,12 +140,13 @@ withAccessM :: ( DbCmd' env err m )
             -> PathId
             -> m a
             -> m a
-withAccessM (AuthenticatedUser uId) (PathNode id) m = do
-  d <- id `isDescendantOf` uId
+withAccessM (AuthenticatedUser nodeId _userId) (PathNode id) m = do
+  d <- id `isDescendantOf` nodeId
   if d then m else m -- serverError err401
-withAccessM (AuthenticatedUser uId) (PathNodeNode cId docId) m = do
+
+withAccessM (AuthenticatedUser nodeId _userId) (PathNodeNode cId docId) m = do
   _a <- isIn cId docId -- TODO use one query for all ?
-  _d <- cId `isDescendantOf` uId
+  _d <- cId `isDescendantOf` nodeId
   if True -- a && d
      then m
      else m -- serverError err401

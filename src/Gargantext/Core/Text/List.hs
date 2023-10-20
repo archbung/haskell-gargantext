@@ -35,12 +35,11 @@ import Gargantext.Core.Text.List.Group.WithStem
 import Gargantext.Core.Text.List.Social
 import Gargantext.Core.Text.List.Social.Prelude
 import Gargantext.Core.Text.Metrics (scored', Scored(..), scored_speExc, scored_genInc, normalizeGlobal, normalizeLocal, scored_terms)
-import Gargantext.Core.Types (ListType(..), MasterCorpusId, UserCorpusId)
+import Gargantext.Core.Types (ListType(..), MasterCorpusId, UserCorpusId, ContextId)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, getContextsByNgramsOnlyUser)
 import Gargantext.Database.Action.Metrics.TFICF (getTficf_withSample)
-import Gargantext.Database.Admin.Types.Node (NodeId)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (text2ngrams)
 import Gargantext.Database.Query.Table.NgramsPostag (selectLems)
@@ -97,7 +96,7 @@ buildNgramsOthersList :: ( HasNodeError err
                       -> (NgramsType, MapListSize, MaxListSize)
                       -> m (Map NgramsType [NgramsElement])
 buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize, MaxListSize maxListSize) = do
-  allTerms  :: HashMap NgramsTerm (Set NodeId) <- getContextsByNgramsUser uCid nt
+  allTerms  :: HashMap NgramsTerm (Set ContextId) <- getContextsByNgramsUser uCid nt
 
   -- PrivateFirst for first developments since Public NodeMode is not implemented yet
   socialLists :: FlowCont NgramsTerm FlowListScores
@@ -232,7 +231,7 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
   -- printDebug "[buildNgramsTermsList: mapTextDocIds]" mapTextDocIds
 
   let
-    groupedTreeScores_SetNodeId :: HashMap NgramsTerm (GroupedTreeScores (Set NodeId))
+    groupedTreeScores_SetNodeId :: HashMap NgramsTerm (GroupedTreeScores (Set ContextId))
     !groupedTreeScores_SetNodeId = HashMap.filter (\g -> Set.size (view gts'_score g) > 1) -- removing hapax
                                 $ setScoresWithMap mapTextDocIds (groupedMonoHead <> groupedMultHead)
 

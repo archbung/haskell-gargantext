@@ -10,7 +10,8 @@ Portability : POSIX
 -}
 
 
-{-# LANGUAGE Arrows                 #-}
+{-# LANGUAGE Arrows       #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.Database.Action.Share
   where
@@ -67,7 +68,7 @@ membersOf nId = do
 
 membersOfQuery :: TeamNodeId
                -> SelectArr () (MaybeFields (Field SqlText), MaybeFields (Field SqlInt4))
-membersOfQuery (NodeId teamId) = proc () -> do
+membersOfQuery (_NodeId -> teamId) = proc () -> do
   (nn, n, u) <- nodeNode_node_User -< ()
   restrict -< (nn ^. nn_node2_id) .== sqlInt4 teamId
   returnA -< ( user_username <$> u

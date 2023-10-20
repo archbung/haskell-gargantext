@@ -59,8 +59,8 @@ type API = "contact" :> Summary "Contact endpoint"
 
 
 api :: AuthenticatedUser -> CorpusId -> ServerT API (GargM Env GargError)
-api authUser@(AuthenticatedUser (NodeId uid)) cid =
-       (api_async   (RootId (NodeId                   uid)) cid)
+api authUser@(AuthenticatedUser userNodeId _userUserId) cid =
+       (api_async   (RootId userNodeId) cid)
   :<|> (nodeNodeAPI (Proxy :: Proxy HyperdataContact) authUser cid)
 
 type API_Async = AsyncJobs JobLog '[JSON] AddContactParams JobLog

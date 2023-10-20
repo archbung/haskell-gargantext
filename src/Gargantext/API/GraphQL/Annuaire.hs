@@ -12,7 +12,7 @@ import Gargantext.Database.Admin.Types.Hyperdata.Contact
   , cw_firstName
   , cw_lastName
   , hc_who, ContactWhere, hc_where, cw_organization, cw_labTeamDepts, cw_role, cw_office, cw_country, cw_city, cw_touch, ct_mail, ct_phone, ct_url, hc_title, hc_source)
-import Gargantext.Database.Admin.Types.Node (NodeId(..))
+import Gargantext.Database.Admin.Types.Node (ContextId (..))
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Context (getContextWith)
 import Gargantext.Database.Schema.Node (node_hyperdata)
@@ -58,7 +58,10 @@ dbAnnuaireContacts contact_id = do
 --  user <- getUsersWithId user_id
 --  hyperdata <- getUserHyperdata user_id
 --  lift (map toUser <$> zip user hyperdata)
-  c <- lift $ getContextWith (NodeId contact_id) (Proxy :: Proxy HyperdataContact)
+
+  -- FIXME(adinapoli) This function seems a bit iffy, unless a 'contact_id'
+  -- is just a synonym for a 'ContextId'.
+  c <- lift $ getContextWith (UnsafeMkContextId contact_id) (Proxy :: Proxy HyperdataContact)
   pure [toAnnuaireContact (contact_id, c ^. node_hyperdata)]
 
 toAnnuaireContact :: (Int, HyperdataContact) -> AnnuaireContact
