@@ -31,8 +31,8 @@ import Protolude
 toDoc :: Lang -> ISTEX.Document -> IO HyperdataDocument
 toDoc la (ISTEX.Document i t a ab d s) = do
   --printDebug "ISTEX date" d
-  (utctime, (pub_year, pub_month, pub_day)) <-
-        Date.dateSplit (maybe (Just $ T.pack $ show Defaults.year) (Just . T.pack . show) d)
+  let mDateS = maybe (Just $ T.pack $ show Defaults.year) (Just . T.pack . show) d
+  let (utctime, (pub_year, pub_month, pub_day)) = Date.mDateSplit mDateS
   --printDebug "toDoc Istex" (utctime, (pub_year, pub_month, pub_day))
   pure $ HyperdataDocument { _hd_bdd       = Just "Istex"
                            , _hd_doi       = Just i

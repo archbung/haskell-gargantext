@@ -23,7 +23,7 @@ import Data.List qualified as List
 import Data.Text (concat)
 import Database.HSparql.Connection
 import Gargantext.Core (Lang(..))
-import Gargantext.Core.Text.Corpus.Parsers.Date (dateSplit)
+import Gargantext.Core.Text.Corpus.Parsers.Date (mDateSplit)
 import Gargantext.Core.Text.Corpus.Parsers.Isidore (unbound)
 import Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
@@ -67,22 +67,38 @@ wikiPageToDocument m wr = do
       source     = Nothing
       abstract   = Just $ concat $ take m sections
 
-  (date, (year, month, day)) <- dateSplit $ head
-                    $ catMaybes
-                    [ wr ^. wr_yearStart
-                    , wr ^. wr_yearEnd
-                    , wr ^. wr_yearFlorish
-                    , head sections
-                    ]
+  let mDateS = head $ catMaybes
+               [ wr ^. wr_yearStart
+               , wr ^. wr_yearEnd
+               , wr ^. wr_yearFlorish
+               , head sections
+               ]
+  let (date, (year, month, day)) = mDateSplit mDateS
 
   let hour = Nothing
       minute = Nothing
       sec = Nothing
       iso2   = Just $ show EN
 
-  pure $ HyperdataDocument bdd doi url uniqId uniqIdBdd
-                           page title authors institutes source
-                           abstract (show <$> date) year month day hour minute sec iso2
+  pure $ HyperdataDocument { _hd_bdd = bdd
+                           , _hd_doi = doi
+                           , _hd_url = url
+                           , _hd_uniqId = uniqId
+                           , _hd_uniqIdBdd = uniqIdBdd
+                           , _hd_page = page
+                           , _hd_title = title
+                           , _hd_authors = authors
+                           , _hd_institutes = institutes
+                           , _hd_source = source
+                           , _hd_abstract = abstract
+                           , _hd_publication_date = show <$> date
+                           , _hd_publication_year = year
+                           , _hd_publication_month = month
+                           , _hd_publication_day = day
+                           , _hd_publication_hour = hour
+                           , _hd_publication_minute = minute
+                           , _hd_publication_second = sec
+                           , _hd_language_iso2 = iso2 }
 
 
 wikidataSelect :: Int -> IO [WikiResult]

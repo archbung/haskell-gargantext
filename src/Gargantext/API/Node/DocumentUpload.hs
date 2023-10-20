@@ -25,7 +25,7 @@ import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Prelude
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NLP (nlpServerGet)
-import Gargantext.Core.Text.Corpus.Parsers.Date (dateSplit)
+import Gargantext.Core.Text.Corpus.Parsers.Date (mDateSplit)
 import Gargantext.Core.Text.Terms (TermType(..))
 import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus)
@@ -102,9 +102,8 @@ documentUpload nId doc = do
         Just c  -> c
         Nothing -> panic $ T.pack $ "[G.A.N.DU] Node has no corpus parent: " <> show nId
 
-  (theFullDate, (year, month, day)) <- liftBase $ dateSplit
-                                                        $ Just
-                                                        $ view du_date doc
+  let mDateS = Just $ view du_date doc
+  let (theFullDate, (year, month, day)) = mDateSplit mDateS
 
   let hd = HyperdataDocument { _hd_bdd = Nothing
                              , _hd_doi = Nothing

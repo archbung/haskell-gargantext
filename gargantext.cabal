@@ -79,6 +79,7 @@ library
       Gargantext.Core.Text.Corpus.Query
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
+      Gargantext.Core.Text.Corpus.Parsers.Date
       Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
       Gargantext.Core.Text.List.Formats.CSV
       Gargantext.Core.Text.Metrics
@@ -222,7 +223,6 @@ library
       Gargantext.Core.Text.Corpus.API.Isidore
       Gargantext.Core.Text.Corpus.API.Istex
       Gargantext.Core.Text.Corpus.Parsers.Book
-      Gargantext.Core.Text.Corpus.Parsers.Date
       Gargantext.Core.Text.Corpus.Parsers.Date.Attoparsec
       Gargantext.Core.Text.Corpus.Parsers.FrameWrite
       Gargantext.Core.Text.Corpus.Parsers.Gitlab

@@ -43,8 +43,8 @@ getC la q ml = do
 toDoc' :: Maybe ISO639.ISO639_1 -> HAL.Corpus -> IO HyperdataDocument
 toDoc' la (HAL.Corpus { .. }) = do
   -- printDebug "[toDoc corpus] h" h
-  (utctime, (pub_year, pub_month, pub_day)) <-
-        Date.dateSplit (maybe (Just $ pack $ show Defaults.year) Just _corpus_date)
+  let mDateS = maybe (Just $ pack $ show Defaults.year) Just _corpus_date
+  let (utctime, (pub_year, pub_month, pub_day)) = Date.mDateSplit mDateS
   let abstractDefault = intercalate " " _corpus_abstract
   let abstract = case la of
         Nothing -> abstractDefault

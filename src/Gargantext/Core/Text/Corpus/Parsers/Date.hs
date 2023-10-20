@@ -31,7 +31,7 @@ import Data.Text (unpack, splitOn, replace)
 import Data.Time (defaultTimeLocale, iso8601DateFormat, parseTimeM, toGregorian)
 import Data.Time.Calendar qualified as DTC
 import Data.Time.Clock ( secondsToDiffTime)
-import Data.Time.Clock (UTCTime(..), getCurrentTime)
+import Data.Time.Clock (UTCTime(..))  -- , getCurrentTime)
 import Data.Time.LocalTime (utc)
 import Data.Time.LocalTime.TimeZone.Series (zonedTimeToZoneSeriesTime)
 import Duckling.Api (analyze)
@@ -41,18 +41,26 @@ import Duckling.Resolve (fromUTC, Context(Context, referenceTime, locale), Duckl
 import Duckling.Types (ResolvedToken(..), ResolvedVal(..))
 import Duckling.Types (Seal(..))
 import Gargantext.Core (Lang(FR,EN))
-import Gargantext.Core.Types (DebugMode(..), withDebugMode)
+-- import Gargantext.Core.Types (DebugMode(..), withDebugMode)
 import Gargantext.Prelude hiding (replace)
 import System.Environment (getEnv)
 ------------------------------------------------------------------------
 -- | Parse date to Ints
 -- TODO add hours, minutes and seconds
-dateSplit :: Maybe Text -> IO (Maybe UTCTime, (Maybe Year, Maybe Month, Maybe Day))
-dateSplit Nothing    = pure (Nothing, (Nothing, Nothing, Nothing))
-dateSplit (Just txt) = do
-  utcTime <- parse txt
-  let (y, m, d) = split' utcTime
-  pure (Just utcTime, (Just y, Just m, Just d))
+dateSplit :: Text -> Either Text (UTCTime, (Year, Month, Day))
+dateSplit txt = mkSplit <$> parse txt
+  where
+    mkSplit utcTime =
+      let (y, m, d) = split' utcTime in
+      (utcTime, (y, m, d))
+
+mDateSplit :: Maybe Text -> (Maybe UTCTime, (Maybe Year, Maybe Month, Maybe Day))
+mDateSplit Nothing = (Nothing, (Nothing, Nothing, Nothing))
+mDateSplit (Just md) =
+  case dateSplit md of
+    Left _err -> (Nothing, (Nothing, Nothing, Nothing))
+    Right (ut, (y, m, d)) -> (Just ut, (Just y, Just m, Just d))
+
 
 split' :: UTCTime -> (Year, Month, Day)
 split' (UTCTime day _) = (fromIntegral y, m, d)
@@ -70,17 +78,18 @@ type Day   = Int
 -- 1900-04-01 19:00:00 UTC
 -- >>> parse EN (pack "April 1 1900")
 -- 1900-04-01 00:00:00 UTC
-parse :: Text -> IO UTCTime
+parse :: Text -> Either Text UTCTime
 parse s = do
   -- printDebug "Date: " s
   let result = dateFlow (DucklingFailure s)
   --printDebug "Date': " dateStr'
   case result of
-    DateFlowSuccess ok -> pure ok
-    DateFlowFailure    -> (withDebugMode (DebugMode True)
-                                        "[G.C.T.P.T.Date parse]" s
-                                        $ getCurrentTime)
-    _                   -> panic "[G.C.T.C.Parsers.Date] parse: Should not happen"
+    DateFlowSuccess ok -> Right ok
+    DateFlowFailure    -> Left "[G.C.T.C.Parsers.Date] DateFlowFailure"
+    -- DateFlowFailure    -> (withDebugMode (DebugMode True)
+    --                                     "[G.C.T.P.T.Date parse]" s
+    --                                     $ getCurrentTime)
+    _                   -> Left "[G.C.T.C.Parsers.Date] parse: Should not happen"
 
 defaultDate :: Text
 defaultDate = "0-0-0T0:0:0"

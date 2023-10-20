@@ -30,6 +30,7 @@ main = do
   utilSpec         <- testSpec "Utils" Utils.test
   clusteringSpec   <- testSpec "Graph Clustering" Graph.test
   dateParserSpec   <- testSpec "Date Parsing" PD.testFromRFC3339
+  dateSplitSpec    <- testSpec "Date split" PD.testDateSplit
   cryptoSpec       <- testSpec "Crypto" Crypto.test
   nlpSpec          <- testSpec "NLP" NLP.test
   jobsSpec         <- testSpec "Jobs" Jobs.test
@@ -38,6 +39,7 @@ main = do
     [ utilSpec
     , clusteringSpec
     , dateParserSpec
+    , dateSplitSpec
     , cryptoSpec
     , nlpSpec
     , jobsSpec

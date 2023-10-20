@@ -227,7 +227,7 @@ toDoc ff d = do
 
       let dateToParse = DT.replace " " "" <$> lookup "PY" d  -- <> Just " " <> lookup "publication_date" d
       -- printDebug "[G.C.T.C.Parsers] dateToParse" dateToParse
-      (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit dateToParse
+      let (utcTime, (pub_year, pub_month, pub_day)) = Date.mDateSplit dateToParse
 
       let hd = HyperdataDocument { _hd_bdd = Just $ DT.pack $ show ff
                                  , _hd_doi = lookup "doi" d

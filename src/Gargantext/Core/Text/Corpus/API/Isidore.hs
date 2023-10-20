@@ -66,7 +66,8 @@ isidoreToDoc l (IsidoreDoc t a d u s as) = do
     langText (OnlyText t2   ) = t2
     langText (ArrayText ts  ) = Text.intercalate " " $ map langText ts
 
-  (utcTime, (pub_year, pub_month, pub_day)) <- Date.dateSplit (maybe (Just $ Text.pack $ show Defaults.year) (Just) d)
+  let mDateS = maybe (Just $ Text.pack $ show Defaults.year) (Just) d
+  let (utcTime, (pub_year, pub_month, pub_day)) = Date.mDateSplit mDateS
 
   pure HyperdataDocument
          { _hd_bdd = Just "Isidore"
