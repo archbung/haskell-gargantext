@@ -15,6 +15,7 @@ Portability : POSIX
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE DerivingVia                #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- {-# LANGUAGE DuplicateRecordFields #-}
 
@@ -26,7 +27,8 @@ import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Csv qualified as Csv
 import Data.Either
-import Data.Morpheus.Types (GQLType)
+import Data.Morpheus.Kind (SCALAR)
+import Data.Morpheus.Types
 import Data.Swagger
 import Data.Text (unpack, pack)
 import Data.Time (UTCTime)
@@ -59,7 +61,15 @@ newtype UserId = UnsafeMkUserId { _UserId :: Int }
   deriving stock (Show, Eq, Ord, Generic)
   deriving newtype (ToSchema, ToJSON, FromJSON, FromField, ToField)
 
-instance GQLType UserId
+-- The 'UserId' is isomprohic to an 'Int'.
+instance GQLType UserId where
+  type KIND UserId = SCALAR
+
+instance EncodeScalar UserId where
+  encodeScalar = encodeScalar . _UserId
+
+instance DecodeScalar UserId where
+  decodeScalar = fmap UnsafeMkUserId . decodeScalar
 
 instance ResourceId UserId where
   isPositive = (> 0) . _UserId

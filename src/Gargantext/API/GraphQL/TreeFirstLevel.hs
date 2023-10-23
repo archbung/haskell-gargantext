@@ -69,8 +69,6 @@ resolveTree :: (CmdCommon env)
             -> TreeArgs
             -> GqlM e env (TreeFirstLevel (GqlM e env))
 resolveTree autUser mgr TreeArgs { root_id } =
-  -- FIXME(adn) We should have a way to enforce the access policy on
-  -- the public or public folders, instead of using 'alwaysAllow'.
   withPolicy autUser mgr (nodeChecks $ UnsafeMkNodeId root_id) $ dbTree root_id
 
 dbTree :: (CmdCommon env) =>

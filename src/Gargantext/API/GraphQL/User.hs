@@ -55,8 +55,8 @@ resolveUsers
   -> UserArgs
   -> GqlM e env [User (GqlM e env)]
 resolveUsers autUser mgr UserArgs { user_id } = do
-  -- FIXME(adn) we should use a proper policy, not 'alwaysAllow'.
-  withPolicy autUser mgr alwaysAllow $ dbUsers user_id
+  -- We are given the /node id/ of the logged-in user.
+  withPolicy autUser mgr (nodeChecks $ UnsafeMkNodeId user_id) $ dbUsers user_id
 
 -- | Inner function to fetch the user from DB.
 dbUsers :: (CmdCommon env)

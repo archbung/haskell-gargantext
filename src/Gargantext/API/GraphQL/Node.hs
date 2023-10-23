@@ -63,8 +63,6 @@ resolveNodes
   -> NodeArgs
   -> GqlM e env [Node]
 resolveNodes autUser mgr NodeArgs { node_id } =
-  -- FIXME(adn) We should have a way to enforce the access policy on
-  -- the public or public folders, instead of using 'alwaysAllow'.
   withPolicy autUser mgr (nodeChecks $ NN.UnsafeMkNodeId node_id) $ dbNodes node_id
 
 resolveNodesCorpus
