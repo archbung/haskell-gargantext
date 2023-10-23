@@ -7,6 +7,7 @@ module Test.Offline.JSON (tests) where
 
 import Data.Aeson
 import Data.Either
+import Gargantext.API.Errors
 import Gargantext.API.Node.Corpus.New
 import Gargantext.API.Node.Corpus.Types
 import Gargantext.Core.Types.Phylo
@@ -27,8 +28,9 @@ jsonRoundtrip a =
 
 tests :: TestTree
 tests = testGroup "JSON" [
-    testProperty "Datafield roundtrips" (jsonRoundtrip @Datafield)
-  , testProperty "WithQuery roundtrips" (jsonRoundtrip @WithQuery)
+    testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
+  , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
+  , testProperty "FrontendError roundtrips" (jsonRoundtrip @FrontendError)
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [
     testProperty "PeriodToNode"  (jsonRoundtrip @PeriodToNodeData)
