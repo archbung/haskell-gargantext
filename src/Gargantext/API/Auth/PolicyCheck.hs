@@ -15,6 +15,7 @@ module Gargantext.API.Auth.PolicyCheck (
   , nodeSuper
   , nodeUser
   , nodeChecks
+  , userMe
   , alwaysAllow
   , alwaysDeny
   ) where
@@ -72,11 +73,15 @@ data AccessPolicyManager = AccessPolicyManager
 data AccessCheck
   = -- | Grants access if the input 'NodeId' is a descendant of the
     -- one for the logged-in user.
-    AC_node_descendant  NodeId
+    AC_node_descendant  !NodeId
+    -- | Grants access if the input 'NodeId' is shared with the logged-in user.
+  | AC_node_shared      !NodeId
     -- | Grants access if the input 'NodeId' /is/ the logged-in user.
-  | AC_user_node        NodeId
+  | AC_user_node        !NodeId
+    -- | Grants access if the logged-in user is the user.
+  | AC_user             !UserId
     -- | Grants access if the logged-in user is the master user.
-  | AC_master_user      NodeId
+  | AC_master_user      !NodeId
     -- | Always grant access, effectively a public route.
   | AC_always_allow
     -- | Always denies access.
@@ -119,13 +124,16 @@ accessPolicyManager = AccessPolicyManager (\ur ac -> interpretPolicy ur ac)
 
 
 check :: HasNodeError err => AuthenticatedUser -> AccessCheck -> DBCmd err AccessResult
-check (AuthenticatedUser loggedUserNodeId _loggedUserUserId) = \case
+check (AuthenticatedUser loggedUserNodeId loggedUserUserId) = \case
   AC_always_deny
     -> pure $ Deny err500
   AC_always_allow
     -> pure Allow
   AC_user_node requestedNodeId
-    -> enforce err403 $ loggedUserNodeId == requestedNodeId
+    -> do ownedByMe <- requestedNodeId `isOwnedBy` loggedUserUserId
+          enforce err403 $ (loggedUserNodeId == requestedNodeId || ownedByMe)
+  AC_user requestedUserId
+    -> enforce err403 $ (loggedUserUserId == requestedUserId)
   AC_master_user _requestedNodeId
     -> do
       masterUsername <- _gc_masteruser <$> view hasConfig
@@ -133,6 +141,8 @@ check (AuthenticatedUser loggedUserNodeId _loggedUserUserId) = \case
       enforce err403 $ masterNodeId == loggedUserNodeId
   AC_node_descendant nodeId
     -> enforce err403 =<< nodeId `isDescendantOf` loggedUserNodeId
+  AC_node_shared nodeId
+    -> enforce err403 =<< nodeId `isSharedWith` loggedUserNodeId
 
 -------------------------------------------------------------------------------
 -- Smart constructors of access checks
@@ -141,17 +151,20 @@ check (AuthenticatedUser loggedUserNodeId _loggedUserUserId) = \case
 nodeUser :: NodeId -> BoolExpr AccessCheck
 nodeUser = BConst . Positive . AC_user_node
 
+userMe :: UserId -> BoolExpr AccessCheck
+userMe = BConst . Positive . AC_user
+
 nodeSuper :: NodeId -> BoolExpr AccessCheck
 nodeSuper = BConst . Positive . AC_master_user
 
 nodeDescendant :: NodeId -> BoolExpr AccessCheck
 nodeDescendant = BConst . Positive . AC_node_descendant
 
--- FIXME(adinapoli) Checks temporarily disabled.
+nodeShared :: NodeId -> BoolExpr AccessCheck
+nodeShared = BConst . Positive . AC_node_shared
+
 nodeChecks :: NodeId -> BoolExpr AccessCheck
-nodeChecks _nid = alwaysAllow
-  where
-    _disabled = nodeUser _nid `BOr` nodeSuper _nid `BOr` nodeDescendant _nid
+nodeChecks nid = nodeUser nid `BOr` nodeSuper nid `BOr` nodeDescendant nid `BOr` nodeShared nid
 
 alwaysAllow :: BoolExpr AccessCheck
 alwaysAllow = BConst . Positive $ AC_always_allow

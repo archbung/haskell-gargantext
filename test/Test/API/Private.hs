@@ -111,8 +111,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
-            let _unused = protected token "GET" (mkUrl port "/node/1") "" `shouldRespondWith` 403
-                in liftIO $ pendingWith "POLICY CHECK DISABLED FOR NOW (ISSUE #279)"
+            protected token "GET" (mkUrl port "/node/1") "" `shouldRespondWith` 403
 
     describe "GET /api/v1.0/tree" $ do
       it "unauthorised users shouldn't see anything" $ \((_testEnv, port), app) -> do
@@ -128,5 +127,4 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
-            let _unused = protected token "GET" (mkUrl port "/tree/1") "" `shouldRespondWith` 403
-                in liftIO $ pendingWith "POLICY CHECK DISABLED FOR NOW (ISSUE #279)"
+            protected token "GET" (mkUrl port "/tree/1") "" `shouldRespondWith` 403

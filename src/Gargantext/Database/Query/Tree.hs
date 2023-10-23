@@ -20,6 +20,8 @@ Let a Root Node, return the Tree of the Node as a directed acyclic graph
 module Gargantext.Database.Query.Tree
   ( module Gargantext.Database.Query.Tree.Error
   , isDescendantOf
+  , isOwnedBy
+  , isSharedWith
   , isIn
   , tree
   , tree_flat
@@ -376,6 +378,37 @@ isDescendantOf childId rootId = (== [Only True])
   SELECT COUNT(*) = 1 from tree AS t
   WHERE t.id = ?;
   |] (childId, rootId)
+
+isOwnedBy :: NodeId -> UserId -> DBCmd err Bool
+isOwnedBy nodeId userId = (== [Only True])
+  <$> runPGSQuery [sql| SELECT COUNT(*) = 1 from nodes AS c where c.id = ? AND c.user_id = ? |] (nodeId, userId)
+
+isSharedWith :: NodeId -> NodeId -> DBCmd err Bool
+isSharedWith targetNode targetUserNode = (== [Only True])
+  <$> runPGSQuery [sql|
+      BEGIN;
+      SET TRANSACTION READ ONLY;
+      COMMIT;
+
+      WITH RECURSIVE SharePath AS (
+        SELECT nn.node1_id, nn.node2_id AS shared_node_id
+        FROM nodes_nodes nn
+        WHERE nn.node1_id IN (SELECT id FROM nodes WHERE parent_id = ?)
+        UNION ALL
+        SELECT nn.node1_id, nn.node2_id
+        FROM nodes_nodes nn
+        JOIN SharePath sp ON nn.node1_id = sp.shared_node_id
+      )
+
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM nodes n
+          JOIN SharePath sp ON n.parent_id = sp.shared_node_id
+          WHERE n.id = ?
+          OR n.parent_id = ?
+        ) AS share_exists;
+  |] (targetUserNode, targetNode, targetNode)
 
 -- TODO should we check the category?
 isIn :: NodeId -> DocId -> DBCmd err Bool

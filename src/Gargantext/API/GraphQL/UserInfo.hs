@@ -113,7 +113,7 @@ resolveUserInfos
   -> UserInfoArgs -> GqlM e env [UserInfo]
 resolveUserInfos autUser mgr UserInfoArgs { user_id } =
   -- FIXME(adn) we should use a proper policy, not 'alwaysAllow'.
-  withPolicy autUser mgr alwaysAllow $ dbUsers (UnsafeMkUserId user_id)
+  withPolicy autUser mgr (userMe $ UnsafeMkUserId user_id) $ dbUsers (UnsafeMkUserId user_id)
 
 -- | Mutation for user info
 updateUserInfo
