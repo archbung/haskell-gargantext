@@ -398,15 +398,21 @@ isSharedWith targetNode targetUserNode = (== [Only True])
         SELECT nn.node1_id, nn.node2_id
         FROM nodes_nodes nn
         JOIN SharePath sp ON nn.node1_id = sp.shared_node_id
+      ),
+      UpwardPath AS (
+        SELECT ? AS current_node_id, parent_id
+        FROM nodes
+        WHERE id = ?
+        UNION ALL
+        SELECT up.parent_id, n.parent_id
+        FROM UpwardPath up
+        JOIN nodes n ON up.parent_id = n.id
       )
-
       SELECT
         EXISTS (
           SELECT 1
-          FROM nodes n
-          JOIN SharePath sp ON n.parent_id = sp.shared_node_id
-          WHERE n.id = ?
-          OR n.parent_id = ?
+          FROM UpwardPath up
+          JOIN SharePath sp ON up.current_node_id = sp.shared_node_id
         ) AS share_exists;
   |] (targetUserNode, targetNode, targetNode)
 
