@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.9
+
+* [BACK][SECURITY][Post policy-manager fixups (#273)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/273)
+* [BACK][SECURITY][Investigate `isDescendantOf` (#279)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/279)
+* [BACK][FIX][`dateSplit` function is wrong (#275)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/275)
+
 ## Version 0.0.6.9.9.8.3.4
 
 * [FRONT][FIX][Improve global theme (#509)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/509)
