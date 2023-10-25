@@ -26,6 +26,7 @@ import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 import Test.API.Setup (setupEnvironment)
 import Test.Database.Operations.DocumentSearch
+import Test.Database.Operations.NodeStory
 import Test.Database.Setup (withTestDB)
 import Test.Database.Types
 import Test.Hspec
@@ -63,6 +64,11 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Can perform search by author in documents" corpusSearch02
       it "Can perform more complex searches using the boolean API" corpusSearch03
       it "Can correctly count doc score" corpusScore01
+    describe "Node story" $ do
+      it "Can create a list" createListTest
+      it "Can add query node story" queryNodeStoryTest
+      it "Can add new terms to node story" insertNewTermsToNodeStoryTest
+      it "Can add new terms (with children) to node story" insertNewTermsWithChildrenToNodeStoryTest
 
 data ExpectedActual a =
     Expected a

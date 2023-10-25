@@ -38,9 +38,9 @@ withDevEnv iniPath k = withLoggerHoisted Dev $ \logger -> do
     newDevEnv logger = do
       cfg     <- readConfig         iniPath
       dbParam <- databaseParameters iniPath
-      --nodeStory_env <- readNodeStoryEnv (_gc_repofilepath cfg)
+      --nodeStory_env <- fromDBNodeStoryEnv (_gc_repofilepath cfg)
       pool    <- newPool            dbParam
-      nodeStory_env <- readNodeStoryEnv pool
+      nodeStory_env <- fromDBNodeStoryEnv pool
       setts   <- devSettings devJwkFile
       mail    <- Mail.readConfig iniPath
       nlp_config <- NLP.readConfig iniPath

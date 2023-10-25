@@ -129,6 +129,7 @@ library
       Gargantext.Database.Admin.Types.Node
       Gargantext.Database.Prelude
       Gargantext.Database.Query.Facet
+      Gargantext.Database.Query.Table.Ngrams
       Gargantext.Database.Query.Table.NgramsPostag
       Gargantext.Database.Query.Table.Node
       Gargantext.Database.Query.Table.Node.Error
@@ -215,7 +216,6 @@ library
       Gargantext.Core.Methods.Similarities.Accelerate.SpeGen
       Gargantext.Core.Methods.Similarities.Conditional
       Gargantext.Core.Methods.Similarities.Distributional
-      Gargantext.Core.NodeStoryFile
       Gargantext.Core.Statistics
       Gargantext.Core.Text.Convert
       Gargantext.Core.Text.Corpus.API.Hal
@@ -329,7 +329,6 @@ library
       Gargantext.Database.Query.Table.Context
       Gargantext.Database.Query.Table.ContextNodeNgrams
       Gargantext.Database.Query.Table.ContextNodeNgrams2
-      Gargantext.Database.Query.Table.Ngrams
       Gargantext.Database.Query.Table.Node.Children
       Gargantext.Database.Query.Table.Node.Contact
       Gargantext.Database.Query.Table.Node.Document.Add
@@ -892,6 +891,7 @@ test-suite garg-test-tasty
       Test.Core.Utils
       Test.Database.Operations
       Test.Database.Operations.DocumentSearch
+      Test.Database.Operations.NodeStory
       Test.Database.Setup
       Test.Database.Types
       Test.Graph.Clustering
@@ -1002,6 +1002,7 @@ test-suite garg-test-hspec
       Test.API.Setup
       Test.Database.Operations
       Test.Database.Operations.DocumentSearch
+      Test.Database.Operations.NodeStory
       Test.Database.Setup
       Test.Database.Types
       Test.Utils

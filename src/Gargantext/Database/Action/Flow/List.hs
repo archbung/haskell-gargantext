@@ -17,7 +17,6 @@ Portability : POSIX
 module Gargantext.Database.Action.Flow.List
     where
 
-import Control.Concurrent
 import Control.Lens ((^.), (+~), (%~), at, (.~), _Just)
 import Control.Monad.Reader
 import Data.List qualified as List
@@ -35,6 +34,7 @@ import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.NodeNgrams (NodeNgramsPoly(..), NodeNgramsW, listInsertDb,{- getCgramsId -})
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (toList)
+import GHC.Conc (readTVar, writeTVar)
 
 -- FLOW LIST
 -- 1. select specific terms of the corpus when compared with others langs
@@ -202,8 +202,10 @@ putListNgrams nodeId ngramsType nes = putListNgrams' nodeId ngramsType m
       -- If valid the rest would be atomic and no merge is required.
       -}
       var <- getNodeStoryVar [listId]
-      liftBase $ modifyMVar_ var $ \r -> do
-        pure $ r & unNodeStory . at listId . _Just . a_version +~ 1
-                 & unNodeStory . at listId . _Just . a_history %~ (p :)
-                 & unNodeStory . at listId . _Just . a_state . at ngramsType' .~ Just ns
+      liftBase $ atomically $ do
+        r <- readTVar var
+        writeTVar var $
+          r & unNodeStory . at listId . _Just . a_version +~ 1
+            & unNodeStory . at listId . _Just . a_history %~ (p :)
+            & unNodeStory . at listId . _Just . a_state . at ngramsType' .~ Just ns
       saveNodeStory

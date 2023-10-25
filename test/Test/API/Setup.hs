@@ -54,7 +54,7 @@ newTestEnv testEnv logger port = do
   dbParam        <- pure $ testEnvToPgConnectionInfo testEnv
   !pool          <- newPool dbParam
 
-  !nodeStory_env <- readNodeStoryEnv pool
+  !nodeStory_env <- fromDBNodeStoryEnv pool
   !scrapers_env  <- ServantAsync.newJobEnv ServantAsync.defaultSettings manager_env
 
   secret        <- Jobs.genSecret

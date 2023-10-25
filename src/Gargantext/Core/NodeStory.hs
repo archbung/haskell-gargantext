@@ -82,7 +82,7 @@ module Gargantext.Core.NodeStory
   , runPGSAdvisoryUnlock
   , runPGSAdvisoryXactLock
   , getNodesIdWithType
-  , readNodeStoryEnv
+  , fromDBNodeStoryEnv
   , upsertNodeStories
   , getNodeStory
   , nodeStoriesQuery
@@ -93,7 +93,7 @@ module Gargantext.Core.NodeStory
 where
 
 import Codec.Serialise.Class
-import Control.Debounce (mkDebounce, defaultDebounceSettings, debounceFreq, debounceAction)
+-- import Control.Debounce (mkDebounce, defaultDebounceSettings, debounceFreq, debounceAction)
 import Control.Exception (throw)
 import Control.Lens (makeLenses, Getter, (^.), (.~), (%~), _Just, at, view)
 import Control.Monad.Except
@@ -122,16 +122,17 @@ import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
+import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
 import qualified Database.PostgreSQL.Simple.ToField     as PGS
 
 ------------------------------------------------------------------------
 data NodeStoryEnv = NodeStoryEnv
-  { _nse_var    :: !(MVar NodeListStory)
+  { _nse_var    :: !(TVar NodeListStory)
   , _nse_saver  :: !(IO ())
   , _nse_saver_immediate :: !(IO ())
   , _nse_archive_saver_immediate :: !(NodeListStory -> IO NodeListStory)
-  , _nse_getter :: !([NodeId] -> IO (MVar NodeListStory))
+  , _nse_getter :: !([NodeId] -> IO (TVar NodeListStory))
   --, _nse_cleaner :: !(IO ()) -- every 12 hours: cleans the repos of unused NodeStories
   -- , _nse_lock  :: !FileLock -- TODO (it depends on the option: if with database or file only)
   }
@@ -149,7 +150,7 @@ class (HasNodeStoryVar env, HasNodeStorySaver env)
     hasNodeStory :: Getter env NodeStoryEnv
 
 class HasNodeStoryVar env where
-  hasNodeStoryVar :: Getter env ([NodeId] -> IO (MVar NodeListStory))
+  hasNodeStoryVar :: Getter env ([NodeId] -> IO (TVar NodeListStory))
 
 class HasNodeStorySaver env where
   hasNodeStorySaver :: Getter env (IO ())
@@ -167,7 +168,7 @@ class HasNodeArchiveStoryImmediateSaver env where
   is implemented already
 -}
 newtype NodeStory s p = NodeStory { _unNodeStory :: Map NodeId (Archive s p) }
-  deriving (Generic, Show)
+  deriving (Generic, Show, Eq)
 
 instance (FromJSON s, FromJSON p) => FromJSON (NodeStory s p)
 instance (ToJSON s, ToJSON p) => ToJSON (NodeStory s p)
@@ -187,7 +188,7 @@ data Archive s p = Archive
     -- structure holds only recent history, the one that will be
     -- inserted to the DB.
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, Eq)
 
 instance (Serialise s, Serialise p) => Serialise (Archive s p)
 
@@ -299,6 +300,16 @@ runPGSExecuteMany c qs a = catch (PGS.executeMany c qs a) printError
       --q' <- PGS.formatQuery c qs a
       _ <- panic $ Text.pack $ show e
       throw (SomeException e)
+
+runPGSReturning :: (PGS.ToRow q, PGS.FromRow r)
+                => PGS.Connection -> PGS.Query -> [q] -> IO [r]
+runPGSReturning c qs a = catch (PGS.returning c qs a) printError
+  where
+    printError (SomeException e) = do
+      --q' <- PGS.formatQuery c qs a
+      _ <- panic $ Text.pack $ show e
+      throw (SomeException e)
+
 
 runPGSQuery :: (PGS.FromRow r, PGS.ToRow q)
             => PGS.Connection -> PGS.Query -> q -> IO [r]
@@ -455,23 +466,27 @@ archiveStateListFilterFromSet set =
 -- | This function inserts whole new node story and archive for given node_id.
 insertNodeStory :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
 insertNodeStory c nId a = do
-  mapM_ (\(ngramsType, ngrams, ngramsRepoElement) -> do
-            termIdM <- runPGSQuery c ngramsIdQuery (PGS.Only ngrams) :: IO [PGS.Only Int64]
-            case headMay termIdM of
-              Nothing -> pure 0
-              Just (PGS.Only termId) -> runPGSExecuteMany c query [(PGS.toField nId, a ^. a_version, ngramsType, termId, ngramsRepoElement)]) $ archiveStateToList $ a ^. a_state
-             -- runInsert c $ insert ngramsType ngrams ngramsRepoElement) $ archiveStateToList _a_state
+  insertArchiveStateList c nId (a ^. a_version) (archiveStateToList $ a ^. a_state)
+  -- mapM_ (\(ngramsType, ngrams, ngramsRepoElement) -> do
+  --           [PGS.Only termId] <- runPGSReturning c qInsert [PGS.Only ngrams] :: IO [PGS.Only Int]
+  --           runPGSExecuteMany c query [(PGS.toField nId, a ^. a_version, ngramsType, termId, ngramsRepoElement)]) $ archiveStateToList $ a ^. a_state
+  --            -- runInsert c $ insert ngramsType ngrams ngramsRepoElement) $ archiveStateToList _a_state
 
-  where
-    -- https://stackoverflow.com/questions/39224438/postgresql-insert-if-foreign-key-exists
-    query :: PGS.Query
-    query = [sql| INSERT INTO node_stories(node_id, ngrams_type_id, ngrams_id, ngrams_repo_element)
-                SELECT * FROM (
-                  VALUES (?, ?, ?, ?)
-                ) AS i(node_id, ngrams_type_id, ngrams_id, ngrams_repo_element)
-                WHERE EXISTS (
-                  SELECT * FROM nodes where nodes.id = node_id
-                )|]
+  -- where
+  --   qInsert :: PGS.Query
+  --   qInsert = [sql|INSERT INTO ngrams (terms) VALUES (?)
+  --                 ON CONFLICT (terms) DO UPDATE SET terms = excluded.terms
+  --                 RETURNING id|]
+
+  --   -- https://stackoverflow.com/questions/39224438/postgresql-insert-if-foreign-key-exists
+  --   query :: PGS.Query
+  --   query = [sql| INSERT INTO node_stories(node_id, ngrams_type_id, ngrams_id, ngrams_repo_element)
+  --               SELECT * FROM (
+  --                 VALUES (?, ?, ?, ?)
+  --               ) AS i(node_id, ngrams_type_id, ngrams_id, ngrams_repo_element)
+  --               WHERE EXISTS (
+  --                 SELECT * FROM nodes where nodes.id = node_id
+  --               )|]
     -- insert ngramsType ngrams ngramsRepoElement =
     --   Insert { iTable      = nodeStoryTable
     --          , iRows       = [NodeStoryDB { node_id = sqlInt4 nId
@@ -485,12 +500,29 @@ insertNodeStory c nId a = do
 
 insertArchiveStateList :: PGS.Connection -> NodeId -> Version -> ArchiveStateList -> IO ()
 insertArchiveStateList c nodeId version as = do
-  mapM_ (\(nt, n, nre) -> runPGSExecute c query (nodeId, version, nt, nre, n)) as
+  mapM_ performInsert as
   where
+    performInsert (nt, n, nre) = do
+      _ <- tryInsertTerms n
+      _ <- case nre ^. nre_root of
+        Nothing -> pure []
+        Just r -> tryInsertTerms r
+      mapM_ tryInsertTerms $ nre ^. nre_children
+      runPGSExecute c query (nodeId, version, nt, nre, n)
+    
+    tryInsertTerms :: NgramsTerm -> IO [PGS.Only Int]
+    tryInsertTerms t = runPGSReturning c qInsert [PGS.Only t]
+    
+    qInsert :: PGS.Query
+    qInsert = [sql|INSERT INTO ngrams (terms) VALUES (?)
+                  ON CONFLICT (terms) DO UPDATE SET terms = excluded.terms
+                  RETURNING id|]
+    
     query :: PGS.Query
-    query = [sql| WITH s as (SELECT ? as sid, ? sversion, ? sngrams_type_id, ngrams.id as sngrams_id, ?::jsonb as srepo FROM ngrams WHERE terms = ?)
+    query = [sql| WITH s AS (SELECT ? AS sid, ? sversion, ? sngrams_type_id, ngrams.id as sngrams_id, ?::jsonb AS srepo FROM ngrams WHERE terms = ?)
                   INSERT INTO node_stories(node_id, version, ngrams_type_id, ngrams_id, ngrams_repo_element)
-                  SELECT s.sid, s.sversion, s.sngrams_type_id, s.sngrams_id, s.srepo from s s join nodes n on s.sid = n.id
+                  SELECT s.sid, s.sversion, s.sngrams_type_id, s.sngrams_id, s.srepo
+                  FROM s s JOIN nodes n ON s.sid = n.id
             |]
 
 deleteArchiveStateList :: PGS.Connection -> NodeId -> ArchiveStateList -> IO ()
@@ -499,7 +531,7 @@ deleteArchiveStateList c nodeId as = do
   where
     query :: PGS.Query
     query = [sql| DELETE FROM node_stories
-                    WHERE node_id = ? AND ngrams_type_id = ? AND ngrams_id IN (SELECT id FROM ngrams WHERE terms = ?) |]
+                WHERE node_id = ? AND ngrams_type_id = ? AND ngrams_id IN (SELECT id FROM ngrams WHERE terms = ?) |]
 
 updateArchiveStateList :: PGS.Connection -> NodeId -> Version -> ArchiveStateList -> IO ()
 updateArchiveStateList c nodeId version as = do
@@ -542,7 +574,7 @@ updateNodeStory c nodeId currentArchive newArchive = do
   -- printDebug "[updateNodeStory] updates" $ Text.unlines $ (Text.pack . show) <$> updates
 
   -- 2. Perform inserts/deletes/updates
-  --printDebug "[updateNodeStory] applying insert" ()
+  -- printDebug "[updateNodeStory] applying inserts" inserts
   insertArchiveStateList c nodeId (newArchive ^. a_version) inserts
   --printDebug "[updateNodeStory] insert applied" ()
     --TODO Use currentArchive ^. a_version in delete and report error
@@ -635,69 +667,71 @@ nodeStoryIncs c (Just nls) ns = foldM (\m n -> nodeStoryInc c (Just m) n) nls ns
 --       pure $ NodeStory ns'
 ------------------------------------
 
-readNodeStoryEnv :: Pool PGS.Connection -> IO NodeStoryEnv
-readNodeStoryEnv pool = do
-  mvar <- nodeStoryVar pool Nothing []
-  let saver_immediate = modifyMVar_ mvar $ \ns -> do
+fromDBNodeStoryEnv :: Pool PGS.Connection -> IO NodeStoryEnv
+fromDBNodeStoryEnv pool = do
+  tvar <- nodeStoryVar pool Nothing []
+  let saver_immediate = do
+        ns <- atomically $ readTVar tvar
         withResource pool $ \c -> do
           --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
           writeNodeStories c ns
-          pure ns
+          pure ()
   let archive_saver_immediate ns@(NodeStory nls) = withResource pool $ \c -> do
         mapM_ (\(nId, a) -> do
                   insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
               ) $ Map.toList nls
         pure $ clearHistory ns
-  saver <- mkNodeStorySaver saver_immediate
+  -- saver <- mkNodeStorySaver saver_immediate
   -- let saver = modifyMVar_ mvar $ \mv -> do
   --       writeNodeStories pool mv
-  --       printDebug "[readNodeStoryEnv] saver" mv
+  --       printDebug "[fromDBNodeStoryEnv] saver" mv
   --       let mv' = clearHistory mv
-  --       printDebug "[readNodeStoryEnv] saver, cleared" mv'
+  --       printDebug "[fromDBNodeStoryEnv] saver, cleared" mv'
   --       pure mv'
-  pure $ NodeStoryEnv { _nse_var    = mvar
-                      , _nse_saver  = saver
+  pure $ NodeStoryEnv { _nse_var    = tvar
+                      , _nse_saver  = saver_immediate
                       , _nse_saver_immediate = saver_immediate
                       , _nse_archive_saver_immediate = archive_saver_immediate
-                      , _nse_getter = nodeStoryVar pool (Just mvar)
+                      , _nse_getter = nodeStoryVar pool (Just tvar)
                       }
 
 nodeStoryVar :: Pool PGS.Connection
-             -> Maybe (MVar NodeListStory)
+             -> Maybe (TVar NodeListStory)
              -> [NodeId]
-             -> IO (MVar NodeListStory)
+             -> IO (TVar NodeListStory)
 nodeStoryVar pool Nothing nIds = do
   state' <- withResource pool $ \c -> nodeStoryIncs c Nothing nIds
-  newMVar state'
-nodeStoryVar pool (Just mv) nIds = do
-  _ <- withResource pool
-      $ \c -> modifyMVar_ mv
-      $ \nsl -> nodeStoryIncs c (Just nsl) nIds
-  pure mv
+  atomically $ newTVar state'
+nodeStoryVar pool (Just tv) nIds = do
+  nls <- atomically $ readTVar tv
+  nls' <- withResource pool
+      $ \c -> nodeStoryIncs c (Just nls) nIds
+  _ <- atomically $ writeTVar tv nls'
+  pure tv
 
 -- Debounce is useful since it could delay the saving to some later
 -- time, asynchronously and we keep operating on memory only.
 -- mkNodeStorySaver :: Pool PGS.Connection -> MVar NodeListStory -> IO (IO ())
 -- mkNodeStorySaver pool mvns = do
-mkNodeStorySaver :: IO () -> IO (IO ())
-mkNodeStorySaver saver = mkDebounce settings
-  where
-    settings = defaultDebounceSettings
-               { debounceAction = saver
-                   -- do
-                   --   -- NOTE: Lock MVar first, then use resource pool.
-                   --   -- Otherwise we could wait for MVar, while
-                   --   -- blocking the pool connection.
-                   --   modifyMVar_ mvns $ \ns -> do
-                   --     withResource pool $ \c -> do
-                   --       --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
-                   --       writeNodeStories c ns
-                   --       pure $ clearHistory ns
-                     --withMVar mvns (\ns -> printDebug "[mkNodeStorySaver] debounce nodestory" ns)
-               , debounceFreq = 1*minute
-               }
-    minute = 60*sec
-    sec = 10^(6 :: Int)
+-- mkNodeStorySaver :: IO () -> IO (IO ())
+-- mkNodeStorySaver saver = mkDebounce settings
+--   where
+--     settings = defaultDebounceSettings
+--                { debounceAction = saver
+--                    -- do
+--                    --   -- NOTE: Lock MVar first, then use resource pool.
+--                    --   -- Otherwise we could wait for MVar, while
+--                    --   -- blocking the pool connection.
+--                    --   modifyMVar_ mvns $ \ns -> do
+--                    --     withResource pool $ \c -> do
+--                    --       --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
+--                    --       writeNodeStories c ns
+--                    --       pure $ clearHistory ns
+--                      --withMVar mvns (\ns -> printDebug "[mkNodeStorySaver] debounce nodestory" ns)
+--                , debounceFreq = 1*minute
+--                }
+--     minute = 60*sec
+--     sec = 10^(6 :: Int)
 
 clearHistory :: NodeListStory -> NodeListStory
 clearHistory (NodeStory ns) = NodeStory $ ns & (traverse . a_history) .~ emptyHistory
