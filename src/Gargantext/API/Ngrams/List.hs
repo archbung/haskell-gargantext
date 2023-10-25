@@ -31,7 +31,6 @@ import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
-import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude (GargServer, GargM, GargError)
 import Gargantext.API.Types
@@ -48,7 +47,6 @@ import Gargantext.Database.Types (Indexed(..))
 import Gargantext.Prelude hiding (concat, toList)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Gargantext.Utils.Servant qualified as GUS
-import GHC.Conc (readTVar)
 import Prelude qualified
 import Protolude qualified as P
 import Servant
@@ -125,7 +123,7 @@ setList l m  = do
   -- TODO check with Version for optim
   -- printDebug "New list as file" l
   _ <- mapM (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList m
-  v <- getNodeStoryVar [l]
+  -- v <- getNodeStoryVar [l]
   -- liftBase $ do
   --   ns <- atomically $ readTVar v
   --   printDebug "[setList] node story: " ns
