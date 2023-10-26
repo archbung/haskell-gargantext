@@ -173,10 +173,10 @@ mkChildrenGroups addOrRem nt patches =
 
 ------------------------------------------------------------------------
 
-saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStorySaver env )
+saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStoryImmediateSaver env )
               => m ()
 saveNodeStory = do
-  saver <- view hasNodeStorySaver
+  saver <- view hasNodeStoryImmediateSaver
   liftBase $ do
     --Gargantext.Prelude.putStrLn "---- Running node story saver ----"
     saver
@@ -336,7 +336,7 @@ commitStatePatch listId (Versioned _p_version p) = do
 
   -- NOTE This is changed now. Before we used MVar's, now it's TVars
   -- (MVar's blocked). It was wrapped in withMVar before, now we read
-  -- the TVar, modify archive with archiveSaver, then write the tvar.
+  -- the TVar, modify archive with archiveSaver, then write the TVar.
 
   -- pure (newNs', snd newNs)
   -- writeTVar var newNs'

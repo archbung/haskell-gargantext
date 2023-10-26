@@ -69,6 +69,7 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Can add query node story" queryNodeStoryTest
       it "Can add new terms to node story" insertNewTermsToNodeStoryTest
       it "Can add new terms (with children) to node story" insertNewTermsWithChildrenToNodeStoryTest
+      it "Can add fix children terms to match parents" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
 
 data ExpectedActual a =
     Expected a

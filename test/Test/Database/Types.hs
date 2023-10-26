@@ -116,9 +116,6 @@ instance HasNodeStoryEnv TestEnv where
 instance HasNodeStoryVar TestEnv where
   hasNodeStoryVar = hasNodeStory . nse_getter
 
-instance HasNodeStorySaver TestEnv where
-  hasNodeStorySaver = hasNodeStory . nse_saver
-
 instance HasNodeStoryImmediateSaver TestEnv where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
 

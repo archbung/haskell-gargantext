@@ -13,13 +13,14 @@ Portability : POSIX
 
 module Test.Database.Operations.NodeStory where
 
+import Control.Lens ((.~))
 import Control.Monad.Reader
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PSQL
 import Database.PostgreSQL.Simple.SqlQQ
 import Gargantext.API.Ngrams (setListNgrams, saveNodeStoryImmediate)
-import Gargantext.API.Ngrams.Types (MSet(..), NgramsRepoElement(..), NgramsTerm(..))
+import Gargantext.API.Ngrams.Types (MSet(..), NgramsRepoElement(..), NgramsTerm(..), nre_list)
 import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Types.Individu
@@ -78,9 +79,8 @@ queryNodeStoryTest env = do
     
     liftIO $ do
       ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId $ Archive { _a_version = 0
-                                                                , _a_state = Map.empty
-                                                                , _a_history = [] })
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       (initArchive :: ArchiveList))
   
 
 insertNewTermsToNodeStoryTest :: TestEnv -> Assertion
@@ -110,9 +110,9 @@ insertNewTermsToNodeStoryTest env = do
     
     liftIO $ do
       ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId $ Archive { _a_version = 0
-                                                                , _a_state = Map.singleton NgramsTerms nls
-                                                                , _a_history = [] })
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) & a_state .~
+                          Map.singleton NgramsTerms nls))
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [terms]
     -- saveNodeStory is called by `setListNgrams`
@@ -159,7 +159,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
                                       , _nre_children = MSet $ Map.singleton tChild () }
     let nreChild = NgramsRepoElement { _nre_size = 1
                                      , _nre_list = MapTerm
-                                     , _nre_root = Nothing
+                                     , _nre_root = Just tParent
                                      , _nre_parent = Just tParent
                                      , _nre_children = MSet Map.empty }
     
@@ -168,16 +168,15 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
 
     liftIO $ do
       ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId $ Archive { _a_version = 0
-                                                                , _a_state = Map.singleton NgramsTerms nls
-                                                                , _a_history = [] })
+      ns `shouldBe` (NodeStory $ Map.singleton listId 
+                      ((initArchive :: ArchiveList) & a_state .~
+                         Map.singleton NgramsTerms nls))
 
     -- `setListNgrams` calls saveNodeStory already so we should have
     -- the terms in the DB by now
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
     
-    saveNodeStoryImmediate
     dbTerms <- runPGSQuery [sql|
                                SELECT terms
                                FROM ngrams
@@ -185,9 +184,6 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
                                WHERE node_id = ?
                                |] (PSQL.Only listId)
     liftIO $ (Set.fromList $ (\(PSQL.Only t) -> t) <$> dbTerms) `shouldBe` (Set.fromList terms)
-
-    ngramsMap2 <- selectNgramsId terms
-    liftIO $ (Set.fromList (snd <$> Map.toList ngramsMap2)) `shouldBe` (Set.fromList terms)
 
     -- let (Just (tParentId, _)) = head $ filter ((==) (unNgramsTerm tParent) . snd) $ Map.toList ngramsMap2
     -- let (Just (tChildId, _)) = head $ filter ((==) (unNgramsTerm tChild) . snd) $ Map.toList ngramsMap2
@@ -197,3 +193,63 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
 
     -- liftIO $ tParentId `shouldBe` tParentId'
 
+      
+insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest :: TestEnv -> Assertion
+insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
+  flip runReaderT env $ runTestMonad $ do
+    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
+    -- for 'addDocumentsToHyperCorpus' to work.
+    let user = UserName userMaster
+    parentId <- getRootId user
+    [corpus] <- getCorporaWithParentId parentId
+    let corpusId = _node_id corpus
+
+    userId <- getUserId user
+
+    listId <- getOrMkList corpusId userId
+
+    v <- getNodeStoryVar [listId]
+
+    let tParent = NgramsTerm "hello"
+    let tChild = NgramsTerm "world"
+    let terms = unNgramsTerm <$> [tParent, tChild]
+    let nreParent = NgramsRepoElement { _nre_size = 1
+                                      , _nre_list = MapTerm
+                                      , _nre_root = Nothing
+                                      , _nre_parent = Nothing
+                                      , _nre_children = MSet $ Map.singleton tChild () }
+    let nreChild = NgramsRepoElement { _nre_size = 1
+                                     , _nre_list = CandidateTerm
+                                     , _nre_root = Just tParent
+                                     , _nre_parent = Just tParent
+                                     , _nre_children = MSet Map.empty }
+    let nreChildFixedType = nreChild & nre_list .~ MapTerm
+    
+    let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
+    let nlsWithChildFixed = Map.fromList [(tParent, nreParent), (tChild, nreChildFixedType)]
+    
+    setListNgrams listId NgramsTerms nls
+
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId 
+                      ((initArchive :: ArchiveList) & a_state .~
+                         Map.singleton NgramsTerms nlsWithChildFixed))
+
+    ngramsMap <- selectNgramsId terms
+    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
+    
+    dbTerms <- runPGSQuery [sql|
+                               SELECT terms
+                               FROM ngrams
+                               JOIN node_stories ON ngrams.id = ngrams_id
+                               WHERE node_id = ?
+                               |] (PSQL.Only listId)
+    liftIO $ (Set.fromList $ (\(PSQL.Only t) -> t) <$> dbTerms) `shouldBe` (Set.fromList terms)
+
+    let (Just (tChildId, _)) = head $ filter ((==) (unNgramsTerm tChild) . snd) $ Map.toList ngramsMap
+                           
+    [PSQL.Only childType] <- runPGSQuery [sql|SELECT ngrams_repo_element->>'list'
+                                             FROM node_stories
+                                             WHERE ngrams_id = ?|] (PSQL.Only tChildId)
+    liftIO $ childType `shouldBe` ("MapTerm" :: Text)
