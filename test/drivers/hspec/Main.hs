@@ -43,3 +43,4 @@ main = do
   bracket startCoreNLPServer stopCoreNLPServer $ \_ -> hspec $ do
     API.tests
     DB.tests
+    DB.nodeStoryTests

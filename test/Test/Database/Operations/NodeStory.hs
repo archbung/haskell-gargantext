@@ -253,3 +253,107 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
                                              FROM node_stories
                                              WHERE ngrams_id = ?|] (PSQL.Only tChildId)
     liftIO $ childType `shouldBe` ("MapTerm" :: Text)
+ 
+setListNgramsUpdatesNodeStoryTest :: TestEnv -> Assertion
+setListNgramsUpdatesNodeStoryTest env = do
+  flip runReaderT env $ runTestMonad $ do
+    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
+    -- for 'addDocumentsToHyperCorpus' to work.
+    let user = UserName userMaster
+    parentId <- getRootId user
+    [corpus] <- getCorporaWithParentId parentId
+    let corpusId = _node_id corpus
+
+    userId <- getUserId user
+
+    listId <- getOrMkList corpusId userId
+
+    v <- getNodeStoryVar [listId]
+
+    let nre = NgramsRepoElement { _nre_size = 1
+                                , _nre_list = MapTerm
+                                , _nre_root = Nothing
+                                , _nre_parent = Nothing
+                                , _nre_children =  MSet Map.empty }
+    let terms = "HELLO"
+    let nls = Map.singleton (NgramsTerm terms) nre
+    setListNgrams listId NgramsTerms nls
+    
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) & a_state .~
+                          Map.singleton NgramsTerms nls))
+    -- check that the ngrams are in the DB as well
+    ngramsMap <- selectNgramsId [terms]
+    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [terms]
+    
+    let nre2 = NgramsRepoElement { _nre_size = 1
+                                 , _nre_list = MapTerm
+                                 , _nre_root = Nothing
+                                 , _nre_parent = Nothing
+                                 , _nre_children =  MSet Map.empty }
+    let terms2 = "WORLD"
+    let nls2 = Map.singleton (NgramsTerm terms2) nre2
+    setListNgrams listId NgramsTerms nls2
+                                        
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) & a_state .~
+                          (Map.singleton NgramsTerms $ nls <> nls2)))
+
+
+setListNgramsUpdatesNodeStoryWithChildrenTest :: TestEnv -> Assertion
+setListNgramsUpdatesNodeStoryWithChildrenTest env = do
+  flip runReaderT env $ runTestMonad $ do
+    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
+    -- for 'addDocumentsToHyperCorpus' to work.
+    let user = UserName userMaster
+    parentId <- getRootId user
+    [corpus] <- getCorporaWithParentId parentId
+    let corpusId = _node_id corpus
+
+    userId <- getUserId user
+
+    listId <- getOrMkList corpusId userId
+
+    v <- getNodeStoryVar [listId]
+
+    let tParent = NgramsTerm "hello"
+    let tChild = NgramsTerm "world"
+    let terms = unNgramsTerm <$> [tParent, tChild]
+    let nreParent = NgramsRepoElement { _nre_size = 1
+                                      , _nre_list = MapTerm
+                                      , _nre_root = Nothing
+                                      , _nre_parent = Nothing
+                                      , _nre_children = MSet $ Map.singleton tChild () }
+    let nreChild = NgramsRepoElement { _nre_size = 1
+                                     , _nre_list = MapTerm
+                                     , _nre_root = Just tParent
+                                     , _nre_parent = Just tParent
+                                     , _nre_children = MSet Map.empty }
+    let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
+    setListNgrams listId NgramsTerms nls
+    
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) & a_state .~
+                          Map.singleton NgramsTerms nls))
+
+    -- OK, now we substitute parent with no children, the parent of
+    -- 'nreChild' should become Nothing
+    let nreParentNew = nreParent { _nre_children = MSet $ Map.empty }
+    let nlsToInsert = Map.fromList [(tParent, nreParentNew)]
+    setListNgrams listId NgramsTerms nlsToInsert
+
+    let nreChildNew = nreChild { _nre_parent = Nothing
+                               , _nre_root = Nothing }
+    let nlsNew = Map.fromList [(tParent, nreParentNew), (tChild, nreChildNew)]
+
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) & a_state .~
+                          Map.singleton NgramsTerms nlsNew))

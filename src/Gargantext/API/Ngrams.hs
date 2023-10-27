@@ -87,7 +87,7 @@ module Gargantext.API.Ngrams
   )
   where
 
-import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, ifolded, to, withIndex, over)
+import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, non, ifolded, to, withIndex, over)
 import Control.Monad.Reader
 import Data.Aeson.Text qualified as DAT
 import Data.Foldable
@@ -264,7 +264,9 @@ setListNgrams listId ngramsType ns = do
         . at listId . _Just
         . a_state
         . at ngramsType
-        .~ Just ns
+        %~ (\mns' -> case mns' of
+               Nothing -> Just ns
+               Just ns' -> Just $ ns <> ns')
       ) nls
   saveNodeStory
 
@@ -294,7 +296,7 @@ commitStatePatch listId (Versioned _p_version p) = do
   archiveSaver <- view hasNodeArchiveStoryImmediateSaver
   ns <- liftBase $ atomically $ readTVar var
   let
-    a = ns ^. unNodeStory . at listId . _Just
+    a = ns ^. unNodeStory . at listId . non initArchive
     -- apply patches from version p_version to a ^. a_version
     -- TODO Check this
     --q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
@@ -376,7 +378,7 @@ tableNgramsPull listId ngramsType p_version = do
   r <- liftBase $ atomically $ readTVar var
 
   let
-    a = r ^. unNodeStory . at listId . _Just
+    a = r ^. unNodeStory . at listId . non initArchive
     q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
     q_table = q ^. _PatchMap . at ngramsType . _Just
 

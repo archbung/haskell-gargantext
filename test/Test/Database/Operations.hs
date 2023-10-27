@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TupleSections        #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -6,13 +7,15 @@
 {-# OPTIONS_GHC -Wno-orphans      #-}
 
 module Test.Database.Operations (
-   tests
+     tests
+   , nodeStoryTests
   ) where
 
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Text qualified as T
 import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.SqlQQ
 import Gargantext.API.Node.Corpus.Update
 import Gargantext.Core
 import Gargantext.Core.Types.Individu
@@ -20,6 +23,7 @@ import Gargantext.Database.Action.User
 import Gargantext.Database.Action.User.New
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Prelude (runPGSQuery)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root (getRootId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
@@ -64,13 +68,25 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Can perform search by author in documents" corpusSearch02
       it "Can perform more complex searches using the boolean API" corpusSearch03
       it "Can correctly count doc score" corpusScore01
+        
+nodeStoryTests :: Spec
+nodeStoryTests = sequential $
+  -- run 'withTestDB' before _every_ test item
+  around setupDBAndCorpus $
+  describe "Database - node story" $ do
     describe "Node story" $ do
       it "Can create a list" createListTest
-      it "Can add query node story" queryNodeStoryTest
+      it "Can query node story" queryNodeStoryTest
       it "Can add new terms to node story" insertNewTermsToNodeStoryTest
       it "Can add new terms (with children) to node story" insertNewTermsWithChildrenToNodeStoryTest
-      it "Can add fix children terms to match parents" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
-
+      it "Fixes child terms to match parents' terms" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
+      it "Can update node story when 'setListNgrams' is called" setListNgramsUpdatesNodeStoryTest
+      it "When 'setListNgrams' is called, childrens' parents are updated" setListNgramsUpdatesNodeStoryWithChildrenTest
+  where
+    setupDBAndCorpus testsFunc = withTestDB $ \env -> do
+      setupEnvironment env
+      testsFunc env
+  
 data ExpectedActual a =
     Expected a
   | Actual a
@@ -133,8 +149,10 @@ corpusReadWrite01 env = do
   flip runReaderT env $ runTestMonad $ do
     uid      <- getUserId (UserName "alfredo")
     parentId <- getRootId (UserName "alfredo")
-    [corpusId] <- mk (Just "Test_Corpus") (Nothing :: Maybe HyperdataCorpus) parentId uid
-    liftIO $ corpusId `shouldBe` UnsafeMkNodeId 416
+    let corpusName = "Test_Corpus"
+    [corpusId] <- mk (Just corpusName) (Nothing :: Maybe HyperdataCorpus) parentId uid
+    [Only corpusId'] <- runPGSQuery [sql|SELECT id FROM nodes WHERE name = ?|] (Only corpusName)
+    liftIO $ corpusId `shouldBe` UnsafeMkNodeId corpusId'
     -- Retrieve the corpus by Id
     [corpus] <- getCorporaWithParentId parentId
     liftIO $ corpusId `shouldBe` (_node_id corpus)

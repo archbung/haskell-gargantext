@@ -71,6 +71,8 @@ module Gargantext.Core.NodeStory
   , getNodesArchiveHistory
   , Archive(..)
   , initArchive
+  , archiveAdvance
+  , unionArchives
   , a_history
   , a_state
   , a_version
@@ -120,7 +122,7 @@ import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (to)
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
 
 ------------------------------------------------------------------------
@@ -161,7 +163,7 @@ class HasNodeArchiveStoryImmediateSaver env where
   is implemented already
 -}
 newtype NodeStory s p = NodeStory { _unNodeStory :: Map NodeId (Archive s p) }
-  deriving (Generic, Show, Eq, Semigroup)
+  deriving (Generic, Show, Eq)
 
 instance (FromJSON s, FromJSON p) => FromJSON (NodeStory s p)
 instance (ToJSON s, ToJSON p) => ToJSON (NodeStory s p)
@@ -206,29 +208,47 @@ instance DefaultFromField SqlJsonb (Archive NgramsState' NgramsStatePatch')
 combineState :: NgramsState' -> NgramsState' -> NgramsState'
 combineState = Map.unionWith (<>)
 
-instance (Semigroup s, Semigroup p) => Semigroup (Archive s p) where
-  (<>) (Archive { _a_history = p }) (Archive { _a_version = v'
-                                             , _a_state = s'
-                                             , _a_history = p' }) =
-    Archive { _a_version = v'
-            , _a_state = s'
-            , _a_history = p' <> p }
-instance (Monoid s, Semigroup p) => Monoid (Archive s p) where
-  mempty = Archive { _a_version = 0
-                   , _a_state = mempty
-                   , _a_history = [] }
+-- This is not a typical Semigroup instance. The state is not
+-- appended, instead it is replaced with the second entry. This is
+-- because state changes with each version. We have to take into
+-- account the removal of terms as well.
+-- instance (Semigroup s, Semigroup p) => Semigroup (Archive s p) where
+--   (<>) (Archive { _a_history = p }) (Archive { _a_version = v'
+--                                              , _a_state = s'
+--                                              , _a_history = p' }) =
+--     Archive { _a_version = v'
+--             , _a_state = s'
+--             , _a_history = p' <> p }
+-- instance (Monoid s, Semigroup p) => Monoid (Archive s p) where
+--   mempty = Archive { _a_version = 0
+--                    , _a_state = mempty
+--                    , _a_history = [] }
 instance (FromJSON s, FromJSON p) => FromJSON (Archive s p) where
   parseJSON = genericParseJSON $ unPrefix "_a_"
 instance (ToJSON s, ToJSON p) => ToJSON (Archive s p) where
   toJSON     = genericToJSON     $ unPrefix "_a_"
   toEncoding = genericToEncoding $ unPrefix "_a_"
 
+-- | This is the normal way to update archive state, bumping the
+-- version and history. Resulting state is taken directly from new
+-- archive, omitting old archive completely.
+archiveAdvance :: (Semigroup s, Semigroup p) => Archive s p -> Archive s p -> Archive s p
+archiveAdvance aOld aNew = aNew { _a_history = _a_history aNew <> _a_history aOld }
+
+-- | This is to merge archive states.
+unionArchives :: (Semigroup s, Semigroup p) => Archive s p -> Archive s p -> Archive s p
+unionArchives aOld aNew = aNew { _a_state = _a_state aOld <> _a_state aNew
+                               , _a_history = _a_history aNew <> _a_history aOld }
+
+
 ------------------------------------------------------------------------
 initNodeStory :: (Monoid s, Semigroup p) => NodeId -> NodeStory s p
 initNodeStory ni = NodeStory $ Map.singleton ni initArchive
 
 initArchive :: (Monoid s, Semigroup p) => Archive s p
-initArchive = mempty
+initArchive = Archive { _a_version = 0
+                      , _a_state = mempty
+                      , _a_history = [] }
 
 initNodeListStoryMock :: NodeListStory
 initNodeListStoryMock = NodeStory $ Map.singleton nodeListId archive
@@ -425,7 +445,7 @@ getNodeStory c nId = do
     pure ()
 -}
 
-  pure $ NodeStory $ Map.singleton nId $ foldl combine mempty dbData
+  pure $ NodeStory $ Map.singleton nId $ foldl combine initArchive dbData
   where
     -- NOTE (<>) for Archive doesn't concatenate states, so we have to use `combine`
     combine a1 a2 = a1 & a_state %~ combineState (a2 ^. a_state)
@@ -582,12 +602,12 @@ upsertNodeStories c nodeId newArchive = do
         pure ()
 
     -- 3. Now we need to set versions of all node state to be the same
-    fixNodeStoryVersion c nodeId newArchive
+    updateNodeStoryVersion c nodeId newArchive
 
     -- printDebug "[upsertNodeStories] STOP nId" nId
 
-fixNodeStoryVersion :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
-fixNodeStoryVersion c nodeId newArchive = do
+updateNodeStoryVersion :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
+updateNodeStoryVersion c nodeId newArchive = do
   let ngramsTypes = Map.keys $ newArchive ^. a_state
   mapM_ (\nt -> runPGSExecute c query (newArchive ^. a_version, nodeId, nt)) ngramsTypes
   where
@@ -605,7 +625,9 @@ writeNodeStories c (NodeStory nls) = do
 nodeStoryInc :: PGS.Connection -> NodeListStory -> NodeId -> IO NodeListStory
 nodeStoryInc c ns@(NodeStory nls) nId = do
   case Map.lookup nId nls of
-    Nothing -> getNodeStory c nId >>= pure . (ns <>)
+    Nothing -> do
+      NodeStory nls' <- getNodeStory c nId
+      pure $ NodeStory $ Map.unionWith archiveAdvance nls' nls
     Just _ -> pure ns
 
 nodeStoryIncrementalRead :: PGS.Connection -> Maybe NodeListStory -> [NodeId] -> IO NodeListStory
@@ -633,8 +655,8 @@ nodeStoryIncrementalRead c (Just nls) ns = foldM (\m n -> nodeStoryInc c m n) nl
 -- `list` as their parent entry.
 fixChildrenTermTypes :: NodeListStory -> NodeListStory
 fixChildrenTermTypes (NodeStory nls) =
-  NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenInNgramsStatePatch) |
-                             (nId, a) <- Map.toList nls ]
+  NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenInNgramsStatePatch)
+                           | (nId, a) <- Map.toList nls ]
 
 fixChildrenInNgramsStatePatch :: NgramsState' -> NgramsState'
 fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
@@ -653,17 +675,50 @@ fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildre
                          )
                       ) <$> nsChildren
 
+-- | Sometimes, when we upload a new list, a child can be left without
+-- a parent. Find such ngrams and set their 'root' and 'parent' to
+-- 'Nothing'.
+fixChildrenWithNoParent :: NodeListStory -> NodeListStory
+fixChildrenWithNoParent (NodeStory nls) =
+  NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenWithNoParentStatePatch)
+                           | (nId, a) <- Map.toList nls ]
+
+fixChildrenWithNoParentStatePatch :: NgramsState' -> NgramsState'
+fixChildrenWithNoParentStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
+  where
+    nls = archiveStateToList ns
+    
+    nsParents = filter (\(_nt, _t, nre) -> isNothing $ nre ^. nre_parent) nls
+    parentNtMap = Map.fromList $ (\(_nt, t, nre) -> (t, nre ^. nre_children & mSetToSet)) <$> nsParents
+    
+    nsChildren = filter (\(_nt, _t, nre) -> isJust $ nre ^. nre_parent) nls
+    nsChildrenFixFunc (nt, t, nre) =
+      ( nt
+      , t
+      , nre { _nre_root = root
+            , _nre_parent = parent }
+      )
+      where
+        (root, parent) = case parentNtMap ^. at (nre ^. nre_parent . _Just) . _Just . at t of
+          Just _ -> (nre ^. nre_root, nre ^. nre_parent)
+          Nothing -> (Nothing, Nothing)
+
+    nsChildrenFixed = nsChildrenFixFunc <$> nsChildren
+
 ------------------------------------
 
 fromDBNodeStoryEnv :: Pool PGS.Connection -> IO NodeStoryEnv
 fromDBNodeStoryEnv pool = do
   tvar <- nodeStoryVar pool Nothing []
   let saver_immediate = do
-        ns <- atomically $ do
-          ns' <- readTVar tvar
-          let ns'' = fixChildrenTermTypes ns'
-          writeTVar tvar ns''
-          pure ns''
+        ns <- atomically $
+              readTVar tvar
+              -- fix children so their 'list' is the same as their parents'
+              >>= pure . fixChildrenTermTypes
+              -- fix children that don't have a parent anymore
+              >>= pure . fixChildrenWithNoParent
+              >>= writeTVar tvar
+              >> readTVar tvar
         withResource pool $ \c -> do
           --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
           writeNodeStories c ns
@@ -707,6 +762,7 @@ currentVersion listId = do
 
 -----------------------------------------
 
+-- | To be called from the REPL
 fixNodeStoryVersions :: (HasNodeStory env err m) => m ()
 fixNodeStoryVersions = do
   pool <- view connPool
