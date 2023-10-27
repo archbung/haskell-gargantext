@@ -82,6 +82,7 @@ nodeStoryTests = sequential $
       it "Fixes child terms to match parents' terms" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
       it "Can update node story when 'setListNgrams' is called" setListNgramsUpdatesNodeStoryTest
       it "When 'setListNgrams' is called, childrens' parents are updated" setListNgramsUpdatesNodeStoryWithChildrenTest
+      it "Correctly commits patches to node story - simple" commitPatchSimpleTest
   where
     setupDBAndCorpus testsFunc = withTestDB $ \env -> do
       setupEnvironment env

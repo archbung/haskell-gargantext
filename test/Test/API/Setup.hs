@@ -22,7 +22,7 @@ import Gargantext.Database.Admin.Trigger.Init
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (getOrMkList)
-import Gargantext.Prelude (printDebug)
+-- import Gargantext.Prelude (printDebug)
 import Gargantext.Prelude.Config
 import Gargantext.System.Logging
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -103,7 +103,7 @@ setupEnvironment env = flip runReaderT env $ runTestMonad $ do
                                         (Left corpusMasterName)
                                         (Nothing :: Maybe HyperdataCorpus)
   masterListId <- getOrMkList masterCorpusId masterUserId
-  printDebug "[setupEnvironment] masterListId: " masterListId
+  -- printDebug "[setupEnvironment] masterListId: " masterListId
   void $ initLastTriggers masterListId
 
 -- | Creates two users, Alice & Bob. Alice shouldn't be able to see

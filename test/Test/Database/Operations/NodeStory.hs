@@ -16,11 +16,12 @@ module Test.Database.Operations.NodeStory where
 import Control.Lens ((.~))
 import Control.Monad.Reader
 import Data.Map.Strict qualified as Map
+import Data.Map.Strict.Patch qualified as PM
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PSQL
 import Database.PostgreSQL.Simple.SqlQQ
-import Gargantext.API.Ngrams (setListNgrams, saveNodeStoryImmediate)
-import Gargantext.API.Ngrams.Types (MSet(..), NgramsRepoElement(..), NgramsTerm(..), nre_list)
+import Gargantext.API.Ngrams (commitStatePatch, setListNgrams, saveNodeStoryImmediate)
+import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_list)
 import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Types.Individu
@@ -111,8 +112,7 @@ insertNewTermsToNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) & a_state .~
-                          Map.singleton NgramsTerms nls))
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [terms]
     -- saveNodeStory is called by `setListNgrams`
@@ -169,8 +169,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      ((initArchive :: ArchiveList) & a_state .~
-                         Map.singleton NgramsTerms nls))
+                      ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
 
     -- `setListNgrams` calls saveNodeStory already so we should have
     -- the terms in the DB by now
@@ -233,8 +232,7 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      ((initArchive :: ArchiveList) & a_state .~
-                         Map.singleton NgramsTerms nlsWithChildFixed))
+                      ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nlsWithChildFixed }))
 
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
@@ -282,8 +280,7 @@ setListNgramsUpdatesNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) & a_state .~
-                          Map.singleton NgramsTerms nls))
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [terms]
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [terms]
@@ -300,8 +297,7 @@ setListNgramsUpdatesNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) & a_state .~
-                          (Map.singleton NgramsTerms $ nls <> nls2)))
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms $ nls <> nls2 }))
 
 
 setListNgramsUpdatesNodeStoryWithChildrenTest :: TestEnv -> Assertion
@@ -322,7 +318,6 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
 
     let tParent = NgramsTerm "hello"
     let tChild = NgramsTerm "world"
-    let terms = unNgramsTerm <$> [tParent, tChild]
     let nreParent = NgramsRepoElement { _nre_size = 1
                                       , _nre_list = MapTerm
                                       , _nre_root = Nothing
@@ -339,8 +334,7 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) & a_state .~
-                          Map.singleton NgramsTerms nls))
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
 
     -- OK, now we substitute parent with no children, the parent of
     -- 'nreChild' should become Nothing
@@ -355,5 +349,50 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) & a_state .~
-                          Map.singleton NgramsTerms nlsNew))
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nlsNew }))
+
+
+commitPatchSimpleTest :: TestEnv -> Assertion
+commitPatchSimpleTest env = do
+  flip runReaderT env $ runTestMonad $ do
+    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
+    -- for 'addDocumentsToHyperCorpus' to work.
+    let user = UserName userMaster
+    parentId <- getRootId user
+    [corpus] <- getCorporaWithParentId parentId
+    let corpusId = _node_id corpus
+
+    userId <- getUserId user
+
+    listId <- getOrMkList corpusId userId
+
+    v <- getNodeStoryVar [listId]
+
+    -- initially, the node story table is empty
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) { _a_state = Map.empty }))
+    
+    let term = NgramsTerm "hello"
+    let nre = NgramsRepoElement { _nre_size = 1
+                                , _nre_list = MapTerm
+                                , _nre_root = Nothing
+                                , _nre_parent = Nothing
+                                , _nre_children = MSet Map.empty }
+    let tPatch = NgramsReplace { _patch_old = Nothing
+                               , _patch_new = Just nre }
+    ver <- currentVersion listId
+    let ntp = mkNgramsTablePatch $ Map.singleton term tPatch
+    let (pm, _validation) = PM.singleton NgramsTerms ntp
+    let patch = Versioned ver pm
+
+    _patchApplied <- commitStatePatch listId patch
+
+    let nls = Map.fromList [(term, nre)]
+    
+    liftIO $ do
+      ns <- atomically $ readTVar v
+      ns `shouldBe` (NodeStory $ Map.singleton listId
+                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls
+                                                     , _a_version = ver + 1 }))
