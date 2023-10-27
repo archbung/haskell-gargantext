@@ -75,14 +75,14 @@ nodeStoryTests = sequential $
   around setupDBAndCorpus $
   describe "Database - node story" $ do
     describe "Node story" $ do
-      it "Can create a list" createListTest
-      it "Can query node story" queryNodeStoryTest
-      it "Can add new terms to node story" insertNewTermsToNodeStoryTest
-      it "Can add new terms (with children) to node story" insertNewTermsWithChildrenToNodeStoryTest
-      it "Fixes child terms to match parents' terms" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
-      it "Can update node story when 'setListNgrams' is called" setListNgramsUpdatesNodeStoryTest
-      it "When 'setListNgrams' is called, childrens' parents are updated" setListNgramsUpdatesNodeStoryWithChildrenTest
-      it "Correctly commits patches to node story - simple" commitPatchSimpleTest
+      it "[#281] Can create a list" createListTest
+      it "[#281] Can query node story" queryNodeStoryTest
+      it "[#218] Can add new terms to node story" insertNewTermsToNodeStoryTest
+      it "[#281] Can add new terms (with children) to node story" insertNewTermsWithChildrenToNodeStoryTest
+      it "[#281] Fixes child terms to match parents' terms" insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest
+      it "[#281] Can update node story when 'setListNgrams' is called" setListNgramsUpdatesNodeStoryTest
+      it "[#281] When 'setListNgrams' is called, childrens' parents are updated" setListNgramsUpdatesNodeStoryWithChildrenTest
+      it "[#281] Correctly commits patches to node story - simple" commitPatchSimpleTest
   where
     setupDBAndCorpus testsFunc = withTestDB $ \env -> do
       setupEnvironment env

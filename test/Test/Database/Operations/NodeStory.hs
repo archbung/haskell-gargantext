@@ -13,19 +13,19 @@ Portability : POSIX
 
 module Test.Database.Operations.NodeStory where
 
-import Control.Lens ((.~))
+import Control.Lens ((^.), (.~), _2)
 import Control.Monad.Reader
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PSQL
 import Database.PostgreSQL.Simple.SqlQQ
-import Gargantext.API.Ngrams (commitStatePatch, setListNgrams, saveNodeStoryImmediate)
-import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_list)
+import Gargantext.API.Ngrams (commitStatePatch, mSetFromList, setListNgrams, saveNodeStoryImmediate)
+import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_children, nre_list, nre_parent, nre_root)
 import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Types.Individu
-import Gargantext.Core.Types (ListType(..))
+import Gargantext.Core.Types (ListType(..), ListId, NodeId, UserId)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Prelude (runPGSQuery)
@@ -35,16 +35,13 @@ import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
-import GHC.Conc (readTVar)
+import GHC.Conc (TVar, readTVar)
 import Test.Database.Types
 import Test.Hspec.Expectations
 import Test.Tasty.HUnit
 
-commonInitialization :: TestMonad
-                        ( Gargantext.Database.Admin.Types.Node.UserId
-                        , Gargantext.Database.Admin.Types.Node.NodeId
-                        , Gargantext.Database.Admin.Types.Node.ListId
-                        , GHC.Conc.Sync.TVar NodeListStory )
+
+commonInitialization :: TestMonad ( UserId, NodeId, ListId, TVar NodeListStory )
 commonInitialization = do
   let user = UserName userMaster
   parentId <- getRootId user
@@ -59,6 +56,36 @@ commonInitialization = do
 
   pure $ (userId, corpusId, listId, v)
 
+
+initArchiveList :: ArchiveList
+initArchiveList = initArchive
+
+
+simpleTerm :: (NgramsTerm, NgramsRepoElement)
+simpleTerm = ( NgramsTerm "hello"
+             , NgramsRepoElement { _nre_size = 1
+                                 , _nre_list = MapTerm
+                                 , _nre_root = Nothing
+                                 , _nre_parent = Nothing
+                                 , _nre_children = MSet Map.empty } )
+
+simpleParentTerm' :: NgramsTerm
+simpleParentTerm' = fst simpleTerm
+simpleParentTerm :: (NgramsTerm, NgramsRepoElement)
+simpleParentTerm = ( simpleParentTerm'
+                   , simpleTerm ^. _2
+                     & nre_children .~ (mSetFromList [simpleChildTerm']) )
+
+simpleChildTerm' :: NgramsTerm
+simpleChildTerm' = NgramsTerm "world"
+simpleChildTerm :: (NgramsTerm, NgramsRepoElement)
+simpleChildTerm = ( simpleChildTerm'
+                  , simpleTerm ^. _2 
+                    & nre_parent .~ Just simpleParentTerm'
+                    & nre_root .~ Just simpleParentTerm' )
+
+
+-- tests start here
 
 createListTest :: TestEnv -> Assertion
 createListTest env = do
@@ -79,8 +106,7 @@ queryNodeStoryTest env = do
     
     liftIO $ do
       ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchive :: ArchiveList))
+      ns `shouldBe` (NodeStory $ Map.singleton listId initArchiveList)
   
 
 insertNewTermsToNodeStoryTest :: TestEnv -> Assertion
@@ -88,22 +114,17 @@ insertNewTermsToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
     (_userId, _corpusId, listId, v) <- commonInitialization
 
-    let nre = NgramsRepoElement { _nre_size = 1
-                                , _nre_list = MapTerm
-                                , _nre_root = Nothing
-                                , _nre_parent = Nothing
-                                , _nre_children =  MSet Map.empty }
-    let terms = "hello"
-    let nls = Map.singleton (NgramsTerm terms) nre
+    let (terms, nre) = simpleTerm
+    let nls = Map.singleton terms nre
     setListNgrams listId NgramsTerms nls
     
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
     -- check that the ngrams are in the DB as well
-    ngramsMap <- selectNgramsId [terms]
-    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [terms]
+    ngramsMap <- selectNgramsId [unNgramsTerm terms]
+    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
     
     -- Finally, check that node stories are inserted correctly
     dbTerms <- runPGSQuery [sql|
@@ -112,7 +133,7 @@ insertNewTermsToNodeStoryTest env = do
                                JOIN node_stories ON ngrams.id = ngrams_id
                                WHERE node_id = ?
                                |] (PSQL.Only listId)
-    liftIO $ dbTerms `shouldBe` [PSQL.Only terms]
+    liftIO $ dbTerms `shouldBe` [PSQL.Only $ unNgramsTerm terms]
                            
 
 insertNewTermsWithChildrenToNodeStoryTest :: TestEnv -> Assertion
@@ -120,19 +141,9 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
     (_userId, _corpusId, listId, v) <- commonInitialization
 
-    let tParent = NgramsTerm "hello"
-    let tChild = NgramsTerm "world"
+    let (tParent, nreParent) = simpleParentTerm
+    let (tChild, nreChild) = simpleChildTerm
     let terms = unNgramsTerm <$> [tParent, tChild]
-    let nreParent = NgramsRepoElement { _nre_size = 1
-                                      , _nre_list = MapTerm
-                                      , _nre_root = Nothing
-                                      , _nre_parent = Nothing
-                                      , _nre_children = MSet $ Map.singleton tChild () }
-    let nreChild = NgramsRepoElement { _nre_size = 1
-                                     , _nre_list = MapTerm
-                                     , _nre_root = Just tParent
-                                     , _nre_parent = Just tParent
-                                     , _nre_children = MSet Map.empty }
     
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
     setListNgrams listId NgramsTerms nls
@@ -140,7 +151,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
+                      (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
 
     -- `setListNgrams` calls saveNodeStory already so we should have
     -- the terms in the DB by now
@@ -169,30 +180,20 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
   flip runReaderT env $ runTestMonad $ do
     (_userId, _corpusId, listId, v) <- commonInitialization
 
-    let tParent = NgramsTerm "hello"
-    let tChild = NgramsTerm "world"
+    let (tParent, nreParent) = simpleParentTerm
+    let (tChild, nreChildGoodType) = simpleChildTerm
+    let nreChildBrokenType = nreChildGoodType & nre_list .~ MapTerm
     let terms = unNgramsTerm <$> [tParent, tChild]
-    let nreParent = NgramsRepoElement { _nre_size = 1
-                                      , _nre_list = MapTerm
-                                      , _nre_root = Nothing
-                                      , _nre_parent = Nothing
-                                      , _nre_children = MSet $ Map.singleton tChild () }
-    let nreChild = NgramsRepoElement { _nre_size = 1
-                                     , _nre_list = CandidateTerm
-                                     , _nre_root = Just tParent
-                                     , _nre_parent = Just tParent
-                                     , _nre_children = MSet Map.empty }
-    let nreChildFixedType = nreChild & nre_list .~ MapTerm
     
-    let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
-    let nlsWithChildFixed = Map.fromList [(tParent, nreParent), (tChild, nreChildFixedType)]
+    let nls = Map.fromList [(tParent, nreParent), (tChild, nreChildBrokenType)]
+    let nlsWithChildFixed = Map.fromList [(tParent, nreParent), (tChild, nreChildGoodType)]
     
     setListNgrams listId NgramsTerms nls
 
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nlsWithChildFixed }))
+                      (initArchiveList { _a_state = Map.singleton NgramsTerms nlsWithChildFixed }))
 
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
@@ -217,22 +218,17 @@ setListNgramsUpdatesNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
     (_userId, _corpusId, listId, v) <- commonInitialization
 
-    let nre = NgramsRepoElement { _nre_size = 1
-                                , _nre_list = MapTerm
-                                , _nre_root = Nothing
-                                , _nre_parent = Nothing
-                                , _nre_children =  MSet Map.empty }
-    let terms = "HELLO"
-    let nls = Map.singleton (NgramsTerm terms) nre
+    let (terms, nre) = simpleTerm
+    let nls = Map.singleton terms nre
     setListNgrams listId NgramsTerms nls
     
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
     -- check that the ngrams are in the DB as well
-    ngramsMap <- selectNgramsId [terms]
-    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [terms]
+    ngramsMap <- selectNgramsId [unNgramsTerm terms]
+    liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
     
     let nre2 = NgramsRepoElement { _nre_size = 1
                                  , _nre_list = MapTerm
@@ -246,7 +242,7 @@ setListNgramsUpdatesNodeStoryTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms $ nls <> nls2 }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms $ nls <> nls2 }))
 
 
 setListNgramsUpdatesNodeStoryWithChildrenTest :: TestEnv -> Assertion
@@ -254,25 +250,15 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
   flip runReaderT env $ runTestMonad $ do
     (_userId, _corpusId, listId, v) <- commonInitialization
 
-    let tParent = NgramsTerm "hello"
-    let tChild = NgramsTerm "world"
-    let nreParent = NgramsRepoElement { _nre_size = 1
-                                      , _nre_list = MapTerm
-                                      , _nre_root = Nothing
-                                      , _nre_parent = Nothing
-                                      , _nre_children = MSet $ Map.singleton tChild () }
-    let nreChild = NgramsRepoElement { _nre_size = 1
-                                     , _nre_list = MapTerm
-                                     , _nre_root = Just tParent
-                                     , _nre_parent = Just tParent
-                                     , _nre_children = MSet Map.empty }
+    let (tChild, nreChild) = simpleChildTerm
+    let (tParent, nreParent) = simpleParentTerm
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
     setListNgrams listId NgramsTerms nls
     
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
 
     -- OK, now we substitute parent with no children, the parent of
     -- 'nreChild' should become Nothing
@@ -287,7 +273,7 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nlsNew }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms nlsNew }))
 
 
 commitPatchSimpleTest :: TestEnv -> Assertion
@@ -299,14 +285,9 @@ commitPatchSimpleTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.empty }))
-    
-    let term = NgramsTerm "hello"
-    let nre = NgramsRepoElement { _nre_size = 1
-                                , _nre_list = MapTerm
-                                , _nre_root = Nothing
-                                , _nre_parent = Nothing
-                                , _nre_children = MSet Map.empty }
+                       (initArchiveList { _a_state = Map.empty }))
+
+    let (term, nre) = simpleTerm
     let tPatch = NgramsReplace { _patch_old = Nothing
                                , _patch_new = Just nre }
     ver <- currentVersion listId
@@ -321,5 +302,5 @@ commitPatchSimpleTest env = do
     liftIO $ do
       ns <- atomically $ readTVar v
       ns `shouldBe` (NodeStory $ Map.singleton listId
-                       ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls
-                                                     , _a_version = ver + 1 }))
+                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls
+                                        , _a_version = ver + 1 }))
