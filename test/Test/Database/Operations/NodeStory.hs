@@ -40,21 +40,31 @@ import Test.Database.Types
 import Test.Hspec.Expectations
 import Test.Tasty.HUnit
 
+commonInitialization :: TestMonad
+                        ( Gargantext.Database.Admin.Types.Node.UserId
+                        , Gargantext.Database.Admin.Types.Node.NodeId
+                        , Gargantext.Database.Admin.Types.Node.ListId
+                        , GHC.Conc.Sync.TVar NodeListStory )
+commonInitialization = do
+  let user = UserName userMaster
+  parentId <- getRootId user
+  [corpus] <- getCorporaWithParentId parentId
+  let corpusId = _node_id corpus
+
+  userId <- getUserId user
+
+  listId <- getOrMkList corpusId userId
+
+  v <- getNodeStoryVar [listId]
+
+  pure $ (userId, corpusId, listId, v)
 
 
 createListTest :: TestEnv -> Assertion
 createListTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
+    (userId, corpusId, listId, _v) <- commonInitialization
 
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
     listId' <- getOrMkList corpusId userId
     
     liftIO $ listId `shouldBe` listId'
@@ -63,20 +73,9 @@ createListTest env = do
 queryNodeStoryTest :: TestEnv -> Assertion
 queryNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     saveNodeStoryImmediate
-
-    v <- getNodeStoryVar [listId]
     
     liftIO $ do
       ns <- atomically $ readTVar v
@@ -87,18 +86,7 @@ queryNodeStoryTest env = do
 insertNewTermsToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     let nre = NgramsRepoElement { _nre_size = 1
                                 , _nre_list = MapTerm
@@ -115,15 +103,9 @@ insertNewTermsToNodeStoryTest env = do
                        ((initArchive :: ArchiveList) { _a_state = Map.singleton NgramsTerms nls }))
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [terms]
-    -- saveNodeStory is called by `setListNgrams`
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [terms]
     
-    -- _ <- insertNgrams [UnsafeNgrams { _ngramsTerms = terms
-    --                                 , _ngramsSize = 1 }]
-
     -- Finally, check that node stories are inserted correctly
-    -- saveNodeStoryImmediate
-
     dbTerms <- runPGSQuery [sql|
                                SELECT terms
                                FROM ngrams
@@ -136,18 +118,7 @@ insertNewTermsToNodeStoryTest env = do
 insertNewTermsWithChildrenToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsWithChildrenToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     let tParent = NgramsTerm "hello"
     let tChild = NgramsTerm "world"
@@ -196,18 +167,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest :: TestEnv -> Assertion
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     let tParent = NgramsTerm "hello"
     let tChild = NgramsTerm "world"
@@ -255,18 +215,7 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
 setListNgramsUpdatesNodeStoryTest :: TestEnv -> Assertion
 setListNgramsUpdatesNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     let nre = NgramsRepoElement { _nre_size = 1
                                 , _nre_list = MapTerm
@@ -303,18 +252,7 @@ setListNgramsUpdatesNodeStoryTest env = do
 setListNgramsUpdatesNodeStoryWithChildrenTest :: TestEnv -> Assertion
 setListNgramsUpdatesNodeStoryWithChildrenTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     let tParent = NgramsTerm "hello"
     let tChild = NgramsTerm "world"
@@ -355,18 +293,7 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
 commitPatchSimpleTest :: TestEnv -> Assertion
 commitPatchSimpleTest env = do
   flip runReaderT env $ runTestMonad $ do
-    -- NOTE(adn) We need to create user 'gargantua'(!!) in order
-    -- for 'addDocumentsToHyperCorpus' to work.
-    let user = UserName userMaster
-    parentId <- getRootId user
-    [corpus] <- getCorporaWithParentId parentId
-    let corpusId = _node_id corpus
-
-    userId <- getUserId user
-
-    listId <- getOrMkList corpusId userId
-
-    v <- getNodeStoryVar [listId]
+    (_userId, _corpusId, listId, v) <- commonInitialization
 
     -- initially, the node story table is empty
     liftIO $ do
