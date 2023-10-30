@@ -21,6 +21,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as C8
 
 import Paths_gargantext
+import Gargantext.Database.Admin.Types.Node
 
 jsonRoundtrip :: (Show a, FromJSON a, ToJSON a, Eq a) => a -> Property
 jsonRoundtrip a =
@@ -28,7 +29,9 @@ jsonRoundtrip a =
 
 tests :: TestTree
 tests = testGroup "JSON" [
-    testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
+    testProperty "NodeId roundtrips"        (jsonRoundtrip @NodeId)
+  , testProperty "RootId roundtrips"        (jsonRoundtrip @RootId)
+  , testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
   , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
   , testProperty "FrontendError roundtrips" (jsonRoundtrip @FrontendError)
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
