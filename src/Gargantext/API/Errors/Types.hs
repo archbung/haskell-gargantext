@@ -19,6 +19,7 @@ module Gargantext.API.Errors.Types (
   -- * The internal backend type and an enumeration of all possible backend error types
   , BackendErrorType(..)
   , BackendInternalError(..)
+  , ToFrontendErrorData(..)
 
   -- * Constructing frontend errors
   , mkFrontendErr
@@ -56,6 +57,7 @@ import qualified Crypto.JWT as Jose
 import qualified Data.Text as T
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Servant.Job.Types as SJ
+import Text.Read (readMaybe)
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -115,10 +117,13 @@ instance HasJoseError BackendInternalError where
 
 -- | A (hopefully and eventually) exhaustive list of backend errors.
 data BackendErrorType
-  = BE_phylo_corpus_not_ready
-  | BE_node_not_found
+  =
+  -- node errors
+    BE_node_error_root_not_found
+  | BE_node_error_corpus_not_found
+  -- tree errors
   | BE_tree_error_root_not_found
-  deriving (Show, Eq, Enum, Bounded)
+  deriving (Show, Read, Eq, Enum, Bounded)
 
 $(genSingletons [''BackendErrorType])
 
@@ -155,9 +160,9 @@ class ( SingI payload
       ) => IsFrontendErrorData payload where
   isFrontendErrorData :: Proxy payload -> Dict IsFrontendErrorData payload
 
-instance IsFrontendErrorData 'BE_phylo_corpus_not_ready where
+instance IsFrontendErrorData 'BE_node_error_root_not_found where
   isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'BE_node_not_found where
+instance IsFrontendErrorData 'BE_node_error_corpus_not_found where
   isFrontendErrorData _ = Dict
 instance IsFrontendErrorData 'BE_tree_error_root_not_found where
   isFrontendErrorData _ = Dict
@@ -166,14 +171,16 @@ instance IsFrontendErrorData 'BE_tree_error_root_not_found where
 -- This data family maps a 'BackendErrorType' into a concrete payload.
 ----------------------------------------------------------------------------
 
+data NoFrontendErrorData = NoFrontendErrorData
+
 data family ToFrontendErrorData (payload :: BackendErrorType) :: Type
 
-data instance ToFrontendErrorData 'BE_phylo_corpus_not_ready =
-  PhyloCorpusNotReady { _pcnr_corpusId :: CorpusId }
+data instance ToFrontendErrorData 'BE_node_error_root_not_found =
+  FE_node_error_root_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'BE_node_not_found         =
-  NodeNotFound { _nnf_nodeId :: NodeId }
+data instance ToFrontendErrorData 'BE_node_error_corpus_not_found =
+  FE_node_error_corpus_not_found
   deriving (Show, Eq, Generic)
 
 data instance ToFrontendErrorData 'BE_tree_error_root_not_found =
@@ -184,22 +191,17 @@ data instance ToFrontendErrorData 'BE_tree_error_root_not_found =
 -- JSON instances. It's important to have nice and human readable instances.
 ----------------------------------------------------------------------------
 
-instance ToJSON (ToFrontendErrorData 'BE_phylo_corpus_not_ready) where
-  toJSON PhyloCorpusNotReady{..} =
-    object [ "corpus_id" .= toJSON _pcnr_corpusId ]
+instance ToJSON (ToFrontendErrorData 'BE_node_error_root_not_found) where
+  toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'BE_phylo_corpus_not_ready) where
-  parseJSON = withObject "PhyloCorpusNotReady" $ \o -> do
-    _pcnr_corpusId <- o .: "corpus_id"
-    pure PhyloCorpusNotReady{..}
+instance FromJSON (ToFrontendErrorData 'BE_node_error_root_not_found) where
+  parseJSON _ = pure FE_node_error_root_not_found
 
-instance ToJSON (ToFrontendErrorData 'BE_node_not_found) where
-  toJSON NodeNotFound{..} = object [ "node_id" .= toJSON _nnf_nodeId ]
+instance ToJSON (ToFrontendErrorData 'BE_node_error_corpus_not_found) where
+  toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'BE_node_not_found) where
-  parseJSON = withObject "NodeNotFound" $ \o -> do
-    _nnf_nodeId <- o .: "node_id"
-    pure NodeNotFound{..}
+instance FromJSON (ToFrontendErrorData 'BE_node_error_corpus_not_found) where
+  parseJSON _ = pure FE_node_error_corpus_not_found
 
 instance ToJSON (ToFrontendErrorData 'BE_tree_error_root_not_found) where
   toJSON RootNotFound{..} = object [ "root_id" .= toJSON _rnf_rootId ]
@@ -233,12 +235,10 @@ instance Arbitrary FrontendError where
 
 genFrontendErr :: T.Text -> BackendErrorType -> Gen FrontendError
 genFrontendErr txt be = case be of
-  BE_phylo_corpus_not_ready
-    -> do corpusId <- arbitrary
-          pure $ mkFrontendErr' txt (Proxy @'BE_phylo_corpus_not_ready) (PhyloCorpusNotReady corpusId)
-  BE_node_not_found
-    -> do nodeId <- arbitrary
-          pure $ mkFrontendErr' txt (Proxy @'BE_node_not_found) (NodeNotFound nodeId)
+  BE_node_error_root_not_found
+    -> pure $ mkFrontendErr' txt (Proxy @'BE_node_error_root_not_found) FE_node_error_root_not_found
+  BE_node_error_corpus_not_found
+    -> pure $ mkFrontendErr' txt (Proxy @'BE_node_error_corpus_not_found) FE_node_error_corpus_not_found
   BE_tree_error_root_not_found
     -> do rootId <- arbitrary
           pure $ mkFrontendErr' txt (Proxy @'BE_tree_error_root_not_found) (RootNotFound rootId)
@@ -246,20 +246,15 @@ genFrontendErr txt be = case be of
 -- | This compiles if we use the correct payload type, or otherwise it won't:
 -- >>> mkFrontendErr (Proxy @'BE_phylo_corpus_not_ready) NodeNotFound
 _myTest :: FrontendError
-_myTest = mkFrontendErr (Proxy @'BE_phylo_corpus_not_ready) (PhyloCorpusNotReady 42)
+_myTest = mkFrontendErr (Proxy @'BE_node_error_root_not_found) FE_node_error_root_not_found
 
 instance ToJSON BackendErrorType where
-  toJSON = \case
-    BE_phylo_corpus_not_ready    -> JSON.String "phylo_corpus_not_ready"
-    BE_node_not_found            -> JSON.String "node_not_found"
-    BE_tree_error_root_not_found -> JSON.String "tree_error_root_not_found"
+  toJSON = JSON.String . T.pack . drop 3 . show
 
 instance FromJSON BackendErrorType where
-  parseJSON (String s) = case s of
-    "phylo_corpus_not_ready"    -> pure BE_phylo_corpus_not_ready
-    "node_not_found"            -> pure BE_node_not_found
-    "tree_error_root_not_found" -> pure BE_tree_error_root_not_found
-    unexpected               -> fail $ "FromJSON BackendErrorType unexpected value: " <> T.unpack unexpected
+  parseJSON (String s) = case readMaybe (T.unpack $ "BE_" <> s) of
+    Just v                      -> pure v
+    Nothing                     -> fail $ "FromJSON BackendErrorType unexpected value: " <> T.unpack s
   parseJSON ty = typeMismatch "BackendErrorType" ty
 
 instance ToJSON FrontendError where
@@ -274,11 +269,11 @@ instance FromJSON FrontendError where
     (fe_diagnostic :: T.Text)      <- o .: "diagnostic"
     (fe_type :: BackendErrorType)  <- o .: "type"
     case fe_type of
-      BE_phylo_corpus_not_ready -> do
-        (fe_data :: ToFrontendErrorData 'BE_phylo_corpus_not_ready) <- o .: "data"
+      BE_node_error_root_not_found         -> do
+        (fe_data :: ToFrontendErrorData 'BE_node_error_root_not_found) <- o .: "data"
         pure FrontendError{..}
-      BE_node_not_found         -> do
-        (fe_data :: ToFrontendErrorData 'BE_node_not_found) <- o .: "data"
+      BE_node_error_corpus_not_found       -> do
+        (fe_data :: ToFrontendErrorData 'BE_node_error_corpus_not_found) <- o .: "data"
         pure FrontendError{..}
       BE_tree_error_root_not_found -> do
         (fe_data :: ToFrontendErrorData 'BE_tree_error_root_not_found) <- o .: "data"

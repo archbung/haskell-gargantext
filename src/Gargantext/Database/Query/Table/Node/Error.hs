@@ -41,9 +41,9 @@ data NodeError = NoListFound ListId
 
 instance Prelude.Show NodeError
   where
-    show (NoListFound {})   = "No list   found"
-    show NoRootFound   = "No Root   found"
-    show NoCorpusFound = "No Corpus found"
+    show (NoListFound {})   = "No list found"
+    show NoRootFound   = "No root found"
+    show NoCorpusFound = "No corpus found"
     show (NoUserFound ur) = "User(" <> T.unpack (renderUser ur) <> ") not found"
 
     show MkNode        = "Cannot make node"
