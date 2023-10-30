@@ -18,6 +18,7 @@ module Gargantext.API.ThrowAll where
 
 import Control.Lens ((#))
 import Gargantext.API.Admin.EnvTypes (Env)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.API.Routes (GargPrivateAPI, serverPrivateGargAPI')
 import Gargantext.Prelude
@@ -45,7 +46,7 @@ instance {-# OVERLAPPABLE #-} (MonadError e m) => ThrowAll' e (m a) where
   throwAll' = throwError
 
 serverPrivateGargAPI
-  :: ServerT GargPrivateAPI (GargM Env GargError)
+  :: ServerT GargPrivateAPI (GargM Env BackendInternalError)
 serverPrivateGargAPI (Authenticated auser) = serverPrivateGargAPI' auser
 serverPrivateGargAPI _                     = throwAll' (_ServerError # err401)
 -- Here throwAll' requires a concrete type for the monad.

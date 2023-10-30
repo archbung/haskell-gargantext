@@ -36,6 +36,7 @@ import Gargantext.API.Admin.Auth (withAccess, withPolicy)
 import Gargantext.API.Admin.Auth.Types (PathId(..), AuthenticatedUser (..), auth_node_id)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.Errors.Types
 import Gargantext.API.Metrics
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableCorpus)
 import Gargantext.API.Ngrams.Types (TabType(..))
@@ -195,14 +196,14 @@ nodeAPI :: forall proxy a.
        ) => proxy a
          -> AuthenticatedUser
          -> NodeId
-         -> ServerT (NodeAPI a) (GargM Env GargError)
+         -> ServerT (NodeAPI a) (GargM Env BackendInternalError)
 nodeAPI p authenticatedUser targetNode =
   withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode targetNode) nodeAPI'
   where
 
     userRootId = RootId $ authenticatedUser ^. auth_node_id
 
-    nodeAPI' :: ServerT (NodeAPI a) (GargM Env GargError)
+    nodeAPI' :: ServerT (NodeAPI a) (GargM Env BackendInternalError)
     nodeAPI' =  withPolicy authenticatedUser (nodeChecks targetNode) (getNodeWith targetNode p)
            :<|> rename                                targetNode
            :<|> postNode            authenticatedUser targetNode

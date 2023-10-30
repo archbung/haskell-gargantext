@@ -10,6 +10,7 @@ import Gargantext.API (makeApp)
 import Gargantext.API.Admin.EnvTypes (Mode(Mock), Env (..))
 import Gargantext.API.Admin.Settings
 import Gargantext.API.Admin.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP
 import Gargantext.Core.NodeStory
@@ -41,7 +42,7 @@ import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Job.Async as ServantAsync
 
 
-newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
+newTestEnv :: TestEnv -> Logger (GargM Env BackendInternalError) -> Warp.Port -> IO Env
 newTestEnv testEnv logger port = do
   file          <- fakeIniPath
   !manager_env  <- newTlsManager

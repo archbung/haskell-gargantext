@@ -22,7 +22,7 @@ import Gargantext.Prelude hiding (sum, head)
 import Prelude qualified
 
 ------------------------------------------------------------------------
-data NodeError = NoListFound { listId :: ListId }
+data NodeError = NoListFound ListId
                | NoRootFound
                | NoCorpusFound
                | NoUserFound User
@@ -60,7 +60,7 @@ instance Prelude.Show NodeError
     show (QueryNoParse err) = "QueryNoParse: " <> T.unpack err
 
 instance ToJSON NodeError where
-  toJSON (NoListFound { listId }) =
+  toJSON (NoListFound listId) =
     object [ ( "error", "No list found" )
            , ( "listId", toJSON listId ) ]
   toJSON err =

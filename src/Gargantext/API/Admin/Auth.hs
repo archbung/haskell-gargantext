@@ -53,7 +53,7 @@ import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
 import Gargantext.API.Auth.PolicyCheck
-import Gargantext.API.Prelude (HasJoseError(..), joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM, GargError (..))
+import Gargantext.API.Prelude (joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM)
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
@@ -72,6 +72,7 @@ import Gargantext.Prelude.Crypto.Pass.User (gargPass)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Servant.Auth.Server
+import Gargantext.API.Errors
 
 ---------------------------------------------------
 
@@ -163,7 +164,7 @@ withAccess p _ ur id = hoistServer p f
 -- | Given the 'AuthenticatedUser', a policy check and a function that returns an @a@,
 -- it runs the underlying policy check to ensure that the resource is returned only to
 -- who is entitled to see it.
-withPolicy :: GargServerC env GargError m
+withPolicy :: GargServerC env BackendInternalError m
            => AuthenticatedUser
            -> BoolExpr AccessCheck
            -> m a
@@ -174,10 +175,10 @@ withPolicy ur checks m mgr = case mgr of
     res <- runAccessPolicy ur checks
     case res of
       Allow     -> m
-      Deny err  -> throwError $ GargServerError $ err
+      Deny err  -> throwError $ InternalServerError $ err
 
 withPolicyT :: forall env m api. (
-                 GargServerC env GargError m
+                 GargServerC env BackendInternalError m
                , HasServer api '[]
                )
             => Proxy api
@@ -309,7 +310,7 @@ generateForgotPasswordUUID = do
 type ForgotPasswordAsyncAPI = Summary "Forgot password asnc"
                               :> AsyncJobs JobLog '[JSON] ForgotPasswordAsyncParams JobLog
 
-forgotPasswordAsync :: ServerT ForgotPasswordAsyncAPI (GargM Env GargError)
+forgotPasswordAsync :: ServerT ForgotPasswordAsyncAPI (GargM Env BackendInternalError)
 forgotPasswordAsync =
   serveJobsAPI ForgotPasswordJob $ \jHandle p -> forgotPasswordAsync' p jHandle
 

@@ -20,33 +20,25 @@ module Gargantext.API.Prelude
   )
   where
 
-import Control.Lens (Prism', (#))
-import Control.Lens.TH (makePrisms)
+import Control.Lens ((#))
 import Crypto.JOSE.Error as Jose
 import Data.Aeson.Types
-import Data.Text qualified as Text
-import Data.Typeable
-import Data.Validity
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
+import Gargantext.API.Errors.Class
 import Gargantext.Core.Mail.Types (HasMail)
 import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (CmdM, CmdRandom, HasConnectionPool, HasConfig)
-import Gargantext.Database.Query.Table.Node.Error (NodeError(..), HasNodeError(..))
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Tree
 import Gargantext.Prelude
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs.Monad (MonadJobStatus(..), JobHandle)
-import Gargantext.Utils.Jobs.Monad qualified as Jobs
 import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
-import Servant.Job.Types qualified as SJ
-
-class HasJoseError e where
-  _JoseError :: Prism' e Jose.Error
 
 joseError :: (MonadError e m, HasJoseError e) => Jose.Error -> m a
 joseError = throwError . (_JoseError #)
@@ -64,13 +56,13 @@ type EnvC env =
   )
 
 type ErrC err =
-  ( HasNodeError     err
-  , HasInvalidError  err
-  , HasTreeError     err
-  , HasServerError   err
-  , HasJoseError     err
+  ( HasNodeError       err
+  , HasValidationError err
+  , HasTreeError       err
+  , HasServerError     err
+  , HasJoseError       err
 --  , ToJSON           err -- TODO this is arguable
-  , Exception        err
+  , Exception          err
   )
 
 type GargServerC env err m =
@@ -102,47 +94,6 @@ type GargNoServer' env err m =
   , HasSettings    env
   , HasNodeError       err
   )
-
--------------------------------------------------------------------
-data GargError
-  = GargNodeError    NodeError
-  | GargTreeError    TreeError
-  | GargInvalidError Validation
-  | GargJoseError    Jose.Error
-  | GargServerError  ServerError
-  | GargJobError     Jobs.JobError
-  deriving (Show, Typeable)
-
-makePrisms ''GargError
-
-instance ToJSON GargError where
-  toJSON (GargJobError s) =
-    object [ ("status", toJSON SJ.IsFailure)
-           , ("log", emptyArray)
-           , ("id", String id)
-           , ("error", String $ Text.pack $ show s) ]
-    where
-      id = case s of
-        Jobs.InvalidMacID i -> i
-        _ -> ""
-  toJSON err = object [("error", String $ Text.pack $ show err)]
-
-instance Exception GargError
-
-instance HasNodeError GargError where
-  _NodeError = _GargNodeError
-
-instance HasInvalidError GargError where
-  _InvalidError = _GargInvalidError
-
-instance HasTreeError GargError where
-  _TreeError = _GargTreeError
-
-instance HasServerError GargError where
-  _ServerError = _GargServerError
-
-instance HasJoseError GargError where
-  _JoseError = _GargJoseError
 
 ------------------------------------------------------------------------
 -- | Utils

@@ -18,7 +18,8 @@ import Data.IntMap.Strict qualified as IntMap
 import Data.Map.Strict qualified as Map
 import Data.Morpheus.Types ( GQLType, Resolver, QUERY )
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..))
-import Gargantext.API.Prelude (GargM, GargError, HasJobEnv')
+import Gargantext.API.Errors.Types
+import Gargantext.API.Prelude (GargM, HasJobEnv')
 import Gargantext.Database.Prelude (HasConnectionPool, HasConfig)
 import Gargantext.Prelude
 import Servant.Job.Async (HasJobEnv(job_env), jenv_jobs, job_async)
@@ -29,7 +30,7 @@ data JobLogArgs
     { job_log_id :: Int
     } deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
+type GqlM e env = Resolver QUERY e (GargM env BackendInternalError)
 
 resolveJobLogs
   :: (HasConnectionPool env, HasConfig env, HasJobEnv' env)

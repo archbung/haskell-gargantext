@@ -28,11 +28,12 @@ import Data.Vector (Vector)
 import Data.Vector qualified as Vec
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
 import Gargantext.API.Ngrams.Types
-import Gargantext.API.Prelude (GargServer, GargM, GargError)
+import Gargantext.API.Prelude (GargServer, GargM)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Main (ListType(..))
@@ -50,6 +51,7 @@ import Gargantext.Utils.Servant qualified as GUS
 import Prelude qualified
 import Protolude qualified as P
 import Servant
+
 ------------------------------------------------------------------------
 type GETAPI = Summary "Get List"
             :> "lists"
@@ -72,7 +74,7 @@ type JSONAPI = Summary "Update List"
           :> "async"
             :> AsyncJobs JobLog '[FormUrlEncoded] WithJsonFile JobLog
 
-jsonApi :: ServerT JSONAPI (GargM Env GargError)
+jsonApi :: ServerT JSONAPI (GargM Env BackendInternalError)
 jsonApi = jsonPostAsync
 
 ----------------------
@@ -85,7 +87,7 @@ type CSVAPI = Summary "Update List (legacy v3 CSV)"
           :> "async"
             :> AsyncJobs JobLog '[FormUrlEncoded] WithTextFile JobLog
 
-csvApi :: ServerT CSVAPI (GargM Env GargError)
+csvApi :: ServerT CSVAPI (GargM Env BackendInternalError)
 csvApi = csvPostAsync
 
 ------------------------------------------------------------------------
@@ -135,7 +137,7 @@ toIndexedNgrams m t = Indexed <$> i <*> n
     n = Just (text2ngrams t)
 
 ------------------------------------------------------------------------
-jsonPostAsync :: ServerT JSONAPI (GargM Env GargError)
+jsonPostAsync :: ServerT JSONAPI (GargM Env BackendInternalError)
 jsonPostAsync lId =
   serveJobsAPI UpdateNgramsListJobJSON $ \jHandle f ->
     postAsync' lId f jHandle
@@ -216,7 +218,7 @@ csvPost l m  = do
       pure $ Right ()
 
 ------------------------------------------------------------------------
-csvPostAsync :: ServerT CSVAPI (GargM Env GargError)
+csvPostAsync :: ServerT CSVAPI (GargM Env BackendInternalError)
 csvPostAsync lId =
   serveJobsAPI UpdateNgramsListJobCSV $ \jHandle f -> do
       markStarted 1 jHandle

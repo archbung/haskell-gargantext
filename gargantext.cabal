@@ -52,6 +52,7 @@ library
       Gargantext.API.Auth.PolicyCheck
       Gargantext.API.Dev
       Gargantext.API.Errors
+      Gargantext.API.Errors.Class
       Gargantext.API.Errors.Types
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams

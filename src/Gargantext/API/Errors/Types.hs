@@ -16,8 +16,9 @@ module Gargantext.API.Errors.Types (
   -- * The main frontend error type
   FrontendError(..)
 
-  -- * The enumeration of all possible backend error types
+  -- * The internal backend type and an enumeration of all possible backend error types
   , BackendErrorType(..)
+  , BackendInternalError(..)
 
   -- * Constructing frontend errors
   , mkFrontendErr
@@ -32,18 +33,29 @@ module Gargantext.API.Errors.Types (
   ) where
 
 import Control.Exception
+import Control.Lens (makePrisms)
 import Data.Aeson as JSON
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types (typeMismatch, emptyArray)
 import Data.Kind
 import Data.Singletons.TH
 import Data.Typeable
+import Data.Validity (Validation)
 import GHC.Generics
 import GHC.Stack
+import Gargantext.API.Errors.Class
+import Gargantext.Core.Types (HasValidationError(..))
 import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Query.Tree.Error
 import Prelude
+import Servant (ServerError)
+import Servant.Job.Core
 import Test.QuickCheck
 import Test.QuickCheck.Instances.Text ()
+import qualified Crypto.JWT as Jose
 import qualified Data.Text as T
+import qualified Gargantext.Utils.Jobs.Monad as Jobs
+import qualified Servant.Job.Types as SJ
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -57,6 +69,49 @@ data WithStacktrace e =
 instance Exception e => Exception (WithStacktrace e) where
   displayException WithStacktrace{..}
     = displayException ct_error <> "\n" <> prettyCallStack ct_callStack
+
+-------------------------------------------------------------------
+-- | An internal error which can be emitted from the backend and later
+-- converted into a 'FrontendError', for later consumption.
+data BackendInternalError
+  = InternalNodeError       !NodeError
+  | InternalTreeError       !TreeError
+  | InternalValidationError !Validation
+  | InternalJoseError       !Jose.Error
+  | InternalServerError     !ServerError
+  | InternalJobError        !Jobs.JobError
+  deriving (Show, Typeable)
+
+makePrisms ''BackendInternalError
+
+instance ToJSON BackendInternalError where
+  toJSON (InternalJobError s) =
+    object [ ("status", toJSON SJ.IsFailure)
+           , ("log", emptyArray)
+           , ("id", String mk_id)
+           , ("error", String $ T.pack $ show s) ]
+    where
+      mk_id = case s of
+        Jobs.InvalidMacID i -> i
+        _ -> ""
+  toJSON err = object [("error", String $ T.pack $ show err)]
+
+instance Exception BackendInternalError
+
+instance HasNodeError BackendInternalError where
+  _NodeError = _InternalNodeError
+
+instance HasValidationError BackendInternalError where
+  _ValidationError = _InternalValidationError
+
+instance HasTreeError BackendInternalError where
+  _TreeError = _InternalTreeError
+
+instance HasServerError BackendInternalError where
+  _ServerError = _InternalServerError
+
+instance HasJoseError BackendInternalError where
+  _JoseError = _InternalJoseError
 
 -- | A (hopefully and eventually) exhaustive list of backend errors.
 data BackendErrorType

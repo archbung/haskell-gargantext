@@ -16,8 +16,8 @@ Import a corpus binary.
 module Main where
 
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Node () -- instances only
-import Gargantext.API.Prelude (GargError)
 import Gargantext.Core.Types.Individu (User(..), arbitraryNewUsers, NewUser(..), arbitraryUsername, GargPassword(..))
 import Gargantext.Database.Action.Flow (getOrMkRoot, getOrMk_RootWithCorpus)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
@@ -48,18 +48,18 @@ main = do
   cfg       <- readConfig         iniPath
   let secret = _gc_secretkey cfg
 
-  let createUsers :: Cmd GargError Int64
+  let createUsers :: Cmd BackendInternalError Int64
       createUsers = insertNewUsers (NewUser "gargantua" (cs email) (GargPassword $ cs password)
                                    : arbitraryNewUsers
                                    )
 
   let
-    mkRoots :: Cmd GargError [(UserId, RootId)]
+    mkRoots :: Cmd BackendInternalError [(UserId, RootId)]
     mkRoots = mapM getOrMkRoot $ map UserName ("gargantua" : arbitraryUsername)
     -- TODO create all users roots
 
   let
-    initMaster :: Cmd GargError (UserId, RootId, CorpusId, ListId)
+    initMaster :: Cmd BackendInternalError (UserId, RootId, CorpusId, ListId)
     initMaster = do
       (masterUserId, masterRootId, masterCorpusId)
                   <- getOrMk_RootWithCorpus (UserName userMaster)
@@ -70,7 +70,7 @@ main = do
       pure (masterUserId, masterRootId, masterCorpusId, masterListId)
 
   withDevEnv iniPath $ \env -> do
-    _ <- runCmdDev env (initFirstTriggers secret :: DBCmd GargError [Int64])
+    _ <- runCmdDev env (initFirstTriggers secret :: DBCmd BackendInternalError [Int64])
     _ <- runCmdDev env createUsers
     x <- runCmdDev env initMaster
     _ <- runCmdDev env mkRoots

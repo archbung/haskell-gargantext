@@ -86,7 +86,7 @@ import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
 import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatternsWith, termsInText)
-import Gargantext.Core.Types (HasInvalidError, POS(NP), TermsCount)
+import Gargantext.Core.Types (HasValidationError, POS(NP), TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main
 import Gargantext.Core.Types.Query (Limit)
@@ -193,7 +193,7 @@ flowDataText :: forall env err m.
                 , MonadLogger m
                 , HasNLPServer env
                 , HasTreeError err
-                , HasInvalidError err
+                , HasValidationError err
                 , MonadJobStatus m
                 )
                 => User
@@ -222,7 +222,7 @@ flowAnnuaire :: ( DbCmd' env err m
                 , MonadLogger m
                 , HasNLPServer env
                 , HasTreeError err
-                , HasInvalidError err
+                , HasValidationError err
                 , MonadJobStatus m )
              => User
              -> Either CorpusName [CorpusId]
@@ -241,7 +241,7 @@ flowCorpusFile :: ( DbCmd' env err m
                   , MonadLogger m
                   , HasNLPServer env
                   , HasTreeError err
-                  , HasInvalidError err
+                  , HasValidationError err
                   , MonadJobStatus m )
            => User
            -> Either CorpusName [CorpusId]
@@ -270,7 +270,7 @@ flowCorpus :: ( DbCmd' env err m
               , MonadLogger m
               , HasNLPServer env
               , HasTreeError err
-              , HasInvalidError err
+              , HasValidationError err
               , FlowCorpus a
               , MonadJobStatus m )
            => User
@@ -289,7 +289,7 @@ flow :: forall env err m a c.
         , MonadLogger m
         , HasNLPServer env
         , HasTreeError err
-        , HasInvalidError err
+        , HasValidationError err
         , FlowCorpus a
         , MkCorpus c
         , MonadJobStatus m
@@ -366,7 +366,7 @@ createNodes user corpusName ctype = do
 
 
 flowCorpusUser :: ( HasNodeError err
-                  , HasInvalidError err
+                  , HasValidationError err
                   , HasNLPServer env
                   , HasTreeError err
                   , HasNodeStory env err m

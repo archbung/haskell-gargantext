@@ -28,6 +28,7 @@ import Gargantext.API.Admin.FrontEnd (FrontEndAPI)
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Context
 import Gargantext.API.Count  (CountAPI, count, Query)
+import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL qualified as GraphQL
 import Gargantext.API.Members (MembersAPI, members)
 import Gargantext.API.Ngrams (TableNgramsApi, apiNgramsTableDoc)
@@ -236,7 +237,7 @@ serverGargAdminAPI =  roots
 
 
 serverPrivateGargAPI'
-  :: AuthenticatedUser -> ServerT GargPrivateAPI' (GargM Env GargError)
+  :: AuthenticatedUser -> ServerT GargPrivateAPI' (GargM Env BackendInternalError)
 serverPrivateGargAPI' authenticatedUser@(AuthenticatedUser userNodeId userId)
        =  serverGargAdminAPI
      :<|> nodeAPI     (Proxy :: Proxy HyperdataAny)      authenticatedUser
@@ -293,7 +294,7 @@ waitAPI n = do
   pure $ "Waited: " <> show n
 ----------------------------------------
 
-addCorpusWithQuery :: User -> ServerT New.AddWithQuery (GargM Env GargError)
+addCorpusWithQuery :: User -> ServerT New.AddWithQuery (GargM Env BackendInternalError)
 addCorpusWithQuery user cid =
   serveJobsAPI AddCorpusQueryJob $ \jHandle q -> do
     limit <- view $ hasConfig . gc_max_docs_scrapers
@@ -303,7 +304,7 @@ addCorpusWithQuery user cid =
         liftBase $ log x
       -}
 
-addCorpusWithForm :: User -> ServerT New.AddWithForm (GargM Env GargError)
+addCorpusWithForm :: User -> ServerT New.AddWithForm (GargM Env BackendInternalError)
 addCorpusWithForm user cid =
   serveJobsAPI AddCorpusFormJob $ \jHandle i -> do
     -- /NOTE(adinapoli)/ Track the initial steps outside 'addToCorpusWithForm', because it's
@@ -311,12 +312,12 @@ addCorpusWithForm user cid =
     markStarted 3 jHandle
     New.addToCorpusWithForm user cid i jHandle
 
-addCorpusWithFile :: User -> ServerT New.AddWithFile (GargM Env GargError)
+addCorpusWithFile :: User -> ServerT New.AddWithFile (GargM Env BackendInternalError)
 addCorpusWithFile user cid =
   serveJobsAPI AddCorpusFileJob $ \jHandle i ->
     New.addToCorpusWithFile user cid i jHandle
 
-addAnnuaireWithForm :: ServerT Annuaire.AddWithForm (GargM Env GargError)
+addAnnuaireWithForm :: ServerT Annuaire.AddWithForm (GargM Env BackendInternalError)
 addAnnuaireWithForm cid =
   serveJobsAPI AddAnnuaireFormJob $ \jHandle i ->
     Annuaire.addToAnnuaireWithForm cid i jHandle

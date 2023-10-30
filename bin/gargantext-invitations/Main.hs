@@ -16,7 +16,7 @@ module Main where
 
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
 import Gargantext.API.Node () -- instances only
-import Gargantext.API.Prelude (GargError)
+import Gargantext.API.Errors.Types
 import Gargantext.Core.NLP (HasNLPServer)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Admin.Types.Node
@@ -36,7 +36,7 @@ main = do
 
   _cfg       <- readConfig         iniPath
 
-  let invite :: (CmdRandom env GargError m, HasNLPServer env) => m Int
+  let invite :: (CmdRandom env BackendInternalError m, HasNLPServer env) => m Int
       invite = Share.api (UserName $ cs user) (UnsafeMkNodeId $ (read node_id :: Int)) (Share.ShareTeamParams $ cs email)
 
   withDevEnv iniPath $ \env -> do

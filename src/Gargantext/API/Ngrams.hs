@@ -104,12 +104,13 @@ import Formatting (hprint, int, (%))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Metrics qualified as Metrics
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NodeStory
-import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasInvalidError, ContextId)
+import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasValidationError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
 import Gargantext.Database.Admin.Config (userMaster)
@@ -382,7 +383,7 @@ tableNgramsPull listId ngramsType p_version = do
 tableNgramsPut :: ( HasNodeStory    env err m
                   , HasNodeStoryImmediateSaver env
                   , HasNodeArchiveStoryImmediateSaver env
-                  , HasInvalidError     err
+                  , HasValidationError     err
                   )
                  => TabType
                  -> ListId
@@ -790,21 +791,21 @@ getTableNgramsDoc dId tabType listId limit_ offset listType minSize maxSize orde
   getTableNgrams dId listId tabType searchQuery
 
 
-apiNgramsTableCorpus :: NodeId -> ServerT TableNgramsApi (GargM Env GargError)
+apiNgramsTableCorpus :: NodeId -> ServerT TableNgramsApi (GargM Env BackendInternalError)
 apiNgramsTableCorpus cId =  getTableNgramsCorpus       cId
                        :<|> tableNgramsPut
                        :<|> scoresRecomputeTableNgrams cId
                        :<|> getTableNgramsVersion      cId
                        :<|> apiNgramsAsync             cId
 
-apiNgramsTableDoc :: DocId -> ServerT TableNgramsApi (GargM Env GargError)
+apiNgramsTableDoc :: DocId -> ServerT TableNgramsApi (GargM Env BackendInternalError)
 apiNgramsTableDoc dId =  getTableNgramsDoc          dId
                     :<|> tableNgramsPut
                     :<|> scoresRecomputeTableNgrams dId
                     :<|> getTableNgramsVersion      dId
                     :<|> apiNgramsAsync             dId
 
-apiNgramsAsync :: NodeId -> ServerT TableNgramsAsyncApi (GargM Env GargError)
+apiNgramsAsync :: NodeId -> ServerT TableNgramsAsyncApi (GargM Env BackendInternalError)
 apiNgramsAsync _dId =
   serveJobsAPI TableNgramsJob $ \jHandle i -> withTracer (printDebug "tableNgramsPostChartsAsync") jHandle $
     \jHandle' -> tableNgramsPostChartsAsync i jHandle'

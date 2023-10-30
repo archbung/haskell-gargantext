@@ -23,8 +23,10 @@ module Gargantext.API.Node.New
 import Control.Lens hiding (elements, Empty)
 import Data.Aeson
 import Data.Swagger
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Node
@@ -37,7 +39,6 @@ import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 import Web.FormUrlEncoded (FromForm, ToForm)
-import Gargantext.API.Admin.Auth.Types
 
 ------------------------------------------------------------------------
 data PostNode = PostNode { pn_name     :: Text
@@ -75,7 +76,7 @@ postNodeAsyncAPI
   -- ^ The logged-in user
   -> NodeId
   -- ^ The target node
-  -> ServerT PostNodeAsync (GargM Env GargError)
+  -> ServerT PostNodeAsync (GargM Env BackendInternalError)
 postNodeAsyncAPI authenticatedUser nId =
   serveJobsAPI NewNodeJob $ \jHandle p -> postNodeAsync authenticatedUser nId p jHandle
 

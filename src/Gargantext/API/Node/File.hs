@@ -33,6 +33,7 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Node.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.Types (TODO)
@@ -114,7 +115,7 @@ type FileAsyncApi = Summary "File Async Api"
 fileAsyncApi :: AuthenticatedUser
              -- ^ The logged-in user
              -> NodeId
-             -> ServerT FileAsyncApi (GargM Env GargError)
+             -> ServerT FileAsyncApi (GargM Env BackendInternalError)
 fileAsyncApi authenticatedUser nId =
   serveJobsAPI AddFileJob $ \jHandle i ->
     addWithFile authenticatedUser nId i jHandle

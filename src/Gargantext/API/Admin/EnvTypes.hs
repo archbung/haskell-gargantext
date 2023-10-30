@@ -32,8 +32,9 @@ import Data.Text qualified as T
 import Database.PostgreSQL.Simple (Connection)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Job
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Prelude (GargM)
 import Gargantext.Core.Mail.Types (HasMail, mailSettings)
 import Gargantext.Core.NLP (NLPServerMap, HasNLPServer(..))
 import Gargantext.Core.NodeStory
@@ -64,17 +65,17 @@ modeToLoggingLevels = \case
    -- For production, accepts everything but DEBUG.
    Prod -> [minBound .. maxBound] \\ [DEBUG]
 
-instance MonadLogger (GargM Env GargError) where
+instance MonadLogger (GargM Env BackendInternalError) where
   getLogger = asks _env_logger
 
-instance HasLogger (GargM Env GargError) where
-  data instance Logger (GargM Env GargError)  =
+instance HasLogger (GargM Env BackendInternalError) where
+  data instance Logger (GargM Env BackendInternalError)  =
     GargLogger {
         logger_mode    :: Mode
       , logger_set     :: FL.LoggerSet
       }
-  type instance LogInitParams (GargM Env GargError) = Mode
-  type instance LogPayload (GargM Env GargError)    = FL.LogStr
+  type instance LogInitParams (GargM Env BackendInternalError) = Mode
+  type instance LogPayload (GargM Env BackendInternalError)    = FL.LogStr
   initLogger                = \mode -> do
     logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
     pure $ GargLogger mode logger_set
@@ -111,7 +112,7 @@ data GargJob
 -- we need to remember to force the fields to WHNF at that point.
 data Env = Env
   { _env_settings  :: ~Settings
-  , _env_logger    :: ~(Logger (GargM Env GargError))
+  , _env_logger    :: ~(Logger (GargM Env BackendInternalError))
   , _env_pool      :: ~(Pool Connection)
   , _env_nodeStory :: ~NodeStoryEnv
   , _env_manager   :: ~Manager
@@ -234,17 +235,17 @@ data MockEnv = MockEnv
 
 makeLenses ''MockEnv
 
-instance MonadLogger (GargM DevEnv GargError) where
+instance MonadLogger (GargM DevEnv BackendInternalError) where
   getLogger = asks _dev_env_logger
 
-instance HasLogger (GargM DevEnv GargError) where
-  data instance Logger (GargM DevEnv GargError)  =
+instance HasLogger (GargM DevEnv BackendInternalError) where
+  data instance Logger (GargM DevEnv BackendInternalError)  =
     GargDevLogger {
         dev_logger_mode    :: Mode
       , dev_logger_set     :: FL.LoggerSet
       }
-  type instance LogInitParams (GargM DevEnv GargError) = Mode
-  type instance LogPayload (GargM DevEnv GargError)    = FL.LogStr
+  type instance LogInitParams (GargM DevEnv BackendInternalError) = Mode
+  type instance LogPayload (GargM DevEnv BackendInternalError)    = FL.LogStr
   initLogger                = \mode -> do
     dev_logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
     pure $ GargDevLogger mode dev_logger_set
@@ -258,7 +259,7 @@ instance HasLogger (GargM DevEnv GargError) where
 data DevEnv = DevEnv
   { _dev_env_settings  :: !Settings
   , _dev_env_config    :: !GargConfig
-  , _dev_env_logger    :: !(Logger (GargM DevEnv GargError))
+  , _dev_env_logger    :: !(Logger (GargM DevEnv BackendInternalError))
   , _dev_env_pool      :: !(Pool Connection)
   , _dev_env_nodeStory :: !NodeStoryEnv
   , _dev_env_mail      :: !MailConfig

@@ -16,7 +16,7 @@ Portability : POSIX
 module Main where
 
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
-import Gargantext.API.Prelude (GargError)
+import Gargantext.API.Errors.Types
 import Gargantext.Database.Action.User.New (newUsers)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd'')
@@ -28,6 +28,6 @@ main = do
   (iniPath:mails) <- getArgs
 
   withDevEnv iniPath $ \env -> do
-    x <- runCmdDev env ((newUsers $ map cs mails) :: Cmd'' DevEnv GargError [UserId])
+    x <- runCmdDev env ((newUsers $ map cs mails) :: Cmd'' DevEnv BackendInternalError [UserId])
     putStrLn (show x :: Text)
   pure ()
