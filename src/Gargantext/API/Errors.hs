@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Gargantext.API.Errors (
@@ -17,17 +18,14 @@ import Prelude
 
 import Gargantext.API.Errors.Class as Class
 import Gargantext.API.Errors.Types as Types
+import Gargantext.API.Errors.TH (deriveHttpStatusCode)
 import Gargantext.Database.Query.Table.Node.Error hiding (nodeError)
 import Servant.Server
 import qualified Data.Aeson as JSON
 import qualified Network.HTTP.Types.Status as HTTP
 import qualified Data.Text as T
 
-backendErrorTypeToErrStatus :: BackendErrorType -> HTTP.Status
-backendErrorTypeToErrStatus = \case
-  BE_node_error_root_not_found   -> HTTP.status404
-  BE_node_error_corpus_not_found -> HTTP.status404
-  BE_tree_error_root_not_found   -> HTTP.status404
+$(deriveHttpStatusCode ''BackendErrorCode)
 
 -- | Transforms a backend internal error into something that the frontend
 -- can consume. This is the only representation we offer to the outside world,
@@ -90,15 +88,15 @@ frontendErrorToServerError :: FrontendError -> ServerError
 frontendErrorToServerError fe@(FrontendError diag ty _) =
   ServerError { errHTTPCode     = HTTP.statusCode $ backendErrorTypeToErrStatus ty
               , errReasonPhrase = T.unpack diag
-              , errBody = JSON.encode fe
-              , errHeaders = mempty
+              , errBody         = JSON.encode fe
+              , errHeaders      = mempty
               }
 
 showAsServantJSONErr :: BackendInternalError -> ServerError
-showAsServantJSONErr (InternalNodeError err@(NoListFound {})) = err404 { errBody = JSON.encode err }
-showAsServantJSONErr (InternalNodeError err@NoRootFound{}) = err404 { errBody = JSON.encode err }
-showAsServantJSONErr (InternalNodeError err@NoCorpusFound) = err404 { errBody = JSON.encode err }
-showAsServantJSONErr (InternalNodeError err@NoUserFound{}) = err404 { errBody = JSON.encode err }
+showAsServantJSONErr (InternalNodeError err@(NoListFound {}))  = err404 { errBody = JSON.encode err }
+showAsServantJSONErr (InternalNodeError err@NoRootFound{})     = err404 { errBody = JSON.encode err }
+showAsServantJSONErr (InternalNodeError err@NoCorpusFound)     = err404 { errBody = JSON.encode err }
+showAsServantJSONErr (InternalNodeError err@NoUserFound{})     = err404 { errBody = JSON.encode err }
 showAsServantJSONErr (InternalNodeError err@(DoesNotExist {})) = err404 { errBody = JSON.encode err }
-showAsServantJSONErr (InternalServerError err) = err
-showAsServantJSONErr a = err500 { errBody = JSON.encode a }
+showAsServantJSONErr (InternalServerError err)                 = err
+showAsServantJSONErr a                                         = err500 { errBody = JSON.encode a }

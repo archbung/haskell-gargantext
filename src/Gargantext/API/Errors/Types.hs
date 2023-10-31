@@ -17,7 +17,7 @@ module Gargantext.API.Errors.Types (
   FrontendError(..)
 
   -- * The internal backend type and an enumeration of all possible backend error types
-  , BackendErrorType(..)
+  , BackendErrorCode(..)
   , BackendInternalError(..)
   , ToFrontendErrorData(..)
 
@@ -117,23 +117,23 @@ instance HasJoseError BackendInternalError where
   _JoseError = _InternalJoseError
 
 -- | A (hopefully and eventually) exhaustive list of backend errors.
-data BackendErrorType
+data BackendErrorCode
   =
   -- node errors
-    BE_node_error_root_not_found
-  | BE_node_error_corpus_not_found
+    EC_404__node_error_root_not_found
+  | EC_404__node_error_corpus_not_found
   -- tree errors
-  | BE_tree_error_root_not_found
+  | EC_404__tree_error_root_not_found
   deriving (Show, Read, Eq, Enum, Bounded)
 
-$(genSingletons [''BackendErrorType])
+$(genSingletons [''BackendErrorCode])
 
 -- | An error that can be returned to the frontend. It carries a human-friendly
 -- diagnostic, the 'type' of the error as well as some context-specific data.
 data FrontendError where
   FrontendError :: forall b. IsFrontendErrorData b =>
     { fe_diagnostic :: !T.Text
-    , fe_type       :: !BackendErrorType
+    , fe_type       :: !BackendErrorCode
     , fe_data       :: ToFrontendErrorData b
     } -> FrontendError
 
@@ -156,30 +156,30 @@ class ( SingI payload
       ) => IsFrontendErrorData payload where
   isFrontendErrorData :: Proxy payload -> Dict IsFrontendErrorData payload
 
-instance IsFrontendErrorData 'BE_node_error_root_not_found where
+instance IsFrontendErrorData 'EC_404__node_error_root_not_found where
   isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'BE_node_error_corpus_not_found where
+instance IsFrontendErrorData 'EC_404__node_error_corpus_not_found where
   isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'BE_tree_error_root_not_found where
+instance IsFrontendErrorData 'EC_404__tree_error_root_not_found where
   isFrontendErrorData _ = Dict
 
 ----------------------------------------------------------------------------
--- This data family maps a 'BackendErrorType' into a concrete payload.
+-- This data family maps a 'BackendErrorCode' into a concrete payload.
 ----------------------------------------------------------------------------
 
 data NoFrontendErrorData = NoFrontendErrorData
 
-data family ToFrontendErrorData (payload :: BackendErrorType) :: Type
+data family ToFrontendErrorData (payload :: BackendErrorCode) :: Type
 
-data instance ToFrontendErrorData 'BE_node_error_root_not_found =
+data instance ToFrontendErrorData 'EC_404__node_error_root_not_found =
   FE_node_error_root_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'BE_node_error_corpus_not_found =
+data instance ToFrontendErrorData 'EC_404__node_error_corpus_not_found =
   FE_node_error_corpus_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'BE_tree_error_root_not_found =
+data instance ToFrontendErrorData 'EC_404__tree_error_root_not_found =
   RootNotFound { _rnf_rootId :: RootId }
   deriving (Show, Eq, Generic)
 
@@ -187,22 +187,22 @@ data instance ToFrontendErrorData 'BE_tree_error_root_not_found =
 -- JSON instances. It's important to have nice and human readable instances.
 ----------------------------------------------------------------------------
 
-instance ToJSON (ToFrontendErrorData 'BE_node_error_root_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__node_error_root_not_found) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'BE_node_error_root_not_found) where
+instance FromJSON (ToFrontendErrorData 'EC_404__node_error_root_not_found) where
   parseJSON _ = pure FE_node_error_root_not_found
 
-instance ToJSON (ToFrontendErrorData 'BE_node_error_corpus_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'BE_node_error_corpus_not_found) where
+instance FromJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
   parseJSON _ = pure FE_node_error_corpus_not_found
 
-instance ToJSON (ToFrontendErrorData 'BE_tree_error_root_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
   toJSON RootNotFound{..} = object [ "root_id" .= toJSON _rnf_rootId ]
 
-instance FromJSON (ToFrontendErrorData 'BE_tree_error_root_not_found) where
+instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
   parseJSON = withObject "RootNotFound" $ \o -> do
     _rnf_rootId <- o .: "root_id"
     pure RootNotFound{..}
@@ -214,11 +214,11 @@ mkFrontendErr et = mkFrontendErr' mempty et
 
 mkFrontendErr' :: forall payload. IsFrontendErrorData payload
                => T.Text
-               -> ToFrontendErrorData (payload :: BackendErrorType)
+               -> ToFrontendErrorData (payload :: BackendErrorCode)
                -> FrontendError
 mkFrontendErr' diag pl = FrontendError diag (fromSing $ sing @payload) pl
 
-instance Arbitrary BackendErrorType where
+instance Arbitrary BackendErrorCode where
   arbitrary = arbitraryBoundedEnum
 
 instance Arbitrary FrontendError where
@@ -227,24 +227,24 @@ instance Arbitrary FrontendError where
     txt <- arbitrary
     genFrontendErr txt et
 
-genFrontendErr :: T.Text -> BackendErrorType -> Gen FrontendError
+genFrontendErr :: T.Text -> BackendErrorCode -> Gen FrontendError
 genFrontendErr txt be = case be of
-  BE_node_error_root_not_found
+  EC_404__node_error_root_not_found
     -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
-  BE_node_error_corpus_not_found
+  EC_404__node_error_corpus_not_found
     -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
-  BE_tree_error_root_not_found
+  EC_404__tree_error_root_not_found
     -> do rootId <- arbitrary
           pure $ mkFrontendErr' txt (RootNotFound rootId)
 
-instance ToJSON BackendErrorType where
+instance ToJSON BackendErrorCode where
   toJSON = JSON.String . T.pack . drop 3 . show
 
-instance FromJSON BackendErrorType where
-  parseJSON (String s) = case readMaybe (T.unpack $ "BE_" <> s) of
+instance FromJSON BackendErrorCode where
+  parseJSON (String s) = case readMaybe (T.unpack $ "EC_" <> s) of
     Just v     -> pure v
-    Nothing    -> fail $ "FromJSON BackendErrorType unexpected value: " <> T.unpack s
-  parseJSON ty = typeMismatch "BackendErrorType" ty
+    Nothing    -> fail $ "FromJSON BackendErrorCode unexpected value: " <> T.unpack s
+  parseJSON ty = typeMismatch "BackendErrorCode" ty
 
 instance ToJSON FrontendError where
   toJSON (FrontendError diag ty dt) =
@@ -256,14 +256,14 @@ instance ToJSON FrontendError where
 instance FromJSON FrontendError where
   parseJSON = withObject "FrontendError" $ \o -> do
     (fe_diagnostic :: T.Text)      <- o .: "diagnostic"
-    (fe_type :: BackendErrorType)  <- o .: "type"
+    (fe_type :: BackendErrorCode)  <- o .: "type"
     case fe_type of
-      BE_node_error_root_not_found         -> do
-        (fe_data :: ToFrontendErrorData 'BE_node_error_root_not_found) <- o .: "data"
+      EC_404__node_error_root_not_found         -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_error_root_not_found) <- o .: "data"
         pure FrontendError{..}
-      BE_node_error_corpus_not_found       -> do
-        (fe_data :: ToFrontendErrorData 'BE_node_error_corpus_not_found) <- o .: "data"
+      EC_404__node_error_corpus_not_found       -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_error_corpus_not_found) <- o .: "data"
         pure FrontendError{..}
-      BE_tree_error_root_not_found -> do
-        (fe_data :: ToFrontendErrorData 'BE_tree_error_root_not_found) <- o .: "data"
+      EC_404__tree_error_root_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__tree_error_root_not_found) <- o .: "data"
         pure FrontendError{..}

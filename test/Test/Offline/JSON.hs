@@ -29,7 +29,7 @@ jsonRoundtrip a =
   counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
 
 class (Show a, FromJSON a, ToJSON a, Eq a, Enum a, Bounded a) => EnumBoundedJSON a
-instance EnumBoundedJSON BackendErrorType
+instance EnumBoundedJSON BackendErrorCode
 
 jsonEnumRoundtrip :: forall a. Dict EnumBoundedJSON a -> Property
 jsonEnumRoundtrip d = case d of
@@ -45,7 +45,7 @@ tests = testGroup "JSON" [
   , testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
   , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
   , testProperty "FrontendError roundtrips" (jsonRoundtrip @FrontendError)
-  , testProperty "BackendErrorType roundtrips" (jsonEnumRoundtrip (Dict @_ @BackendErrorType))
+  , testProperty "BackendErrorCode roundtrips" (jsonEnumRoundtrip (Dict @_ @BackendErrorCode))
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [
     testProperty "PeriodToNode"  (jsonRoundtrip @PeriodToNodeData)

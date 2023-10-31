@@ -53,6 +53,7 @@ library
       Gargantext.API.Dev
       Gargantext.API.Errors
       Gargantext.API.Errors.Class
+      Gargantext.API.Errors.TH
       Gargantext.API.Errors.Types
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams
