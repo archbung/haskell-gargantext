@@ -48,6 +48,7 @@ import Gargantext.Core.Types (HasValidationError(..))
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Tree.Error
+import Gargantext.Utils.Dict
 import Prelude
 import Servant (ServerError)
 import Servant.Job.Core
@@ -146,11 +147,6 @@ instance Eq FrontendError where
             Nothing   -> False
             Just Refl -> fe_data_1 == fe_data_2
 
-data Dict (c :: k -> Constraint) (a :: k) where
-  Dict :: c a => Dict c a
-
-deriving instance Show (Dict c a)
-
 class ( SingI payload
       , ToJSON (ToFrontendErrorData payload)
       , FromJSON (ToFrontendErrorData payload)
@@ -212,17 +208,15 @@ instance FromJSON (ToFrontendErrorData 'BE_tree_error_root_not_found) where
     pure RootNotFound{..}
 
 mkFrontendErr :: IsFrontendErrorData payload
-              => Proxy (payload :: BackendErrorType)
-              -> ToFrontendErrorData payload
+              => ToFrontendErrorData payload
               -> FrontendError
 mkFrontendErr et = mkFrontendErr' mempty et
 
-mkFrontendErr' :: IsFrontendErrorData payload
+mkFrontendErr' :: forall payload. IsFrontendErrorData payload
                => T.Text
-               -> Proxy (payload :: BackendErrorType)
-               -> ToFrontendErrorData payload
+               -> ToFrontendErrorData (payload :: BackendErrorType)
                -> FrontendError
-mkFrontendErr' diag (Proxy :: Proxy payload) pl = FrontendError diag (fromSing $ sing @payload) pl
+mkFrontendErr' diag pl = FrontendError diag (fromSing $ sing @payload) pl
 
 instance Arbitrary BackendErrorType where
   arbitrary = arbitraryBoundedEnum
@@ -236,25 +230,20 @@ instance Arbitrary FrontendError where
 genFrontendErr :: T.Text -> BackendErrorType -> Gen FrontendError
 genFrontendErr txt be = case be of
   BE_node_error_root_not_found
-    -> pure $ mkFrontendErr' txt (Proxy @'BE_node_error_root_not_found) FE_node_error_root_not_found
+    -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
   BE_node_error_corpus_not_found
-    -> pure $ mkFrontendErr' txt (Proxy @'BE_node_error_corpus_not_found) FE_node_error_corpus_not_found
+    -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
   BE_tree_error_root_not_found
     -> do rootId <- arbitrary
-          pure $ mkFrontendErr' txt (Proxy @'BE_tree_error_root_not_found) (RootNotFound rootId)
-
--- | This compiles if we use the correct payload type, or otherwise it won't:
--- >>> mkFrontendErr (Proxy @'BE_phylo_corpus_not_ready) NodeNotFound
-_myTest :: FrontendError
-_myTest = mkFrontendErr (Proxy @'BE_node_error_root_not_found) FE_node_error_root_not_found
+          pure $ mkFrontendErr' txt (RootNotFound rootId)
 
 instance ToJSON BackendErrorType where
   toJSON = JSON.String . T.pack . drop 3 . show
 
 instance FromJSON BackendErrorType where
   parseJSON (String s) = case readMaybe (T.unpack $ "BE_" <> s) of
-    Just v                      -> pure v
-    Nothing                     -> fail $ "FromJSON BackendErrorType unexpected value: " <> T.unpack s
+    Just v     -> pure v
+    Nothing    -> fail $ "FromJSON BackendErrorType unexpected value: " <> T.unpack s
   parseJSON ty = typeMismatch "BackendErrorType" ty
 
 instance ToJSON FrontendError where

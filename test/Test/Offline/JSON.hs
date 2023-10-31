@@ -1,6 +1,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Test.Offline.JSON (tests) where
@@ -27,6 +28,16 @@ jsonRoundtrip :: (Show a, FromJSON a, ToJSON a, Eq a) => a -> Property
 jsonRoundtrip a =
   counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
 
+class (Show a, FromJSON a, ToJSON a, Eq a, Enum a, Bounded a) => EnumBoundedJSON a
+instance EnumBoundedJSON BackendErrorType
+
+jsonEnumRoundtrip :: forall a. Dict EnumBoundedJSON a -> Property
+jsonEnumRoundtrip d = case d of
+  Dict -> conjoin $ map (prop Dict) [minBound .. maxBound]
+  where
+    prop :: Dict EnumBoundedJSON a -> a -> Property
+    prop Dict a = counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
+
 tests :: TestTree
 tests = testGroup "JSON" [
     testProperty "NodeId roundtrips"        (jsonRoundtrip @NodeId)
@@ -34,6 +45,7 @@ tests = testGroup "JSON" [
   , testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
   , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
   , testProperty "FrontendError roundtrips" (jsonRoundtrip @FrontendError)
+  , testProperty "BackendErrorType roundtrips" (jsonEnumRoundtrip (Dict @_ @BackendErrorType))
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [
     testProperty "PeriodToNode"  (jsonRoundtrip @PeriodToNodeData)

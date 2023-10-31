@@ -21,7 +21,6 @@ import Gargantext.Database.Query.Table.Node.Error hiding (nodeError)
 import Servant.Server
 import qualified Data.Aeson as JSON
 import qualified Network.HTTP.Types.Status as HTTP
-import Data.Data
 import qualified Data.Text as T
 
 backendErrorTypeToErrStatus :: BackendErrorType -> HTTP.Status
@@ -53,9 +52,9 @@ nodeErrorToFrontendError ne = case ne of
   NoListFound _lid
     -> undefined
   NoRootFound
-    -> mkFrontendErr' renderedError Proxy FE_node_error_root_not_found
+    -> mkFrontendErr' renderedError FE_node_error_root_not_found
   NoCorpusFound
-    -> mkFrontendErr' renderedError Proxy FE_node_error_corpus_not_found
+    -> mkFrontendErr' renderedError FE_node_error_corpus_not_found
   NoUserFound _ur
     -> undefined
   MkNode
