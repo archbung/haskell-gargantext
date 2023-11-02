@@ -6,6 +6,8 @@ with-compiler: ghc-8.10.7
 
 packages:
     ./
+    ../epo-api-client
+    ../openalex
 
 source-repository-package
     type: git
@@ -90,6 +92,11 @@ source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git
     tag: 3db385e767d2100d8abe900833c6e7de3ac55e1b
+
+source-repository-package
+    type: git
+    location: https://gitlab.iscpif.fr/gargantext/iso639.git
+    tag: 1a9e23e210a02da3b846d7cdc666541e2148334d
 
 source-repository-package
     type: git

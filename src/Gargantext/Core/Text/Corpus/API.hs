@@ -21,9 +21,11 @@ module Gargantext.Core.Text.Corpus.API
 import Conduit
 import Control.Monad.Except
 import Data.Text qualified as T
+import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
 import Gargantext.Core (Lang(..), toISO639)
 import Gargantext.Core.Text.Corpus.API.Arxiv qualified as Arxiv
+import Gargantext.Core.Text.Corpus.API.EPO qualified as EPO
 import Gargantext.Core.Text.Corpus.API.Hal qualified as HAL
 import Gargantext.Core.Text.Corpus.API.Isidore qualified as ISIDORE
 import Gargantext.Core.Text.Corpus.API.Istex qualified as ISTEX
@@ -47,6 +49,7 @@ get :: ExternalAPIs
     -> Lang
     -> Corpus.RawQuery
     -> Maybe PUBMED.APIKey
+    -> Maybe EPO.AuthKey
     -> Maybe Corpus.Limit
     -- -> IO [HyperdataDocument]
     -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
@@ -69,5 +72,7 @@ get externalAPI la q mPubmedAPIKey limit = do
       Isidore  -> do
         docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
         pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
+      EPO -> do
+        first ExternalAPIError <$> EPO.get (fromMaybe "" Nothing {- email -}) q (toISO639 la) limit
   where
     parse_query = first (InvalidInputQuery q . T.pack) $ Corpus.parseQuery q

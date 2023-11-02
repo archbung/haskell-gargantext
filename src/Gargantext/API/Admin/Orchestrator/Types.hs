@@ -36,6 +36,7 @@ data ExternalAPIs = OpenAlex
                   | HAL
                   | IsTex
                   | Isidore
+                  | EPO
   deriving (Show, Eq, Generic, Enum, Bounded)
 
 
