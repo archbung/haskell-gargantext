@@ -22,12 +22,16 @@ module Gargantext.API.Errors.Types (
   , ToFrontendErrorData(..)
 
   -- * Constructing frontend errors
-  , mkFrontendErr
+  , mkFrontendErrNoDiagnostic
+  , mkFrontendErrShow
   , mkFrontendErr'
 
   -- * Evidence carrying
   , Dict(..)
   , IsFrontendErrorData(..)
+
+  -- * Generating test cases
+  , genFrontendErr
 
   -- * Attaching callstacks to exceptions
   , WithStacktrace(..)
@@ -120,7 +124,8 @@ instance HasJoseError BackendInternalError where
 data BackendErrorCode
   =
   -- node errors
-    EC_404__node_error_root_not_found
+    EC_404__node_error_list_not_found
+  | EC_404__node_error_root_not_found
   | EC_404__node_error_corpus_not_found
   -- tree errors
   | EC_404__tree_error_root_not_found
@@ -156,6 +161,8 @@ class ( SingI payload
       ) => IsFrontendErrorData payload where
   isFrontendErrorData :: Proxy payload -> Dict IsFrontendErrorData payload
 
+instance IsFrontendErrorData 'EC_404__node_error_list_not_found where
+  isFrontendErrorData _ = Dict
 instance IsFrontendErrorData 'EC_404__node_error_root_not_found where
   isFrontendErrorData _ = Dict
 instance IsFrontendErrorData 'EC_404__node_error_corpus_not_found where
@@ -170,6 +177,10 @@ instance IsFrontendErrorData 'EC_404__tree_error_root_not_found where
 data NoFrontendErrorData = NoFrontendErrorData
 
 data family ToFrontendErrorData (payload :: BackendErrorCode) :: Type
+
+newtype instance ToFrontendErrorData 'EC_404__node_error_list_not_found =
+  FE_node_error_list_not_found { lnf_list_id :: ListId }
+  deriving (Show, Eq, Generic)
 
 data instance ToFrontendErrorData 'EC_404__node_error_root_not_found =
   FE_node_error_root_not_found
@@ -186,6 +197,15 @@ data instance ToFrontendErrorData 'EC_404__tree_error_root_not_found =
 ----------------------------------------------------------------------------
 -- JSON instances. It's important to have nice and human readable instances.
 ----------------------------------------------------------------------------
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_error_list_not_found) where
+  toJSON (FE_node_error_list_not_found lid) =
+    JSON.object [ "list_id" .= toJSON lid ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_error_list_not_found) where
+  parseJSON = withObject "FE_node_error_list_not_found" $ \o -> do
+    lnf_list_id <- o .: "list_id"
+    pure FE_node_error_list_not_found{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_error_root_not_found) where
   toJSON _ = JSON.Null
@@ -207,10 +227,18 @@ instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
     _rnf_rootId <- o .: "root_id"
     pure RootNotFound{..}
 
-mkFrontendErr :: IsFrontendErrorData payload
-              => ToFrontendErrorData payload
-              -> FrontendError
-mkFrontendErr et = mkFrontendErr' mempty et
+-- | Creates an error without attaching a diagnostic to it.
+mkFrontendErrNoDiagnostic :: IsFrontendErrorData payload
+                          => ToFrontendErrorData payload
+                          -> FrontendError
+mkFrontendErrNoDiagnostic et = mkFrontendErr' mempty et
+
+-- | Renders the error by using as a diagnostic the string
+-- resulting from 'Show'ing the underlying type.
+mkFrontendErrShow :: IsFrontendErrorData payload
+                  => ToFrontendErrorData payload
+                  -> FrontendError
+mkFrontendErrShow et = mkFrontendErr' (T.pack $ show et) et
 
 mkFrontendErr' :: forall payload. IsFrontendErrorData payload
                => T.Text
@@ -218,24 +246,26 @@ mkFrontendErr' :: forall payload. IsFrontendErrorData payload
                -> FrontendError
 mkFrontendErr' diag pl = FrontendError diag (fromSing $ sing @payload) pl
 
+----------------------------------------------------------------------------
+-- Arbitrary instances and test data generation
+----------------------------------------------------------------------------
+
 instance Arbitrary BackendErrorCode where
   arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary FrontendError where
-  arbitrary = do
-    et  <- arbitrary
-    txt <- arbitrary
-    genFrontendErr txt et
-
-genFrontendErr :: T.Text -> BackendErrorCode -> Gen FrontendError
-genFrontendErr txt be = case be of
-  EC_404__node_error_root_not_found
-    -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
-  EC_404__node_error_corpus_not_found
-    -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
-  EC_404__tree_error_root_not_found
-    -> do rootId <- arbitrary
-          pure $ mkFrontendErr' txt (RootNotFound rootId)
+genFrontendErr :: BackendErrorCode -> Gen FrontendError
+genFrontendErr be = do
+  txt <- arbitrary
+  case be of
+    EC_404__node_error_list_not_found
+      -> arbitrary >>= \lid -> pure $ mkFrontendErr' txt $ FE_node_error_list_not_found lid
+    EC_404__node_error_root_not_found
+      -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
+    EC_404__node_error_corpus_not_found
+      -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
+    EC_404__tree_error_root_not_found
+      -> do rootId <- arbitrary
+            pure $ mkFrontendErr' txt (RootNotFound rootId)
 
 instance ToJSON BackendErrorCode where
   toJSON = JSON.String . T.pack . drop 3 . show
@@ -258,6 +288,9 @@ instance FromJSON FrontendError where
     (fe_diagnostic :: T.Text)      <- o .: "diagnostic"
     (fe_type :: BackendErrorCode)  <- o .: "type"
     case fe_type of
+      EC_404__node_error_list_not_found         -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_error_list_not_found) <- o .: "data"
+        pure FrontendError{..}
       EC_404__node_error_root_not_found         -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_error_root_not_found) <- o .: "data"
         pure FrontendError{..}

@@ -38,13 +38,21 @@ jsonEnumRoundtrip d = case d of
     prop :: Dict EnumBoundedJSON a -> a -> Property
     prop Dict a = counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
 
+-- | Tests /all/ the 'BackendErrorCode' and their associated 'FrontendError' payloads.
+jsonFrontendErrorRoundtrip :: Property
+jsonFrontendErrorRoundtrip = conjoin $ map mk_prop [minBound .. maxBound]
+  where
+    mk_prop :: BackendErrorCode -> Property
+    mk_prop code = forAll (genFrontendErr code) $ \a ->
+      counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
+
 tests :: TestTree
 tests = testGroup "JSON" [
     testProperty "NodeId roundtrips"        (jsonRoundtrip @NodeId)
   , testProperty "RootId roundtrips"        (jsonRoundtrip @RootId)
   , testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
   , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
-  , testProperty "FrontendError roundtrips" (jsonRoundtrip @FrontendError)
+  , testProperty "FrontendError roundtrips" jsonFrontendErrorRoundtrip
   , testProperty "BackendErrorCode roundtrips" (jsonEnumRoundtrip (Dict @_ @BackendErrorCode))
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [

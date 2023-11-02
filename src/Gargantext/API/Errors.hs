@@ -47,12 +47,12 @@ backendErrorToFrontendError = \case
 
 nodeErrorToFrontendError :: NodeError -> FrontendError
 nodeErrorToFrontendError ne = case ne of
-  NoListFound _lid
-    -> undefined
+  NoListFound lid
+    -> mkFrontendErrShow $ FE_node_error_list_not_found lid
   NoRootFound
-    -> mkFrontendErr' renderedError FE_node_error_root_not_found
+    -> mkFrontendErrShow FE_node_error_root_not_found
   NoCorpusFound
-    -> mkFrontendErr' renderedError FE_node_error_corpus_not_found
+    -> mkFrontendErrShow FE_node_error_corpus_not_found
   NoUserFound _ur
     -> undefined
   MkNode
@@ -79,8 +79,6 @@ nodeErrorToFrontendError ne = case ne of
     -> undefined
   QueryNoParse _txt
     -> undefined
-  where
-    renderedError = T.pack (show ne)
 
 -- | Converts a 'FrontendError' into a 'ServerError' that the servant app can
 -- return to the frontend.
