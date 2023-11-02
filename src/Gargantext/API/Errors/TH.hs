@@ -3,16 +3,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 module Gargantext.API.Errors.TH (
-  deriveHttpStatusCode
+    deriveHttpStatusCode
+  , deriveIsFrontendErrorData
   ) where
 
 import           Prelude
 
+import           Gargantext.API.Errors.Types.Backend
 import           Network.HTTP.Types
 import qualified Data.Map.Strict                as Map
 import qualified Data.Text                      as T
 import qualified Language.Haskell.TH            as TH
-import Gargantext.API.Errors.Types
 import qualified Network.HTTP.Types as HTTP
 
 -- | A static map of the HTTP status code we support.
@@ -72,3 +73,16 @@ parse_error_codes = mapM go
              Just st -> Right (n, st, msg)
       where
         (code, msg) = do_parse $ (T.pack $ TH.nameBase n)
+
+deriveIsFrontendErrorData :: TH.Name -> TH.Q [TH.Dec]
+deriveIsFrontendErrorData appliedType = do
+  info <- TH.reify appliedType
+  case info of
+    TH.TyConI (TH.DataD _ _ _ _ ctors _)
+      -> case extract_names ctors of
+           Left ctor   -> error $ "Only enum-like constructors supported: " ++ show ctor
+           Right names -> fmap mconcat . sequence $ flip map names $ \n ->
+               [d| instance IsFrontendErrorData $(TH.promotedT n) where
+                     isFrontendErrorData _ = Dict |]
+    err
+      -> error $ "Cannot call deriveHttpStatusCode on: " ++ show err

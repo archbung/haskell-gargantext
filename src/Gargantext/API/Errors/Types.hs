@@ -11,10 +11,11 @@
 {-# LANGUAGE TypeFamilies             #-}
 {-# LANGUAGE TypeFamilyDependencies   #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-orphans          #-} -- instance IsFrontendErrorData and stage restriction
 
 module Gargantext.API.Errors.Types (
   -- * The main frontend error type
-  FrontendError(..)
+    FrontendError(..)
 
   -- * The internal backend type and an enumeration of all possible backend error types
   , BackendErrorCode(..)
@@ -41,13 +42,14 @@ import Control.Exception
 import Control.Lens (makePrisms)
 import Data.Aeson as JSON
 import Data.Aeson.Types (typeMismatch, emptyArray)
-import Data.Kind
 import Data.Singletons.TH
 import Data.Typeable
 import Data.Validity (Validation)
 import GHC.Generics
 import GHC.Stack
 import Gargantext.API.Errors.Class
+import Gargantext.API.Errors.TH
+import Gargantext.API.Errors.Types.Backend
 import Gargantext.Core.Types (HasValidationError(..))
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node.Error
@@ -120,19 +122,6 @@ instance HasServerError BackendInternalError where
 instance HasJoseError BackendInternalError where
   _JoseError = _InternalJoseError
 
--- | A (hopefully and eventually) exhaustive list of backend errors.
-data BackendErrorCode
-  =
-  -- node errors
-    EC_404__node_error_list_not_found
-  | EC_404__node_error_root_not_found
-  | EC_404__node_error_corpus_not_found
-  -- tree errors
-  | EC_404__tree_error_root_not_found
-  deriving (Show, Read, Eq, Enum, Bounded)
-
-$(genSingletons [''BackendErrorCode])
-
 -- | An error that can be returned to the frontend. It carries a human-friendly
 -- diagnostic, the 'type' of the error as well as some context-specific data.
 data FrontendError where
@@ -141,6 +130,25 @@ data FrontendError where
     , fe_type       :: !BackendErrorCode
     , fe_data       :: ToFrontendErrorData b
     } -> FrontendError
+
+-- | Creates an error without attaching a diagnostic to it.
+mkFrontendErrNoDiagnostic :: IsFrontendErrorData payload
+                          => ToFrontendErrorData payload
+                          -> FrontendError
+mkFrontendErrNoDiagnostic et = mkFrontendErr' mempty et
+
+-- | Renders the error by using as a diagnostic the string
+-- resulting from 'Show'ing the underlying type.
+mkFrontendErrShow :: IsFrontendErrorData payload
+                  => ToFrontendErrorData payload
+                  -> FrontendError
+mkFrontendErrShow et = mkFrontendErr' (T.pack $ show et) et
+
+mkFrontendErr' :: forall payload. IsFrontendErrorData payload
+               => T.Text
+               -> ToFrontendErrorData (payload :: BackendErrorCode)
+               -> FrontendError
+mkFrontendErr' diag pl = FrontendError diag (fromSing $ sing @payload) pl
 
 deriving instance Show FrontendError
 instance Eq FrontendError where
@@ -152,31 +160,13 @@ instance Eq FrontendError where
             Nothing   -> False
             Just Refl -> fe_data_1 == fe_data_2
 
-class ( SingI payload
-      , ToJSON (ToFrontendErrorData payload)
-      , FromJSON (ToFrontendErrorData payload)
-      , Show (ToFrontendErrorData payload)
-      , Eq (ToFrontendErrorData payload)
-      , Typeable payload
-      ) => IsFrontendErrorData payload where
-  isFrontendErrorData :: Proxy payload -> Dict IsFrontendErrorData payload
-
-instance IsFrontendErrorData 'EC_404__node_error_list_not_found where
-  isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'EC_404__node_error_root_not_found where
-  isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'EC_404__node_error_corpus_not_found where
-  isFrontendErrorData _ = Dict
-instance IsFrontendErrorData 'EC_404__tree_error_root_not_found where
-  isFrontendErrorData _ = Dict
+$(deriveIsFrontendErrorData ''BackendErrorCode)
 
 ----------------------------------------------------------------------------
--- This data family maps a 'BackendErrorCode' into a concrete payload.
+-- ToFrontendErrorData data family instances
 ----------------------------------------------------------------------------
 
 data NoFrontendErrorData = NoFrontendErrorData
-
-data family ToFrontendErrorData (payload :: BackendErrorCode) :: Type
 
 newtype instance ToFrontendErrorData 'EC_404__node_error_list_not_found =
   FE_node_error_list_not_found { lnf_list_id :: ListId }
@@ -226,25 +216,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
   parseJSON = withObject "RootNotFound" $ \o -> do
     _rnf_rootId <- o .: "root_id"
     pure RootNotFound{..}
-
--- | Creates an error without attaching a diagnostic to it.
-mkFrontendErrNoDiagnostic :: IsFrontendErrorData payload
-                          => ToFrontendErrorData payload
-                          -> FrontendError
-mkFrontendErrNoDiagnostic et = mkFrontendErr' mempty et
-
--- | Renders the error by using as a diagnostic the string
--- resulting from 'Show'ing the underlying type.
-mkFrontendErrShow :: IsFrontendErrorData payload
-                  => ToFrontendErrorData payload
-                  -> FrontendError
-mkFrontendErrShow et = mkFrontendErr' (T.pack $ show et) et
-
-mkFrontendErr' :: forall payload. IsFrontendErrorData payload
-               => T.Text
-               -> ToFrontendErrorData (payload :: BackendErrorCode)
-               -> FrontendError
-mkFrontendErr' diag pl = FrontendError diag (fromSing $ sing @payload) pl
 
 ----------------------------------------------------------------------------
 -- Arbitrary instances and test data generation
