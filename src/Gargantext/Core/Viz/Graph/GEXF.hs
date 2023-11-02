@@ -18,12 +18,37 @@ Portability : POSIX
 module Gargantext.Core.Viz.Graph.GEXF
   where
 
+import Conduit
 import Data.HashMap.Lazy qualified as HashMap
+import Data.XML.Types qualified as XML
 import Gargantext.Core.Viz.Graph.Types qualified as G
 import Gargantext.Prelude
 import Gargantext.Prelude qualified as P
 import Prelude qualified
+-- import Text.XML qualified as XML
+import Text.XML.Stream.Render qualified as XML
 import Xmlbf qualified as Xmlbf
+
+
+graphToXML :: Monad m => G.Graph -> ConduitT i XML.Event m ()
+graphToXML (G.Graph { .. }) = root _graph_nodes _graph_edges
+  where
+    -- root :: [G.Node] -> [G.Edge] -> ConduitT i XML.Event m ()
+    root gn ge =
+      XML.tag "gexf" params $ meta .| (graph gn ge)
+        where
+          params =    XML.attr "xmlns" "http://www.gexf.net/1.3"
+                   <> XML.attr "xmlns:viz" "http://gexf.net/1.3/viz"
+                   <> XML.attr "xmlns:xsi" "http://www.w3.org/2001/XMLSchema-instance"
+                   <> XML.attr "xsi:schemaLocation" "http://gexf.net/1.3 http://gexf.net/1.3/gexf.xsd"
+                   <> XML.attr "version" "1.3"
+
+    meta = XML.tag "meta" params $ XML.content "x"
+      where
+        params = XML.attr "lastmodifieddate" "2020-03-13"
+
+    graph _gn _ge = XML.tag "graph" mempty $ XML.content "graph here"
+
 
 -- Converts to GEXF format
 -- See https://gephi.org/gexf/format/
