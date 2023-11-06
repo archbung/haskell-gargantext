@@ -226,6 +226,30 @@ data instance ToFrontendErrorData 'EC_500__tree_error_too_many_roots =
   FE_tree_error_too_many_roots { tmr_roots :: NonEmpty NodeId }
   deriving (Show, Eq, Generic)
 
+--
+-- Job errors
+--
+
+data instance ToFrontendErrorData 'EC_500__job_error_invalid_id_type =
+  FE_job_error_invalid_id_type { jeiit_type :: T.Text }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_500__job_error_expired =
+  FE_job_error_expired { jee_job_id :: Int }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_500__job_error_invalid_mac =
+  FE_job_error_invalid_mac { jeim_mac :: T.Text }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_500__job_error_unknown_job =
+  FE_job_error_unknown_job { jeuj_job_id :: Int }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_500__job_error_generic_exception =
+  FE_job_error_generic_exception { jege_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
 ----------------------------------------------------------------------------
 -- JSON instances. It's important to have nice and human readable instances.
 -- It's also important that they all roundtrips, i.e. that given a 'ToFrontendErrorData'
@@ -317,6 +341,55 @@ instance FromJSON (ToFrontendErrorData 'EC_500__tree_error_too_many_roots) where
     tmr_roots <- o .: "node_ids"
     pure FE_tree_error_too_many_roots{..}
 
+--
+-- job errors
+--
+
+instance ToJSON (ToFrontendErrorData 'EC_500__job_error_invalid_id_type) where
+  toJSON (FE_job_error_invalid_id_type idTy) =
+    object [ "type" .= toJSON idTy ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__job_error_invalid_id_type) where
+  parseJSON = withObject "FE_job_error_invalid_id_type" $ \o -> do
+    jeiit_type <- o .: "type"
+    pure FE_job_error_invalid_id_type{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_500__job_error_expired) where
+  toJSON (FE_job_error_expired jobId) =
+    object [ "job_id" .= toJSON jobId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__job_error_expired) where
+  parseJSON = withObject "FE_job_error_expired" $ \o -> do
+    jee_job_id <- o .: "job_id"
+    pure FE_job_error_expired{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_500__job_error_invalid_mac) where
+  toJSON (FE_job_error_invalid_mac mac) =
+    object [ "mac" .= toJSON mac ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__job_error_invalid_mac) where
+  parseJSON = withObject "FE_job_error_invalid_mac" $ \o -> do
+    jeim_mac <- o .: "mac"
+    pure FE_job_error_invalid_mac{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_500__job_error_unknown_job) where
+  toJSON (FE_job_error_unknown_job jobId) =
+    object [ "job_id" .= toJSON jobId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__job_error_unknown_job) where
+  parseJSON = withObject "FE_job_error_unknown_job" $ \o -> do
+    jeuj_job_id <- o .: "job_id"
+    pure FE_job_error_unknown_job{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_500__job_error_generic_exception) where
+  toJSON (FE_job_error_generic_exception err) =
+    object [ "error" .= toJSON err ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__job_error_generic_exception) where
+  parseJSON = withObject "FE_job_error_generic_exception" $ \o -> do
+    jege_error <- o .: "error"
+    pure FE_job_error_generic_exception{..}
+
 ----------------------------------------------------------------------------
 -- Arbitrary instances and test data generation
 ----------------------------------------------------------------------------
@@ -362,6 +435,23 @@ genFrontendErr be = do
     EC_500__tree_error_too_many_roots
       -> do nodes <- arbitrary
             pure $ mkFrontendErr' txt $ FE_tree_error_too_many_roots nodes
+
+    -- job errors
+    EC_500__job_error_invalid_id_type
+      -> do idTy <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_job_error_invalid_id_type idTy
+    EC_500__job_error_expired
+      -> do jobId <- getPositive <$> arbitrary
+            pure $ mkFrontendErr' txt $ FE_job_error_expired jobId
+    EC_500__job_error_invalid_mac
+      -> do macId <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_job_error_expired macId
+    EC_500__job_error_unknown_job
+      -> do jobId <- getPositive <$> arbitrary
+            pure $ mkFrontendErr' txt $ FE_job_error_unknown_job jobId
+    EC_500__job_error_generic_exception
+      -> do err <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_job_error_generic_exception err
 
 instance ToJSON BackendErrorCode where
   toJSON = JSON.String . T.pack . drop 3 . show
@@ -419,4 +509,21 @@ instance FromJSON FrontendError where
         pure FrontendError{..}
       EC_500__tree_error_too_many_roots -> do
         (fe_data :: ToFrontendErrorData 'EC_500__tree_error_too_many_roots) <- o .: "data"
+        pure FrontendError{..}
+
+      -- job errors
+      EC_500__job_error_invalid_id_type -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_error_invalid_id_type) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__job_error_expired -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_error_expired) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__job_error_invalid_mac -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_error_invalid_mac) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__job_error_unknown_job -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_error_unknown_job) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__job_error_generic_exception -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_error_generic_exception) <- o .: "data"
         pure FrontendError{..}

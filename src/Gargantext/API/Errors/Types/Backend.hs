@@ -29,6 +29,12 @@ data BackendErrorCode
   | EC_404__tree_error_root_not_found
   | EC_404__tree_error_empty_root
   | EC_500__tree_error_too_many_roots
+  -- job errors
+  | EC_500__job_error_invalid_id_type
+  | EC_500__job_error_expired
+  | EC_500__job_error_invalid_mac
+  | EC_500__job_error_unknown_job
+  | EC_500__job_error_generic_exception
   deriving (Show, Read, Eq, Enum, Bounded)
 
 $(genSingletons [''BackendErrorCode])

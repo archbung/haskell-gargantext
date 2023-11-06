@@ -16,17 +16,19 @@ module Gargantext.API.Errors (
 
 import Prelude
 
-import Gargantext.API.Errors.Class as Class
-import Gargantext.API.Errors.Types as Types
-import Gargantext.API.Errors.TH (deriveHttpStatusCode)
-import Gargantext.Database.Query.Table.Node.Error hiding (nodeError)
-import Servant.Server
-import qualified Data.Aeson as JSON
-import qualified Network.HTTP.Types.Status as HTTP
-import qualified Data.Text as T
-import Gargantext.Database.Query.Tree hiding (treeError)
+import Control.Exception
 import Data.Validity ( prettyValidation )
 import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Errors.Class as Class
+import Gargantext.API.Errors.TH (deriveHttpStatusCode)
+import Gargantext.API.Errors.Types as Types
+import Gargantext.Database.Query.Table.Node.Error hiding (nodeError)
+import Gargantext.Database.Query.Tree hiding (treeError)
+import Gargantext.Utils.Jobs.Monad (JobError(..))
+import Servant.Server
+import qualified Data.Aeson as JSON
+import qualified Data.Text as T
+import qualified Network.HTTP.Types.Status as HTTP
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
@@ -48,9 +50,16 @@ backendErrorToFrontendError = \case
     -> authErrorToFrontendError authError
   InternalServerError _internalServerError
     -> undefined
-  InternalJobError _jobError
-    -> undefined
+  InternalJobError jobError
+    -> jobErrorToFrontendError jobError
 
+jobErrorToFrontendError :: JobError -> FrontendError
+jobErrorToFrontendError = \case
+  InvalidIDType idTy -> mkFrontendErrNoDiagnostic $ FE_job_error_invalid_id_type idTy
+  IDExpired jobId    -> mkFrontendErrNoDiagnostic $ FE_job_error_expired jobId
+  InvalidMacID macId -> mkFrontendErrNoDiagnostic $ FE_job_error_invalid_mac macId
+  UnknownJob jobId   -> mkFrontendErrNoDiagnostic $ FE_job_error_unknown_job jobId
+  JobException err   -> mkFrontendErrNoDiagnostic $ FE_job_error_generic_exception (T.pack $ displayException err)
 
 authErrorToFrontendError :: AuthenticationError -> FrontendError
 authErrorToFrontendError = \case
