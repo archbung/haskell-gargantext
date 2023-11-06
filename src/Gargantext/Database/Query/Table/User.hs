@@ -18,6 +18,7 @@ Functions to deal with users, database side.
 {-# LANGUAGE FunctionalDependencies      #-}
 {-# LANGUAGE QuasiQuotes            #-}
 {-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.Database.Query.Table.User
   ( insertUsers
@@ -57,9 +58,9 @@ import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config (nodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Admin.Types.Node (UserId(..))
 import Gargantext.Database.Prelude
+import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
 import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)
 import Gargantext.Database.Schema.User
@@ -67,11 +68,12 @@ import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Auth qualified as Auth
 import Opaleye
 import PUBMED.Types qualified as PUBMED
+import qualified Data.List.NonEmpty as NE
 
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
-insertUsers :: [UserWrite] -> DBCmd err Int64
-insertUsers us = mkCmd $ \c -> runInsert c insert
+insertUsers :: NonEmpty UserWrite -> DBCmd err Int64
+insertUsers (NE.toList -> us) = mkCmd $ \c -> runInsert c insert
   where
     insert = Insert userTable us rCount Nothing
 
@@ -302,7 +304,7 @@ getUser :: Username -> DBCmd err (Maybe UserLight)
 getUser u = userLightWithUsername u <$> usersLight
 
 ----------------------------------------------------------------------
-insertNewUsers :: [NewUser GargPassword] -> DBCmd err Int64
+insertNewUsers :: NonEmpty (NewUser GargPassword) -> DBCmd err Int64
 insertNewUsers newUsers = do
   users' <- liftBase $ mapM toUserHash newUsers
   insertUsers $ map toUserWrite users'

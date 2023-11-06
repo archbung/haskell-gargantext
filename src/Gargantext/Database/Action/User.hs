@@ -27,7 +27,7 @@ getUserLightWithId :: HasNodeError err => UserId -> DBCmd err UserLight
 getUserLightWithId i = do
   candidates <- head <$> getUsersWithId (UserDBId i)
   case candidates of
-    Nothing -> nodeError (NoUserFound (UserDBId i))
+    Nothing -> nodeError (NodeLookupFailed $ UserDoesNotExist i)
     Just u  -> pure u
 
 getUserLightDB :: HasNodeError err => User -> DBCmd err UserLight
@@ -43,22 +43,21 @@ getUserId :: HasNodeError err
 getUserId u = do
   maybeUser <- getUserId' u
   case maybeUser of
-    Nothing -> nodeError (NoUserFound u)
-    Just u'  -> pure u'
+    Left reason -> nodeError $ NodeLookupFailed reason
+    Right u'    -> pure u'
 
 getUserId' :: HasNodeError err
           => User
-          -> DBCmd err (Maybe UserId)
-getUserId' (UserDBId uid) = pure (Just uid)
+          -> DBCmd err (Either NodeLookupError UserId)
+getUserId' (UserDBId uid) = pure (Right uid)
 getUserId' (RootId   rid) = do
   n <- getNode rid
-  pure $ Just $ _node_user_id n
+  pure $ Right $ _node_user_id n
 getUserId' (UserName u  ) = do
   muser <- getUser u
   case muser of
-    Just user -> pure $ Just $ userLight_id user
-    Nothing   -> pure Nothing
-getUserId' UserPublic = pure Nothing
+    Just user -> pure $ Right $ userLight_id user
+    Nothing   -> pure $ Left $ UserNameDoesNotExist u
 
 ------------------------------------------------------------------------
 -- | Username = Text
@@ -73,11 +72,10 @@ getUsername user@(UserDBId _) = do
   users <- getUsersWithId user
   case head users of
     Just u  -> pure $ userLight_username u
-    Nothing -> nodeError $ NodeError "G.D.A.U.getUserName: User not found with that id"
+    Nothing -> errorWith "G.D.A.U.getUserName: User not found with that id"
 getUsername (RootId   rid) = do
   n <- getNode rid
   getUsername (UserDBId $ _node_user_id n)
-getUsername UserPublic = pure "UserPublic"
 
 --------------------------------------------------------------------------
 -- getRootId is in Gargantext.Database.Query.Tree.Root

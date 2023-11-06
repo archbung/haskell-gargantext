@@ -62,60 +62,68 @@ internalServerErrorToFrontendError = \case
 
 jobErrorToFrontendError :: JobError -> FrontendError
 jobErrorToFrontendError = \case
-  InvalidIDType idTy -> mkFrontendErrNoDiagnostic $ FE_job_error_invalid_id_type idTy
-  IDExpired jobId    -> mkFrontendErrNoDiagnostic $ FE_job_error_expired jobId
-  InvalidMacID macId -> mkFrontendErrNoDiagnostic $ FE_job_error_invalid_mac macId
-  UnknownJob jobId   -> mkFrontendErrNoDiagnostic $ FE_job_error_unknown_job jobId
-  JobException err   -> mkFrontendErrNoDiagnostic $ FE_job_error_generic_exception (T.pack $ displayException err)
+  InvalidIDType idTy -> mkFrontendErrNoDiagnostic $ FE_job_invalid_id_type idTy
+  IDExpired jobId    -> mkFrontendErrNoDiagnostic $ FE_job_expired jobId
+  InvalidMacID macId -> mkFrontendErrNoDiagnostic $ FE_job_invalid_mac macId
+  UnknownJob jobId   -> mkFrontendErrNoDiagnostic $ FE_job_unknown_job jobId
+  JobException err   -> mkFrontendErrNoDiagnostic $ FE_job_generic_exception (T.pack $ displayException err)
 
 authErrorToFrontendError :: AuthenticationError -> FrontendError
 authErrorToFrontendError = \case
   -- For now, we ignore the Jose error, as they are too specific
   -- (i.e. they should be logged internally to Sentry rather than shared
-  -- externall).
+  -- externally).
   LoginFailed nid uid _
     -> mkFrontendErr' "Invalid username/password, or invalid session token." $ FE_login_failed_error nid uid
 
 nodeErrorToFrontendError :: NodeError -> FrontendError
 nodeErrorToFrontendError ne = case ne of
   NoListFound lid
-    -> mkFrontendErrShow $ FE_node_error_list_not_found lid
+    -> mkFrontendErrShow $ FE_node_list_not_found lid
   NoRootFound
-    -> mkFrontendErrShow FE_node_error_root_not_found
+    -> mkFrontendErrShow FE_node_root_not_found
   NoCorpusFound
-    -> mkFrontendErrShow FE_node_error_corpus_not_found
+    -> mkFrontendErrShow FE_node_corpus_not_found
   NoUserFound _ur
     -> undefined
-  MkNode
-    -> undefined
-  UserNoParent
-    -> undefined
-  HasParent
-    -> undefined
-  ManyParents
-    -> undefined
-  NegativeId
-    -> undefined
+  NodeCreationFailed reason
+    -> case reason of
+         UserParentAlreadyExists pId uId
+           -> mkFrontendErrShow $ FE_node_creation_failed_parent_exists uId pId
+         UserParentDoesNotExist uId
+           -> mkFrontendErrShow $ FE_node_creation_failed_no_parent uId
+         InsertNodeFailed uId pId
+           -> mkFrontendErrShow $ FE_node_creation_failed_insert_node uId pId
+         UserHasNegativeId uid
+           -> mkFrontendErrShow $ FE_node_creation_failed_user_negative_id uid
+  NodeLookupFailed reason
+    -> case reason of
+         NodeDoesNotExist nid
+           -> mkFrontendErrShow $ FE_node_lookup_failed_not_found nid
+         UserDoesNotExist uid
+           -> mkFrontendErrShow $ FE_node_lookup_failed_user_not_found uid
+         UserNameDoesNotExist uname
+           -> mkFrontendErrShow $ FE_node_lookup_failed_username_not_found uname
+         UserHasTooManyRoots uid roots
+           -> mkFrontendErrShow $ FE_node_lookup_failed_user_too_many_roots uid roots
   NotImplYet
-    -> mkFrontendErrShow FE_node_error_not_implemented_yet
-  ManyNodeUsers
-    -> undefined
-  DoesNotExist nodeId
-    -> mkFrontendErrShow $ FE_node_error_not_found nodeId
-  NoContextFound _contextId
-    -> undefined
+    -> mkFrontendErrShow FE_node_not_implemented_yet
+  NoContextFound contextId
+    -> mkFrontendErrShow $ FE_node_context_not_found contextId
   NeedsConfiguration
-    -> undefined
-  NodeError _txt
-    -> undefined
-  QueryNoParse _txt
-    -> undefined
+    -> mkFrontendErrShow $ FE_node_needs_configuration
+  NodeError err
+    -> mkFrontendErrShow $ FE_node_generic_exception (T.pack $ displayException err)
+
+  -- backward-compatibility shims, to remove eventually.
+  DoesNotExist nid
+    -> mkFrontendErrShow $ FE_node_lookup_failed_not_found nid
 
 treeErrorToFrontendError :: TreeError -> FrontendError
 treeErrorToFrontendError te = case te of
-  NoRoot             -> mkFrontendErrShow FE_tree_error_root_not_found
-  EmptyRoot          -> mkFrontendErrShow FE_tree_error_empty_root
-  TooManyRoots roots -> mkFrontendErrShow $ FE_tree_error_too_many_roots roots
+  NoRoot             -> mkFrontendErrShow FE_tree_root_not_found
+  EmptyRoot          -> mkFrontendErrShow FE_tree_empty_root
+  TooManyRoots roots -> mkFrontendErrShow $ FE_tree_too_many_roots roots
 
 -- | Converts a 'FrontendError' into a 'ServerError' that the servant app can
 -- return to the frontend.

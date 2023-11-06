@@ -29,6 +29,7 @@ import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.User (insertNewUsers, )
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
+import qualified Data.List.NonEmpty as NE
 
 
 main :: IO ()
@@ -50,7 +51,7 @@ main = do
 
   let createUsers :: Cmd BackendInternalError Int64
       createUsers = insertNewUsers (NewUser "gargantua" (cs email) (GargPassword $ cs password)
-                                   : arbitraryNewUsers
+                                   NE.:| arbitraryNewUsers
                                    )
 
   let

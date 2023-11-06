@@ -68,6 +68,7 @@ import Text.Read (readMaybe)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
 import Gargantext.API.Admin.Auth.Types (AuthenticationError)
+import Gargantext.Core.Types.Individu
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -171,25 +172,72 @@ $(deriveIsFrontendErrorData ''BackendErrorCode)
 
 data NoFrontendErrorData = NoFrontendErrorData
 
-newtype instance ToFrontendErrorData 'EC_404__node_error_list_not_found =
-  FE_node_error_list_not_found { lnf_list_id :: ListId }
+newtype instance ToFrontendErrorData 'EC_404__node_list_not_found =
+  FE_node_list_not_found { lnf_list_id :: ListId }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_404__node_error_root_not_found =
-  FE_node_error_root_not_found
+data instance ToFrontendErrorData 'EC_404__node_root_not_found =
+  FE_node_root_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_404__node_error_corpus_not_found =
-  FE_node_error_corpus_not_found
+data instance ToFrontendErrorData 'EC_404__node_corpus_not_found =
+  FE_node_corpus_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__node_error_not_implemented_yet =
-  FE_node_error_not_implemented_yet
+data instance ToFrontendErrorData 'EC_500__node_not_implemented_yet =
+  FE_node_not_implemented_yet
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_404__node_error_not_found =
-  FE_node_error_not_found { nenf_node_id :: !NodeId }
+newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_not_found =
+  FE_node_lookup_failed_not_found { nenf_node_id :: NodeId }
   deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found =
+  FE_node_lookup_failed_user_not_found { nenf_user_id :: UserId }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found =
+  FE_node_lookup_failed_username_not_found { nenf_username :: Username }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id =
+  FE_node_creation_failed_user_negative_id { neuni_user_id :: UserId }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots =
+  FE_node_lookup_failed_user_too_many_roots { netmr_user_id :: UserId
+                                            , netmr_roots   :: [NodeId]
+                                            }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_404__node_context_not_found =
+  FE_node_context_not_found { necnf_context_id :: ContextId }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists =
+  FE_node_creation_failed_parent_exists { necpe_parent_id :: ParentId
+                                              , necpe_user_id   :: UserId
+                                              }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_400__node_creation_failed_no_parent =
+  FE_node_creation_failed_no_parent { necnp_user_id   :: UserId }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_400__node_creation_failed_insert_node =
+  FE_node_creation_failed_insert_node { necin_user_id   :: UserId
+                                            , necin_parent_id :: ParentId
+                                            }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_500__node_generic_exception =
+  FE_node_generic_exception { nege_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_400__node_needs_configuration =
+  FE_node_needs_configuration
+  deriving (Show, Eq, Generic)
+
 
 --
 -- validation errors
@@ -214,44 +262,44 @@ data instance ToFrontendErrorData 'EC_403__login_failed_error =
 -- Tree errors
 --
 
-data instance ToFrontendErrorData 'EC_404__tree_error_root_not_found =
-  FE_tree_error_root_not_found
+data instance ToFrontendErrorData 'EC_404__tree_root_not_found =
+  FE_tree_root_not_found
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_404__tree_error_empty_root =
-  FE_tree_error_empty_root
+data instance ToFrontendErrorData 'EC_404__tree_empty_root =
+  FE_tree_empty_root
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__tree_error_too_many_roots =
-  FE_tree_error_too_many_roots { tmr_roots :: NonEmpty NodeId }
+data instance ToFrontendErrorData 'EC_500__tree_too_many_roots =
+  FE_tree_too_many_roots { tmr_roots :: NonEmpty NodeId }
   deriving (Show, Eq, Generic)
 
 --
 -- Job errors
 --
 
-data instance ToFrontendErrorData 'EC_500__job_error_invalid_id_type =
-  FE_job_error_invalid_id_type { jeiit_type :: T.Text }
+data instance ToFrontendErrorData 'EC_500__job_invalid_id_type =
+  FE_job_invalid_id_type { jeiit_type :: T.Text }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_error_expired =
-  FE_job_error_expired { jee_job_id :: Int }
+data instance ToFrontendErrorData 'EC_500__job_expired =
+  FE_job_expired { jee_job_id :: Int }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_error_invalid_mac =
-  FE_job_error_invalid_mac { jeim_mac :: T.Text }
+data instance ToFrontendErrorData 'EC_500__job_invalid_mac =
+  FE_job_invalid_mac { jeim_mac :: T.Text }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_error_unknown_job =
-  FE_job_error_unknown_job { jeuj_job_id :: Int }
+data instance ToFrontendErrorData 'EC_500__job_unknown_job =
+  FE_job_unknown_job { jeuj_job_id :: Int }
   deriving (Show, Eq, Generic)
 
 data instance ToFrontendErrorData 'EC_500__internal_server_error =
   FE_internal_server_error { ise_error :: T.Text }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_error_generic_exception =
-  FE_job_error_generic_exception { jege_error :: T.Text }
+data instance ToFrontendErrorData 'EC_500__job_generic_exception =
+  FE_job_generic_exception { jege_error :: T.Text }
   deriving (Show, Eq, Generic)
 
 ----------------------------------------------------------------------------
@@ -260,40 +308,125 @@ data instance ToFrontendErrorData 'EC_500__job_error_generic_exception =
 -- payload, we can render it to JSON and parse it back.
 ----------------------------------------------------------------------------
 
-instance ToJSON (ToFrontendErrorData 'EC_404__node_error_list_not_found) where
-  toJSON (FE_node_error_list_not_found lid) =
+instance ToJSON (ToFrontendErrorData 'EC_404__node_list_not_found) where
+  toJSON (FE_node_list_not_found lid) =
     JSON.object [ "list_id" .= toJSON lid ]
 
-instance FromJSON (ToFrontendErrorData 'EC_404__node_error_list_not_found) where
-  parseJSON = withObject "FE_node_error_list_not_found" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_404__node_list_not_found) where
+  parseJSON = withObject "FE_node_list_not_found" $ \o -> do
     lnf_list_id <- o .: "list_id"
-    pure FE_node_error_list_not_found{..}
+    pure FE_node_list_not_found{..}
 
-instance ToJSON (ToFrontendErrorData 'EC_404__node_error_root_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__node_root_not_found) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'EC_404__node_error_root_not_found) where
-  parseJSON _ = pure FE_node_error_root_not_found
+instance FromJSON (ToFrontendErrorData 'EC_404__node_root_not_found) where
+  parseJSON _ = pure FE_node_root_not_found
 
-instance ToJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__node_corpus_not_found) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
-  parseJSON _ = pure FE_node_error_corpus_not_found
+instance FromJSON (ToFrontendErrorData 'EC_404__node_corpus_not_found) where
+  parseJSON _ = pure FE_node_corpus_not_found
 
-instance ToJSON (ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) where
+instance ToJSON (ToFrontendErrorData 'EC_500__node_not_implemented_yet) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) where
-  parseJSON _ = pure FE_node_error_not_implemented_yet
+instance FromJSON (ToFrontendErrorData 'EC_500__node_not_implemented_yet) where
+  parseJSON _ = pure FE_node_not_implemented_yet
 
-instance ToJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
-  toJSON (FE_node_error_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
+instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) where
+  toJSON (FE_node_lookup_failed_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
 
-instance FromJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
-  parseJSON = withObject "FE_node_error_not_found" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) where
+  parseJSON = withObject "FE_node_lookup_failed_not_found" $ \o -> do
     nenf_node_id <- o .: "node_id"
-    pure FE_node_error_not_found{..}
+    pure FE_node_lookup_failed_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
+  toJSON (FE_node_lookup_failed_user_not_found userId) = object [ "user_id" .= toJSON userId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
+  parseJSON = withObject "FE_node_lookup_failed_user_not_found" $ \o -> do
+    nenf_user_id <- o .: "user_id"
+    pure FE_node_lookup_failed_user_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found) where
+  toJSON (FE_node_lookup_failed_username_not_found username) = object [ "username" .= toJSON username ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found) where
+  parseJSON = withObject "FE_node_lookup_failed_username_not_found" $ \o -> do
+    nenf_username <- o .: "username"
+    pure FE_node_lookup_failed_username_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id) where
+  toJSON (FE_node_creation_failed_user_negative_id userId) = object [ "user_id" .= toJSON userId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id) where
+  parseJSON = withObject "FE_node_creation_failed_user_negative_id" $ \o -> do
+    neuni_user_id <- o .: "user_id"
+    pure FE_node_creation_failed_user_negative_id{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots) where
+  toJSON (FE_node_lookup_failed_user_too_many_roots userId roots) =
+    object [ "user_id" .= toJSON userId, "roots" .= toJSON roots ]
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots) where
+  parseJSON = withObject "FE_node_lookup_failed_user_too_many_roots" $ \o -> do
+    netmr_user_id <- o .: "user_id"
+    netmr_roots   <- o .: "roots"
+    pure FE_node_lookup_failed_user_too_many_roots{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_context_not_found) where
+  toJSON (FE_node_context_not_found cId) = object [ "context_id" .= toJSON cId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_context_not_found) where
+  parseJSON = withObject "FE_node_context_not_found" $ \o -> do
+    necnf_context_id <- o .: "context_id"
+    pure FE_node_context_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) where
+  toJSON (FE_node_creation_failed_no_parent uId) = object [ "user_id" .= toJSON uId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) where
+  parseJSON = withObject "FE_node_creation_failed_no_parent" $ \o -> do
+    necnp_user_id <- o .: "user_id"
+    pure FE_node_creation_failed_no_parent{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists) where
+  toJSON FE_node_creation_failed_parent_exists{..} =
+    object [ "user_id" .= toJSON necpe_user_id, "parent_id" .= toJSON necpe_parent_id ]
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists) where
+  parseJSON = withObject "FE_node_creation_failed_parent_exists" $ \o -> do
+    necpe_user_id   <- o .: "user_id"
+    necpe_parent_id <- o .: "parent_id"
+    pure FE_node_creation_failed_parent_exists{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_insert_node) where
+  toJSON FE_node_creation_failed_insert_node{..} =
+    JSON.object [ "user_id" .= toJSON necin_user_id, "parent_id" .= necin_parent_id ]
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_insert_node) where
+  parseJSON = withObject "FE_node_creation_failed_insert_node" $ \o -> do
+    necin_user_id   <- o .: "user_id"
+    necin_parent_id <- o .: "parent_id"
+    pure FE_node_creation_failed_insert_node{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_500__node_generic_exception) where
+  toJSON FE_node_generic_exception{..} =
+    JSON.object [ "error" .= nege_error ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__node_generic_exception) where
+  parseJSON = withObject "FE_node_generic_exception" $ \o -> do
+    nege_error <- o .: "error"
+    pure FE_node_generic_exception{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_400__node_needs_configuration) where
+  toJSON _ = JSON.Null
+
+instance FromJSON (ToFrontendErrorData 'EC_400__node_needs_configuration) where
+  parseJSON _ = pure FE_node_needs_configuration
 
 --
 -- validation errors
@@ -337,75 +470,75 @@ instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
 -- tree errors
 --
 
-instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
+instance ToJSON (ToFrontendErrorData 'EC_404__tree_root_not_found) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
-  parseJSON _ = pure FE_tree_error_root_not_found
+instance FromJSON (ToFrontendErrorData 'EC_404__tree_root_not_found) where
+  parseJSON _ = pure FE_tree_root_not_found
 
-instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_empty_root) where
+instance ToJSON (ToFrontendErrorData 'EC_404__tree_empty_root) where
   toJSON _ = JSON.Null
 
-instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_empty_root) where
-  parseJSON _ = pure FE_tree_error_empty_root
+instance FromJSON (ToFrontendErrorData 'EC_404__tree_empty_root) where
+  parseJSON _ = pure FE_tree_empty_root
 
-instance ToJSON (ToFrontendErrorData 'EC_500__tree_error_too_many_roots) where
-  toJSON (FE_tree_error_too_many_roots roots) =
+instance ToJSON (ToFrontendErrorData 'EC_500__tree_too_many_roots) where
+  toJSON (FE_tree_too_many_roots roots) =
     object [ "node_ids" .= NE.toList roots ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__tree_error_too_many_roots) where
-  parseJSON = withObject "FE_tree_error_too_many_roots" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__tree_too_many_roots) where
+  parseJSON = withObject "FE_tree_too_many_roots" $ \o -> do
     tmr_roots <- o .: "node_ids"
-    pure FE_tree_error_too_many_roots{..}
+    pure FE_tree_too_many_roots{..}
 
 --
 -- job errors
 --
 
-instance ToJSON (ToFrontendErrorData 'EC_500__job_error_invalid_id_type) where
-  toJSON (FE_job_error_invalid_id_type idTy) =
+instance ToJSON (ToFrontendErrorData 'EC_500__job_invalid_id_type) where
+  toJSON (FE_job_invalid_id_type idTy) =
     object [ "type" .= toJSON idTy ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__job_error_invalid_id_type) where
-  parseJSON = withObject "FE_job_error_invalid_id_type" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_id_type) where
+  parseJSON = withObject "FE_job_invalid_id_type" $ \o -> do
     jeiit_type <- o .: "type"
-    pure FE_job_error_invalid_id_type{..}
+    pure FE_job_invalid_id_type{..}
 
-instance ToJSON (ToFrontendErrorData 'EC_500__job_error_expired) where
-  toJSON (FE_job_error_expired jobId) =
+instance ToJSON (ToFrontendErrorData 'EC_500__job_expired) where
+  toJSON (FE_job_expired jobId) =
     object [ "job_id" .= toJSON jobId ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__job_error_expired) where
-  parseJSON = withObject "FE_job_error_expired" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__job_expired) where
+  parseJSON = withObject "FE_job_expired" $ \o -> do
     jee_job_id <- o .: "job_id"
-    pure FE_job_error_expired{..}
+    pure FE_job_expired{..}
 
-instance ToJSON (ToFrontendErrorData 'EC_500__job_error_invalid_mac) where
-  toJSON (FE_job_error_invalid_mac mac) =
+instance ToJSON (ToFrontendErrorData 'EC_500__job_invalid_mac) where
+  toJSON (FE_job_invalid_mac mac) =
     object [ "mac" .= toJSON mac ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__job_error_invalid_mac) where
-  parseJSON = withObject "FE_job_error_invalid_mac" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_mac) where
+  parseJSON = withObject "FE_job_invalid_mac" $ \o -> do
     jeim_mac <- o .: "mac"
-    pure FE_job_error_invalid_mac{..}
+    pure FE_job_invalid_mac{..}
 
-instance ToJSON (ToFrontendErrorData 'EC_500__job_error_unknown_job) where
-  toJSON (FE_job_error_unknown_job jobId) =
+instance ToJSON (ToFrontendErrorData 'EC_500__job_unknown_job) where
+  toJSON (FE_job_unknown_job jobId) =
     object [ "job_id" .= toJSON jobId ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__job_error_unknown_job) where
-  parseJSON = withObject "FE_job_error_unknown_job" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__job_unknown_job) where
+  parseJSON = withObject "FE_job_unknown_job" $ \o -> do
     jeuj_job_id <- o .: "job_id"
-    pure FE_job_error_unknown_job{..}
+    pure FE_job_unknown_job{..}
 
-instance ToJSON (ToFrontendErrorData 'EC_500__job_error_generic_exception) where
-  toJSON (FE_job_error_generic_exception err) =
+instance ToJSON (ToFrontendErrorData 'EC_500__job_generic_exception) where
+  toJSON (FE_job_generic_exception err) =
     object [ "error" .= toJSON err ]
 
-instance FromJSON (ToFrontendErrorData 'EC_500__job_error_generic_exception) where
-  parseJSON = withObject "FE_job_error_generic_exception" $ \o -> do
+instance FromJSON (ToFrontendErrorData 'EC_500__job_generic_exception) where
+  parseJSON = withObject "FE_job_generic_exception" $ \o -> do
     jege_error <- o .: "error"
-    pure FE_job_error_generic_exception{..}
+    pure FE_job_generic_exception{..}
 
 ----------------------------------------------------------------------------
 -- Arbitrary instances and test data generation
@@ -420,17 +553,48 @@ genFrontendErr be = do
   case be of
 
     -- node errors
-    EC_404__node_error_list_not_found
-      -> arbitrary >>= \lid -> pure $ mkFrontendErr' txt $ FE_node_error_list_not_found lid
-    EC_404__node_error_root_not_found
-      -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
-    EC_404__node_error_corpus_not_found
-      -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
-    EC_500__node_error_not_implemented_yet
-      -> pure $ mkFrontendErr' txt FE_node_error_not_implemented_yet
-    EC_404__node_error_not_found
+    EC_404__node_list_not_found
+      -> arbitrary >>= \lid -> pure $ mkFrontendErr' txt $ FE_node_list_not_found lid
+    EC_404__node_root_not_found
+      -> pure $ mkFrontendErr' txt FE_node_root_not_found
+    EC_404__node_corpus_not_found
+      -> pure $ mkFrontendErr' txt FE_node_corpus_not_found
+    EC_500__node_not_implemented_yet
+      -> pure $ mkFrontendErr' txt FE_node_not_implemented_yet
+    EC_404__node_lookup_failed_not_found
       -> do nodeId <- arbitrary
-            pure $ mkFrontendErr' txt (FE_node_error_not_found nodeId)
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_not_found nodeId)
+    EC_404__node_lookup_failed_user_not_found
+      -> do userId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_user_not_found userId)
+    EC_404__node_lookup_failed_username_not_found
+      -> do username <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_username_not_found username)
+    EC_400__node_lookup_failed_user_too_many_roots
+      -> do userId <- arbitrary
+            roots  <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_user_too_many_roots userId roots)
+    EC_404__node_context_not_found
+      -> do contextId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_context_not_found contextId)
+    EC_400__node_creation_failed_no_parent
+      -> do userId   <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_creation_failed_no_parent userId)
+    EC_400__node_creation_failed_parent_exists
+      -> do userId   <- arbitrary
+            parentId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_creation_failed_parent_exists userId parentId)
+    EC_400__node_creation_failed_insert_node
+      -> do userId   <- arbitrary
+            parentId <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_node_creation_failed_insert_node parentId userId
+    EC_400__node_creation_failed_user_negative_id
+      ->    pure $ mkFrontendErr' txt (FE_node_creation_failed_user_negative_id (UnsafeMkUserId (-42)))
+    EC_500__node_generic_exception
+      -> do err <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_node_generic_exception err
+    EC_400__node_needs_configuration
+      ->    pure $ mkFrontendErr' txt $ FE_node_needs_configuration
 
     -- validation error
     EC_400__validation_error
@@ -450,30 +614,30 @@ genFrontendErr be = do
             pure $ mkFrontendErr' txt $ FE_internal_server_error err
 
     -- tree errors
-    EC_404__tree_error_root_not_found
-      -> pure $ mkFrontendErr' txt $ FE_tree_error_root_not_found
-    EC_404__tree_error_empty_root
-      -> pure $ mkFrontendErr' txt $ FE_tree_error_empty_root
-    EC_500__tree_error_too_many_roots
+    EC_404__tree_root_not_found
+      -> pure $ mkFrontendErr' txt $ FE_tree_root_not_found
+    EC_404__tree_empty_root
+      -> pure $ mkFrontendErr' txt $ FE_tree_empty_root
+    EC_500__tree_too_many_roots
       -> do nodes <- arbitrary
-            pure $ mkFrontendErr' txt $ FE_tree_error_too_many_roots nodes
+            pure $ mkFrontendErr' txt $ FE_tree_too_many_roots nodes
 
     -- job errors
-    EC_500__job_error_invalid_id_type
+    EC_500__job_invalid_id_type
       -> do idTy <- arbitrary
-            pure $ mkFrontendErr' txt $ FE_job_error_invalid_id_type idTy
-    EC_500__job_error_expired
+            pure $ mkFrontendErr' txt $ FE_job_invalid_id_type idTy
+    EC_500__job_expired
       -> do jobId <- getPositive <$> arbitrary
-            pure $ mkFrontendErr' txt $ FE_job_error_expired jobId
-    EC_500__job_error_invalid_mac
+            pure $ mkFrontendErr' txt $ FE_job_expired jobId
+    EC_500__job_invalid_mac
       -> do macId <- arbitrary
-            pure $ mkFrontendErr' txt $ FE_job_error_expired macId
-    EC_500__job_error_unknown_job
+            pure $ mkFrontendErr' txt $ FE_job_expired macId
+    EC_500__job_unknown_job
       -> do jobId <- getPositive <$> arbitrary
-            pure $ mkFrontendErr' txt $ FE_job_error_unknown_job jobId
-    EC_500__job_error_generic_exception
+            pure $ mkFrontendErr' txt $ FE_job_unknown_job jobId
+    EC_500__job_generic_exception
       -> do err <- arbitrary
-            pure $ mkFrontendErr' txt $ FE_job_error_generic_exception err
+            pure $ mkFrontendErr' txt $ FE_job_generic_exception err
 
 instance ToJSON BackendErrorCode where
   toJSON = JSON.String . T.pack . drop 3 . show
@@ -496,20 +660,50 @@ instance FromJSON FrontendError where
     (fe_diagnostic :: T.Text)      <- o .: "diagnostic"
     (fe_type :: BackendErrorCode)  <- o .: "type"
     case fe_type of
-      EC_404__node_error_list_not_found         -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__node_error_list_not_found) <- o .: "data"
+      EC_404__node_list_not_found         -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_list_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_404__node_error_root_not_found         -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__node_error_root_not_found) <- o .: "data"
+      EC_404__node_root_not_found         -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_root_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_404__node_error_corpus_not_found       -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__node_error_corpus_not_found) <- o .: "data"
+      EC_404__node_corpus_not_found       -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_corpus_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_404__node_error_not_found -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__node_error_not_found) <- o .: "data"
+      EC_404__node_lookup_failed_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_500__node_error_not_implemented_yet -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) <- o .: "data"
+      EC_404__node_lookup_failed_user_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) <- o .: "data"
+        pure FrontendError{..}
+      EC_404__node_lookup_failed_username_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_lookup_failed_user_too_many_roots -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__node_not_implemented_yet -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__node_not_implemented_yet) <- o .: "data"
+        pure FrontendError{..}
+      EC_404__node_context_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_context_not_found) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_creation_failed_no_parent -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_creation_failed_parent_exists -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_creation_failed_insert_node -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_creation_failed_insert_node) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_creation_failed_user_negative_id -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__node_generic_exception -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__node_generic_exception) <- o .: "data"
+        pure FrontendError{..}
+      EC_400__node_needs_configuration -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__node_needs_configuration) <- o .: "data"
         pure FrontendError{..}
 
       -- validation error
@@ -528,29 +722,29 @@ instance FromJSON FrontendError where
         pure FrontendError{..}
 
       -- tree errors
-      EC_404__tree_error_root_not_found -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__tree_error_root_not_found) <- o .: "data"
+      EC_404__tree_root_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__tree_root_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_404__tree_error_empty_root -> do
-        (fe_data :: ToFrontendErrorData 'EC_404__tree_error_empty_root) <- o .: "data"
+      EC_404__tree_empty_root -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__tree_empty_root) <- o .: "data"
         pure FrontendError{..}
-      EC_500__tree_error_too_many_roots -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__tree_error_too_many_roots) <- o .: "data"
+      EC_500__tree_too_many_roots -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__tree_too_many_roots) <- o .: "data"
         pure FrontendError{..}
 
       -- job errors
-      EC_500__job_error_invalid_id_type -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__job_error_invalid_id_type) <- o .: "data"
+      EC_500__job_invalid_id_type -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_invalid_id_type) <- o .: "data"
         pure FrontendError{..}
-      EC_500__job_error_expired -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__job_error_expired) <- o .: "data"
+      EC_500__job_expired -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_expired) <- o .: "data"
         pure FrontendError{..}
-      EC_500__job_error_invalid_mac -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__job_error_invalid_mac) <- o .: "data"
+      EC_500__job_invalid_mac -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_invalid_mac) <- o .: "data"
         pure FrontendError{..}
-      EC_500__job_error_unknown_job -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__job_error_unknown_job) <- o .: "data"
+      EC_500__job_unknown_job -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_unknown_job) <- o .: "data"
         pure FrontendError{..}
-      EC_500__job_error_generic_exception -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__job_error_generic_exception) <- o .: "data"
+      EC_500__job_generic_exception -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__job_generic_exception) <- o .: "data"
         pure FrontendError{..}

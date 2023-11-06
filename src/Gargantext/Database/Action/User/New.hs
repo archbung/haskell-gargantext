@@ -40,6 +40,7 @@ import Gargantext.Database.Query.Table.User
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Pass.User (gargPass)
 import Gargantext.Prelude.Mail.Types (MailConfig)
+import qualified Data.List.NonEmpty as NE
 
 ------------------------------------------------------------------------
 -- | Creates a new 'User' from the input 'EmailAddress', which needs to
@@ -63,10 +64,8 @@ new_user :: HasNodeError err
          => NewUser GargPassword
          -> DBCmd err UserId
 new_user rq = do
-  ur <- new_users [rq]
-  case head ur of
-    Nothing   -> nodeError MkNode
-    Just uid  -> pure uid
+  (uid NE.:| _) <- new_users (rq NE.:| [])
+  pure uid
 
 ------------------------------------------------------------------------
 -- | A DB-specific action to bulk-create users.
@@ -74,18 +73,18 @@ new_user rq = do
 -- notification, and thus lives in the 'DbCmd' effect stack. You may want to
 -- use 'newUsers' instead for standard Gargantext code.
 new_users :: HasNodeError err
-          => [NewUser GargPassword]
+          => NonEmpty (NewUser GargPassword)
           -- ^ A list of users to create.
-          -> DBCmd err [UserId]
+          -> DBCmd err (NonEmpty UserId)
 new_users us = do
   us'   <- liftBase        $ mapM toUserHash us
-  void  $ insertUsers      $ map  toUserWrite us'
-  mapM (fmap fst . getOrMkRoot) $ map  (\u -> UserName   (_nu_username u)) us
+  void  $ insertUsers      $ NE.map toUserWrite us'
+  mapM (fmap fst . getOrMkRoot) $ NE.map  (\u -> UserName   (_nu_username u)) us
 
 ------------------------------------------------------------------------
 newUsers :: (CmdM env err m, MonadRandom m, HasNodeError err, HasMail env)
-         => [EmailAddress]
-         -> m [UserId]
+         => NonEmpty EmailAddress
+         -> m (NonEmpty UserId)
 newUsers us = do
   config <- view $ mailSettings
   us' <- mapM (\ea -> mkNewUser ea . GargPassword <$> gargPass) us
@@ -110,10 +109,10 @@ guessUserName n = case splitOn "@" n of
 
 ------------------------------------------------------------------------
 newUsers' :: HasNodeError err
-         => MailConfig -> [NewUser GargPassword] -> Cmd err [UserId]
+         => MailConfig -> NonEmpty (NewUser GargPassword) -> Cmd err (NonEmpty UserId)
 newUsers' cfg us = do
   us' <- liftBase         $ mapM toUserHash  us
-  void $ insertUsers      $ map  toUserWrite us'
+  void $ insertUsers      $ NE.map  toUserWrite us'
   urs <- mapM (fmap fst . getOrMkRoot) $ map  (\u -> UserName   (_nu_username u)) us
   _   <- mapM (\u -> mail cfg (Invitation u)) us
   -- printDebug "newUsers'" us

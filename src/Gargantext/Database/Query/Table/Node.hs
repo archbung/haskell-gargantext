@@ -266,21 +266,25 @@ getNodeWith nId _ = do
 
 ------------------------------------------------------------------------
 -- | Sugar to insert Node with NodeType in Database
-insertDefaultNode :: HasDBid NodeType
-                  => NodeType -> ParentId -> UserId -> DBCmd err [NodeId]
+insertDefaultNode :: (HasDBid NodeType, HasNodeError err)
+                  => NodeType -> ParentId -> UserId -> DBCmd err NodeId
 insertDefaultNode nt p u = insertNode nt Nothing Nothing p u
 
-insertDefaultNodeIfNotExists :: HasDBid NodeType
+insertDefaultNodeIfNotExists :: (HasDBid NodeType, HasNodeError err)
                              => NodeType -> ParentId -> UserId -> DBCmd err [NodeId]
 insertDefaultNodeIfNotExists nt p u = do
   children <- getChildrenByType p nt
   case children of
-    [] -> insertDefaultNode nt p u
+    [] -> (:[]) <$> insertDefaultNode nt p u
     xs -> pure xs
 
-insertNode :: HasDBid NodeType
-           => NodeType -> Maybe Name -> Maybe DefaultHyperdata -> ParentId -> UserId -> DBCmd err [NodeId]
-insertNode nt n h p u = insertNodesR [nodeW nt n h p u]
+insertNode :: (HasDBid NodeType, HasNodeError err)
+           => NodeType -> Maybe Name -> Maybe DefaultHyperdata -> ParentId -> UserId -> DBCmd err NodeId
+insertNode nt n h p u = do
+  res <- insertNodesR [nodeW nt n h p u]
+  case res of
+    [x] -> pure x
+    _   -> nodeError $ NodeCreationFailed $ InsertNodeFailed u p
 
 nodeW ::  HasDBid NodeType
        => NodeType -> Maybe Name -> Maybe DefaultHyperdata -> ParentId -> UserId -> NodeWrite
@@ -378,18 +382,18 @@ data CorpusType = CorpusDocument | CorpusContact
 
 class MkCorpus a
   where
-    mk :: HasDBid NodeType => Maybe Name -> Maybe a -> ParentId -> UserId -> DBCmd err [NodeId]
+    mk :: (HasDBid NodeType, HasNodeError err) => Maybe Name -> Maybe a -> ParentId -> UserId -> DBCmd err [NodeId]
 
 instance MkCorpus HyperdataCorpus
   where
-    mk n Nothing  p u = insertNode NodeCorpus n Nothing p u
-    mk n (Just h) p u = insertNode NodeCorpus n (Just $ DefaultCorpus h) p u
+    mk n Nothing  p u = (:[]) <$> insertNode NodeCorpus n Nothing p u
+    mk n (Just h) p u = (:[]) <$> insertNode NodeCorpus n (Just $ DefaultCorpus h) p u
 
 
 instance MkCorpus HyperdataAnnuaire
   where
-    mk n Nothing  p u = insertNode NodeCorpus   n Nothing p u
-    mk n (Just h) p u = insertNode NodeAnnuaire n (Just $ DefaultAnnuaire h) p u
+    mk n Nothing  p u = (:[]) <$> insertNode NodeCorpus   n Nothing p u
+    mk n (Just h) p u = (:[]) <$> insertNode NodeAnnuaire n (Just $ DefaultAnnuaire h) p u
 
 
 getOrMkList :: (HasNodeError err, HasDBid NodeType)
@@ -399,7 +403,7 @@ getOrMkList :: (HasNodeError err, HasDBid NodeType)
 getOrMkList pId uId =
   maybe (mkList' pId uId) (pure . view node_id) . headMay =<< getListsWithParentId pId
     where
-      mkList' pId' uId' = maybe (nodeError MkNode) pure . headMay =<< insertDefaultNode NodeList pId' uId'
+      mkList' pId' uId' = insertDefaultNode NodeList pId' uId'
 
 -- | TODO remove defaultList
 defaultList :: (HasNodeError err, HasDBid NodeType) => CorpusId -> DBCmd err ListId

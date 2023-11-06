@@ -275,6 +275,9 @@ newtype ContextId = UnsafeMkContextId { _ContextId :: Int }
 
 instance ToParamSchema ContextId
 
+instance Arbitrary ContextId where
+  arbitrary = UnsafeMkContextId . getPositive <$> arbitrary
+
 instance FromHttpApiData ContextId where
   parseUrlPiece n = pure $ UnsafeMkContextId $ (read . cs) n
 instance ToHttpApiData ContextId where
