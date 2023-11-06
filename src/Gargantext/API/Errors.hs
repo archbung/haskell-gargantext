@@ -26,6 +26,7 @@ import qualified Network.HTTP.Types.Status as HTTP
 import qualified Data.Text as T
 import Gargantext.Database.Query.Tree hiding (treeError)
 import Data.Validity ( prettyValidation )
+import Gargantext.API.Admin.Auth.Types
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
@@ -43,12 +44,21 @@ backendErrorToFrontendError = \case
          $ FE_validation_error $ case prettyValidation validationError of
              Nothing -> "unknown_validation_error"
              Just v  -> T.pack v
-  InternalJoseError _joseError
-    -> undefined
+  InternalAuthenticationError authError
+    -> authErrorToFrontendError authError
   InternalServerError _internalServerError
     -> undefined
   InternalJobError _jobError
     -> undefined
+
+
+authErrorToFrontendError :: AuthenticationError -> FrontendError
+authErrorToFrontendError = \case
+  -- For now, we ignore the Jose error, as they are too specific
+  -- (i.e. they should be logged internally to Sentry rather than shared
+  -- externall).
+  LoginFailed nid uid _
+    -> mkFrontendErr' "Invalid username/password, or invalid session token." $ FE_login_failed_error nid uid
 
 nodeErrorToFrontendError :: NodeError -> FrontendError
 nodeErrorToFrontendError ne = case ne of

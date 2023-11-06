@@ -2,7 +2,7 @@
 module Gargantext.API.Errors.Class where
 
 import Control.Lens
-import Crypto.JOSE.Error as Jose
+import Gargantext.API.Admin.Auth.Types (AuthenticationError)
 
-class HasJoseError e where
-  _JoseError :: Prism' e Jose.Error
+class HasAuthenticationError e where
+  _AuthenticationError :: Prism' e AuthenticationError

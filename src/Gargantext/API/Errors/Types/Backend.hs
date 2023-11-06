@@ -23,6 +23,8 @@ data BackendErrorCode
   | EC_500__node_error_not_implemented_yet
   -- validation errors
   | EC_400__validation_error
+  -- authentication errors
+  | EC_403__login_failed_error
   -- tree errors
   | EC_404__tree_error_root_not_found
   | EC_404__tree_error_empty_root

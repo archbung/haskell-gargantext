@@ -21,8 +21,8 @@ module Gargantext.API.Prelude
   where
 
 import Control.Lens ((#))
-import Crypto.JOSE.Error as Jose
 import Data.Aeson.Types
+import Gargantext.API.Admin.Auth.Types (AuthenticationError)
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Admin.Types
 import Gargantext.API.Errors.Class
@@ -40,8 +40,8 @@ import Servant
 import Servant.Job.Async
 import Servant.Job.Core (HasServerError(..), serverError)
 
-joseError :: (MonadError e m, HasJoseError e) => Jose.Error -> m a
-joseError = throwError . (_JoseError #)
+authenticationError :: (MonadError e m, HasAuthenticationError e) => AuthenticationError -> m a
+authenticationError = throwError . (_AuthenticationError #)
 
 type HasJobEnv' env = HasJobEnv env JobLog JobLog
 
@@ -56,13 +56,13 @@ type EnvC env =
   )
 
 type ErrC err =
-  ( HasNodeError       err
-  , HasValidationError err
-  , HasTreeError       err
-  , HasServerError     err
-  , HasJoseError       err
---  , ToJSON           err -- TODO this is arguable
-  , Exception          err
+  ( HasNodeError           err
+  , HasValidationError     err
+  , HasTreeError           err
+  , HasServerError         err
+  , HasAuthenticationError err
+--  , ToJSON               err -- TODO this is arguable
+  , Exception              err
   )
 
 type GargServerC env err m =

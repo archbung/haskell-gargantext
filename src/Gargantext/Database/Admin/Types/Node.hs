@@ -74,6 +74,9 @@ instance DecodeScalar UserId where
 instance ResourceId UserId where
   isPositive = (> 0) . _UserId
 
+instance Arbitrary UserId where
+  arbitrary = UnsafeMkUserId . getPositive <$> arbitrary
+
 instance DefaultFromField SqlInt4 UserId
   where
     defaultFromField = fromPGSFromField

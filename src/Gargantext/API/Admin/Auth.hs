@@ -53,7 +53,7 @@ import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types
 import Gargantext.API.Auth.PolicyCheck
-import Gargantext.API.Prelude (joseError, HasServerError, GargServerC, GargServer, _ServerError, GargM)
+import Gargantext.API.Prelude (authenticationError, HasServerError, GargServerC, GargServer, _ServerError, GargM)
 import Gargantext.Core.Mail (MailModel(..), mail)
 import Gargantext.Core.Mail.Types (mailSettings)
 import Gargantext.Core.Types.Individu (User(..), Username, GargPassword(..))
@@ -78,7 +78,7 @@ import Gargantext.API.Errors
 
 -- | Main functions of authorization
 
-makeTokenForUser :: (HasSettings env, HasJoseError err)
+makeTokenForUser :: (HasSettings env, HasAuthenticationError err)
                  => NodeId
                  -> UserId
                  -> Cmd' env err Token
@@ -86,10 +86,10 @@ makeTokenForUser nodeId userId = do
   jwtS <- view $ settings . jwtSettings
   e <- liftBase $ makeJWT (AuthenticatedUser nodeId userId) jwtS Nothing
   -- TODO-SECURITY here we can implement token expiration ^^.
-  either joseError (pure . toStrict . LE.decodeUtf8) e
+  either (authenticationError . LoginFailed nodeId userId) (pure . toStrict . LE.decodeUtf8) e
   -- TODO not sure about the encoding...
 
-checkAuthRequest :: ( HasSettings env, HasJoseError err, DbCmd' env err m )
+checkAuthRequest :: ( HasSettings env, HasAuthenticationError err, DbCmd' env err m )
                  => Username
                  -> GargPassword
                  -> m CheckAuth
@@ -114,7 +114,7 @@ checkAuthRequest couldBeEmail (GargPassword p) = do
               token <- makeTokenForUser nodeId userLight_id
               pure $ Valid token nodeId userLight_id
 
-auth :: (HasSettings env, HasJoseError err, DbCmd' env err m)
+auth :: (HasSettings env, HasAuthenticationError err, DbCmd' env err m)
      => AuthRequest -> m AuthResponse
 auth (AuthRequest u p) = do
   checkAuthRequest' <- checkAuthRequest u p
@@ -233,11 +233,12 @@ forgotPasswordPost (ForgotPasswordRequest email) = do
   -- users' emails
   pure $ ForgotPasswordResponse "ok"
 
-forgotPasswordGet :: (HasSettings env, CmdCommon env, HasJoseError err, HasServerError err)
+forgotPasswordGet :: (HasSettings env, CmdCommon env, HasAuthenticationError err, HasServerError err)
      => Maybe Text -> Cmd' env err ForgotPasswordGet
 forgotPasswordGet Nothing = pure $ ForgotPasswordGet ""
 forgotPasswordGet (Just uuid) = do
   let mUuid = fromText uuid
+  -- FIXME(adn) Sending out \"not found\" is leaking information here, we ought to fix it.
   case mUuid of
     Nothing -> throwError $ _ServerError # err404 { errBody = "Not found" }
     Just uuid' -> do
@@ -249,7 +250,7 @@ forgotPasswordGet (Just uuid) = do
 
 ---------------------
 
-forgotPasswordGetUser :: ( HasSettings env, CmdCommon env, HasJoseError err, HasServerError err)
+forgotPasswordGetUser :: ( HasSettings env, CmdCommon env, HasAuthenticationError err, HasServerError err)
      => UserLight -> Cmd' env err ForgotPasswordGet
 forgotPasswordGetUser (UserLight { .. }) = do
   -- pick some random password

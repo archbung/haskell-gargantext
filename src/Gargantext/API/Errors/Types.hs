@@ -61,13 +61,13 @@ import Servant (ServerError)
 import Servant.Job.Core
 import Test.QuickCheck
 import Test.QuickCheck.Instances.Text ()
-import qualified Crypto.JWT as Jose
 import qualified Data.Text as T
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Servant.Job.Types as SJ
 import Text.Read (readMaybe)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe
+import Gargantext.API.Admin.Auth.Types (AuthenticationError)
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -86,12 +86,12 @@ instance Exception e => Exception (WithStacktrace e) where
 -- | An internal error which can be emitted from the backend and later
 -- converted into a 'FrontendError', for later consumption.
 data BackendInternalError
-  = InternalNodeError       !NodeError
-  | InternalTreeError       !TreeError
-  | InternalValidationError !Validation
-  | InternalJoseError       !Jose.Error
-  | InternalServerError     !ServerError
-  | InternalJobError        !Jobs.JobError
+  = InternalNodeError           !NodeError
+  | InternalTreeError           !TreeError
+  | InternalValidationError     !Validation
+  | InternalAuthenticationError !AuthenticationError
+  | InternalServerError         !ServerError
+  | InternalJobError            !Jobs.JobError
   deriving (Show, Typeable)
 
 makePrisms ''BackendInternalError
@@ -122,8 +122,8 @@ instance HasTreeError BackendInternalError where
 instance HasServerError BackendInternalError where
   _ServerError = _InternalServerError
 
-instance HasJoseError BackendInternalError where
-  _JoseError = _InternalJoseError
+instance HasAuthenticationError BackendInternalError where
+  _AuthenticationError = _InternalAuthenticationError
 
 -- | An error that can be returned to the frontend. It carries a human-friendly
 -- diagnostic, the 'type' of the error as well as some context-specific data.
@@ -200,6 +200,17 @@ data instance ToFrontendErrorData 'EC_400__validation_error =
   deriving (Show, Eq, Generic)
 
 --
+-- authentication errors
+--
+
+data instance ToFrontendErrorData 'EC_403__login_failed_error =
+  FE_login_failed_error { lfe_node_id :: NodeId
+                        , lfe_user_id :: UserId
+                        }
+  deriving (Show, Eq, Generic)
+
+
+--
 -- Tree errors
 --
 
@@ -267,6 +278,19 @@ instance FromJSON (ToFrontendErrorData 'EC_400__validation_error) where
   parseJSON (String txt) = pure $ FE_validation_error txt
   parseJSON ty           = typeMismatch "FE_validation_error" ty
 
+--
+-- authentication errors
+--
+
+instance ToJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
+  toJSON FE_login_failed_error{..} =
+    object [ "user_id" .= toJSON lfe_user_id, "node_id" .= toJSON lfe_node_id ]
+
+instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
+  parseJSON = withObject "FE_login_failed_error" $ \o -> do
+    lfe_user_id <- o .: "user_id"
+    lfe_node_id <- o .: "node_id"
+    pure FE_login_failed_error{..}
 
 --
 -- tree errors
@@ -317,11 +341,18 @@ genFrontendErr be = do
     EC_404__node_error_not_found
       -> do nodeId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_error_not_found nodeId)
+
     -- validation error
     EC_400__validation_error
       -> do let genValChain = oneof [ Violated <$> arbitrary, Location <$> arbitrary <*> genValChain ]
             chain <- listOf1 genValChain
             pure $ mkFrontendErr' txt $ FE_validation_error (T.pack $ fromMaybe "unknown_validation_error" $ prettyValidation $ Validation chain)
+
+    -- authentication error
+    EC_403__login_failed_error
+      -> do nid <- arbitrary
+            uid <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_login_failed_error nid uid
 
     -- tree errors
     EC_404__tree_error_root_not_found
@@ -372,6 +403,11 @@ instance FromJSON FrontendError where
       -- validation error
       EC_400__validation_error -> do
         (fe_data :: ToFrontendErrorData 'EC_400__validation_error) <- o .: "data"
+        pure FrontendError{..}
+
+      -- authentication errors
+      EC_403__login_failed_error -> do
+        (fe_data :: ToFrontendErrorData 'EC_403__login_failed_error) <- o .: "data"
         pure FrontendError{..}
 
       -- tree errors

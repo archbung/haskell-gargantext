@@ -25,6 +25,7 @@ import Gargantext.Prelude hiding (reverse)
 import Servant.Auth.Server
 import Test.QuickCheck (elements, oneof)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import qualified Crypto.JWT as Jose
 
 ---------------------------------------------------
 
@@ -69,6 +70,10 @@ instance ToSchema AuthenticatedUser where
 
 instance ToJWT AuthenticatedUser
 instance FromJWT AuthenticatedUser
+
+data AuthenticationError
+  = LoginFailed NodeId UserId Jose.Error
+  deriving (Show, Eq)
 
 -- TODO-SECURITY why is the CookieSettings necessary?
 type AuthContext = '[JWTSettings, CookieSettings] -- , BasicAuthCfg
