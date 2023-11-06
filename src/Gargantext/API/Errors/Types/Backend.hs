@@ -18,7 +18,9 @@ data BackendErrorCode
   -- node errors
     EC_404__node_error_list_not_found
   | EC_404__node_error_root_not_found
+  | EC_404__node_error_not_found
   | EC_404__node_error_corpus_not_found
+  | EC_500__node_error_not_implemented_yet
   -- tree errors
   | EC_404__tree_error_root_not_found
   deriving (Show, Read, Eq, Enum, Bounded)

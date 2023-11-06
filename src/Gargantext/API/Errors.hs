@@ -66,11 +66,11 @@ nodeErrorToFrontendError ne = case ne of
   NegativeId
     -> undefined
   NotImplYet
-    -> undefined
+    -> mkFrontendErrShow FE_node_error_not_implemented_yet
   ManyNodeUsers
     -> undefined
-  DoesNotExist _nodeId
-    -> undefined
+  DoesNotExist nodeId
+    -> mkFrontendErrShow $ FE_node_error_not_found nodeId
   NoContextFound _contextId
     -> undefined
   NeedsConfiguration

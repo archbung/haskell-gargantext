@@ -180,12 +180,26 @@ data instance ToFrontendErrorData 'EC_404__node_error_corpus_not_found =
   FE_node_error_corpus_not_found
   deriving (Show, Eq, Generic)
 
+data instance ToFrontendErrorData 'EC_500__node_error_not_implemented_yet =
+  FE_node_error_not_implemented_yet
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_404__node_error_not_found =
+  FE_node_error_not_found { nenf_node_id :: !NodeId }
+  deriving (Show, Eq, Generic)
+
+--
+-- Tree errors
+--
+
 data instance ToFrontendErrorData 'EC_404__tree_error_root_not_found =
   RootNotFound { _rnf_rootId :: RootId }
   deriving (Show, Eq, Generic)
 
 ----------------------------------------------------------------------------
 -- JSON instances. It's important to have nice and human readable instances.
+-- It's also important that they all roundtrips, i.e. that given a 'ToFrontendErrorData'
+-- payload, we can render it to JSON and parse it back.
 ----------------------------------------------------------------------------
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_error_list_not_found) where
@@ -209,6 +223,20 @@ instance ToJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
 instance FromJSON (ToFrontendErrorData 'EC_404__node_error_corpus_not_found) where
   parseJSON _ = pure FE_node_error_corpus_not_found
 
+instance ToJSON (ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) where
+  toJSON _ = JSON.Null
+
+instance FromJSON (ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) where
+  parseJSON _ = pure FE_node_error_not_implemented_yet
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
+  toJSON (FE_node_error_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
+  parseJSON = withObject "FE_node_error_not_found" $ \o -> do
+    nenf_node_id <- o .: "node_id"
+    pure FE_node_error_not_found{..}
+
 instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
   toJSON RootNotFound{..} = object [ "root_id" .= toJSON _rnf_rootId ]
 
@@ -228,12 +256,21 @@ genFrontendErr :: BackendErrorCode -> Gen FrontendError
 genFrontendErr be = do
   txt <- arbitrary
   case be of
+
+    -- node errors
     EC_404__node_error_list_not_found
       -> arbitrary >>= \lid -> pure $ mkFrontendErr' txt $ FE_node_error_list_not_found lid
     EC_404__node_error_root_not_found
       -> pure $ mkFrontendErr' txt FE_node_error_root_not_found
     EC_404__node_error_corpus_not_found
       -> pure $ mkFrontendErr' txt FE_node_error_corpus_not_found
+    EC_500__node_error_not_implemented_yet
+      -> pure $ mkFrontendErr' txt FE_node_error_not_implemented_yet
+    EC_404__node_error_not_found
+      -> do nodeId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_error_not_found nodeId)
+
+    -- tree errors
     EC_404__tree_error_root_not_found
       -> do rootId <- arbitrary
             pure $ mkFrontendErr' txt (RootNotFound rootId)
@@ -268,6 +305,14 @@ instance FromJSON FrontendError where
       EC_404__node_error_corpus_not_found       -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_error_corpus_not_found) <- o .: "data"
         pure FrontendError{..}
+      EC_404__node_error_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_error_not_found) <- o .: "data"
+        pure FrontendError{..}
+
+      -- tree errors
       EC_404__tree_error_root_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__tree_error_root_not_found) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__node_error_not_implemented_yet -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) <- o .: "data"
         pure FrontendError{..}
