@@ -24,6 +24,7 @@ import Servant.Server
 import qualified Data.Aeson as JSON
 import qualified Network.HTTP.Types.Status as HTTP
 import qualified Data.Text as T
+import Gargantext.Database.Query.Tree hiding (treeError)
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
@@ -34,8 +35,8 @@ backendErrorToFrontendError :: BackendInternalError -> FrontendError
 backendErrorToFrontendError = \case
   InternalNodeError nodeError
     -> nodeErrorToFrontendError nodeError
-  InternalTreeError _treeError
-    -> undefined
+  InternalTreeError treeError
+    -> treeErrorToFrontendError treeError
   InternalValidationError _validationError
     -> undefined
   InternalJoseError _joseError
@@ -79,6 +80,12 @@ nodeErrorToFrontendError ne = case ne of
     -> undefined
   QueryNoParse _txt
     -> undefined
+
+treeErrorToFrontendError :: TreeError -> FrontendError
+treeErrorToFrontendError te = case te of
+  NoRoot             -> mkFrontendErrShow FE_tree_error_root_not_found
+  EmptyRoot          -> mkFrontendErrShow FE_tree_error_empty_root
+  TooManyRoots roots -> mkFrontendErrShow $ FE_tree_error_too_many_roots roots
 
 -- | Converts a 'FrontendError' into a 'ServerError' that the servant app can
 -- return to the frontend.

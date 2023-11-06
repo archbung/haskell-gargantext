@@ -43,6 +43,7 @@ import Control.Lens (makePrisms)
 import Data.Aeson as JSON
 import Data.Aeson.Types (typeMismatch, emptyArray)
 import Data.Singletons.TH
+import Data.List.NonEmpty (NonEmpty)
 import Data.Typeable
 import Data.Validity (Validation)
 import GHC.Generics
@@ -65,6 +66,7 @@ import qualified Data.Text as T
 import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Servant.Job.Types as SJ
 import Text.Read (readMaybe)
+import qualified Data.List.NonEmpty as NE
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -193,7 +195,15 @@ data instance ToFrontendErrorData 'EC_404__node_error_not_found =
 --
 
 data instance ToFrontendErrorData 'EC_404__tree_error_root_not_found =
-  RootNotFound { _rnf_rootId :: RootId }
+  FE_tree_error_root_not_found
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_404__tree_error_empty_root =
+  FE_tree_error_empty_root
+  deriving (Show, Eq, Generic)
+
+data instance ToFrontendErrorData 'EC_500__tree_error_too_many_roots =
+  FE_tree_error_too_many_roots { tmr_roots :: NonEmpty NodeId }
   deriving (Show, Eq, Generic)
 
 ----------------------------------------------------------------------------
@@ -238,12 +248,25 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
     pure FE_node_error_not_found{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
-  toJSON RootNotFound{..} = object [ "root_id" .= toJSON _rnf_rootId ]
+  toJSON _ = JSON.Null
 
 instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
-  parseJSON = withObject "RootNotFound" $ \o -> do
-    _rnf_rootId <- o .: "root_id"
-    pure RootNotFound{..}
+  parseJSON _ = pure FE_tree_error_root_not_found
+
+instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_empty_root) where
+  toJSON _ = JSON.Null
+
+instance FromJSON (ToFrontendErrorData 'EC_404__tree_error_empty_root) where
+  parseJSON _ = pure FE_tree_error_empty_root
+
+instance ToJSON (ToFrontendErrorData 'EC_500__tree_error_too_many_roots) where
+  toJSON (FE_tree_error_too_many_roots roots) =
+    object [ "node_ids" .= NE.toList roots ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__tree_error_too_many_roots) where
+  parseJSON = withObject "FE_tree_error_too_many_roots" $ \o -> do
+    tmr_roots <- o .: "node_ids"
+    pure FE_tree_error_too_many_roots{..}
 
 ----------------------------------------------------------------------------
 -- Arbitrary instances and test data generation
@@ -272,8 +295,12 @@ genFrontendErr be = do
 
     -- tree errors
     EC_404__tree_error_root_not_found
-      -> do rootId <- arbitrary
-            pure $ mkFrontendErr' txt (RootNotFound rootId)
+      -> pure $ mkFrontendErr' txt $ FE_tree_error_root_not_found
+    EC_404__tree_error_empty_root
+      -> pure $ mkFrontendErr' txt $ FE_tree_error_empty_root
+    EC_500__tree_error_too_many_roots
+      -> do nodes <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_tree_error_too_many_roots nodes
 
 instance ToJSON BackendErrorCode where
   toJSON = JSON.String . T.pack . drop 3 . show
@@ -308,11 +335,17 @@ instance FromJSON FrontendError where
       EC_404__node_error_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_error_not_found) <- o .: "data"
         pure FrontendError{..}
+      EC_500__node_error_not_implemented_yet -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) <- o .: "data"
+        pure FrontendError{..}
 
       -- tree errors
       EC_404__tree_error_root_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__tree_error_root_not_found) <- o .: "data"
         pure FrontendError{..}
-      EC_500__node_error_not_implemented_yet -> do
-        (fe_data :: ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) <- o .: "data"
+      EC_404__tree_error_empty_root -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__tree_error_empty_root) <- o .: "data"
+        pure FrontendError{..}
+      EC_500__tree_error_too_many_roots -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__tree_error_too_many_roots) <- o .: "data"
         pure FrontendError{..}

@@ -23,6 +23,8 @@ data BackendErrorCode
   | EC_500__node_error_not_implemented_yet
   -- tree errors
   | EC_404__tree_error_root_not_found
+  | EC_404__tree_error_empty_root
+  | EC_500__tree_error_too_many_roots
   deriving (Show, Read, Eq, Enum, Bounded)
 
 $(genSingletons [''BackendErrorCode])

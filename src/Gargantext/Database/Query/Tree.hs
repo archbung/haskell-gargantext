@@ -64,6 +64,7 @@ import Gargantext.Database.Query.Tree.Error
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Database.Schema.NodeNode (NodeNodePoly(..))
 import Gargantext.Prelude hiding (to)
+import qualified Data.List.NonEmpty as NE
 
 ------------------------------------------------------------------------
 data DbTreeNode = DbTreeNode { _dt_nodeId   :: NodeId
@@ -254,6 +255,9 @@ findNodesWithType root target through =
       isInTarget n = List.elem (fromDBid $ view dt_typeId n)
                    $ List.nub $ target <> through
 
+treeNodeToNodeId :: DbTreeNode -> NodeId
+treeNodeToNodeId = _dt_nodeId
+
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 toTree :: ( MonadError e m
@@ -266,7 +270,7 @@ toTree m =
         Just [root] -> pure $ toTree' m root
         Nothing     -> treeError NoRoot
         Just []     -> treeError EmptyRoot
-        Just _r     -> treeError TooManyRoots
+        Just r      -> treeError $ TooManyRoots (NE.fromList $ map treeNodeToNodeId r)
 
       where
         toTree' :: Map (Maybe ParentId) [DbTreeNode]
