@@ -29,6 +29,8 @@ import Servant.Server
 import qualified Data.Aeson as JSON
 import qualified Data.Text as T
 import qualified Network.HTTP.Types.Status as HTTP
+import qualified Data.Text.Lazy.Encoding as TE
+import qualified Data.Text.Lazy as TL
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
@@ -48,10 +50,15 @@ backendErrorToFrontendError = \case
              Just v  -> T.pack v
   InternalAuthenticationError authError
     -> authErrorToFrontendError authError
-  InternalServerError _internalServerError
-    -> undefined
+  InternalServerError internalServerError
+    -> internalServerErrorToFrontendError internalServerError
   InternalJobError jobError
     -> jobErrorToFrontendError jobError
+
+internalServerErrorToFrontendError :: ServerError -> FrontendError
+internalServerErrorToFrontendError = \case
+  ServerError{..} ->
+    mkFrontendErr' (T.pack errReasonPhrase) $ FE_internal_server_error (TL.toStrict $ TE.decodeUtf8 $ errBody)
 
 jobErrorToFrontendError :: JobError -> FrontendError
 jobErrorToFrontendError = \case

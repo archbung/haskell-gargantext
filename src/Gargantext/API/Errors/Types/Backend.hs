@@ -29,6 +29,8 @@ data BackendErrorCode
   | EC_404__tree_error_root_not_found
   | EC_404__tree_error_empty_root
   | EC_500__tree_error_too_many_roots
+  -- internal server errors
+  | EC_500__internal_server_error
   -- job errors
   | EC_500__job_error_invalid_id_type
   | EC_500__job_error_expired

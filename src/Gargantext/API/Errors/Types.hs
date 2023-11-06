@@ -246,6 +246,10 @@ data instance ToFrontendErrorData 'EC_500__job_error_unknown_job =
   FE_job_error_unknown_job { jeuj_job_id :: Int }
   deriving (Show, Eq, Generic)
 
+data instance ToFrontendErrorData 'EC_500__internal_server_error =
+  FE_internal_server_error { ise_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
 data instance ToFrontendErrorData 'EC_500__job_error_generic_exception =
   FE_job_error_generic_exception { jege_error :: T.Text }
   deriving (Show, Eq, Generic)
@@ -315,6 +319,19 @@ instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
     lfe_user_id <- o .: "user_id"
     lfe_node_id <- o .: "node_id"
     pure FE_login_failed_error{..}
+
+--
+-- internal server errors
+--
+
+instance ToJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
+  toJSON FE_internal_server_error{..} = object [ "error" .= toJSON ise_error ]
+
+instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
+  parseJSON = withObject "FE_internal_server_error" $ \o -> do
+    ise_error <- o .: "error"
+    pure FE_internal_server_error{..}
+
 
 --
 -- tree errors
@@ -427,6 +444,11 @@ genFrontendErr be = do
             uid <- arbitrary
             pure $ mkFrontendErr' txt $ FE_login_failed_error nid uid
 
+    -- internal error
+    EC_500__internal_server_error
+      -> do err <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_internal_server_error err
+
     -- tree errors
     EC_404__tree_error_root_not_found
       -> pure $ mkFrontendErr' txt $ FE_tree_error_root_not_found
@@ -498,6 +520,11 @@ instance FromJSON FrontendError where
       -- authentication errors
       EC_403__login_failed_error -> do
         (fe_data :: ToFrontendErrorData 'EC_403__login_failed_error) <- o .: "data"
+        pure FrontendError{..}
+
+      -- internal server error
+      EC_500__internal_server_error -> do
+        (fe_data :: ToFrontendErrorData 'EC_500__internal_server_error) <- o .: "data"
         pure FrontendError{..}
 
       -- tree errors
