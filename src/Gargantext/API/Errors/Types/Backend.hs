@@ -21,6 +21,8 @@ data BackendErrorCode
   | EC_404__node_error_not_found
   | EC_404__node_error_corpus_not_found
   | EC_500__node_error_not_implemented_yet
+  -- validation errors
+  | EC_400__validation_error
   -- tree errors
   | EC_404__tree_error_root_not_found
   | EC_404__tree_error_empty_root

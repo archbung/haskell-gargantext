@@ -45,7 +45,7 @@ import Data.Aeson.Types (typeMismatch, emptyArray)
 import Data.Singletons.TH
 import Data.List.NonEmpty (NonEmpty)
 import Data.Typeable
-import Data.Validity (Validation)
+import Data.Validity (Validation(..), ValidationChain (..), prettyValidation)
 import GHC.Generics
 import GHC.Stack
 import Gargantext.API.Errors.Class
@@ -67,6 +67,7 @@ import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Servant.Job.Types as SJ
 import Text.Read (readMaybe)
 import qualified Data.List.NonEmpty as NE
+import Data.Maybe
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -191,6 +192,14 @@ data instance ToFrontendErrorData 'EC_404__node_error_not_found =
   deriving (Show, Eq, Generic)
 
 --
+-- validation errors
+--
+
+data instance ToFrontendErrorData 'EC_400__validation_error =
+  FE_validation_error { validation_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
+--
 -- Tree errors
 --
 
@@ -247,6 +256,22 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_error_not_found) where
     nenf_node_id <- o .: "node_id"
     pure FE_node_error_not_found{..}
 
+--
+-- validation errors
+--
+
+instance ToJSON (ToFrontendErrorData 'EC_400__validation_error) where
+  toJSON (FE_validation_error val) = toJSON val
+
+instance FromJSON (ToFrontendErrorData 'EC_400__validation_error) where
+  parseJSON (String txt) = pure $ FE_validation_error txt
+  parseJSON ty           = typeMismatch "FE_validation_error" ty
+
+
+--
+-- tree errors
+--
+
 instance ToJSON (ToFrontendErrorData 'EC_404__tree_error_root_not_found) where
   toJSON _ = JSON.Null
 
@@ -292,6 +317,11 @@ genFrontendErr be = do
     EC_404__node_error_not_found
       -> do nodeId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_error_not_found nodeId)
+    -- validation error
+    EC_400__validation_error
+      -> do let genValChain = oneof [ Violated <$> arbitrary, Location <$> arbitrary <*> genValChain ]
+            chain <- listOf1 genValChain
+            pure $ mkFrontendErr' txt $ FE_validation_error (T.pack $ fromMaybe "unknown_validation_error" $ prettyValidation $ Validation chain)
 
     -- tree errors
     EC_404__tree_error_root_not_found
@@ -337,6 +367,11 @@ instance FromJSON FrontendError where
         pure FrontendError{..}
       EC_500__node_error_not_implemented_yet -> do
         (fe_data :: ToFrontendErrorData 'EC_500__node_error_not_implemented_yet) <- o .: "data"
+        pure FrontendError{..}
+
+      -- validation error
+      EC_400__validation_error -> do
+        (fe_data :: ToFrontendErrorData 'EC_400__validation_error) <- o .: "data"
         pure FrontendError{..}
 
       -- tree errors

@@ -25,6 +25,7 @@ import qualified Data.Aeson as JSON
 import qualified Network.HTTP.Types.Status as HTTP
 import qualified Data.Text as T
 import Gargantext.Database.Query.Tree hiding (treeError)
+import Data.Validity ( prettyValidation )
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
@@ -37,8 +38,11 @@ backendErrorToFrontendError = \case
     -> nodeErrorToFrontendError nodeError
   InternalTreeError treeError
     -> treeErrorToFrontendError treeError
-  InternalValidationError _validationError
-    -> undefined
+  InternalValidationError validationError
+    -> mkFrontendErr' "A validation error occurred"
+         $ FE_validation_error $ case prettyValidation validationError of
+             Nothing -> "unknown_validation_error"
+             Just v  -> T.pack v
   InternalJoseError _joseError
     -> undefined
   InternalServerError _internalServerError
