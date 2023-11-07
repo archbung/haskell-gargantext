@@ -22,7 +22,7 @@ import Control.Lens (view)
 import Data.ByteString.Lazy qualified as DBL
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
-import Gargantext.Core.NodeStory hiding (readNodeStoryEnv)
+import Gargantext.Core.NodeStory hiding (fromDBNodeStoryEnv)
 import Gargantext.Core.Types (ListId, NodeId(..))
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams

@@ -14,22 +14,20 @@ Portability : POSIX
 module Gargantext.API.Ngrams.Tools
   where
 
-import Control.Concurrent
 import Control.Lens (_Just, (^.), at, view, At, Index, IxValue)
 import Control.Monad.Reader
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
-import Data.Pool (withResource)
 import Data.Set qualified as Set
 import Data.Validity
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
-import Gargantext.Core.NodeStoryFile qualified as NSF
-import Gargantext.Core.Types (ListType(..), NodeId, NodeType(..), ListId)
-import Gargantext.Database.Prelude (HasConnectionPool(..))
+-- import Gargantext.Core.NodeStoryFile qualified as NSF
+import Gargantext.Core.Types (ListType(..), NodeId, ListId)
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
+import GHC.Conc (TVar, readTVar)
 
 
 mergeNgramsElement :: NgramsRepoElement -> NgramsRepoElement -> NgramsRepoElement
@@ -43,7 +41,7 @@ getRepo :: HasNodeStory env err m
 getRepo listIds = do
   f <- getNodeListStory
   v  <- liftBase $ f listIds
-  v' <- liftBase $ readMVar v
+  v' <- liftBase $ atomically $ readTVar v
   pure $ v'
 
 
@@ -58,7 +56,7 @@ repoSize repo node_id = Map.map Map.size state'
 
 
 getNodeStoryVar :: HasNodeStory env err m
-           => [ListId] -> m (MVar NodeListStory)
+           => [ListId] -> m (TVar NodeListStory)
 getNodeStoryVar l = do
   f <- getNodeListStory
   v  <- liftBase $ f l
@@ -66,7 +64,7 @@ getNodeStoryVar l = do
 
 
 getNodeListStory :: HasNodeStory env err m
-                 => m ([NodeId] -> IO (MVar NodeListStory))
+                 => m ([NodeId] -> IO (TVar NodeListStory))
 getNodeListStory = do
   env <- view hasNodeStory
   pure $ view nse_getter env
@@ -228,20 +226,20 @@ getCoocByNgrams'' (Diagonal diag) (f1,f2) (m1,m2) =
 ------------------------------------------
 
 
-migrateFromDirToDb :: (HasNodeStory env err m) -- , HasNodeStory env err m)
-                   => m ()
-migrateFromDirToDb = do
-  pool <- view connPool
-  withResource pool $ \c -> do
-    listIds <- liftBase $ getNodesIdWithType c NodeList
-    -- printDebug "[migrateFromDirToDb] listIds" listIds
-    (NodeStory nls) <- NSF.getRepoReadConfig listIds
-    -- printDebug "[migrateFromDirToDb] nls" nls
-    _ <- mapM (\(nId, a) -> do
-                  n <- liftBase $ nodeExists c nId
-                  case n of
-                    False -> pure ()
-                    True  -> liftBase $ upsertNodeStories c nId a
-              ) $ Map.toList nls
-    --_ <- nodeStoryIncs (Just $ NodeStory nls) listIds
-    pure ()
+-- migrateFromDirToDb :: (HasNodeStory env err m) -- , HasNodeStory env err m)
+--                    => m ()
+-- migrateFromDirToDb = do
+--   pool <- view connPool
+--   withResource pool $ \c -> do
+--     listIds <- liftBase $ getNodesIdWithType c NodeList
+--     -- printDebug "[migrateFromDirToDb] listIds" listIds
+--     (NodeStory nls) <- NSF.getRepoReadConfig listIds
+--     -- printDebug "[migrateFromDirToDb] nls" nls
+--     _ <- mapM (\(nId, a) -> do
+--                   n <- liftBase $ nodeExists c nId
+--                   case n of
+--                     False -> pure ()
+--                     True  -> liftBase $ upsertNodeStories c nId a
+--               ) $ Map.toList nls
+--     --_ <- nodeStoryIncs (Just $ NodeStory nls) listIds
+--     pure ()

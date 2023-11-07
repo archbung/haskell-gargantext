@@ -122,7 +122,11 @@ setList :: HasNodeStory env err m
 setList l m  = do
   -- TODO check with Version for optim
   -- printDebug "New list as file" l
-  _ <- mapM (\(nt, Versioned _v ns) -> setListNgrams l nt ns) $ toList m
+  _ <- mapM (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList m
+  -- v <- getNodeStoryVar [l]
+  -- liftBase $ do
+  --   ns <- atomically $ readTVar v
+  --   printDebug "[setList] node story: " ns
   -- TODO reindex
   pure True
 

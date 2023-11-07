@@ -186,8 +186,8 @@ newEnv logger port file = do
   !self_url_env  <- parseBaseUrl $ "http://0.0.0.0:" <> show port
   dbParam        <- databaseParameters file
   !pool          <- newPool dbParam
-  --nodeStory_env <- readNodeStoryEnv (_gc_repofilepath config_env)
-  !nodeStory_env <- readNodeStoryEnv pool
+  --nodeStory_env <- fromDBNodeStoryEnv (_gc_repofilepath config_env)
+  !nodeStory_env <- fromDBNodeStoryEnv pool
   !scrapers_env  <- newJobEnv defaultSettings manager_env
 
   secret        <- Jobs.genSecret

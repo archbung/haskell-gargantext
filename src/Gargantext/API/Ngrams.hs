@@ -87,8 +87,7 @@ module Gargantext.API.Ngrams
   )
   where
 
-import Control.Concurrent
-import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, ifolded, to, withIndex, over)
+import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, non, ifolded, to, withIndex, over)
 import Control.Monad.Reader
 import Data.Aeson.Text qualified as DAT
 import Data.Foldable
@@ -123,6 +122,7 @@ import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
 import Gargantext.Prelude hiding (log, to, toLower, (%))
 import Gargantext.Prelude.Clock (hasTime, getTime)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import GHC.Conc (readTVar, writeTVar)
 import Prelude (error)
 import Servant hiding (Patch)
 
@@ -173,10 +173,10 @@ mkChildrenGroups addOrRem nt patches =
 
 ------------------------------------------------------------------------
 
-saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStorySaver env )
+saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStoryImmediateSaver env )
               => m ()
 saveNodeStory = do
-  saver <- view hasNodeStorySaver
+  saver <- view hasNodeStoryImmediateSaver
   liftBase $ do
     --Gargantext.Prelude.putStrLn "---- Running node story saver ----"
     saver
@@ -249,7 +249,6 @@ addListNgrams listId ngramsType nes = do
 -- | TODO: incr the Version number
 -- && should use patch
 -- UNSAFE
-
 setListNgrams :: HasNodeStory env err m
               => NodeId
               -> TableNgrams.NgramsType
@@ -257,15 +256,18 @@ setListNgrams :: HasNodeStory env err m
               -> m ()
 setListNgrams listId ngramsType ns = do
   -- printDebug "[setListNgrams]" (listId, ngramsType)
-  getter <- view hasNodeStory
-  var <- liftBase $ (getter ^. nse_getter) [listId]
-  liftBase $ modifyMVar_ var $
-    pure . ( unNodeStory
-           . at listId . _Just
-            . a_state
-              . at ngramsType
-              .~ Just ns
-           )
+  var <- getNodeStoryVar [listId]
+  liftBase $ atomically $ do
+    nls <- readTVar var
+    writeTVar var $
+      ( unNodeStory
+        . at listId . _Just
+        . a_state
+        . at ngramsType
+        %~ (\mns' -> case mns' of
+               Nothing -> Just ns
+               Just ns' -> Just $ ns <> ns')
+      ) nls
   saveNodeStory
 
 
@@ -292,57 +294,67 @@ commitStatePatch listId (Versioned _p_version p) = do
   -- printDebug "[commitStatePatch]" listId
   var <- getNodeStoryVar [listId]
   archiveSaver <- view hasNodeArchiveStoryImmediateSaver
-  vq' <- liftBase $ modifyMVar var $ \ns -> do
-    let
-      a = ns ^. unNodeStory . at listId . _Just
-      -- apply patches from version p_version to a ^. a_version
-      -- TODO Check this
-      --q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
-      q = mconcat $ a ^. a_history
+  ns <- liftBase $ atomically $ readTVar var
+  let
+    a = ns ^. unNodeStory . at listId . non initArchive
+    -- apply patches from version p_version to a ^. a_version
+    -- TODO Check this
+    --q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
+    q = mconcat $ a ^. a_history
 
-    --printDebug "[commitStatePatch] transformWith" (p,q)
-    -- let tws s = case s of
-    --       (Mod p) -> "Mod"
-    --       _ -> "Rpl"
-    -- printDebug "[commitStatePatch] transformWith" (tws $ p ^. _NgramsPatch, tws $ q ^. _NgramsPatch)
+  --printDebug "[commitStatePatch] transformWith" (p,q)
+  -- let tws s = case s of
+  --       (Mod p) -> "Mod"
+  --       _ -> "Rpl"
+  -- printDebug "[commitStatePatch] transformWith" (tws $ p ^. _NgramsPatch, tws $ q ^. _NgramsPatch)
 
-    let
-      (p', q') = transformWith ngramsStatePatchConflictResolution p q
-      a' = a & a_version +~ 1
-             & a_state   %~ act p'
-             & a_history %~ (p' :)
+  let
+    (p', q') = transformWith ngramsStatePatchConflictResolution p q
+    a' = a & a_version +~ 1
+           & a_state   %~ act p'
+           & a_history %~ (p' :)
 
-    {-
-    -- Ideally we would like to check these properties. However:
-    -- * They should be checked only to debug the code. The client data
-    --   should be able to trigger these.
-    -- * What kind of error should they throw (we are in IO here)?
-    -- * Should we keep modifyMVar?
-    -- * Should we throw the validation in an Exception, catch it around
-    --   modifyMVar and throw it back as an Error?
-    assertValid $ transformable p q
-    assertValid $ applicable p' (r ^. r_state)
-    -}
-    -- printDebug "[commitStatePatch] a version" (a ^. a_version)
-    -- printDebug "[commitStatePatch] a' version" (a' ^. a_version)
-    let newNs = ( ns & unNodeStory . at listId .~ (Just a')
-         , Versioned (a' ^. a_version) q'
-         )
+  {-
+  -- Ideally we would like to check these properties. However:
+  -- * They should be checked only to debug the code. The client data
+  --   should be able to trigger these.
+  -- * What kind of error should they throw (we are in IO here)?
+  -- * Should we keep modifyMVar?
+  -- * Should we throw the validation in an Exception, catch it around
+  --   modifyMVar and throw it back as an Error?
+  assertValid $ transformable p q
+  assertValid $ applicable p' (r ^. r_state)
+  -}
+  -- printDebug "[commitStatePatch] a version" (a ^. a_version)
+  -- printDebug "[commitStatePatch] a' version" (a' ^. a_version)
+  let newNs = ( ns & unNodeStory . at listId .~ (Just a')
+       , Versioned (a' ^. a_version) q'
+       )
 
-    -- NOTE Now is the only good time to save the archive history. We
-    -- have the handle to the MVar and we need to save its exact
-    -- snapshot. Node Story archive is a linear table, so it's only
-    -- couple of inserts, it shouldn't take long...
+  -- NOTE Now is the only good time to save the archive history. We
+  -- have the handle to the MVar and we need to save its exact
+  -- snapshot. Node Story archive is a linear table, so it's only
+  -- couple of inserts, it shouldn't take long...
 
-    -- If we postponed saving the archive to the debounce action, we
-    -- would have issues like
-    -- https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/476
-    -- where the `q` computation from above (which uses the archive)
-    -- would cause incorrect patch application (before the previous
-    -- archive was saved and applied)
+  -- NOTE This is changed now. Before we used MVar's, now it's TVars
+  -- (MVar's blocked). It was wrapped in withMVar before, now we read
+  -- the TVar, modify archive with archiveSaver, then write the TVar.
+
+  -- pure (newNs', snd newNs)
+  -- writeTVar var newNs'
+
+  --pure newNs
+
+  -- If we postponed saving the archive to the debounce action, we
+  -- would have issues like
+  -- https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/476
+  -- where the `q` computation from above (which uses the archive)
+  -- would cause incorrect patch application (before the previous
+  -- archive was saved and applied)
+  -- newNs' <- archiveSaver $ fst newNs
+  liftBase $ do
     newNs' <- archiveSaver $ fst newNs
-
-    pure (newNs', snd newNs)
+    atomically $ writeTVar var newNs'
 
   -- Save new ngrams
   _ <- insertNgrams (newNgramsFromNgramsStatePatch p)
@@ -350,7 +362,7 @@ commitStatePatch listId (Versioned _p_version p) = do
   -- saveNodeStory
   saveNodeStoryImmediate
 
-  pure vq'
+  pure $ snd newNs
 
 
 
@@ -363,10 +375,10 @@ tableNgramsPull :: HasNodeStory env err m
 tableNgramsPull listId ngramsType p_version = do
   -- printDebug "[tableNgramsPull]" (listId, ngramsType)
   var <- getNodeStoryVar [listId]
-  r <- liftBase $ readMVar var
+  r <- liftBase $ atomically $ readTVar var
 
   let
-    a = r ^. unNodeStory . at listId . _Just
+    a = r ^. unNodeStory . at listId . non initArchive
     q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
     q_table = q ^. _PatchMap . at ngramsType . _Just
 
@@ -491,7 +503,7 @@ getNgramsTableMap :: HasNodeStory env err m
                   -> m (Versioned NgramsTableMap)
 getNgramsTableMap nodeId ngramsType = do
   v    <- getNodeStoryVar [nodeId]
-  repo <- liftBase $ readMVar v
+  repo <- liftBase $ atomically $ readTVar v
   pure $ Versioned (repo ^. unNodeStory . at nodeId . _Just . a_version)
                    (repo ^. unNodeStory . at nodeId . _Just . a_state . at ngramsType . _Just)
 

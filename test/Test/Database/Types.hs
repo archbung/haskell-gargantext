@@ -32,6 +32,7 @@ import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.Mail.Types (HasMail(..))
 import Gargantext.Core.NLP (HasNLPServer(..))
+import Gargantext.Core.NodeStory
 import Gargantext.Database.Prelude (HasConfig(..), HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Prelude.Config
@@ -57,6 +58,7 @@ nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
 data TestEnv = TestEnv {
     test_db                  :: !DBHandle
   , test_config              :: !GargConfig
+  , test_nodeStory           :: !NodeStoryEnv
   , test_usernameGen         :: !Counter
   , test_logger              :: !(Logger (GargM TestEnv GargError))
   }
@@ -106,6 +108,20 @@ instance HasMail TestEnv where
                                         , _mc_mail_from       = "test@localhost"
                                         , _mc_mail_password   = "test"
                                         , _mc_mail_login_type = NoAuth })
+
+instance HasNodeStoryEnv TestEnv where
+  hasNodeStory = to test_nodeStory
+
+
+instance HasNodeStoryVar TestEnv where
+  hasNodeStoryVar = hasNodeStory . nse_getter
+
+instance HasNodeStoryImmediateSaver TestEnv where
+  hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
+
+instance HasNodeArchiveStoryImmediateSaver TestEnv where
+  hasNodeArchiveStoryImmediateSaver = hasNodeStory . nse_archive_saver_immediate
+
 
 coreNLPConfig :: NLPServerConfig
 coreNLPConfig =

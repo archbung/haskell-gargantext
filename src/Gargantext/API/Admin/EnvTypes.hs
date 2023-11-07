@@ -138,9 +138,6 @@ instance HasNodeStoryEnv Env where
 instance HasNodeStoryVar Env where
   hasNodeStoryVar = hasNodeStory . nse_getter
 
-instance HasNodeStorySaver Env where
-  hasNodeStorySaver = hasNodeStory . nse_saver
-
 instance HasNodeStoryImmediateSaver Env where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
 
@@ -309,9 +306,6 @@ instance HasNodeStoryEnv DevEnv where
 
 instance HasNodeStoryVar DevEnv where
   hasNodeStoryVar = hasNodeStory . nse_getter
-
-instance HasNodeStorySaver DevEnv where
-  hasNodeStorySaver = hasNodeStory . nse_saver
 
 instance HasNodeStoryImmediateSaver DevEnv where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate

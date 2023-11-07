@@ -2,19 +2,18 @@
 {-# LANGUAGE TypeApplications #-}
 module Test.Ngrams.Query (tests) where
 
-import           Control.Monad
-import           Data.Coerce
-import           Data.Monoid
-import           Gargantext.API.Ngrams
-import           Gargantext.API.Ngrams.Types
-import           Gargantext.Core.Types.Main
-import           Gargantext.Core.Types.Query
-import           Gargantext.Prelude
-import qualified Data.Map.Strict as Map
-import qualified Data.Patch.Class as Patch
-import qualified Data.Validity    as Validity
-import qualified Data.Text as T
-
+import Control.Monad
+import Data.Coerce
+import Data.Map.Strict qualified as Map
+import Data.Monoid
+import Data.Patch.Class qualified as Patch
+import Data.Text qualified as T
+import Data.Validity qualified as Validity
+import Gargantext.API.Ngrams
+import Gargantext.API.Ngrams.Types
+import Gargantext.Core.Types.Main
+import Gargantext.Core.Types.Query
+import Gargantext.Prelude
 import Test.Ngrams.Query.PaginationCorpus
 import Test.Tasty
 import Test.Tasty.HUnit
