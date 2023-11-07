@@ -1,8 +1,14 @@
+## Version 0.0.6.9.9.9.1
+
+* [FRONT][ERGO][[Top header &amp; navbar] Reorganize to navbar (#569)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/569)
+* [BACK][TESTS][Adding new ngrams (#281)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/281)
+
 ## Version 0.0.6.9.9.9
 
 * [BACK][SECURITY][Post policy-manager fixups (#273)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/273)
 * [BACK][SECURITY][Investigate `isDescendantOf` (#279)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/279)
 * [BACK][FIX][`dateSplit` function is wrong (#275)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/275)
+* [FRONT][FIX][[Breadcrumb] Limit the elements that the user is allowed to see and add links (#609)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/609)
 
 ## Version 0.0.6.9.9.8.3.4
 
