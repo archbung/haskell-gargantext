@@ -10,7 +10,7 @@ import Network.Wai.Test
 import Servant
 import Servant.Auth.Client ()
 import Servant.Client
-import Test.API.Private (protected, withValidLogin)
+import Test.API.Private (protected, withValidLogin, protectedNewError)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
 import Test.Hspec
 import Test.Hspec.Wai.Internal (withApplication)
@@ -48,3 +48,14 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
                 ->liftIO $ do
                     statusCode `shouldBe` 404
                     simpleBody `shouldBe` [r|{"error":"Node does not exist (nodeId-99)"}|]
+
+      it "returns the new error if header X-Garg-Error-Scheme: new is passed" $ \((_testEnv, port), app) -> do
+        withApplication app $ do
+          withValidLogin port "gargantua" (GargPassword "secret_key") $ \token -> do
+            res <- protectedNewError token "GET" (mkUrl port "/node/99") ""
+            case res of
+              SResponse{..}
+                | Status{..} <- simpleStatus
+                ->liftIO $ do
+                    statusCode `shouldBe` 404
+                    simpleBody `shouldBe` [r|{"data":{"node_id":99},"diagnostic":"FE_node_lookup_failed_not_found {nenf_node_id = nodeId-99}","type":"EC_404__node_lookup_failed_not_found"}|]

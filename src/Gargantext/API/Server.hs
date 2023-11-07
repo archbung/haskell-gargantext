@@ -53,18 +53,19 @@ serverGargAPI baseUrl -- orchestrator
 server :: Env -> IO (Server API)
 server env = do
   -- orchestrator <- scrapyOrchestrator env
-  pure $  swaggerSchemaUIServer swaggerDoc
+  pure $ \errScheme -> swaggerSchemaUIServer swaggerDoc
      :<|> hoistServerWithContext
             (Proxy :: Proxy GargAPI)
             (Proxy :: Proxy AuthContext)
-            transformJSON
+            (transformJSON errScheme)
             (serverGargAPI (env ^. hasConfig . gc_url_backend_api))
      :<|> hoistServerWithContext
             (Proxy :: Proxy GraphQL.API)
             (Proxy :: Proxy AuthContext)
-            transformJSON
+            (transformJSON errScheme)
             GraphQL.api
      :<|> frontEndServer
   where
-    transformJSON :: forall a. GargM Env BackendInternalError a -> Handler a
-    transformJSON = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env)
+    transformJSON :: forall a. GargErrorScheme -> GargM Env BackendInternalError a -> Handler a
+    transformJSON GES_old = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env)
+    transformJSON GES_new = Handler . withExceptT (frontendErrorToServerError . backendErrorToFrontendError) . (`runReaderT` env)

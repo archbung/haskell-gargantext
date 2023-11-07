@@ -640,10 +640,10 @@ genFrontendErr be = do
             pure $ mkFrontendErr' txt $ FE_job_generic_exception err
 
 instance ToJSON BackendErrorCode where
-  toJSON = JSON.String . T.pack . drop 3 . show
+  toJSON = JSON.String . T.pack . show
 
 instance FromJSON BackendErrorCode where
-  parseJSON (String s) = case readMaybe (T.unpack $ "EC_" <> s) of
+  parseJSON (String s) = case readMaybe (T.unpack s) of
     Just v     -> pure v
     Nothing    -> fail $ "FromJSON BackendErrorCode unexpected value: " <> T.unpack s
   parseJSON ty = typeMismatch "BackendErrorCode" ty

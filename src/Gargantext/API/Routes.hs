@@ -15,6 +15,7 @@ Portability : POSIX
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Gargantext.API.Routes
       where
@@ -28,6 +29,7 @@ import Gargantext.API.Admin.FrontEnd (FrontEndAPI)
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.Context
 import Gargantext.API.Count  (CountAPI, count, Query)
+import Gargantext.API.Errors (GargErrorScheme (..))
 import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL qualified as GraphQL
 import Gargantext.API.Members (MembersAPI, members)
@@ -51,11 +53,38 @@ import Gargantext.Database.Prelude (HasConfig(..))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_scrapers)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Network.Wai (requestHeaders)
 import Servant
 import Servant.Auth as SA
 import Servant.Auth.Swagger ()
+import Servant.Ekg
+import Servant.Server.Internal.Delayed
+import Servant.Server.Internal.DelayedIO
+import Servant.Swagger
 import Servant.Swagger.UI
+import qualified Data.List as L
 
+data WithCustomErrorScheme a
+
+instance (HasServer subApi ctx) => HasServer (WithCustomErrorScheme subApi) ctx where
+  type ServerT (WithCustomErrorScheme subApi) m = GargErrorScheme -> ServerT subApi m
+  hoistServerWithContext _ pc nt s = hoistServerWithContext (Proxy :: Proxy subApi) pc nt . s
+  route Proxy ctx d = route (Proxy :: Proxy subApi) ctx (d `addHeaderCheck` getErrorScheme)
+    where
+      getErrorScheme :: DelayedIO GargErrorScheme
+      getErrorScheme = withRequest $ \rq -> do
+        let hdrs = requestHeaders rq
+            in case L.lookup "X-Garg-Error-Scheme" hdrs of
+                 Nothing     -> pure GES_old
+                 Just "new"  -> pure GES_new
+                 Just _      -> pure GES_old
+
+instance HasSwagger (WithCustomErrorScheme GargAPI) where
+    toSwagger _ = toSwagger (Proxy :: Proxy GargAPI)
+
+instance HasEndpoint sub => HasEndpoint (WithCustomErrorScheme sub) where
+  getEndpoint _ = getEndpoint (Proxy :: Proxy sub)
+  enumerateEndpoints _ = enumerateEndpoints (Proxy :: Proxy sub)
 
 type GargAPI = MkGargAPI (GargAPIVersion GargAPI')
 
@@ -207,10 +236,7 @@ type GargPrivateAPI' =
        -- :<|> "auth"     :> Capture "node_id" Int  :> NodeAPI
 ---------------------------------------------------------------------
 
-type API = SwaggerAPI
-       :<|> GargAPI
-       :<|> GraphQL.API
-       :<|> FrontEndAPI
+type API = WithCustomErrorScheme (SwaggerAPI :<|> GargAPI :<|> GraphQL.API :<|> FrontEndAPI)
 
 -- | API for serving @swagger.json@
 type SwaggerAPI = SwaggerSchemaUI "swagger-ui" "swagger.json"
