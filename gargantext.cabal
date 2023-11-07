@@ -1003,6 +1003,7 @@ test-suite garg-test-hspec
   other-modules:
       Test.API
       Test.API.Authentication
+      Test.API.Errors
       Test.API.GraphQL
       Test.API.Private
       Test.API.Setup
