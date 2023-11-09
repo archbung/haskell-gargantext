@@ -6,8 +6,8 @@ import Prelude
 import Control.Monad.Except
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL.Types
-import Gargantext.API.Prelude
 import Gargantext.Database.Prelude (HasConnectionPool, HasConfig)
 
 withPolicy :: (HasConnectionPool env, HasConfig env)
@@ -21,5 +21,5 @@ withPolicy ur mgr checks m = case mgr of
     res <- lift $ runAccessPolicy ur checks
     case res of
       Allow     -> m
-      Deny err  -> lift $ throwError $ GargServerError $ err
+      Deny err  -> lift $ throwError $ InternalServerError $ err
 

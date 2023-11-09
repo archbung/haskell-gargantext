@@ -29,6 +29,7 @@ import Web.FormUrlEncoded (FromForm)
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Node.Corpus.New (addToCorpusWithForm)
 import Gargantext.API.Node.Corpus.New.Types (FileFormat(..), FileType(..))
 import Gargantext.API.Node.Types (NewWithForm(..))
@@ -62,7 +63,7 @@ type API = Summary " FrameCalc upload"
            :> "async"
            :> AsyncJobs JobLog '[JSON] FrameCalcUpload JobLog
 
-api :: AuthenticatedUser -> NodeId -> ServerT API (GargM Env GargError)
+api :: AuthenticatedUser -> NodeId -> ServerT API (GargM Env BackendInternalError)
 api authenticatedUser nId =
   serveJobsAPI UploadFrameCalcJob $ \jHandle p ->
     frameCalcUploadAsync authenticatedUser nId p jHandle

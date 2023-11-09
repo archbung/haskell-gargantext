@@ -17,9 +17,10 @@ module Gargantext.API.GraphQL.Team where
 import Data.Morpheus.Types (GQLType, ResolverM)
 import Data.Text qualified as T
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL.Types (GqlM)
 import Gargantext.API.GraphQL.Utils (authUser, AuthStatus (Invalid, Valid))
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Prelude (GargM)
 import Gargantext.Core.Types (NodeId(..), unNodeId)
 import Gargantext.Core.Types.Individu qualified as Individu
 import Gargantext.Database.Action.Share (membersOf, deleteMemberShip)
@@ -49,7 +50,7 @@ data TeamDeleteMArgs = TeamDeleteMArgs
   , team_node_id     :: Int
   } deriving (Generic, GQLType)
 
-type GqlM' e env a = ResolverM e (GargM env GargError) a
+type GqlM' e env a = ResolverM e (GargM env BackendInternalError) a
 
 resolveTeam :: (CmdCommon env) => TeamArgs -> GqlM e env Team
 resolveTeam TeamArgs { team_node_id } = dbTeam team_node_id

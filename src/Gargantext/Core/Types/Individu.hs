@@ -28,7 +28,7 @@ import Gargantext.Prelude.Crypto.Auth qualified as Auth
 import Prelude qualified
 
 -- FIXME UserName used twice
-data User = UserDBId UserId | UserName Text | RootId NodeId | UserPublic
+data User = UserDBId UserId | UserName Text | RootId NodeId
   deriving (Eq)
 
 renderUser :: User -> T.Text
@@ -36,7 +36,6 @@ renderUser = \case
   UserDBId urId -> T.pack (show urId)
   UserName txt  -> txt
   RootId   nId  -> T.pack (show nId)
-  UserPublic    -> T.pack "public"
 
 type Username = Text
 

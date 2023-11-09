@@ -21,24 +21,24 @@ module Gargantext.API.Auth.PolicyCheck (
   ) where
 
 import Control.Lens
+import Control.Monad
+import Data.BoolExpr
 import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Errors.Types
 import Gargantext.Core.Types
+import Gargantext.Core.Types.Individu
 import Gargantext.Database.Prelude (DBCmd, HasConfig (..))
+import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Query.Tree
+import Gargantext.Database.Query.Tree.Root
 import Gargantext.Prelude.Config (GargConfig(..))
 import Prelude
 import Servant
+import Servant.Auth.Server.Internal.AddSetCookie
 import Servant.Ekg
 import Servant.Server.Internal.Delayed
 import Servant.Server.Internal.DelayedIO
 import qualified Servant.Swagger as Swagger
-import Gargantext.Core.Types.Individu
-import Gargantext.Database.Query.Table.Node.Error
-import Data.BoolExpr
-import Control.Monad
-import Gargantext.API.Prelude
-import Servant.Auth.Server.Internal.AddSetCookie
-import Gargantext.Database.Query.Tree
-import Gargantext.Database.Query.Tree.Root
 
 -------------------------------------------------------------------------------
 -- Types
@@ -66,7 +66,7 @@ instance Monoid AccessResult where
 -- | An access policy manager for gargantext that governs how resources are accessed
 -- and who is entitled to see what.
 data AccessPolicyManager = AccessPolicyManager
-  { runAccessPolicy :: AuthenticatedUser -> BoolExpr AccessCheck -> DBCmd GargError AccessResult }
+  { runAccessPolicy :: AuthenticatedUser -> BoolExpr AccessCheck -> DBCmd BackendInternalError AccessResult }
 
 -- | A type representing all the possible access checks we might want to perform on a resource,
 -- typically a 'Node'.
@@ -97,7 +97,7 @@ data AccessCheck
 accessPolicyManager :: AccessPolicyManager
 accessPolicyManager = AccessPolicyManager (\ur ac -> interpretPolicy ur ac)
   where
-    interpretPolicy :: AuthenticatedUser -> BoolExpr AccessCheck -> DBCmd GargError AccessResult
+    interpretPolicy :: AuthenticatedUser -> BoolExpr AccessCheck -> DBCmd BackendInternalError AccessResult
     interpretPolicy ur chk = case chk of
       BAnd b1 b2
         -> liftM2 (<>) (interpretPolicy ur b1) (interpretPolicy ur b2)

@@ -15,6 +15,7 @@ module Gargantext.API.Dev where
 import Control.Monad (fail)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Settings
+import Gargantext.API.Errors.Types
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP (nlpServerMap)
@@ -38,9 +39,9 @@ withDevEnv iniPath k = withLoggerHoisted Dev $ \logger -> do
     newDevEnv logger = do
       cfg     <- readConfig         iniPath
       dbParam <- databaseParameters iniPath
-      --nodeStory_env <- readNodeStoryEnv (_gc_repofilepath cfg)
+      --nodeStory_env <- fromDBNodeStoryEnv (_gc_repofilepath cfg)
       pool    <- newPool            dbParam
-      nodeStory_env <- readNodeStoryEnv pool
+      nodeStory_env <- fromDBNodeStoryEnv pool
       setts   <- devSettings devJwkFile
       mail    <- Mail.readConfig iniPath
       nlp_config <- NLP.readConfig iniPath
@@ -69,7 +70,7 @@ runCmdDev :: Show err => DevEnv -> Cmd'' DevEnv err a -> IO a
 runCmdDev env f =
   (either (fail . show) pure =<< runCmd env f)
 
-runCmdGargDev :: DevEnv -> GargM DevEnv GargError a -> IO a
+runCmdGargDev :: DevEnv -> GargM DevEnv BackendInternalError a -> IO a
 runCmdGargDev env cmd =
   (either (fail . show) pure =<< runExceptT (runReaderT cmd env))
     `finally`
@@ -81,5 +82,5 @@ runCmdDevNoErr = runCmdDev
 runCmdDevServantErr :: DevEnv -> Cmd' DevEnv ServerError a -> IO a
 runCmdDevServantErr = runCmdDev
 
-runCmdReplEasy :: Cmd'' DevEnv GargError a -> IO a
+runCmdReplEasy :: Cmd'' DevEnv BackendInternalError a -> IO a
 runCmdReplEasy f = withDevEnv "gargantext.ini" $ \env -> runCmdDev env f

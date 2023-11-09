@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 module Test.API.Setup where
 
@@ -10,6 +11,7 @@ import Gargantext.API (makeApp)
 import Gargantext.API.Admin.EnvTypes (Mode(Mock), Env (..))
 import Gargantext.API.Admin.Settings
 import Gargantext.API.Admin.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP
 import Gargantext.Core.NodeStory
@@ -21,6 +23,7 @@ import Gargantext.Database.Admin.Trigger.Init
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (getOrMkList)
+-- import Gargantext.Prelude (printDebug)
 import Gargantext.Prelude.Config
 import Gargantext.System.Logging
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -41,7 +44,7 @@ import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Job.Async as ServantAsync
 
 
-newTestEnv :: TestEnv -> Logger (GargM Env GargError) -> Warp.Port -> IO Env
+newTestEnv :: TestEnv -> Logger (GargM Env BackendInternalError) -> Warp.Port -> IO Env
 newTestEnv testEnv logger port = do
   file          <- fakeIniPath
   !manager_env  <- newTlsManager
@@ -54,7 +57,7 @@ newTestEnv testEnv logger port = do
   dbParam        <- pure $ testEnvToPgConnectionInfo testEnv
   !pool          <- newPool dbParam
 
-  !nodeStory_env <- readNodeStoryEnv pool
+  !nodeStory_env <- fromDBNodeStoryEnv pool
   !scrapers_env  <- ServantAsync.newJobEnv ServantAsync.defaultSettings manager_env
 
   secret        <- Jobs.genSecret
@@ -101,6 +104,7 @@ setupEnvironment env = flip runReaderT env $ runTestMonad $ do
                                         (Left corpusMasterName)
                                         (Nothing :: Maybe HyperdataCorpus)
   masterListId <- getOrMkList masterCorpusId masterUserId
+  -- printDebug "[setupEnvironment] masterListId: " masterListId
   void $ initLastTriggers masterListId
 
 -- | Creates two users, Alice & Bob. Alice shouldn't be able to see

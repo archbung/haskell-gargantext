@@ -42,14 +42,14 @@ mkNodeWithParent :: (HasNodeError err, HasDBid NodeType)
                  -> UserId
                  -> Name
                  -> DBCmd err [NodeId]
-mkNodeWithParent NodeUser (Just _) _   _    = nodeError UserNoParent
+mkNodeWithParent NodeUser (Just pId) uid  _ = nodeError $ NodeCreationFailed $ UserParentAlreadyExists uid pId
 
 ------------------------------------------------------------------------
 -- | MkNode, insert and eventually configure Hyperdata
 mkNodeWithParent NodeUser Nothing uId name =
   insertNodesWithParentR Nothing [node NodeUser name defaultHyperdataUser Nothing uId]
 
-mkNodeWithParent _ Nothing _ _ = nodeError HasParent
+mkNodeWithParent _ Nothing uId _ = nodeError $ NodeCreationFailed $ UserParentDoesNotExist uId
 ------------------------------------------------------------------------
 mkNodeWithParent Notes i u n =
   mkNodeWithParent_ConfigureHyperdata Notes i u n
@@ -65,7 +65,7 @@ mkNodeWithParent NodeFrameNotebook i u n =
 
 
 
-mkNodeWithParent nt (Just pId) uId name  = insertNode nt (Just name) Nothing pId uId
+mkNodeWithParent nt (Just pId) uId name  = (:[]) <$> insertNode nt (Just name) Nothing pId uId
 -- mkNodeWithParent _ _ _ _ = errorWith "[G.D.A.Node.mkNodeWithParent] nees parent"
 
 
@@ -85,7 +85,7 @@ mkNodeWithParent_ConfigureHyperdata Calc (Just i) uId name =
 mkNodeWithParent_ConfigureHyperdata NodeFrameVisio (Just i) uId name =
   mkNodeWithParent_ConfigureHyperdata' NodeFrameVisio (Just i) uId name
 
-mkNodeWithParent_ConfigureHyperdata NodeFrameNotebook (Just i) uId name =
+mkNodeWithParent_ConfigureHyperdata NodeFrameNotebook (Just i) uId name = (:[]) <$>
   insertNode NodeFrameNotebook  (Just "Notebook")
                                 (Just $ DefaultFrameCode $ HyperdataFrame { _hf_base = "Codebook"
                                                                           , _hf_frame_id = name }) i uId
@@ -101,26 +101,21 @@ mkNodeWithParent_ConfigureHyperdata' :: (HasNodeError err, HasDBid NodeType)
                                     -> Name
                                     -> DBCmd err [NodeId]
 mkNodeWithParent_ConfigureHyperdata' nt (Just i) uId name = do
-  maybeNodeId <- case nt of
+  nodeId <- case nt of
      Notes -> insertNode Notes (Just name)   Nothing i uId
      Calc  -> insertNode Calc  (Just name)   Nothing i uId
      NodeFrameVisio -> insertNode NodeFrameVisio (Just name)   Nothing i uId
      _              -> nodeError NeedsConfiguration
 
-  case maybeNodeId of
-    []  -> nodeError (DoesNotExist i)
-    [n] -> do
-      cfg <- view hasConfig
-      u <- case nt of
-            Notes -> pure $ _gc_frame_write_url cfg
-            Calc  -> pure $ _gc_frame_calc_url  cfg
-            NodeFrameVisio -> pure $ _gc_frame_visio_url  cfg
-            _              -> nodeError NeedsConfiguration
-      let
-        s = _gc_secretkey cfg
-        hd = HyperdataFrame u (hash $ s <> (show n))
-      _ <- updateHyperdata n hd
-      pure [n]
-    (_:_:_)  -> nodeError MkNode
-mkNodeWithParent_ConfigureHyperdata' _ _ _ _ = nodeError HasParent
-
+  cfg <- view hasConfig
+  u <- case nt of
+        Notes -> pure $ _gc_frame_write_url cfg
+        Calc  -> pure $ _gc_frame_calc_url  cfg
+        NodeFrameVisio -> pure $ _gc_frame_visio_url  cfg
+        _              -> nodeError NeedsConfiguration
+  let
+    s = _gc_secretkey cfg
+    hd = HyperdataFrame u (hash $ s <> (show nodeId))
+  _ <- updateHyperdata nodeId hd
+  pure [nodeId]
+mkNodeWithParent_ConfigureHyperdata' _ Nothing uId _ = nodeError $ NodeCreationFailed $ UserParentDoesNotExist uId

@@ -147,7 +147,9 @@ makeLenses ''RootParent
 data NgramsRepoElement = NgramsRepoElement
   { _nre_size        :: !Int
   , _nre_list        :: !ListType
+  -- root is the top-most parent of ngrams
   , _nre_root        :: !(Maybe NgramsTerm)
+  -- parent is the direct parent of this ngram
   , _nre_parent      :: !(Maybe NgramsTerm)
   , _nre_children    :: !(MSet NgramsTerm)
   }

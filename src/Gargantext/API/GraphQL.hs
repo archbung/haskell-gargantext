@@ -28,6 +28,7 @@ import Gargantext.API.Admin.Auth.Types (AuthenticatedUser)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Auth.PolicyCheck
+import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL.Annuaire qualified as GQLA
 import Gargantext.API.GraphQL.AsyncTask qualified as GQLAT
 import Gargantext.API.GraphQL.Context qualified as GQLCTX
@@ -38,7 +39,7 @@ import Gargantext.API.GraphQL.Team qualified as GQLTeam
 import Gargantext.API.GraphQL.TreeFirstLevel qualified as GQLTree
 import Gargantext.API.GraphQL.User qualified as GQLUser
 import Gargantext.API.GraphQL.UserInfo qualified as GQLUserInfo
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Prelude (GargM)
 import Gargantext.API.Prelude (HasJobEnv')
 import Gargantext.API.Types
 import Gargantext.Core.NLP (HasNLPServer)
@@ -106,7 +107,7 @@ rootResolver
   :: (CmdCommon env, HasNLPServer env, HasJobEnv' env, HasSettings env)
   => AuthenticatedUser
   -> AccessPolicyManager
-  -> RootResolver (GargM env GargError) e Query Mutation Undefined
+  -> RootResolver (GargM env BackendInternalError) e Query Mutation Undefined
 rootResolver authenticatedUser policyManager =
   RootResolver
     { queryResolver = Query { annuaire_contacts   = GQLA.resolveAnnuaireContacts
@@ -135,7 +136,7 @@ app
   :: (Typeable env, CmdCommon env, HasJobEnv' env, HasNLPServer env, HasSettings env)
   => AuthenticatedUser
   -> AccessPolicyManager
-  -> App (EVENT (GargM env GargError)) (GargM env GargError)
+  -> App (EVENT (GargM env BackendInternalError)) (GargM env BackendInternalError)
 app authenticatedUser policyManager = deriveApp (rootResolver authenticatedUser policyManager)
 
 ----------------------------------------------
@@ -172,6 +173,6 @@ gqapi = Proxy
 --api :: Server API
 api
   :: (Typeable env, CmdCommon env, HasJobEnv' env, HasSettings env)
-  => ServerT API (GargM env GargError)
+  => ServerT API (GargM env BackendInternalError)
 api (SAS.Authenticated auser) = (httpPubApp [] . app auser) :<|> pure httpPlayground
 api _                         = panic "401 in graphql" -- SAS.throwAll (_ServerError # err401)
