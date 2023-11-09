@@ -79,6 +79,7 @@ library
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
+      Gargantext.Core.Text.Corpus.API.EPO
       Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.API.OpenAlex
       Gargantext.Core.Text.Corpus.Query
@@ -523,6 +524,7 @@ library
     , servant-blaze ^>= 0.9.1
     , servant-cassava ^>= 0.10.1
     , servant-client ^>= 0.18.3
+    , servant-client-core ^>= 0.18.3
     , servant-ekg ^>= 0.3.1
     , servant-flatten ^>= 0.2
     , servant-job >= 0.2.0.0

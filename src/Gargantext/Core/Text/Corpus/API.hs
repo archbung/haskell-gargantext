@@ -23,7 +23,7 @@ import Control.Monad.Except
 import Data.Text qualified as T
 import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
-import Gargantext.Core (Lang(..), toISO639)
+import Gargantext.Core (Lang(..), toISO639, toISO639EN)
 import Gargantext.Core.Text.Corpus.API.Arxiv qualified as Arxiv
 import Gargantext.Core.Text.Corpus.API.EPO qualified as EPO
 import Gargantext.Core.Text.Corpus.API.Hal qualified as HAL
@@ -53,7 +53,7 @@ get :: ExternalAPIs
     -> Maybe Corpus.Limit
     -- -> IO [HyperdataDocument]
     -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get externalAPI la q mPubmedAPIKey limit = do
+get externalAPI la q mPubmedAPIKey epoAuthKey limit = do
   -- For PUBMED, HAL, IsTex, Isidore and OpenAlex, we want to send the query as-it.
   -- For Arxiv we parse the query into a structured boolean query we submit over.
   case externalAPI of
@@ -73,6 +73,6 @@ get externalAPI la q mPubmedAPIKey limit = do
         docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
         pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
       EPO -> do
-        first ExternalAPIError <$> EPO.get (fromMaybe "" Nothing {- email -}) q (toISO639 la) limit
+        first ExternalAPIError <$> EPO.get epoAuthKey q (toISO639EN la) limit
   where
     parse_query = first (InvalidInputQuery q . T.pack) $ Corpus.parseQuery q

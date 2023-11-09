@@ -69,6 +69,7 @@ import Data.Proxy
 import Data.Set qualified as Set
 import Data.Swagger
 import Data.Text qualified as T
+import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Ngrams.Tools (getTermsWith)
 import Gargantext.API.Ngrams.Types qualified as NT
 import Gargantext.Core (Lang(..), PosTagAlgo(..), NLPServerConfig)
@@ -160,12 +161,13 @@ getDataText :: (HasNodeError err)
             -> TermType Lang
             -> API.RawQuery
             -> Maybe PUBMED.APIKey
+            -> Maybe EPO.AuthKey
             -> Maybe API.Limit
             -> DBCmd err (Either API.GetCorpusError DataText)
-getDataText (ExternalOrigin api) la q mPubmedAPIKey li = do
-  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey li
+getDataText (ExternalOrigin api) la q mPubmedAPIKey mAuthKey li = do
+  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey li
   pure $ DataNew <$> eRes
-getDataText (InternalOrigin _) _la q _ _li = do
+getDataText (InternalOrigin _) _la q _ _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
                                            (UserName userMaster)
                                            (Left "")
@@ -180,7 +182,7 @@ getDataText_Debug :: (HasNodeError err)
                   -> Maybe API.Limit
                   -> DBCmd err ()
 getDataText_Debug a l q li = do
-  result <- getDataText a l q Nothing li
+  result <- getDataText a l q Nothing Nothing li
   case result of
     Left  err -> liftBase $ putText $ show err
     Right res -> liftBase $ printDataText res
