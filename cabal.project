@@ -6,7 +6,6 @@ with-compiler: ghc-8.10.7
 
 packages:
     ./
-    ../epo-api-client
     ../openalex
 
 source-repository-package
@@ -97,6 +96,11 @@ source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/iso639.git
     tag: 1a9e23e210a02da3b846d7cdc666541e2148334d
+
+source-repository-package
+    type: git
+    location: https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git
+    tag: eae89b09f4ce46cd3db836d5c580ac90073de7ba
 
 source-repository-package
     type: git
