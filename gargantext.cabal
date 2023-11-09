@@ -51,6 +51,11 @@ library
       Gargantext.API.Admin.Types
       Gargantext.API.Auth.PolicyCheck
       Gargantext.API.Dev
+      Gargantext.API.Errors
+      Gargantext.API.Errors.Class
+      Gargantext.API.Errors.TH
+      Gargantext.API.Errors.Types
+      Gargantext.API.Errors.Types.Backend
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams
       Gargantext.API.Ngrams.Prelude
@@ -142,6 +147,7 @@ library
       Gargantext.Database.Schema.User
       Gargantext.Defaults
       Gargantext.System.Logging
+      Gargantext.Utils.Dict
       Gargantext.Utils.Jobs
       Gargantext.Utils.Jobs.Internal
       Gargantext.Utils.Jobs.Map
@@ -997,6 +1003,7 @@ test-suite garg-test-hspec
   other-modules:
       Test.API
       Test.API.Authentication
+      Test.API.Errors
       Test.API.GraphQL
       Test.API.Private
       Test.API.Setup

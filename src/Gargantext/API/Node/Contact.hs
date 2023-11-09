@@ -33,11 +33,13 @@ import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
 
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Node
-import Gargantext.API.Prelude (GargError, GargM, simuLogs)
+import Gargantext.API.Prelude (GargM, simuLogs)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Terms (TermType(..))
 import Gargantext.Core.Types.Individu (User(..))
@@ -47,9 +49,8 @@ import Gargantext.Database.Admin.Types.Hyperdata (HyperdataAnnuaire(..), Hyperda
 import Gargantext.Database.Admin.Types.Hyperdata.Contact (hyperdataContact)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Prelude (($), {-printDebug,-})
-import qualified Gargantext.Utils.Aeson as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Gargantext.API.Admin.Auth.Types
+import qualified Gargantext.Utils.Aeson as GUA
 
 ------------------------------------------------------------------------
 type API = "contact" :> Summary "Contact endpoint"
@@ -58,7 +59,7 @@ type API = "contact" :> Summary "Contact endpoint"
             :> NodeNodeAPI HyperdataContact
 
 
-api :: AuthenticatedUser -> CorpusId -> ServerT API (GargM Env GargError)
+api :: AuthenticatedUser -> CorpusId -> ServerT API (GargM Env BackendInternalError)
 api authUser@(AuthenticatedUser userNodeId _userUserId) cid =
        (api_async   (RootId userNodeId) cid)
   :<|> (nodeNodeAPI (Proxy :: Proxy HyperdataContact) authUser cid)
@@ -73,7 +74,7 @@ data AddContactParams = AddContactParams         { firstname :: !Text, lastname 
     deriving (Generic)
 
 ----------------------------------------------------------------------
-api_async :: User -> NodeId -> ServerT API_Async (GargM Env GargError)
+api_async :: User -> NodeId -> ServerT API_Async (GargM Env BackendInternalError)
 api_async u nId =
   serveJobsAPI AddContactJob $ \jHandle p ->
     addContact u nId p jHandle

@@ -112,10 +112,13 @@ findJob jid = do
   liftIO $ lookupJob jid jmap
 
 data JobError
-  = InvalidIDType
-  | IDExpired
+  =
+  -- | We expected to find a job tagged internall as \"job\", but we found the input @T.Text@ instead.
+    InvalidIDType T.Text
+  -- | The given ID expired.
+  | IDExpired Int
   | InvalidMacID T.Text
-  | UnknownJob
+  | UnknownJob Int
   | JobException SomeException
   deriving Show
 
@@ -126,8 +129,8 @@ checkJID
 checkJID (SJ.PrivateID tn n t d) = do
   now <- liftIO getCurrentTime
   js <- getJobsSettings
-  if | tn /= "job" -> pure (Left InvalidIDType)
-     | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> pure (Left IDExpired)
+  if | tn /= "job" -> pure (Left $ InvalidIDType $ T.pack tn)
+     | now > addUTCTime (fromIntegral $ jsIDTimeout js) t -> pure (Left $ IDExpired n)
      | d /= SJ.macID tn (jsSecretKey js) t n -> pure (Left $ InvalidMacID $ T.pack d)
      | otherwise -> pure $ Right (SJ.PrivateID tn n t d)
 

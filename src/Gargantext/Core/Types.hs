@@ -23,7 +23,7 @@ module Gargantext.Core.Types ( module Gargantext.Core.Types.Main
                              , Term(..), Terms(..), TermsCount, TermsWithCount
                              , TokenTag(..), POS(..), NER(..)
                              , Label, Stems
-                             , HasInvalidError(..), assertValid
+                             , HasValidationError(..), assertValid
                              , Name
                              , TableResult(..), NodeTableResult
                              , Ordering(..)
@@ -171,11 +171,11 @@ instance Monoid TokenTag where
   -- mappend t1 t2 = (<>) t1 t2
 
 
-class HasInvalidError e where
-  _InvalidError :: Prism' e Validation
+class HasValidationError e where
+  _ValidationError :: Prism' e Validation
 
-assertValid :: (MonadError e m, HasInvalidError e) => Validation -> m ()
-assertValid v = when (not $ validationIsValid v) $ throwError $ _InvalidError # v
+assertValid :: (MonadError e m, HasValidationError e) => Validation -> m ()
+assertValid v = when (not $ validationIsValid v) $ throwError $ _ValidationError # v
 -- assertValid :: MonadBase IO m => Validation -> m ()
 -- assertValid v = when (not $ validationIsValid v) $ fail $ show v
 

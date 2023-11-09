@@ -15,19 +15,22 @@ module Gargantext.Database.Query.Tree.Error
   where
 
 import Control.Lens (Prism', (#))
+import Gargantext.Core.Types
 import Gargantext.Prelude
 import Prelude qualified
+import qualified Data.List.NonEmpty as NE
+import qualified Data.Text as T
 
 ------------------------------------------------------------------------
 data TreeError = NoRoot
                | EmptyRoot
-               | TooManyRoots
+               | TooManyRoots (NonEmpty NodeId)
 
 instance Prelude.Show TreeError
   where
-    show NoRoot       = "Root node not found"
-    show EmptyRoot    = "Root node should not be empty"
-    show TooManyRoots = "Too many root nodes"
+    show NoRoot               = "Root node not found"
+    show EmptyRoot            = "Root node should not be empty"
+    show (TooManyRoots roots) = "Too many root nodes: [" <> T.unpack (T.intercalate "," . map show $ NE.toList roots) <> "]"
 
 class HasTreeError e where
   _TreeError :: Prism' e TreeError

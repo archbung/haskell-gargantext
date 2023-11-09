@@ -28,6 +28,7 @@ import Data.Pool (Pool, createPool)
 import Database.PostgreSQL.Simple (Connection, connect, close, ConnectInfo)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Core.NodeStory
@@ -171,7 +172,7 @@ readRepoEnv repoDir = do
 devJwkFile :: FilePath
 devJwkFile = "dev.jwk"
 
-newEnv :: Logger (GargM Env GargError) -> PortNumber -> FilePath -> IO Env
+newEnv :: Logger (GargM Env BackendInternalError) -> PortNumber -> FilePath -> IO Env
 newEnv logger port file = do
   !manager_env  <- newTlsManager
   !settings'    <- devSettings devJwkFile <&> appPort .~ port -- TODO read from 'file'

@@ -27,7 +27,7 @@ import Gargantext.API.Ngrams (saveNodeStory)
 import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
-import Gargantext.Core.Types (HasInvalidError(..), assertValid)
+import Gargantext.Core.Types (HasValidationError(..), assertValid)
 import Gargantext.Core.Types.Main (ListType(CandidateTerm))
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
@@ -79,7 +79,7 @@ flowList_Tficf' u m nt f = do
 
 
 ------------------------------------------------------------------------
-flowList_DbRepo :: (HasInvalidError err, HasNodeStory env err m)
+flowList_DbRepo :: (HasValidationError err, HasNodeStory env err m)
                 => ListId
                 -> Map NgramsType [NgramsElement]
                 -> m ListId
@@ -154,7 +154,7 @@ toNodeNgramsW' l'' ngs = [ NodeNgrams { _nng_id            = Nothing
                          ]
 
 
-listInsert :: (HasInvalidError err, HasNodeStory env err m)
+listInsert :: (HasValidationError err, HasNodeStory env err m)
            => ListId
            -> Map NgramsType [NgramsElement]
            -> m ()
@@ -168,7 +168,7 @@ listInsert lId ngs = mapM_ (\(typeList, ngElmts)
 -- This function is maintained for its usage in Database.Action.Flow.List.
 -- If the given list of ngrams elements contains ngrams already in
 -- the repo, they will be ignored.
-putListNgrams :: (HasInvalidError err, HasNodeStory env err m)
+putListNgrams :: (HasValidationError err, HasNodeStory env err m)
               => NodeId
               -> TableNgrams.NgramsType
               -> [NgramsElement]
@@ -178,7 +178,7 @@ putListNgrams nodeId ngramsType nes = putListNgrams' nodeId ngramsType m
   where
     m = Map.fromList $ map (\n -> (n ^. ne_ngrams, ngramsElementToRepo n)) nes
 
-    putListNgrams' :: (HasInvalidError err, HasNodeStory env err m)
+    putListNgrams' :: (HasValidationError err, HasNodeStory env err m)
                    => NodeId
                    -> TableNgrams.NgramsType
                    -> Map NgramsTerm NgramsRepoElement

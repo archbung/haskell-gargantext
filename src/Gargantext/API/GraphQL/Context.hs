@@ -25,7 +25,8 @@ import Data.Morpheus.Types
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Errors.Types
+import Gargantext.API.Prelude (GargM)
 import Gargantext.Core.Types.Search (HyperdataRow(..), toHyperdataRow)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
 import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId, ContextId (..))
@@ -109,8 +110,8 @@ data ContextNgramsArgs
     , list_id     :: Int }
     deriving (Generic, GQLType)
 
-type GqlM e env = Resolver QUERY e (GargM env GargError)
-type GqlM' e env a = ResolverM e (GargM env GargError) a
+type GqlM e env = Resolver QUERY e (GargM env BackendInternalError)
+type GqlM' e env a = ResolverM e (GargM env BackendInternalError) a
 
 -- GQL API
 

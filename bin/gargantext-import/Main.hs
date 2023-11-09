@@ -20,8 +20,8 @@ import qualified Data.Text as Text
 
 import Gargantext.API.Dev (withDevEnv, runCmdGargDev)
 import Gargantext.API.Admin.EnvTypes (DevEnv(..), DevJobHandle(..))
+import Gargantext.API.Errors.Types
 import Gargantext.API.Node () -- instances
-import Gargantext.API.Prelude (GargError)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Query (Limit)
@@ -45,17 +45,17 @@ main = do
     limit' = case (readMaybe limit :: Maybe Limit) of
       Nothing -> panic $ "Cannot read limit: " <> (Text.pack limit)
       Just l  -> l
-    corpus :: forall m. (FlowCmdM DevEnv GargError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
+    corpus :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
     corpus = flowCorpusFile (UserName $ cs user) (Left (cs name :: Text)) limit' tt  format Plain corpusPath Nothing DevJobHandle
 
-    corpusCsvHal :: forall m. (FlowCmdM DevEnv GargError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
+    corpusCsvHal :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
     corpusCsvHal = flowCorpusFile (UserName $ cs user) (Left (cs name :: Text)) limit' tt CsvHal Plain corpusPath Nothing DevJobHandle
 
-    annuaire :: forall m. (FlowCmdM DevEnv GargError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
+    annuaire :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
     annuaire = flowAnnuaire (UserName $ cs user) (Left "Annuaire") (Multi EN) corpusPath DevJobHandle
 
   {-
-  let debatCorpus :: forall m. FlowCmdM DevEnv GargError m => m CorpusId
+  let debatCorpus :: forall m. FlowCmdM DevEnv BackendInternalError m => m CorpusId
       debatCorpus = do
         docs <- liftIO ( splitEvery 500
                        <$> take (read limit :: Int)

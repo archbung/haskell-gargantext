@@ -23,9 +23,10 @@ import Data.Swagger
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Metrics qualified as Metrics
 import Gargantext.API.Ngrams.Types qualified as NgramsTypes
-import Gargantext.API.Prelude (GargM, GargError, simuLogs)
+import Gargantext.API.Prelude (GargM, simuLogs)
 import Gargantext.Core.Methods.Similarities (GraphMetric(..))
 import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Types.Main (ListType(..))
@@ -88,7 +89,7 @@ data Charts = Sources | Authors | Institutes | Ngrams | All
     deriving (Generic, Eq, Ord, Enum, Bounded)
 
 ------------------------------------------------------------------------
-api :: NodeId -> ServerT API (GargM Env GargError)
+api :: NodeId -> ServerT API (GargM Env BackendInternalError)
 api nId =
   serveJobsAPI UpdateNodeJob $ \jHandle p ->
     updateNode nId p jHandle

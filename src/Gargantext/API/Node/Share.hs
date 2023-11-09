@@ -67,10 +67,10 @@ api userInviting nId (ShareTeamParams user') = do
     Just (u,_) -> do
       isRegistered <- getUserId' (UserName u)
       case isRegistered of
-        Just _  -> do
+        Right _  -> do
           -- printDebug "[G.A.N.Share.api]" ("Team shared with " <> u)
           pure u
-        Nothing -> do
+        Left _err -> do
           username' <- getUsername userInviting
           _ <- case List.elem username' arbitraryUsername of
             True  -> do

@@ -29,6 +29,7 @@ import Gargantext hiding (to)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.EnvTypes qualified as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.Mail.Types (HasMail(..))
 import Gargantext.Core.NLP (HasNLPServer(..))
@@ -60,7 +61,7 @@ data TestEnv = TestEnv {
   , test_config              :: !GargConfig
   , test_nodeStory           :: !NodeStoryEnv
   , test_usernameGen         :: !Counter
-  , test_logger              :: !(Logger (GargM TestEnv GargError))
+  , test_logger              :: !(Logger (GargM TestEnv BackendInternalError))
   }
 
 newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
@@ -73,7 +74,7 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            )
 
 instance MonadJobStatus TestMonad where
-  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle GargError
+  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle BackendInternalError
   type JobType        TestMonad = GargJob
   type JobOutputType  TestMonad = JobLog
   type JobEventType   TestMonad = JobLog
@@ -132,17 +133,17 @@ coreNLPConfig =
 instance HasNLPServer TestEnv where
   nlpServer = to $ const (Map.singleton EN coreNLPConfig)
 
-instance MonadLogger (GargM TestEnv GargError) where
+instance MonadLogger (GargM TestEnv BackendInternalError) where
   getLogger = asks test_logger
 
-instance HasLogger (GargM TestEnv GargError) where
-  data instance Logger (GargM TestEnv GargError) =
+instance HasLogger (GargM TestEnv BackendInternalError) where
+  data instance Logger (GargM TestEnv BackendInternalError) =
     GargTestLogger {
       test_logger_mode :: Mode
     , test_logger_set  :: FL.LoggerSet
     }
-  type instance LogInitParams (GargM TestEnv GargError) = Mode
-  type instance LogPayload (GargM TestEnv GargError)    = FL.LogStr
+  type instance LogInitParams (GargM TestEnv BackendInternalError) = Mode
+  type instance LogPayload (GargM TestEnv BackendInternalError)    = FL.LogStr
   initLogger                = \mode -> do
     test_logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
     pure $ GargTestLogger mode test_logger_set
