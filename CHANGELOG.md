@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.2
+
+* [BACK][REFACT][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
+
 ## Version 0.0.6.9.9.9.1
 
 * [FRONT][ERGO][[Top header &amp; navbar] Reorganize to navbar (#569)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/569)
