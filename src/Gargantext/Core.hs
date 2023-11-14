@@ -137,27 +137,34 @@ class HasDBid a where
 -- NOTE: We try to use numeric codes for countries
 -- https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
 -- https://en.wikipedia.org/wiki/ISO_3166-1_numeric#004
-dbIds :: [(Lang, Int)]
-dbIds = [ (All, 0  )
-        , (DE , 276)
-        , (EL , 300)
-        , (EN , 2  )
-        , (ES , 724)
-        , (FR , 1  )
-        , (IT , 380)
-        , (PL , 616)
-        , (PT , 620)
-        , (RU , 643)
-        , (UK , 804)
-        , (ZH , 156)
-        ]
+-- The pattern matching ensures this mapping will always be total
+-- once we add a new 'Lang'.
+lang2id :: Map Lang Int
+lang2id = Map.fromList $ allLangs <&> \lid -> case lid of
+  All -> (lid, 0)
+  DE  -> (lid, 276)
+  EL  -> (lid, 300)
+  EN  -> (lid, 2)
+  ES  -> (lid, 724)
+  FR  -> (lid, 1)
+  IT  -> (lid, 380)
+  PL  -> (lid, 616)
+  PT  -> (lid, 620)
+  RU  -> (lid, 643)
+  UK  -> (lid, 804)
+  ZH  -> (lid, 156)
+
+-- | /static/ conversion map between an 'Int' and a 'Lang'. Automatically kept up-to-date
+-- as it's derived from 'lang2id'.
+id2lang :: Map Int Lang
+id2lang = Map.fromList . map swap . Map.toList $ lang2id
 
 instance HasDBid Lang where
-  toDBid lang = case Map.lookup lang $ Map.fromList dbIds of
-                    Just la -> la
-                    Nothing -> panic "[G.Core] Add this lang to DB ids"
+  -- /NOTE/ this lookup cannot fail because 'dbIds' is defined as a total function
+  -- over its domain.
+  toDBid lang = lang2id Map.! lang
 
-  fromDBid dbId = case Map.lookup dbId $ Map.fromList $ map swap dbIds of
+  fromDBid dbId = case Map.lookup dbId id2lang of
                     Just la -> la
                     Nothing -> panic "HasDBid lang, not implemented"
 
