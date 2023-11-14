@@ -24,6 +24,7 @@ import Gargantext.Database.Query.Table.ContextNodeNgrams
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Types
 import Gargantext.Prelude
+import Gargantext.Core (toDBid)
 
 
 data DocumentIdWithNgrams a b =
@@ -41,7 +42,7 @@ insertDocNgrams lId m = do
   where
     ns = [ ContextNodeNgrams (nodeId2ContextId docId)
                              lId (ng^.index)
-                             (ngramsTypeId t)
+                             (NgramsTypeId $ toDBid t)
                              (fromIntegral i)
                              cnt
          | (ng, t2n2i)       <- HashMap.toList m

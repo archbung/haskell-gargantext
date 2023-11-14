@@ -19,11 +19,12 @@ import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Auth.PolicyCheck
 import Gargantext.API.GraphQL.PolicyCheck
 import Gargantext.API.GraphQL.Types
+import Gargantext.Core (fromDBid)
 import Gargantext.Core.Types (Tree, NodeTree, NodeType)
 import Gargantext.Core.Types.Main ( Tree(TreeN), _tn_node, _tn_children, NodeTree(NodeTree, _nt_id, _nt_type), _nt_name )
-import Gargantext.Database.Admin.Config (fromNodeTypeId)
-import Gargantext.Database.Admin.Types.Node qualified as NN
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Node (allNodeTypes, NodeId (UnsafeMkNodeId))
+import Gargantext.Database.Admin.Types.Node qualified as NN
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Tree qualified as T
@@ -104,11 +105,11 @@ resolveParent Nothing = pure Nothing
 
 
 nodeToTreeNode :: NN.Node json -> Maybe TreeNode
-nodeToTreeNode N.Node {..} = if (fromNodeTypeId _node_typename /= NN.NodeFolderShared) && (fromNodeTypeId _node_typename /= NN.NodeTeam)
+nodeToTreeNode N.Node {..} = if (fromDBid _node_typename /= NN.NodeFolderShared) && (fromDBid _node_typename /= NN.NodeTeam)
                              then
                              Just TreeNode { id        = NN.unNodeId _node_id
                                            , name      = _node_name
-                                           , node_type = fromNodeTypeId _node_typename
+                                           , node_type = fromDBid _node_typename
                                            , parent_id = NN.unNodeId <$> _node_parent_id
                                            }
                              else
@@ -121,7 +122,7 @@ convertDbTreeToTreeNode :: T.DbTreeNode -> TreeNode
 convertDbTreeToTreeNode T.DbTreeNode { _dt_name, _dt_nodeId, _dt_typeId, _dt_parentId } = TreeNode
   { name = _dt_name
   , id = NN.unNodeId _dt_nodeId
-  , node_type = fromNodeTypeId _dt_typeId
+  , node_type = fromDBid _dt_typeId
   , parent_id = NN.unNodeId <$> _dt_parentId
   }
 

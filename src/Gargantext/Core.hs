@@ -9,14 +9,16 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Gargantext.Core
   where
 
 import Data.Aeson
 import Data.LanguageCodes qualified as ISO639
-import Data.Map qualified as Map
+import Data.Bimap qualified as Bimap
+import Data.Bimap (Bimap)
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
 import Data.Text (pack)
@@ -131,16 +133,16 @@ allLangs :: [Lang]
 allLangs = [minBound .. maxBound]
 
 class HasDBid a where
-  toDBid   :: a   -> Int
-  fromDBid :: Int -> a
+  toDBid     :: a   -> Int
+  lookupDBid :: Int -> Maybe a
 
 -- NOTE: We try to use numeric codes for countries
 -- https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
 -- https://en.wikipedia.org/wiki/ISO_3166-1_numeric#004
 -- The pattern matching ensures this mapping will always be total
 -- once we add a new 'Lang'.
-lang2id :: Map Lang Int
-lang2id = Map.fromList $ allLangs <&> \lid -> case lid of
+langIds :: Bimap Lang Int
+langIds = Bimap.fromList $ allLangs <&> \lid -> case lid of
   All -> (lid, 0)
   DE  -> (lid, 276)
   EL  -> (lid, 300)
@@ -154,19 +156,11 @@ lang2id = Map.fromList $ allLangs <&> \lid -> case lid of
   UK  -> (lid, 804)
   ZH  -> (lid, 156)
 
--- | /static/ conversion map between an 'Int' and a 'Lang'. Automatically kept up-to-date
--- as it's derived from 'lang2id'.
-id2lang :: Map Int Lang
-id2lang = Map.fromList . map swap . Map.toList $ lang2id
-
 instance HasDBid Lang where
   -- /NOTE/ this lookup cannot fail because 'dbIds' is defined as a total function
   -- over its domain.
-  toDBid lang = lang2id Map.! lang
-
-  fromDBid dbId = case Map.lookup dbId id2lang of
-                    Just la -> la
-                    Nothing -> panic "HasDBid lang, not implemented"
+  toDBid lang     = langIds Bimap.! lang
+  lookupDBid dbId = Bimap.lookupR dbId langIds
 
 ------------------------------------------------------------------------
 data NLPServerConfig = NLPServerConfig
@@ -186,7 +180,13 @@ instance HasDBid PosTagAlgo where
   toDBid CoreNLP        = 1
   toDBid JohnSnowServer = 2
   toDBid Spacy          = 3
-  fromDBid 1 = CoreNLP
-  fromDBid 2 = JohnSnowServer
-  fromDBid 3 = Spacy
-  fromDBid _ = panic "HasDBid posTagAlgo : Not implemented"
+  lookupDBid 1          = Just CoreNLP
+  lookupDBid 2          = Just JohnSnowServer
+  lookupDBid 3          = Just Spacy
+  lookupDBid _          = Nothing
+
+
+fromDBid :: forall a. (HasCallStack, HasDBid a, Typeable a) => Int -> a
+fromDBid i = case lookupDBid i of
+  Nothing -> panic $ "HasDBid " <> show (typeRep (Proxy :: Proxy a)) <> " not found or not implemented."
+  Just v  -> v

@@ -34,7 +34,7 @@ import Database.PostgreSQL.Simple qualified as PGS (Query, Only(..))
 import Gargantext.Core
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
-import Gargantext.Database.Schema.Ngrams (NgramsType, ngramsTypeId, fromNgramsTypeId)
+import Gargantext.Database.Schema.Ngrams (NgramsType, fromNgramsTypeId)
 import Gargantext.Database.Schema.NodeNgrams
 import Gargantext.Database.Schema.Prelude (Select, FromRow, sql, fromRow, toField, field, Values(..), QualifiedIdentifier(..), selectTable)
 import Gargantext.Prelude
@@ -82,7 +82,7 @@ insertNodeNgrams nns = runPGSQuery query (PGS.Only $ Values fields nns')
                               -> [ toField node_id''
                                  , toField $ toDBid node_subtype
                                  , toField $ ngrams_terms
-                                 , toField $ ngramsTypeId ngrams_type
+                                 , toField $ toDBid ngrams_type
                                  , toField $ fromMaybe 0 ngrams_field
                                  , toField $ fromMaybe 0 ngrams_tag
                                  , toField $ fromMaybe 0 ngrams_class

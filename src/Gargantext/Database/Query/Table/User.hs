@@ -52,10 +52,11 @@ module Gargantext.Database.Query.Table.User
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), (?~))
+import Data.List.NonEmpty qualified as NE
 import Data.Proxy
 import Data.Time (UTCTime)
 import Data.UUID qualified as UUID
-import Gargantext.Core (HasDBid)
+import Gargantext.Core (HasDBid, toDBid)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config (nodeTypeId)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key, hu_epo_api_user, hu_epo_api_token)
@@ -70,7 +71,6 @@ import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Auth qualified as Auth
 import Opaleye
 import PUBMED.Types qualified as PUBMED
-import qualified Data.List.NonEmpty as NE
 
 ------------------------------------------------------------------------
 -- TODO: on conflict, nice message
@@ -164,7 +164,7 @@ getUsersWithId (RootId i) = map toUserLight <$> runOpaQuery (selectUsersLightWit
     selectUsersLightWithId i' = proc () -> do
       n <- queryNodeTable -< ()
       restrict -< n^.node_id .== pgNodeId i'
-      restrict -< n^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
+      restrict -< n^.node_typename .== sqlInt4 (toDBid NodeUser)
       row      <- queryUserTable -< ()
       restrict -< user_id row .== n^.node_user_id
       returnA  -< row
@@ -192,7 +192,7 @@ getUserHyperdata (UserDBId uId) = do
     selectUserHyperdataWithId i' = proc () -> do
       row      <- queryNodeTable -< ()
       restrict -< row^.node_user_id .== sqlInt4 i'
-      restrict -< row^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
+      restrict -< row^.node_typename .== sqlInt4 (toDBid NodeUser)
       returnA  -< row^.node_hyperdata
 getUserHyperdata _ = undefined
 
@@ -214,7 +214,7 @@ getUserNodeHyperdata (UserDBId uId) = do
     selectUserHyperdataWithId i' = proc () -> do
       row      <- queryNodeTable -< ()
       restrict -< row^.node_user_id .== sqlInt4 i'
-      restrict -< row^.node_typename .== sqlInt4 (nodeTypeId NodeUser)
+      restrict -< row^.node_typename .== sqlInt4 (toDBid NodeUser)
       returnA  -< row
 getUserNodeHyperdata _ = undefined
 

@@ -115,7 +115,7 @@ import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
-import Gargantext.Database.Admin.Config (nodeTypeId)
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
@@ -123,6 +123,7 @@ import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Database
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
+import Gargantext.Core (toDBid)
 
 ------------------------------------------------------------------------
 data NodeStoryEnv = NodeStoryEnv
@@ -303,7 +304,7 @@ nodeExists c nId = (== [PGS.Only True])
 
 getNodesIdWithType :: PGS.Connection -> NodeType -> IO [NodeId]
 getNodesIdWithType c nt = do
-  ns <- runPGSQuery c query (PGS.Only $ nodeTypeId nt)
+  ns <- runPGSQuery c query (PGS.Only $ toDBid nt)
   pure $ map (\(PGS.Only nId) -> UnsafeMkNodeId nId) ns
   where
     query :: PGS.Query
