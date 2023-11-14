@@ -1,6 +1,12 @@
+## Version 0.0.6.9.9.9.3
+
+* [BACK][FIX][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
+* [BACK][FIX][Phylo Default (#284)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/284)
+
 ## Version 0.0.6.9.9.9.2
 
 * [BACK][REFACT][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
+* [FRONT][FIX][[Docs View] Highlight sometimes broken (#598)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/598)
 
 ## Version 0.0.6.9.9.9.1
 
