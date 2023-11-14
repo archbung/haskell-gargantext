@@ -6,6 +6,9 @@ module Gargantext.API.Errors (
     module Types
   , module Class
 
+  -- * Types
+  , GargErrorScheme(..)
+
   -- * Conversion functions
   , backendErrorToFrontendError
   , frontendErrorToServerError
@@ -33,6 +36,13 @@ import qualified Data.Text.Lazy.Encoding as TE
 import qualified Data.Text.Lazy as TL
 
 $(deriveHttpStatusCode ''BackendErrorCode)
+
+data GargErrorScheme
+  = -- | The old error scheme.
+    GES_old
+    -- | The new error scheme, that returns a 'FrontendError'.
+  | GES_new
+    deriving (Show, Eq)
 
 -- | Transforms a backend internal error into something that the frontend
 -- can consume. This is the only representation we offer to the outside world,

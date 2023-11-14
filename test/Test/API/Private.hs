@@ -10,9 +10,12 @@ module Test.API.Private (
   , withValidLogin
   , getJSON
   , protected
+  , protectedWith
+  , protectedNewError
   ) where
 
 import Data.ByteString.Lazy qualified as L
+import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Routes
@@ -36,11 +39,21 @@ import Test.Utils (jsonFragment, shouldRespondWith')
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
 protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
-protected tkn mth url payload =
-  request mth url [ (hAccept, "application/json;charset=utf-8")
+protected tkn mth url = protectedWith mempty tkn mth url
+
+protectedWith :: [Network.HTTP.Types.Header]
+              -> Token
+              -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protectedWith extraHeaders tkn mth url payload =
+  request mth url ([ (hAccept, "application/json;charset=utf-8")
                   , (hContentType, "application/json")
                   , (hAuthorization, "Bearer " <> TE.encodeUtf8 tkn)
-                  ] payload
+                  ] <> extraHeaders) payload
+
+protectedNewError :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protectedNewError tkn mth url = protectedWith newErrorFormat tkn mth url
+  where
+    newErrorFormat = [(CI.mk "X-Garg-Error-Scheme", "new")]
 
 getJSON :: ByteString -> WaiSession () SResponse
 getJSON url =
