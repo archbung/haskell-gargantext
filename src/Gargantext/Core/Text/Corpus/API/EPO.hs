@@ -33,11 +33,11 @@ get Nothing _ _ _ _ = do
   -- throwIO $ EPO.OtherError "AuthKey is required"
   pure $ Left $ ConnectionError $ toException $ ErrorCall "AuthKey is required"
 get (Just authKey) epoAPIUrl q lang mLimit = do
-  let _limit = Corpus.getLimit $ fromMaybe 10000 mLimit
+  let limit = Corpus.getLimit <$> mLimit
   case parseURI (T.unpack epoAPIUrl) of
     Nothing -> pure $ Left $ ConnectionError $ toException $ ErrorCall "Cannot parse API URL"
     Just apiUrl -> do
-      eRes <- EPO.searchEPOAPIC apiUrl authKey Nothing (Just 30) (Corpus.getRawQuery q)
+      eRes <- EPO.searchEPOAPIC apiUrl authKey Nothing limit (Corpus.getRawQuery q)
       pure $ (\(total, itemsC) -> (Just total, itemsC .| mapC (toDoc lang))) <$> eRes
         
       -- EPO.Paginated { .. } <- EPO.searchEPOAPI apiUrl authKey 1 20 (Corpus.getRawQuery q)
