@@ -24,20 +24,24 @@ import Servant.Client.Core (ClientError(ConnectionError))
 
 
 get :: Maybe EPO.AuthKey
+    -> Text
     -> Corpus.RawQuery
     -> ISO639_1
     -> Maybe Corpus.Limit
     -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get Nothing _ _ _ = do
+get Nothing _ _ _ _ = do
   -- throwIO $ EPO.OtherError "AuthKey is required"
   pure $ Left $ ConnectionError $ toException $ ErrorCall "AuthKey is required"
-get (Just authKey) q lang mLimit = do
+get (Just authKey) epoAPIUrl q lang mLimit = do
   let _limit = Corpus.getLimit $ fromMaybe 10000 mLimit
-  case parseURI "http://localhost:3000" of
+  case parseURI (T.unpack epoAPIUrl) of
     Nothing -> pure $ Left $ ConnectionError $ toException $ ErrorCall "Cannot parse API URL"
     Just apiUrl -> do
-      EPO.Paginated { .. } <- EPO.searchEPOAPI apiUrl authKey 1 20 (Corpus.getRawQuery q)
-      pure $ Right ( Just $ fromIntegral total, yieldMany items .| mapC (toDoc lang) )
+      eRes <- EPO.searchEPOAPIC apiUrl authKey Nothing (Just 30) (Corpus.getRawQuery q)
+      pure $ (\(total, itemsC) -> (Just total, itemsC .| mapC (toDoc lang))) <$> eRes
+        
+      -- EPO.Paginated { .. } <- EPO.searchEPOAPI apiUrl authKey 1 20 (Corpus.getRawQuery q)
+      -- pure $ Right ( Just $ fromIntegral total, yieldMany items .| mapC (toDoc lang) )
 
 toDoc :: ISO639_1 -> EPO.HyperdataDocument -> HyperdataDocument
 toDoc lang (EPO.HyperdataDocument { .. }) =

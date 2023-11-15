@@ -102,7 +102,7 @@ import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
-import Gargantext.Database.Prelude (DbCmd', DBCmd)
+import Gargantext.Database.Prelude (DbCmd', DBCmd, hasConfig)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node
@@ -117,6 +117,7 @@ import Gargantext.Database.Schema.Node (NodePoly(..), node_id)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Database.Types
 import Gargantext.Prelude hiding (to)
+import Gargantext.Prelude.Config (GargConfig(..))
 import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
@@ -165,7 +166,8 @@ getDataText :: (HasNodeError err)
             -> Maybe API.Limit
             -> DBCmd err (Either API.GetCorpusError DataText)
 getDataText (ExternalOrigin api) la q mPubmedAPIKey mAuthKey li = do
-  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey li
+  cfg <- view hasConfig
+  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey (_gc_epo_api_url cfg) li
   pure $ DataNew <$> eRes
 getDataText (InternalOrigin _) _la q _ _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus

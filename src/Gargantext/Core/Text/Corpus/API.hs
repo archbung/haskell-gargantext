@@ -50,10 +50,11 @@ get :: ExternalAPIs
     -> Corpus.RawQuery
     -> Maybe PUBMED.APIKey
     -> Maybe EPO.AuthKey
+    -> Text
     -> Maybe Corpus.Limit
     -- -> IO [HyperdataDocument]
     -> IO (Either GetCorpusError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
-get externalAPI la q mPubmedAPIKey epoAuthKey limit = do
+get externalAPI la q mPubmedAPIKey epoAuthKey epoAPIUrl limit = do
   -- For PUBMED, HAL, IsTex, Isidore and OpenAlex, we want to send the query as-it.
   -- For Arxiv we parse the query into a structured boolean query we submit over.
   case externalAPI of
@@ -73,6 +74,6 @@ get externalAPI la q mPubmedAPIKey epoAuthKey limit = do
         docs <- ISIDORE.get la (Corpus.getLimit <$> limit) (Just $ Corpus.getRawQuery q) Nothing
         pure $ Right (Just $ fromIntegral $ length docs, yieldMany docs)
       EPO -> do
-        first ExternalAPIError <$> EPO.get epoAuthKey q (toISO639EN la) limit
+        first ExternalAPIError <$> EPO.get epoAuthKey epoAPIUrl q (toISO639EN la) limit
   where
     parse_query = first (InvalidInputQuery q . T.pack) $ Corpus.parseQuery q

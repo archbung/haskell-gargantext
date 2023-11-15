@@ -6,7 +6,6 @@ with-compiler: ghc-8.10.7
 
 packages:
     ./
-    ../openalex
 
 source-repository-package
     type: git
@@ -84,6 +83,11 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git
+    tag: 9225d046083853200b9045c8d71161e6a234fc5c
+
+source-repository-package
+    type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
     tag: 25a1e9558075462a82660987920a698b8863dd63
 
@@ -99,18 +103,13 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git
-    tag: eae89b09f4ce46cd3db836d5c580ac90073de7ba
-
-source-repository-package
-    type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
     tag: 9b1bd17f3ed38eab83e675bb68278922217a9c73
 
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-    tag: 1cf872fb3bd0e3e44af31247833c4b6bb7d0dca5
+    tag: a46abe16700449a1f863deb89380b05d89ad9723
 
 source-repository-package
     type: git
@@ -125,7 +124,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-    tag: 40135d166830690b1101180b79e9fd3663284b2b
+    tag: 9b33568da92f92bfa89c8bd8f05b07b70fd021f9
 
 source-repository-package
     type: git
