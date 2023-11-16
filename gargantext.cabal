@@ -75,6 +75,7 @@ library
       Gargantext.API.Prelude
       Gargantext.API.Routes
       Gargantext.Core
+      Gargantext.Core.Errors.Types
       Gargantext.Core.Mail.Types
       Gargantext.Core.Methods.Similarities
       Gargantext.Core.NLP
@@ -948,6 +949,7 @@ test-suite garg-test-tasty
       Test.Ngrams.NLP
       Test.Ngrams.Query
       Test.Ngrams.Query.PaginationCorpus
+      Test.Offline.Errors
       Test.Offline.JSON
       Test.Parsers.Date
       Test.Parsers.Types

@@ -18,6 +18,7 @@ import qualified Test.Graph.Clustering        as Graph
 import qualified Test.Ngrams.NLP              as NLP
 import qualified Test.Ngrams.Query            as NgramsQuery
 import qualified Test.Offline.JSON            as JSON
+import qualified Test.Offline.Errors          as Errors
 import qualified Test.Parsers.Date            as PD
 import qualified Test.Utils.Crypto            as Crypto
 import qualified Test.Utils.Jobs              as Jobs
@@ -46,4 +47,5 @@ main = do
     , NgramsQuery.tests
     , CorpusQuery.tests
     , JSON.tests
+    , Errors.tests
     ]

@@ -25,6 +25,9 @@ import Data.Text (pack)
 import Gargantext.Prelude hiding (All)
 import Servant.API
 import Test.QuickCheck
+import Control.Exception (throw)
+import Prelude (userError)
+import Gargantext.Core.Errors.Types (WithStacktrace(..))
 
 ------------------------------------------------------------------------
 -- | Language of a Text
@@ -190,5 +193,7 @@ instance HasDBid PosTagAlgo where
 -- with an error if the conversion cannot be performed.
 fromDBid :: forall a. (HasCallStack, HasDBid a, Typeable a) => Int -> a
 fromDBid i = case lookupDBid i of
-  Nothing -> panic $ "HasDBid " <> show (typeRep (Proxy :: Proxy a)) <> " not found or not implemented."
+  Nothing ->
+    let err = userError $ "HasDBid " <> show (typeRep (Proxy :: Proxy a)) <> " not found or not implemented."
+    in throw $ WithStacktrace callStack err
   Just v  -> v
