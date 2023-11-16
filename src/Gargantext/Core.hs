@@ -186,6 +186,8 @@ instance HasDBid PosTagAlgo where
   lookupDBid _          = Nothing
 
 
+-- | Tries to convert the given integer into the relevant DB identifier, failing
+-- with an error if the conversion cannot be performed.
 fromDBid :: forall a. (HasCallStack, HasDBid a, Typeable a) => Int -> a
 fromDBid i = case lookupDBid i of
   Nothing -> panic $ "HasDBid " <> show (typeRep (Proxy :: Proxy a)) <> " not found or not implemented."

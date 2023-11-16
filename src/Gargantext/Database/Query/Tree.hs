@@ -248,7 +248,7 @@ findNodesId r nt = tail
                 <$> map _dt_nodeId
                 <$> dbTree r nt
 
-findNodesWithType :: RootId -> [NodeType] -> [NodeType] -> DBCmd err [DbTreeNode]
+findNodesWithType :: HasCallStack => RootId -> [NodeType] -> [NodeType] -> DBCmd err [DbTreeNode]
 findNodesWithType root target through =
   filter isInTarget <$> dbTree root through
     where
@@ -282,8 +282,7 @@ toTree m =
             -- m' ^.. at (Just $ _dt_nodeId root) . _Just . each . to (toTree' m')
             toListOf (at (Just $ _dt_nodeId root) . _Just . each . to (toTree' m')) m'
 
-toNodeTree :: DbTreeNode
-            -> NodeTree
+toNodeTree :: HasCallStack => DbTreeNode -> NodeTree
 toNodeTree (DbTreeNode nId tId _ n) = NodeTree n (fromDBid tId) nId
 
 ------------------------------------------------------------------------

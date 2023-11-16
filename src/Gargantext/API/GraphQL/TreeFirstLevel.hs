@@ -104,7 +104,7 @@ resolveParent (Just pId) = do
 resolveParent Nothing = pure Nothing
 
 
-nodeToTreeNode :: NN.Node json -> Maybe TreeNode
+nodeToTreeNode :: HasCallStack => NN.Node json -> Maybe TreeNode
 nodeToTreeNode N.Node {..} = if (fromDBid _node_typename /= NN.NodeFolderShared) && (fromDBid _node_typename /= NN.NodeTeam)
                              then
                              Just TreeNode { id        = NN.unNodeId _node_id
@@ -118,7 +118,7 @@ nodeToTreeNode N.Node {..} = if (fromDBid _node_typename /= NN.NodeFolderShared)
 resolveBreadcrumb :: (CmdCommon env) => BreadcrumbArgs -> GqlM e env (BreadcrumbInfo)
 resolveBreadcrumb BreadcrumbArgs { node_id } = dbRecursiveParents node_id
 
-convertDbTreeToTreeNode :: T.DbTreeNode -> TreeNode
+convertDbTreeToTreeNode :: HasCallStack => T.DbTreeNode -> TreeNode
 convertDbTreeToTreeNode T.DbTreeNode { _dt_name, _dt_nodeId, _dt_typeId, _dt_parentId } = TreeNode
   { name = _dt_name
   , id = NN.unNodeId _dt_nodeId
