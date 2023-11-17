@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.3.1
+
+* [FRONT][FIX][[NGram Table] Display of all terms return blank page (#208)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/208)
+* [FRONT][FIX][[Node Documents] Frontend enhancement - highlight terms side-by-side with other terms (#615)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/615)
+
 ## Version 0.0.6.9.9.9.3
 
 * [BACK][FIX][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
