@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import qualified Servant.Client as C
 import qualified Servant.Job.Async as SJ
 import qualified Servant.Job.Client as SJ
+import qualified Servant.Job.Core as SJ
 import qualified Servant.Job.Types as SJ
 
 serveJobsAPI
@@ -65,7 +66,7 @@ serveJobAPI t joberr jid' = wrap' (killJob t)
           -> m a
         wrap g = do
           jid <- handleIDError joberr (checkJID jid')
-          job <- maybe (throwError $ joberr UnknownJob) pure =<< findJob jid
+          job <- maybe (throwError $ joberr $ UnknownJob (SJ._id_number jid)) pure =<< findJob jid
           g jid job
 
         wrap' g limit offset = wrap (g limit offset)

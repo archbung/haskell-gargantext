@@ -15,6 +15,7 @@ import Database.PostgreSQL.Simple.Options qualified as Client
 import Database.PostgreSQL.Simple.Options qualified as Opts
 import Database.Postgres.Temp qualified as Tmp
 import Gargantext.API.Admin.EnvTypes (Mode(Mock))
+import Gargantext.Core.NodeStory (fromDBNodeStoryEnv)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config
 import Gargantext.System.Logging (withLoggerHoisted)
@@ -71,8 +72,13 @@ setup = do
                          (PG.close) 2 60 2
       bootstrapDB db pool gargConfig
       ugen <- emptyCounter
+      test_nodeStory <- fromDBNodeStoryEnv pool
       withLoggerHoisted Mock $ \logger -> do
-        pure $ TestEnv (DBHandle pool db) gargConfig ugen logger
+        pure $ TestEnv { test_db = DBHandle pool db
+                       , test_config = gargConfig
+                       , test_nodeStory
+                       , test_usernameGen = ugen
+                       , test_logger = logger }
 
 withTestDB :: (TestEnv -> IO ()) -> IO ()
 withTestDB = bracket setup teardown

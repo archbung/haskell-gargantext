@@ -22,11 +22,13 @@ import Data.Aeson
 import Data.List qualified as List
 import Data.Swagger
 import Data.Text qualified as T
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
-import Gargantext.API.Prelude (GargM, GargError)
+import Gargantext.API.Prelude (GargM)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion)
 import Gargantext.Core.Text.Corpus.Parsers.Date (split')
@@ -44,7 +46,6 @@ import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
-import Gargantext.API.Admin.Auth.Types
 -- import qualified Gargantext.Defaults as Defaults
 
 ------------------------------------------------------------------------
@@ -67,7 +68,7 @@ instance ToSchema Params
 api :: AuthenticatedUser
     -- ^ The logged-in user
     -> NodeId
-    -> ServerT API (GargM Env GargError)
+    -> ServerT API (GargM Env BackendInternalError)
 api authenticatedUser nId =
   serveJobsAPI DocumentFromWriteNodeJob $ \jHandle p ->
     documentsFromWriteNodes authenticatedUser nId p jHandle

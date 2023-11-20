@@ -1,12 +1,14 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Test.Offline.JSON (tests) where
 
 import Data.Aeson
 import Data.Either
+import Gargantext.API.Errors
 import Gargantext.API.Node.Corpus.New
 import Gargantext.API.Node.Corpus.Types
 import Gargantext.Core.Types.Phylo
@@ -20,15 +22,38 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as C8
 
 import Paths_gargantext
+import Gargantext.Database.Admin.Types.Node
 
 jsonRoundtrip :: (Show a, FromJSON a, ToJSON a, Eq a) => a -> Property
 jsonRoundtrip a =
   counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
 
+class (Show a, FromJSON a, ToJSON a, Eq a, Enum a, Bounded a) => EnumBoundedJSON a
+instance EnumBoundedJSON BackendErrorCode
+
+jsonEnumRoundtrip :: forall a. Dict EnumBoundedJSON a -> Property
+jsonEnumRoundtrip d = case d of
+  Dict -> conjoin $ map (prop Dict) [minBound .. maxBound]
+  where
+    prop :: Dict EnumBoundedJSON a -> a -> Property
+    prop Dict a = counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
+
+-- | Tests /all/ the 'BackendErrorCode' and their associated 'FrontendError' payloads.
+jsonFrontendErrorRoundtrip :: Property
+jsonFrontendErrorRoundtrip = conjoin $ map mk_prop [minBound .. maxBound]
+  where
+    mk_prop :: BackendErrorCode -> Property
+    mk_prop code = forAll (genFrontendErr code) $ \a ->
+      counterexample ("Parsed JSON: " <> C8.unpack (encode a)) $ eitherDecode (encode a) === Right a
+
 tests :: TestTree
 tests = testGroup "JSON" [
-    testProperty "Datafield roundtrips" (jsonRoundtrip @Datafield)
-  , testProperty "WithQuery roundtrips" (jsonRoundtrip @WithQuery)
+    testProperty "NodeId roundtrips"        (jsonRoundtrip @NodeId)
+  , testProperty "RootId roundtrips"        (jsonRoundtrip @RootId)
+  , testProperty "Datafield roundtrips"     (jsonRoundtrip @Datafield)
+  , testProperty "WithQuery roundtrips"     (jsonRoundtrip @WithQuery)
+  , testProperty "FrontendError roundtrips" jsonFrontendErrorRoundtrip
+  , testProperty "BackendErrorCode roundtrips" (jsonEnumRoundtrip (Dict @_ @BackendErrorCode))
   , testCase "WithQuery frontend compliance" testWithQueryFrontend
   , testGroup "Phylo" [
     testProperty "PeriodToNode"  (jsonRoundtrip @PeriodToNodeData)

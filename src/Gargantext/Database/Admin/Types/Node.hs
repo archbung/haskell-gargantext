@@ -44,7 +44,7 @@ import Opaleye (DefaultFromField, defaultFromField, SqlInt4, SqlText, SqlTSVecto
 import Opaleye qualified as O
 import Prelude qualified
 import Servant hiding (Context)
-import Test.QuickCheck (elements)
+import Test.QuickCheck (elements, Positive (getPositive))
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Instances.Text ()
 import Test.QuickCheck.Instances.Time ()
@@ -73,6 +73,9 @@ instance DecodeScalar UserId where
 
 instance ResourceId UserId where
   isPositive = (> 0) . _UserId
+
+instance Arbitrary UserId where
+  arbitrary = UnsafeMkUserId . getPositive <$> arbitrary
 
 instance DefaultFromField SqlInt4 UserId
   where
@@ -272,6 +275,9 @@ newtype ContextId = UnsafeMkContextId { _ContextId :: Int }
 
 instance ToParamSchema ContextId
 
+instance Arbitrary ContextId where
+  arbitrary = UnsafeMkContextId . getPositive <$> arbitrary
+
 instance FromHttpApiData ContextId where
   parseUrlPiece n = pure $ UnsafeMkContextId $ (read . cs) n
 instance ToHttpApiData ContextId where
@@ -304,8 +310,10 @@ instance FromHttpApiData NodeId where
 instance ToHttpApiData NodeId where
   toUrlPiece (UnsafeMkNodeId n) = toUrlPiece n
 instance ToParamSchema NodeId
+
+-- | It makes sense to generate only positive ids.
 instance Arbitrary NodeId where
-  arbitrary = UnsafeMkNodeId <$> arbitrary
+  arbitrary = UnsafeMkNodeId . getPositive <$> arbitrary
 
 type ParentId    = NodeId
 type CorpusId    = NodeId

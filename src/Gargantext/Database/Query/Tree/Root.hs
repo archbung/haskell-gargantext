@@ -37,7 +37,7 @@ getRootId :: (HasNodeError err) => User -> DBCmd err NodeId
 getRootId u = do
   maybeRoot <- head <$> getRoot u
   case maybeRoot of
-    Nothing -> nodeError $ NodeError "[G.D.Q.T.R.getRootId] No root id"
+    Nothing -> errorWith "[G.D.Q.T.R.getRootId] No root id"
     Just  r -> pure (_node_id r)
 
 getRoot :: User -> DBCmd err [Node HyperdataUser]
@@ -54,7 +54,7 @@ getOrMkRoot user = do
   rootId'' <- case rootId' of
         []  -> mkRoot user
         n   -> case length n >= 2 of
-            True  -> nodeError ManyNodeUsers
+            True  -> nodeError $ NodeLookupFailed $ UserHasTooManyRoots userId n
             False -> pure rootId'
 
   rootId <- maybe (nodeError NoRootFound) pure (head rootId'')
@@ -80,7 +80,7 @@ getOrMk_RootWithCorpus user cName c = do
                   else do
                     c' <- mk (Just $ fromLeft "Default" cName) c rootId userId
                     _tId <- case head c' of
-                              Nothing  -> nodeError $ NodeError "[G.D.Q.T.Root.getOrMk...] mk Corpus failed"
+                              Nothing  -> errorWith "[G.D.Q.T.Root.getOrMk...] mk Corpus failed"
                               Just c'' -> insertDefaultNode NodeTexts c'' userId
                     pure c'
 
@@ -102,7 +102,7 @@ mkRoot user = do
   una <- getUsername user
 
   case isPositive uid of
-     False -> nodeError NegativeId
+     False -> nodeError $ NodeCreationFailed (UserHasNegativeId uid)
      True  -> do
        rs <- mkNodeWithParent NodeUser Nothing uid una
        _ <- case rs of
@@ -135,4 +135,3 @@ selectRoot (RootId nid) =
     restrict -< _node_typename row   .== (sqlInt4 $ toDBid NodeUser)
     restrict -< _node_id   row   .== (pgNodeId nid)
     returnA  -< row
-selectRoot UserPublic = panic {-nodeError $ NodeError-}  "[G.D.Q.T.Root.selectRoot] No root for Public"

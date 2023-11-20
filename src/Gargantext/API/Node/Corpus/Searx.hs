@@ -29,7 +29,7 @@ import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
 import Gargantext.Core.Text.Terms (TermType(..))
-import Gargantext.Core.Types (HasInvalidError)
+import Gargantext.Core.Types (HasValidationError)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus) --, DataText(..))
@@ -124,7 +124,7 @@ insertSearxResponse :: ( MonadBase IO m
                        , HasNLPServer env
                        , HasNodeError err
                        , HasTreeError err
-                       , HasInvalidError err )
+                       , HasValidationError err )
                     => User
                     -> CorpusId
                     -> ListId
@@ -166,7 +166,7 @@ triggerSearxSearch :: ( MonadBase IO m
                       , HasNLPServer env
                       , HasNodeError err
                       , HasTreeError err
-                      , HasInvalidError err 
+                      , HasValidationError err
                       , MonadJobStatus m )
                    => User
                    -> CorpusId

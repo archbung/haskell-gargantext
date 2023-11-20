@@ -28,6 +28,7 @@ import Gargantext.API (startGargantext) -- , startGargantextMock)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.Prelude
 import Gargantext.System.Logging
+import GHC.IO.Encoding
 import Options.Generic
 import System.Exit (exitSuccess)
 import qualified Paths_gargantext as PG -- cabal magic build module
@@ -54,6 +55,11 @@ deriving instance Show (MyOptions Unwrapped)
 
 main :: IO ()
 main = withLogger () $ \ioLogger -> do
+
+  -- Sets the locale to avoid encoding issues like in #284.
+  setLocaleEncoding utf8
+  currentLocale <- getLocaleEncoding
+
   MyOptions myMode myPort myIniFile myVersion  <- unwrapRecord
           "Gargantext server"
   ---------------------------------------------------------------
@@ -75,6 +81,7 @@ main = withLogger () $ \ioLogger -> do
   let start = case myMode of
         Mock -> panic "[ERROR] Mock mode unsupported"
         _ -> startGargantext myMode myPort' (unpack myIniFile')
-  logMsg ioLogger INFO $ "Starting with " <> show myMode <> " mode."
+  logMsg ioLogger INFO $ "Starting with "   <> show myMode <> " mode."
+  logMsg ioLogger INFO $ "Machine locale: " <> show currentLocale
   start
   ---------------------------------------------------------------

@@ -21,7 +21,7 @@ module Gargantext.Database.Action.Flow.Types
 
 import Data.Aeson (ToJSON)
 
-import Gargantext.Core.Types (HasInvalidError)
+import Gargantext.Core.Types (HasValidationError)
 import Gargantext.Core.Flow.Types
 import Gargantext.Core.Text
 import Gargantext.Core.NodeStory
@@ -36,7 +36,7 @@ type FlowCmdM env err m =
   ( CmdM     env err m
   , HasNodeStory env err m
   , HasNodeError err
-  , HasInvalidError err
+  , HasValidationError err
   , HasTreeError err
   , MonadLogger m
   )

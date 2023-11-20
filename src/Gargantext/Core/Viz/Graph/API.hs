@@ -24,6 +24,7 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.Swagger
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Ngrams.Tools
 import Gargantext.API.Prelude
 import Gargantext.Core.Methods.Similarities (Similarity(..), GraphMetric(..), withMetric)
@@ -41,8 +42,8 @@ import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.Ngrams
+import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
@@ -70,7 +71,7 @@ instance FromJSON GraphVersions
 instance ToJSON GraphVersions
 instance ToSchema GraphVersions
 
-graphAPI :: UserId -> NodeId -> ServerT GraphAPI (GargM Env GargError)
+graphAPI :: UserId -> NodeId -> ServerT GraphAPI (GargM Env BackendInternalError)
 graphAPI userId n = getGraph n
           :<|> graphAsync        n
           :<|> graphClone        userId n
@@ -248,7 +249,7 @@ type GraphAsyncAPI = Summary "Recompute graph"
                      :> AsyncJobsAPI JobLog () JobLog
 
 
-graphAsync :: NodeId -> ServerT GraphAsyncAPI (GargM Env GargError)
+graphAsync :: NodeId -> ServerT GraphAsyncAPI (GargM Env BackendInternalError)
 graphAsync n =
   serveJobsAPI RecomputeGraphJob $ \jHandle _ -> graphRecompute n jHandle
 

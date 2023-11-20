@@ -26,6 +26,7 @@ import Data.Maybe (fromJust)
 import Data.Text  (unpack, replace, pack)
 import Data.Text qualified as T
 import Data.Vector qualified as Vector
+import GHC.IO.Encoding
 import Gargantext.API.Ngrams.Prelude (toTermList)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Text.Context (TermList)
@@ -253,6 +254,9 @@ fileToList parser path =
 main :: IO ()
 main = do
 
+    setLocaleEncoding utf8
+    currentLocale <- getLocaleEncoding
+    printIOMsg $ "Machine locale: " <> show currentLocale
     printIOMsg "Starting the reconstruction"
 
     printIOMsg "Read the configuration file"

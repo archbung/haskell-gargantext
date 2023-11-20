@@ -26,6 +26,7 @@ import Data.Time
 import Debug.RecoverRTTI (anythingToString)
 import Gargantext.API.Admin.EnvTypes as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs.Internal (newJob)
@@ -215,14 +216,14 @@ testFairness = do
 
 
 newtype MyDummyMonad a =
-  MyDummyMonad { _MyDummyMonad :: GargM Env GargError a }
+  MyDummyMonad { _MyDummyMonad :: GargM Env BackendInternalError a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env)
 
 instance MonadJob MyDummyMonad GargJob (Seq JobLog) JobLog where
   getJobEnv = MyDummyMonad getJobEnv
 
 instance MonadJobStatus MyDummyMonad where
-  type JobHandle      MyDummyMonad = EnvTypes.ConcreteJobHandle GargError
+  type JobHandle      MyDummyMonad = EnvTypes.ConcreteJobHandle BackendInternalError
   type JobType        MyDummyMonad = GargJob
   type JobOutputType  MyDummyMonad = JobLog
   type JobEventType   MyDummyMonad = JobLog
@@ -252,7 +253,7 @@ withJob :: Env
         -> IO (SJ.JobStatus 'SJ.Safe JobLog)
 withJob env f = runMyDummyMonad env $ MyDummyMonad $
   -- the job type doesn't matter in our tests, we use a random one, as long as it's of type 'GargJob'.
-  newJob @_ @GargError mkJobHandle (pure env) RecomputeGraphJob (\_ hdl input ->
+  newJob @_ @BackendInternalError mkJobHandle (pure env) RecomputeGraphJob (\_ hdl input ->
     runMyDummyMonad env $ (Right <$> (f hdl input >> getLatestJobStatus hdl))) (SJ.JobInput () Nothing)
 
 withJob_ :: Env

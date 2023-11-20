@@ -28,6 +28,7 @@ import Text.Read (readMaybe)
 import qualified Data.Text as T
 
 import Gargantext.API.Admin.EnvTypes
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import qualified Gargantext.Utils.Jobs.Internal as Internal
 import Gargantext.Utils.Jobs.Monad
@@ -36,8 +37,8 @@ import Gargantext.System.Logging
 import qualified Servant.Job.Async as SJ
 
 jobErrorToGargError
-  :: JobError -> GargError
-jobErrorToGargError = GargJobError
+  :: JobError -> BackendInternalError
+jobErrorToGargError = InternalJobError
 
 serveJobsAPI
   :: (
@@ -47,7 +48,7 @@ serveJobsAPI
    , ToJSON (JobEventType m)
    , ToJSON (JobOutputType m)
    , MonadJobStatus m
-   , m ~ (GargM Env GargError)
+   , m ~ (GargM Env BackendInternalError)
    , JobEventType m ~ JobOutputType m
    )
   => JobType m

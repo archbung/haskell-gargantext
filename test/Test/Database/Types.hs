@@ -29,9 +29,11 @@ import Gargantext hiding (to)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.EnvTypes qualified as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core.Mail.Types (HasMail(..))
 import Gargantext.Core.NLP (HasNLPServer(..))
+import Gargantext.Core.NodeStory
 import Gargantext.Database.Prelude (HasConfig(..), HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Prelude.Config
@@ -57,8 +59,9 @@ nextCounter (Counter ref) = atomicModifyIORef' ref (\old -> (succ old, old))
 data TestEnv = TestEnv {
     test_db                  :: !DBHandle
   , test_config              :: !GargConfig
+  , test_nodeStory           :: !NodeStoryEnv
   , test_usernameGen         :: !Counter
-  , test_logger              :: !(Logger (GargM TestEnv GargError))
+  , test_logger              :: !(Logger (GargM TestEnv BackendInternalError))
   }
 
 newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
@@ -71,7 +74,7 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            )
 
 instance MonadJobStatus TestMonad where
-  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle GargError
+  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle BackendInternalError
   type JobType        TestMonad = GargJob
   type JobOutputType  TestMonad = JobLog
   type JobEventType   TestMonad = JobLog
@@ -107,6 +110,20 @@ instance HasMail TestEnv where
                                         , _mc_mail_password   = "test"
                                         , _mc_mail_login_type = NoAuth })
 
+instance HasNodeStoryEnv TestEnv where
+  hasNodeStory = to test_nodeStory
+
+
+instance HasNodeStoryVar TestEnv where
+  hasNodeStoryVar = hasNodeStory . nse_getter
+
+instance HasNodeStoryImmediateSaver TestEnv where
+  hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
+
+instance HasNodeArchiveStoryImmediateSaver TestEnv where
+  hasNodeArchiveStoryImmediateSaver = hasNodeStory . nse_archive_saver_immediate
+
+
 coreNLPConfig :: NLPServerConfig
 coreNLPConfig =
   let uri = parseURI "http://localhost:9000"
@@ -116,17 +133,17 @@ coreNLPConfig =
 instance HasNLPServer TestEnv where
   nlpServer = to $ const (Map.singleton EN coreNLPConfig)
 
-instance MonadLogger (GargM TestEnv GargError) where
+instance MonadLogger (GargM TestEnv BackendInternalError) where
   getLogger = asks test_logger
 
-instance HasLogger (GargM TestEnv GargError) where
-  data instance Logger (GargM TestEnv GargError) =
+instance HasLogger (GargM TestEnv BackendInternalError) where
+  data instance Logger (GargM TestEnv BackendInternalError) =
     GargTestLogger {
       test_logger_mode :: Mode
     , test_logger_set  :: FL.LoggerSet
     }
-  type instance LogInitParams (GargM TestEnv GargError) = Mode
-  type instance LogPayload (GargM TestEnv GargError)    = FL.LogStr
+  type instance LogInitParams (GargM TestEnv BackendInternalError) = Mode
+  type instance LogPayload (GargM TestEnv BackendInternalError)    = FL.LogStr
   initLogger                = \mode -> do
     test_logger_set <- liftIO $ FL.newStderrLoggerSet FL.defaultBufSize
     pure $ GargTestLogger mode test_logger_set

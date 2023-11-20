@@ -22,6 +22,7 @@ import Data.Swagger (ToSchema)
 import Data.Text qualified as T
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NLP (nlpServerGet)
@@ -75,7 +76,7 @@ type API = Summary " Document upload"
            :> "async"
            :> AsyncJobs JobLog '[JSON] DocumentUpload JobLog
 
-api :: NodeId -> ServerT API (GargM Env GargError)
+api :: NodeId -> ServerT API (GargM Env BackendInternalError)
 api nId =
   serveJobsAPI UploadDocumentJob $ \jHandle q -> do
       documentUploadAsync nId q jHandle
