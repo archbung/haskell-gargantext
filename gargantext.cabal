@@ -28,6 +28,7 @@ data-files:
     ekg-assets/chart_line_add.png
     ekg-assets/cross.png
     test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
+    test-data/ngrams/simple.json
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
     test-data/test_config.ini
@@ -58,6 +59,7 @@ library
       Gargantext.API.Errors.Types.Backend
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams
+      Gargantext.API.Ngrams.List.Types
       Gargantext.API.Ngrams.Prelude
       Gargantext.API.Ngrams.Tools
       Gargantext.API.Ngrams.Types
@@ -186,7 +188,6 @@ library
       Gargantext.API.Members
       Gargantext.API.Metrics
       Gargantext.API.Ngrams.List
-      Gargantext.API.Ngrams.List.Types
       Gargantext.API.Ngrams.NgramsTree
       Gargantext.API.Node.Contact
       Gargantext.API.Node.Corpus.Annuaire
@@ -939,10 +940,12 @@ test-suite garg-test-tasty
   build-depends:
       QuickCheck ^>= 2.14.2
     , aeson ^>= 1.5.6.0
+    , aeson-qq
     , async ^>= 2.2.4
     , base ^>= 4.14.3.0
     , boolexpr ^>= 0.2
     , bytestring ^>= 0.10.12.0
+    , case-insensitive
     , conduit ^>= 1.3.4.2
     , containers ^>= 0.6.5.1
     , crawlerArxiv
@@ -957,6 +960,7 @@ test-suite garg-test-tasty
     , hspec-expectations >= 0.8 && < 0.9
     , hspec-wai
     , hspec-wai-json
+    , http-api-data
     , http-client ^>= 0.6.4.1
     , http-client-tls ^>= 0.3.5.3
     , http-types
@@ -974,6 +978,7 @@ test-suite garg-test-tasty
     , raw-strings-qq
     , recover-rtti >= 0.4 && < 0.5
     , resource-pool >= 0.2.3.2 && < 0.2.4
+    , servant-auth
     , servant-auth
     , servant-auth-client
     , servant-client
@@ -1007,6 +1012,7 @@ test-suite garg-test-hspec
       Test.API.GraphQL
       Test.API.Private
       Test.API.Setup
+      Test.API.UpdateList
       Test.Database.Operations
       Test.Database.Operations.DocumentSearch
       Test.Database.Operations.NodeStory
@@ -1045,6 +1051,7 @@ test-suite garg-test-hspec
   build-depends:
       QuickCheck ^>= 2.14.2
     , aeson ^>= 1.5.6.0
+    , aeson-qq
     , async ^>= 2.2.4
     , base ^>= 4.14.3.0
     , boolexpr ^>= 0.2
@@ -1064,6 +1071,7 @@ test-suite garg-test-hspec
     , hspec-expectations >= 0.8 && < 0.9
     , hspec-wai
     , hspec-wai-json
+    , http-api-data
     , http-types
     , http-client ^>= 0.6.4.1
     , http-client-tls ^>= 0.3.5.3

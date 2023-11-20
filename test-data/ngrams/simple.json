@@ -1,0 +1,5 @@
+{ "Authors":    { "version":30 ,"data":{ "Alain Connes":{"size":2,"list":"MapTerm","children":[]} } }
+, "Institutes": { "version":30 ,"data":{ "College de France":{"size":3,"list":"MapTerm","children":[]} } }
+, "Sources":    { "version":30 ,"data":{ "Annales Henri Poincare 3 (2002) 411-433":{"size":6,"list":"MapTerm","children":[]} } }
+, "NgramsTerms":{ "version":30 ,"data":{ "abelian group":{"size":2,"list":"MapTerm","children":[]} } }
+}
