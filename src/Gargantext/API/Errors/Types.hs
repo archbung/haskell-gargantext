@@ -294,13 +294,22 @@ data instance ToFrontendErrorData 'EC_500__job_unknown_job =
   FE_job_unknown_job { jeuj_job_id :: Int }
   deriving (Show, Eq, Generic)
 
+data instance ToFrontendErrorData 'EC_500__job_generic_exception =
+  FE_job_generic_exception { jege_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
+--
+-- server errors
+--
+
 data instance ToFrontendErrorData 'EC_500__internal_server_error =
   FE_internal_server_error { ise_error :: T.Text }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_generic_exception =
-  FE_job_generic_exception { jege_error :: T.Text }
+data instance ToFrontendErrorData 'EC_405__not_allowed =
+  FE_not_allowed { isena_error :: T.Text }
   deriving (Show, Eq, Generic)
+
 
 ----------------------------------------------------------------------------
 -- JSON instances. It's important to have nice and human readable instances.
@@ -465,6 +474,14 @@ instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
     ise_error <- o .: "error"
     pure FE_internal_server_error{..}
 
+instance ToJSON (ToFrontendErrorData 'EC_405__not_allowed) where
+  toJSON FE_not_allowed{..} = object [ "error" .= toJSON isena_error ]
+
+instance FromJSON (ToFrontendErrorData 'EC_405__not_allowed) where
+  parseJSON = withObject "FE_not_allowed" $ \o -> do
+    isena_error <- o .: "error"
+    pure FE_not_allowed{..}
+
 
 --
 -- tree errors
@@ -613,6 +630,10 @@ genFrontendErr be = do
       -> do err <- arbitrary
             pure $ mkFrontendErr' txt $ FE_internal_server_error err
 
+    EC_405__not_allowed
+      -> do err <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_not_allowed err
+
     -- tree errors
     EC_404__tree_root_not_found
       -> pure $ mkFrontendErr' txt $ FE_tree_root_not_found
@@ -719,6 +740,9 @@ instance FromJSON FrontendError where
       -- internal server error
       EC_500__internal_server_error -> do
         (fe_data :: ToFrontendErrorData 'EC_500__internal_server_error) <- o .: "data"
+        pure FrontendError{..}
+      EC_405__not_allowed -> do
+        (fe_data :: ToFrontendErrorData 'EC_405__not_allowed) <- o .: "data"
         pure FrontendError{..}
 
       -- tree errors

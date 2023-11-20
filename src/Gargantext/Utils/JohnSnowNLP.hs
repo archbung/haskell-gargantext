@@ -21,11 +21,13 @@ import Data.List.Safe qualified as LS
 import Data.Map.Strict qualified as Map
 import Data.Text hiding (map, group, filter, concat, zip)
 import Gargantext.Core (Lang(..))
+import Gargantext.Core.Errors.Types
 import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Types (POS(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Prelude hiding (All)
 import Network.HTTP.Simple (parseRequest, httpJSON, setRequestBodyLBS, getResponseBody, Response)
+import Prelude (userError)
 
 
 data JSSpell = JSPOS Lang | JSLemma Lang
@@ -197,7 +199,7 @@ jsTaskResponse (JSAsyncTask uuid) = do
   result <- httpJSON url
   pure $ getResponseBody result
 
-waitForJsTask :: JSAsyncTask -> IO JSAsyncTaskResponse
+waitForJsTask :: HasCallStack => JSAsyncTask -> IO JSAsyncTaskResponse
 waitForJsTask jsTask = wait' 0
   where
     wait' :: Int -> IO JSAsyncTaskResponse
@@ -207,7 +209,7 @@ waitForJsTask jsTask = wait' 0
         jsTaskResponse jsTask
       else
         if counter > 60 then
-          panic "[waitForJsTask] waited for 1 minute and still no answer from JohnSnow NLP"
+          throwIO $ withStacktrace $ userError "waited for 1 minute and still no answer from JohnSnow NLP"
         else do
           -- printDebug "[waitForJsTask] task not ready, waiting" counter
           _ <- threadDelay $ 1000000*1

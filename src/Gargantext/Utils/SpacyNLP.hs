@@ -122,6 +122,3 @@ spacyDataToPosSentences (SpacyData ds) = PosSentences
 
 nlp :: URI -> Lang -> Text -> IO PosSentences
 nlp uri _lang txt = spacyDataToPosSentences <$> spacyRequest uri txt
--- nlp _ _ _ = panic "Make sure you have the right model for your lang for spacy Server"
--- nlp FR txt  = spacyDataToPosSentences <$> spacyRequest txt
--- nlp _  _ = panic "Make sure you have the right model for your lang for spacy Server"

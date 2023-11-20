@@ -41,6 +41,7 @@ data BackendErrorCode
   | EC_500__tree_too_many_roots
   -- internal server errors
   | EC_500__internal_server_error
+  | EC_405__not_allowed
   -- job errors
   | EC_500__job_invalid_id_type
   | EC_500__job_expired

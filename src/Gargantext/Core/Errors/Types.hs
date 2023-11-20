@@ -1,6 +1,7 @@
 module Gargantext.Core.Errors.Types (
   -- * Attaching callstacks to exceptions
-  WithStacktrace(..)
+    WithStacktrace(..)
+  , withStacktrace
   ) where
 
 import Control.Exception
@@ -19,3 +20,6 @@ data WithStacktrace e =
 instance Exception e => Exception (WithStacktrace e) where
   displayException WithStacktrace{..}
     = displayException ct_error <> "\n" <> prettyCallStack ct_callStack
+
+withStacktrace :: HasCallStack => e -> WithStacktrace e
+withStacktrace = withFrozenCallStack . WithStacktrace callStack

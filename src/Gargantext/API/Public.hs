@@ -65,7 +65,7 @@ api_node nId = do
   pubNodes <- publicNodes
   -- TODO optimize with SQL
   case Set.member nId pubNodes of
-    False -> panic "Not allowed" -- TODO throwErr
+    False -> serverError $ err405 { errBody = "Not allowed" }
     True  -> fileApi nId
 
 -------------------------------------------------------------------------

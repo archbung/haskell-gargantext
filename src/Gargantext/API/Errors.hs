@@ -67,8 +67,11 @@ backendErrorToFrontendError = \case
 
 internalServerErrorToFrontendError :: ServerError -> FrontendError
 internalServerErrorToFrontendError = \case
-  ServerError{..} ->
-    mkFrontendErr' (T.pack errReasonPhrase) $ FE_internal_server_error (TL.toStrict $ TE.decodeUtf8 $ errBody)
+  ServerError{..}
+    | errHTTPCode == 405
+    -> mkFrontendErr' (T.pack errReasonPhrase) $ FE_not_allowed (TL.toStrict $ TE.decodeUtf8 $ errBody)
+    | otherwise
+    -> mkFrontendErr' (T.pack errReasonPhrase) $ FE_internal_server_error (TL.toStrict $ TE.decodeUtf8 $ errBody)
 
 jobErrorToFrontendError :: JobError -> FrontendError
 jobErrorToFrontendError = \case

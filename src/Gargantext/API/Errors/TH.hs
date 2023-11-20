@@ -23,6 +23,7 @@ supported_http_status_map = Map.fromList
   , ("400", TH.varE 'status400)
   , ("403", TH.varE 'status403)
   , ("404", TH.varE 'status404)
+  , ("405", TH.varE 'status405)
   , ("500", TH.varE 'status500)
   ]
 
@@ -36,7 +37,8 @@ deriveHttpStatusCode appliedType = do
            Left ctor   -> error $ "Only enum-like constructors supported: " ++ show ctor
            Right names -> case parse_error_codes names of
              Left n -> error $ "Couldn't extract error code from : " ++ TH.nameBase n
-                             ++ ". Make sure it's in the form XX_<validHttpStatusCode>__<textual_diagnostic>"
+                             ++ ". Make sure it's in the form XX_<validHttpStatusCode>__<textual_diagnostic> "
+                             ++ "and the error code is supported in the supported_http_status_map list."
              Right codes -> do
                let static_matches = flip map codes $ \(n, stE, _txt) ->
                      TH.match (TH.conP n [])
