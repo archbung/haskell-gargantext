@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.API.UpdateList (
     tests
@@ -28,19 +29,21 @@ import Gargantext.Prelude hiding (get)
 import Network.Wai.Handler.Warp qualified as Wai
 import Paths_gargantext (getDataFileName)
 import Prelude (error)
-import Test.API.Private (withValidLogin, protectedJSON, postJSONUrlEncoded)
+import Test.API.Private (withValidLogin, protectedJSON, postJSONUrlEncoded, getJSON)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
 import Test.Database.Types
 import Test.Hspec
 import Test.Hspec.Wai.Internal (withApplication, WaiSession)
+import Test.Utils (shouldRespondWith')
 import Web.FormUrlEncoded
+import Test.Hspec.Wai.JSON (json)
 
 data JobPollHandle = JobPollHandle {
     _jph_id     :: !Text
   , _jph_log    :: [JobLog]
   , _jph_status :: !Text
   , _jph_error  :: !(Maybe Text)
-    }
+    } deriving Show
 
 instance JSON.FromJSON JobPollHandle where
   parseJSON = JSON.withObject "JobPollHandle" $ \o -> do
@@ -78,7 +81,11 @@ pollUntilFinished tkn port mkUrlPiece = go 60
       liftIO $ threadDelay 1_000_000
       h' <- protectedJSON tkn "GET" (mkUrl port $ mkUrlPiece h) ""
       go (n-1) h'
-    False -> pure h
+    False
+     | _jph_status h == "IsFailure"
+     -> error $ T.unpack $ "JobPollHandle contains a failure: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
+     | otherwise
+     -> pure h
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do
@@ -105,3 +112,20 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
             (j :: JobPollHandle) <- postJSONUrlEncoded token (mkUrl port url) (urlEncodeFormStable $ toForm jsonFileFormData)
             j' <- pollUntilFinished token port mkPollUrl j
             liftIO (_jph_status j' `shouldBe` "IsFinished")
+
+            -- Now check that we can retrieve the ngrams
+            let getUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=MapTerm&list="+| listId |+"&limit=50"
+            getJSON token (mkUrl port getUrl)
+              `shouldRespondWith'` [json| { "version": 0,
+                                            "count": 1,
+                                            "data": [
+                                                {
+                                                    "ngrams": "abelian group",
+                                                    "size": 2,
+                                                    "list": "MapTerm",
+                                                    "occurrences": [],
+                                                    "children": []
+                                                }
+                                            ]
+                                        } |]
+

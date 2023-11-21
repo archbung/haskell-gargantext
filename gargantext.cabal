@@ -444,6 +444,7 @@ library
     , fgl ^>= 5.7.0.3
     , filelock ^>= 0.1.1.5
     , filepath ^>= 1.4.2.1
+    , fmt
     , formatting ^>= 7.1.3
     , full-text-search ^>= 0.2.1.4
     , fullstop ^>= 0.1.4

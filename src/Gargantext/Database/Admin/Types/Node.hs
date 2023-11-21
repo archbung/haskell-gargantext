@@ -35,6 +35,7 @@ import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toField, toJSONField)
 import Database.PostgreSQL.Simple.ToRow (ToRow, toRow)
+import Fmt
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Node
@@ -249,6 +250,9 @@ newtype NodeId = UnsafeMkNodeId { _NodeId :: Int }
 
 instance ResourceId NodeId where
   isPositive = (> 0) . _NodeId
+
+instance Buildable NodeId where
+  build (UnsafeMkNodeId nid) = build nid
 
 instance GQLType NodeId
 instance Prelude.Show NodeId where

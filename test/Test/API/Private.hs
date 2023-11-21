@@ -85,9 +85,8 @@ protectedNewError tkn mth url = protectedWith newErrorFormat tkn mth url
   where
     newErrorFormat = [(CI.mk "X-Garg-Error-Scheme", "new")]
 
-getJSON :: ByteString -> WaiSession () SResponse
-getJSON url =
-  request "GET" url [(hContentType, "application/json")] ""
+getJSON :: Token -> ByteString -> WaiSession () SResponse
+getJSON tkn url = protectedWith mempty tkn "GET" url ""
 
 postJSONUrlEncoded :: forall a. (JSON.FromJSON a, Typeable a)
                    => Token
