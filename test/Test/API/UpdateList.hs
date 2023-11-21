@@ -71,7 +71,12 @@ newCorpusForUser env uname = flip runReaderT env $ runTestMonad $ do
 
 -- | Poll the given URL every second until it finishes.
 -- Retries up to 60 times (i.e. for 1 minute, before giving up)
-pollUntilFinished :: Token -> Wai.Port -> (JobPollHandle -> Builder) -> JobPollHandle -> WaiSession () JobPollHandle
+pollUntilFinished :: HasCallStack
+                  => Token
+                  -> Wai.Port
+                  -> (JobPollHandle -> Builder)
+                  -> JobPollHandle
+                  -> WaiSession () JobPollHandle
 pollUntilFinished tkn port mkUrlPiece = go 60
   where
    go :: Int -> JobPollHandle -> WaiSession () JobPollHandle
@@ -100,15 +105,15 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         cId <- newCorpusForUser testEnv "alice"
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
-            ([listId] :: [NodeId]) <- protectedJSON token "POST" (mkUrl port ("/node/" <> (fromString $ show $ _NodeId cId))) [aesonQQ|{"pn_typename":"NodeList","pn_name":"Testing"}|]
+            ([listId] :: [NodeId]) <- protectedJSON token "POST" (mkUrl port ("/node/" <> build cId)) [aesonQQ|{"pn_typename":"NodeList","pn_name":"Testing"}|]
             -- Upload the JSON doc
             simpleNgrams <- liftIO (TIO.readFile =<< getDataFileName "test-data/ngrams/simple.json")
             let jsonFileFormData = [ (T.pack "_wjf_data", simpleNgrams)
                                    , ("_wjf_filetype", "JSON")
                                    , ("_wjf_name", "simple_ngrams.json")
                                    ]
-            let url         = "/lists/"  <> (fromString $ show $ _NodeId listId) <> "/add/form/async"
-            let mkPollUrl j = "/corpus/" <> (fromString $ show $ _NodeId listId) <> "/add/form/async/" +|_jph_id j|+ "/poll?limit=1"
+            let url         = "/lists/"  +|listId|+ "/add/form/async"
+            let mkPollUrl j = "/corpus/" +|listId|+ "/add/form/async/" +|_jph_id j|+ "/poll?limit=1"
             (j :: JobPollHandle) <- postJSONUrlEncoded token (mkUrl port url) (urlEncodeFormStable $ toForm jsonFileFormData)
             j' <- pollUntilFinished token port mkPollUrl j
             liftIO (_jph_status j' `shouldBe` "IsFinished")
@@ -128,4 +133,36 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
                                                 }
                                             ]
                                         } |]
+
+    describe "POST /api/v1.0/lists/:id/csv/add/form/async (CSV)" $ do
+
+      it "allows uploading a CSV ngrams file" $ \((testEnv, port), app) -> do
+        cId <- newCorpusForUser testEnv "alice"
+        withApplication app $ do
+          withValidLogin port "alice" (GargPassword "alice") $ \token -> do
+            ([listId] :: [NodeId]) <- protectedJSON token "POST" (mkUrl port ("/node/" <> build cId)) [aesonQQ|{"pn_typename":"NodeList","pn_name":"Testing"}|]
+            -- Upload the CSV doc
+            simpleNgrams <- liftIO (TIO.readFile =<< getDataFileName "test-data/ngrams/simple.csv")
+            let tsvFileFormData = [ (T.pack "_wtf_data", simpleNgrams)
+                                  , ("_wtf_filetype", "CSV")
+                                  , ("_wtf_name", "simple.csv")
+                                  ]
+            let url         = "/lists/"  <> (fromString $ show $ _NodeId listId) <> "/csv/add/form/async"
+            let mkPollUrl j = "/corpus/" <> (fromString $ show $ _NodeId listId) <> "/add/form/async/" +|_jph_id j|+ "/poll?limit=1"
+            (j :: JobPollHandle) <- postJSONUrlEncoded token (mkUrl port url) (urlEncodeFormStable $ toForm tsvFileFormData)
+            j' <- pollUntilFinished token port mkPollUrl j
+            liftIO (_jph_status j' `shouldBe` "IsFinished")
+
+            -- Now check that we can retrieve the ngrams
+            let getUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=MapTerm&list="+| listId |+"&limit=50"
+            getJSON token (mkUrl port getUrl)
+              `shouldRespondWith'` [json| {"version":0
+                                          ,"count":1
+                                          ,"data":[
+                                            {"ngrams":"abelian group"
+                                            ,"size":1
+                                            ,"list":"MapTerm"
+                                            ,"occurrences":[],"children":[]}
+                                            ]
+                                          } |]
 

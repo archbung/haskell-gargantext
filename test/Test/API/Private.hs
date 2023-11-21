@@ -43,10 +43,15 @@ import qualified Data.Map.Strict as Map
 import qualified Data.ByteString.Lazy.Char8 as C8L
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
-protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protected :: HasCallStack
+          => Token
+          -> Method
+          -> ByteString
+          -> L.ByteString
+          -> WaiSession () SResponse
 protected tkn mth url = protectedWith mempty tkn mth url
 
-protectedJSON :: forall a. (JSON.FromJSON a, Typeable a)
+protectedJSON :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
               => Token
               -> Method
               -> ByteString
@@ -54,7 +59,7 @@ protectedJSON :: forall a. (JSON.FromJSON a, Typeable a)
               -> WaiSession () a
 protectedJSON tkn mth url = protectedJSONWith mempty tkn mth url
 
-protectedJSONWith :: forall a. (JSON.FromJSON a, Typeable a)
+protectedJSONWith :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
                   => [Network.HTTP.Types.Header]
                   -> Token
                   -> Method
@@ -67,7 +72,8 @@ protectedJSONWith hdrs tkn mth url jsonV = do
     Left err -> Prelude.fail $ "protectedJSON failed when parsing " <> show (typeRep $ Proxy @a) <> ": " <> err
     Right x  -> pure x
 
-protectedWith :: [Network.HTTP.Types.Header]
+protectedWith :: HasCallStack
+              => [Network.HTTP.Types.Header]
               -> Token
               -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
 protectedWith extraHeaders tkn mth url payload =
@@ -80,7 +86,7 @@ protectedWith extraHeaders tkn mth url payload =
       hdrs = Map.toList $ Map.fromList $ defaultHeaders <> extraHeaders
   in request mth url hdrs payload
 
-protectedNewError :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protectedNewError :: HasCallStack => Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
 protectedNewError tkn mth url = protectedWith newErrorFormat tkn mth url
   where
     newErrorFormat = [(CI.mk "X-Garg-Error-Scheme", "new")]
@@ -88,7 +94,7 @@ protectedNewError tkn mth url = protectedWith newErrorFormat tkn mth url
 getJSON :: Token -> ByteString -> WaiSession () SResponse
 getJSON tkn url = protectedWith mempty tkn "GET" url ""
 
-postJSONUrlEncoded :: forall a. (JSON.FromJSON a, Typeable a)
+postJSONUrlEncoded :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
                    => Token
                    -> ByteString
                    -> L.ByteString

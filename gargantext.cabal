@@ -29,6 +29,7 @@ data-files:
     ekg-assets/cross.png
     test-data/ngrams/GarganText_NgramsTerms-QuantumComputing.json
     test-data/ngrams/simple.json
+    test-data/ngrams/simple.csv
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
     test-data/test_config.ini
