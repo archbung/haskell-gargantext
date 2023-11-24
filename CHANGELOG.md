@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.3.2
+
+* [FRONT][FIX][[Node Documents] Frontend enhancement - highlight terms side-by-side with other terms (#615)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/615)
+* [FRONT][FIX][[Node Terms] On clicking on a term association (+/-) the scroll position is lost (#546)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/546)
+
 ## Version 0.0.6.9.9.9.3.1
 
 * [FRONT][FIX][[NGram Table] Display of all terms return blank page (#208)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/208)
