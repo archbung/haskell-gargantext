@@ -387,7 +387,7 @@ library
       RankNTypes
       RecordWildCards
       StrictData
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fplugin=Clippy
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fplugin=Clippy -fprint-potential-instances
   if flag(test-crypto)
     cpp-options: -DTEST_CRYPTO
   build-depends:
@@ -530,7 +530,7 @@ library
     , servant-server ^>= 0.18.3
     , servant-swagger ^>= 1.1.10
     , servant-swagger-ui ^>= 0.3.5.3.5.0
-    , servant-xml ^>= 1.0.1.4
+    , servant-xml-conduit == 0.1.0.4
     , simple-reflect ^>= 0.3.3
     , singletons ^>= 2.7
     , split ^>= 0.2.3.4
@@ -567,7 +567,6 @@ library
     , wreq ^>= 0.5.3.3
     , xml-conduit ^>= 1.9.1.3
     , xml-types ^>= 0.3.8
-    , xmlbf ^>= 0.6.1
     , yaml ^>= 0.11.8.0
     , zip ^>= 1.7.2
     , zlib ^>= 0.6.2.3
