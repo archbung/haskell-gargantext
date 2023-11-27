@@ -113,6 +113,8 @@ nodeErrorToFrontendError ne = case ne of
     -> case reason of
          NodeDoesNotExist nid
            -> mkFrontendErrShow $ FE_node_lookup_failed_not_found nid
+         NodeParentDoesNotExist nid
+           -> mkFrontendErrShow $ FE_node_lookup_failed_parent_not_found nid
          UserDoesNotExist uid
            -> mkFrontendErrShow $ FE_node_lookup_failed_user_not_found uid
          UserNameDoesNotExist uname

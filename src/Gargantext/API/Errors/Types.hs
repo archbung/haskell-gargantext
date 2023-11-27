@@ -192,6 +192,10 @@ newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_not_found =
   FE_node_lookup_failed_not_found { nenf_node_id :: NodeId }
   deriving (Show, Eq, Generic)
 
+newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found =
+  FE_node_lookup_failed_parent_not_found { nepnf_node_id :: NodeId }
+  deriving (Show, Eq, Generic)
+
 newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found =
   FE_node_lookup_failed_user_not_found { nenf_user_id :: UserId }
   deriving (Show, Eq, Generic)
@@ -351,6 +355,14 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) wh
   parseJSON = withObject "FE_node_lookup_failed_not_found" $ \o -> do
     nenf_node_id <- o .: "node_id"
     pure FE_node_lookup_failed_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
+  toJSON (FE_node_lookup_failed_parent_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
+  parseJSON = withObject "FE_node_lookup_failed_parent_not_found" $ \o -> do
+    nepnf_node_id <- o .: "node_id"
+    pure FE_node_lookup_failed_parent_not_found{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
   toJSON (FE_node_lookup_failed_user_not_found userId) = object [ "user_id" .= toJSON userId ]
@@ -581,6 +593,9 @@ genFrontendErr be = do
     EC_404__node_lookup_failed_not_found
       -> do nodeId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_lookup_failed_not_found nodeId)
+    EC_404__node_lookup_failed_parent_not_found
+      -> do nodeId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_parent_not_found nodeId)
     EC_404__node_lookup_failed_user_not_found
       -> do userId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_lookup_failed_user_not_found userId)
@@ -692,6 +707,9 @@ instance FromJSON FrontendError where
         pure FrontendError{..}
       EC_404__node_lookup_failed_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) <- o .: "data"
+        pure FrontendError{..}
+      EC_404__node_lookup_failed_parent_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) <- o .: "data"
         pure FrontendError{..}
       EC_404__node_lookup_failed_user_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) <- o .: "data"

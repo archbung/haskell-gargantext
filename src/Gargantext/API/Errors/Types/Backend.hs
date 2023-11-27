@@ -19,6 +19,7 @@ data BackendErrorCode
     EC_404__node_list_not_found
   | EC_404__node_root_not_found
   | EC_404__node_lookup_failed_not_found
+  | EC_404__node_lookup_failed_parent_not_found
   | EC_400__node_lookup_failed_user_too_many_roots
   | EC_404__node_lookup_failed_user_not_found
   | EC_404__node_lookup_failed_username_not_found
