@@ -42,6 +42,7 @@ import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Web.HttpApiData (readTextData)
+import Gargantext.Database.Query.Table.Node.Error
 
 ------------------------------------------------------------------------
 type PhyloAPI = Summary "Phylo API"
@@ -125,8 +126,8 @@ type GetPhylo =  QueryParam "listId"      ListId
 -- TODO fix parameters to default config that should be in Node
 getPhylo :: PhyloId -> GargServer GetPhylo
 getPhylo phyloId lId _level _minSizeBranch = do
-  corpusId <- fromMaybe (panic $ "[G.C.V.Phylo.API] no parent for NodeId " <> (show phyloId))
-          <$> getClosestParentIdByType phyloId NodeCorpus
+  corpusId <- maybe (nodeLookupError $ NodeParentDoesNotExist phyloId) pure
+              =<< getClosestParentIdByType phyloId NodeCorpus
   listId   <- case lId of
                 Nothing -> defaultList corpusId
                 Just ld -> pure ld
