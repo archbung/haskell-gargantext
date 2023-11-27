@@ -33,9 +33,6 @@ module Gargantext.API.Errors.Types (
 
   -- * Generating test cases
   , genFrontendErr
-
-  -- * Attaching callstacks to exceptions
-  , WithStacktrace(..)
   ) where
 
 import Control.Exception
@@ -93,6 +90,7 @@ data BackendInternalError
   | InternalAuthenticationError !AuthenticationError
   | InternalServerError         !ServerError
   | InternalJobError            !Jobs.JobError
+  | InternalUnexpectedError     !SomeException
   deriving (Show, Typeable)
 
 makePrisms ''BackendInternalError

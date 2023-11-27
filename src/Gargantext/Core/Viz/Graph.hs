@@ -19,6 +19,7 @@ import Data.ByteString.Lazy as DBL (readFile, writeFile)
 import Data.HashMap.Strict (HashMap, lookup)
 import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types (NgramsTerm(..), NgramsRepoElement(..), mSetToList)
+import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
@@ -58,7 +59,7 @@ graphV3ToGraphWithFiles g1 g2 = do
   -- GraphV3 <- IO Fichier
   graph <- DBL.readFile g1
   let newGraph = case DA.decode graph :: Maybe GraphV3 of
-        Nothing -> panic (Text.pack "no graph")
+        Nothing -> panicTrace "no graph"
         Just new -> new
 
   DBL.writeFile g2 (DA.encode $ graphV3ToGraph newGraph)

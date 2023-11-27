@@ -58,7 +58,7 @@ import Data.Time (UTCTime)
 import Data.UUID qualified as UUID
 import Gargantext.Core (HasDBid, toDBid)
 import Gargantext.Core.Types.Individu
-import Gargantext.Database.Admin.Config (nodeTypeId)
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key, hu_epo_api_user, hu_epo_api_token)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
 import Gargantext.Database.Admin.Types.Node (UserId(..))

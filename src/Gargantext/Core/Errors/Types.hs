@@ -1,7 +1,11 @@
 module Gargantext.Core.Errors.Types (
   -- * Attaching callstacks to exceptions
     WithStacktrace(..)
+  , UnexpectedPanic(..)
   , withStacktrace
+
+  -- * Drop-in replacement for panic/error
+  , panicTrace
   ) where
 
 import Control.Exception
@@ -23,3 +27,11 @@ instance Exception e => Exception (WithStacktrace e) where
 
 withStacktrace :: HasCallStack => e -> WithStacktrace e
 withStacktrace = withFrozenCallStack . WithStacktrace callStack
+
+newtype UnexpectedPanic = UnexpectedPanic String
+  deriving Show
+
+instance Exception UnexpectedPanic
+
+panicTrace :: HasCallStack => String -> x
+panicTrace = throw . withFrozenCallStack . WithStacktrace callStack . UnexpectedPanic

@@ -113,6 +113,8 @@ import Database.PostgreSQL.Simple.ToField qualified as PGS
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Gargantext.API.Ngrams.Types
+import Gargantext.Core (toDBid)
+import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config ()
@@ -123,7 +125,6 @@ import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Database
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
-import Gargantext.Core (toDBid)
 
 ------------------------------------------------------------------------
 data NodeStoryEnv = NodeStoryEnv
@@ -747,4 +748,4 @@ fixNodeStoryVersions = do
         [PGS.Only (Just maxVersion)] -> do
           _ <- runPGSExecute c updateVerQuery (maxVersion, nId, ngramsType)
           pure ()
-        _ -> panic "Should get only 1 result!"
+        _ -> panicTrace "Should get only 1 result!"

@@ -64,6 +64,11 @@ backendErrorToFrontendError = \case
     -> internalServerErrorToFrontendError internalServerError
   InternalJobError jobError
     -> jobErrorToFrontendError jobError
+  -- As this carries a 'SomeException' which might exposes sensible
+  -- information, we do not send to the frontend its content.
+  InternalUnexpectedError _
+    -> let msg = T.pack $ "An unexpected error occurred. Please check your server logs."
+       in mkFrontendErr' msg $ FE_internal_server_error msg
 
 internalServerErrorToFrontendError :: ServerError -> FrontendError
 internalServerErrorToFrontendError = \case

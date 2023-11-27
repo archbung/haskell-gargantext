@@ -46,6 +46,7 @@ import Data.Text qualified as Text
 import Data.Traversable
 import GHC.Base (String)
 import Gargantext.Core
+import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Text (sentences, HasText(..))
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)
@@ -187,7 +188,7 @@ type MinNgramSize = Int
 -- language agnostic extraction
 -- TODO: newtype BlockText
 termsUnsupervised :: TermType Lang -> Text -> [TermsWithCount]
-termsUnsupervised (Unsupervised { _tt_model = Nothing }) = panic "[termsUnsupervised] no model"
+termsUnsupervised (Unsupervised { _tt_model = Nothing }) = panicTrace "[termsUnsupervised] no model"
 termsUnsupervised (Unsupervised { _tt_model = Just _tt_model, .. }) =
                map (\(t, cnt) -> (text2term _tt_lang t, cnt))
              . groupWithCounts

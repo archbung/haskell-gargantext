@@ -32,7 +32,7 @@ import Data.Patch.Class (Replace, replace, Action(act), Group, Applicable(..), C
 import Data.Set qualified as Set
 import Data.String (IsString(..))
 import Data.Swagger hiding (version, patch)
-import Data.Text (pack, strip)
+import Data.Text (pack, strip, unpack)
 import Data.Validity
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toJSONField, toField)
@@ -49,6 +49,7 @@ import Servant hiding (Patch)
 import Servant.Job.Utils (jsonOptions)
 import Test.QuickCheck (elements, frequency)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import Gargantext.Core.Errors.Types (panicTrace)
 
 ------------------------------------------------------------------------
 
@@ -791,7 +792,7 @@ ngramsTypeFromTabType tabType =
       Authors    -> TableNgrams.Authors
       Institutes -> TableNgrams.Institutes
       Terms      -> TableNgrams.NgramsTerms
-      _          -> panic $ here <> "No Ngrams for this tab"
+      _          -> panicTrace $ unpack $ here <> "No Ngrams for this tab"
       -- TODO: This `panic` would disapear with custom NgramsType.
 
 ----
