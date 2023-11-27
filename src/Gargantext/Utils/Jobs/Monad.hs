@@ -44,6 +44,7 @@ import Prelude
 
 import qualified Servant.Job.Core as SJ
 import qualified Servant.Job.Types as SJ
+import Data.Proxy
 
 data JobEnv t w a = JobEnv
   { jeSettings :: JobSettings
@@ -187,6 +188,11 @@ class MonadJobStatus m where
   type JobType        m :: Type
   type JobOutputType  m :: Type
   type JobEventType   m :: Type
+
+  -- | A job handle that doesn't do anything. Sometimes useful in all those circumstances
+  -- where we need to test a function taking a 'JobHandle' as input but we are not interested
+  -- in the progress tracking.
+  noJobHandle :: Proxy m -> JobHandle m
 
   -- | Retrevies the latest 'JobEventType' from the underlying monad. It can be
   -- used to query the latest status for a particular job, given its 'JobHandle' as input.

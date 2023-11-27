@@ -9,10 +9,11 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeApplications  #-}
-{-# LANGUAGE TypeOperators     #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 module Gargantext.API.Ngrams.List
   where
@@ -34,12 +35,11 @@ import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
 import Gargantext.API.Ngrams.Types
-import Gargantext.API.Prelude (GargServer, GargM, serverError)
+import Gargantext.API.Prelude (GargServer, GargM, serverError, HasServerError)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (reIndexWith)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node (getNode)
@@ -115,7 +115,7 @@ jsonPostAsync lId =
     postAsyncJSON lId (_wjf_data f) jHandle
 
 ------------------------------------------------------------------------
-postAsyncJSON :: (FlowCmdM env err m, MonadJobStatus m)
+postAsyncJSON :: (HasNodeStory env err m, MonadJobStatus m)
               => ListId
               -> NgramsList
               -> JobHandle m
@@ -213,11 +213,13 @@ csvToNgramsTableMap record = case Vec.toList record of
 
 
 -- | This is for debugging the CSV parser in the REPL
---importCsvFile :: (HasNodeStory env err m)
---              => ListId -> P.FilePath -> m ()
---importCsvFile lId fp = do
---  contents <- liftBase $ P.readFile fp
---  postAsyncCSV lId (WithTextFile mempty contents mempty) noJobHandle
+importCsvFile :: forall env err m. (HasNodeStory env err m, HasServerError err, MonadJobStatus m)
+              => ListId -> P.FilePath -> m ()
+importCsvFile lId fp = do
+  contents <- liftBase $ P.readFile fp
+  case ngramsListFromCSVData contents of
+    Left err         -> serverError $ err500 { errReasonPhrase = err }
+    Right ngramsList -> postAsyncJSON lId ngramsList (noJobHandle @m Proxy)
 
 --
 -- Utils
