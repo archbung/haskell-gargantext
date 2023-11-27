@@ -12,6 +12,7 @@ Portability : POSIX
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.API.Ngrams.List
   where
@@ -33,7 +34,7 @@ import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
 import Gargantext.API.Ngrams.Types
-import Gargantext.API.Prelude (GargServer, GargM)
+import Gargantext.API.Prelude (GargServer, GargM, serverError)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Main (ListType(..))
@@ -111,20 +112,19 @@ getCsv lId = do
 jsonPostAsync :: ServerT JSONAPI (GargM Env BackendInternalError)
 jsonPostAsync lId =
   serveJobsAPI UpdateNgramsListJobJSON $ \jHandle f ->
-    postAsyncJSON lId f jHandle
+    postAsyncJSON lId (_wjf_data f) jHandle
 
 ------------------------------------------------------------------------
 postAsyncJSON :: (FlowCmdM env err m, MonadJobStatus m)
               => ListId
-              -> WithJsonFile
+              -> NgramsList
               -> JobHandle m
               -> m ()
-postAsyncJSON l (WithJsonFile m _) jobHandle = do
+postAsyncJSON l ngramsList jobHandle = do
 
   markStarted 2 jobHandle
-  -- printDebug "New list as file" l
+
   setList
-  -- printDebug "Done" r
 
   markProgress 1 jobHandle
 
@@ -138,7 +138,7 @@ postAsyncJSON l (WithJsonFile m _) jobHandle = do
     setList :: HasNodeStory env err m => m ()
     setList = do
       -- TODO check with Version for optim
-      mapM_ (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList m
+      mapM_ (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList ngramsList
       -- TODO reindex
 
 
@@ -163,44 +163,38 @@ csvApi = csvPostAsync
 csvPostAsync :: ServerT CSVAPI (GargM Env BackendInternalError)
 csvPostAsync lId =
   serveJobsAPI UpdateNgramsListJobCSV $ \jHandle f -> do
-    postAsyncCSV lId f jHandle
+    case ngramsListFromCSVData (_wtf_data f) of
+      Left err         -> serverError $ err500 { errReasonPhrase = err }
+      Right ngramsList -> postAsyncJSON lId ngramsList jHandle
 
-postAsyncCSV :: (FlowCmdM env err m, MonadJobStatus m)
-             => ListId
-             -> WithTextFile
-             -> JobHandle m
-             -> m ()
-postAsyncCSV l (WithTextFile _filetype csvData _name) jHandle = do
-  markStarted 2 jHandle
-
-  let eLst = readCsvText csvData
-  case eLst of
-    Left err -> markFailed (Just err) jHandle
-    Right lst -> do
-      let p = parseCsvData lst
-      _ <- setListNgrams l NgramsTerms p
-      markProgress 1 jHandle
-      corpus_node <- getNode l -- (Proxy :: Proxy HyperdataList)
-      let corpus_id = fromMaybe (panic "") (_node_parent_id corpus_node)
-      _ <- reIndexWith corpus_id l NgramsTerms (Set.fromList [MapTerm, CandidateTerm])
-      markComplete jHandle
-
-------------------------------------------------------------------------
-readCsvText :: Text -> Either Text [(Text, Text, Text)]
-readCsvText t = case eDec of
-  Left err -> Left $ pack err
-  Right dec -> Right $ Vec.toList dec
+-- | Tries converting a text file into an 'NgramList', so that we can reuse the
+-- existing JSON endpoint for the CSV upload.
+ngramsListFromCSVData :: Text -> Either Prelude.String NgramsList
+ngramsListFromCSVData csvData = case decodeCsv of
+  -- /NOTE/ The legacy CSV data only supports terms in imports and exports, so this is
+  -- all we care about.
+  Left err    -> Left $ "Invalid CSV found in ngramsListFromCSVData: " <> err
+  Right terms -> pure $ Map.fromList [ (NgramsTerms, Versioned 0 $ mconcat . Vec.toList $ terms) ]
   where
-    lt = BSL.fromStrict $ P.encodeUtf8 t
-    eDec = Csv.decodeWith
-             (Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (P.ord '\t') })
-             Csv.HasHeader lt :: Either Prelude.String (Vector (Text, Text, Text))
+    binaryData = BSL.fromStrict $ P.encodeUtf8 csvData
 
-parseCsvData :: [(Text, Text, Text)] -> Map NgramsTerm NgramsRepoElement
-parseCsvData lst = Map.fromList $ conv <$> lst
+    decodeCsv :: Either Prelude.String (Vector NgramsTableMap)
+    decodeCsv = Csv.decodeWithP csvToNgramsTableMap
+                               (Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (P.ord '\t') })
+                               Csv.HasHeader
+                               binaryData
+
+-- | Converts a plain CSV 'Record' into an NgramsTableMap
+csvToNgramsTableMap :: Csv.Record -> Csv.Parser NgramsTableMap
+csvToNgramsTableMap record = case Vec.toList record of
+  (map P.decodeUtf8 -> [status, label, forms])
+    -> pure $ conv status label forms
+  _ -> Prelude.fail "csvToNgramsTableMap failed"
+
   where
-    conv (status, label, forms) =
-        (NgramsTerm label, NgramsRepoElement { _nre_size = 1
+    conv :: Text -> Text -> Text -> NgramsTableMap
+    conv status label forms = Map.singleton (NgramsTerm label)
+        $ NgramsRepoElement { _nre_size = 1
                                              , _nre_list = case status == "map" of
                                                              True  -> MapTerm
                                                              False -> case status == "main" of
@@ -214,7 +208,6 @@ parseCsvData lst = Map.fromList $ conv <$> lst
                                                              $ filter (\w -> w /= "" && w /= label)
                                                              $ splitOn "|&|" forms
                                              }
-         )
 
 ------------------------------------------------------------------------
 
@@ -236,4 +229,3 @@ toIndexedNgrams m t = Indexed <$> i <*> n
   where
     i = HashMap.lookup t m
     n = Just (text2ngrams t)
-

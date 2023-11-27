@@ -19,12 +19,15 @@ import Data.Text.IO qualified as TIO
 import Fmt
 import Gargantext.API.Admin.Auth.Types (Token)
 import Gargantext.API.Admin.Orchestrator.Types
+import Gargantext.API.Ngrams.List ( ngramsListFromCSVData )
+import Gargantext.API.Ngrams.Types
+import Gargantext.Core.Types
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
-import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root
+import Gargantext.Database.Schema.Ngrams
 import Gargantext.Prelude hiding (get)
 import Network.Wai.Handler.Warp qualified as Wai
 import Paths_gargantext (getDataFileName)
@@ -34,9 +37,10 @@ import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAn
 import Test.Database.Types
 import Test.Hspec
 import Test.Hspec.Wai.Internal (withApplication, WaiSession)
-import Test.Utils (shouldRespondWith')
-import Web.FormUrlEncoded
 import Test.Hspec.Wai.JSON (json)
+import Test.Hspec.Wai (shouldRespondWith)
+import Web.FormUrlEncoded
+import qualified Data.Map.Strict as Map
 
 data JobPollHandle = JobPollHandle {
     _jph_id     :: !Text
@@ -121,7 +125,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
             -- Now check that we can retrieve the ngrams
             let getUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=MapTerm&list="+| listId |+"&limit=50"
             getJSON token (mkUrl port getUrl)
-              `shouldRespondWith'` [json| { "version": 0,
+              `shouldRespondWith` [json| { "version": 0,
                                             "count": 1,
                                             "data": [
                                                 {
@@ -135,6 +139,14 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
                                         } |]
 
     describe "POST /api/v1.0/lists/:id/csv/add/form/async (CSV)" $ do
+
+      it "parses CSV via ngramsListFromCSVData" $ \((_testEnv, _port), _app) -> do
+        simpleNgrams <- liftIO (TIO.readFile =<< getDataFileName "test-data/ngrams/simple.csv")
+        ngramsListFromCSVData simpleNgrams `shouldBe`
+          Right (Map.fromList [ (NgramsTerms, Versioned 0 $ Map.fromList [
+                                  (NgramsTerm "abelian group", NgramsRepoElement 1 MapTerm Nothing Nothing (MSet mempty))
+                                , (NgramsTerm "brazorf", NgramsRepoElement 1 StopTerm Nothing Nothing (MSet mempty))
+                              ])])
 
       it "allows uploading a CSV ngrams file" $ \((testEnv, port), app) -> do
         cId <- newCorpusForUser testEnv "alice"
@@ -154,15 +166,26 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
             liftIO (_jph_status j' `shouldBe` "IsFinished")
 
             -- Now check that we can retrieve the ngrams
-            let getUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=MapTerm&list="+| listId |+"&limit=50"
-            getJSON token (mkUrl port getUrl)
-              `shouldRespondWith'` [json| {"version":0
-                                          ,"count":1
-                                          ,"data":[
-                                            {"ngrams":"abelian group"
-                                            ,"size":1
-                                            ,"list":"MapTerm"
-                                            ,"occurrences":[],"children":[]}
-                                            ]
-                                          } |]
+            let getTermsUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=MapTerm&list="+| listId |+"&limit=50"
+            getJSON token (mkUrl port getTermsUrl)
+              `shouldRespondWith` [json| {"version":0
+                                         ,"count":1
+                                         ,"data":[
+                                           {"ngrams":"abelian group"
+                                           ,"size":1
+                                           ,"list":"MapTerm"
+                                           ,"occurrences":[],"children":[]}
+                                           ]
+                                         } |]
+            let getStopUrl = "/node/" +| listId |+ "/ngrams?ngramsType=Terms&listType=StopTerm&list="+| listId |+"&limit=50"
+            getJSON token (mkUrl port getStopUrl)
+              `shouldRespondWith` [json| {"version":0
+                                         ,"count":1
+                                         ,"data":[
+                                           {"ngrams":"brazorf"
+                                           ,"size":1
+                                           ,"list":"StopTerm"
+                                           ,"occurrences":[],"children":[]}
+                                           ]
+                                         } |]
 

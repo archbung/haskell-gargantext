@@ -41,11 +41,14 @@ jsonFragment = QuasiQuoter {
 
 newtype JsonFragmentResponseMatcher = JsonFragmentResponseMatcher { getJsonMatcher :: ResponseMatcher }
 
-shouldRespondWith' :: HasCallStack
-                   => WaiSession st SResponse
-                   -> JsonFragmentResponseMatcher
-                   -> WaiExpectation st
-shouldRespondWith' action matcher = do
+-- | Succeeds if the full body matches the input /fragment/. Careful in using this
+-- combinator, as it won't check that the full body matches the input, but rather
+-- that the body contains the input fragment, which might lead to confusion.
+shouldRespondWithFragment :: HasCallStack
+                          => WaiSession st SResponse
+                          -> JsonFragmentResponseMatcher
+                          -> WaiExpectation st
+shouldRespondWithFragment action matcher = do
   r <- action
   forM_ (match r (getJsonMatcher matcher)) (liftIO . expectationFailure)
 

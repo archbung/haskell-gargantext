@@ -60,6 +60,7 @@ library
       Gargantext.API.Errors.Types.Backend
       Gargantext.API.HashedResponse
       Gargantext.API.Ngrams
+      Gargantext.API.Ngrams.List
       Gargantext.API.Ngrams.List.Types
       Gargantext.API.Ngrams.Prelude
       Gargantext.API.Ngrams.Tools
@@ -188,7 +189,6 @@ library
       Gargantext.API.Job
       Gargantext.API.Members
       Gargantext.API.Metrics
-      Gargantext.API.Ngrams.List
       Gargantext.API.Ngrams.NgramsTree
       Gargantext.API.Node.Contact
       Gargantext.API.Node.Corpus.Annuaire
