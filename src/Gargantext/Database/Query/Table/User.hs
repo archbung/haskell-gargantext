@@ -34,6 +34,8 @@ module Gargantext.Database.Query.Table.User
   , updateUserForgotPasswordUUID
   , getUserPubmedAPIKey
   , updateUserPubmedAPIKey
+  , updateUserEPOAPIUser
+  , updateUserEPOAPIToken
   , getUser
   , insertNewUsers
   , selectUsersLightWith
@@ -56,7 +58,7 @@ import Data.UUID qualified as UUID
 import Gargantext.Core (HasDBid)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config (nodeTypeId)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key)
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key, hu_epo_api_user, hu_epo_api_token)
 import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
 import Gargantext.Database.Admin.Types.Node (UserId(..))
 import Gargantext.Database.Prelude
@@ -275,6 +277,21 @@ updateUserPubmedAPIKey (RootId uId) apiKey = do
   _ <- updateNodeWithType uId NodeUser (Proxy :: Proxy HyperdataUser) (\h -> h & hu_pubmed_api_key ?~ apiKey)
   pure 1
 updateUserPubmedAPIKey _ _ = undefined
+
+updateUserEPOAPIUser :: (HasDBid NodeType, HasNodeError err)
+                     => User -> Text -> DBCmd err Int64
+updateUserEPOAPIUser (RootId uId) apiUser = do
+  _ <- updateNodeWithType uId NodeUser (Proxy :: Proxy HyperdataUser) (\h -> h & hu_epo_api_user ?~ apiUser)
+  pure 1
+updateUserEPOAPIUser _ _ = undefined
+
+updateUserEPOAPIToken :: (HasDBid NodeType, HasNodeError err)
+                      => User -> Text -> DBCmd err Int64
+updateUserEPOAPIToken (RootId uId) apiToken = do
+  _ <- updateNodeWithType uId NodeUser (Proxy :: Proxy HyperdataUser) (\h -> h & hu_epo_api_token ?~ apiToken)
+  pure 1
+updateUserEPOAPIToken _ _ = undefined
+
 ------------------------------------------------------------------
 -- | Select User with some parameters
 -- Not optimized version

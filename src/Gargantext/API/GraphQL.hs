@@ -82,6 +82,8 @@ data Mutation m
   = Mutation
     { update_user_info       :: GQLUserInfo.UserInfoMArgs -> m Int
     , update_user_pubmed_api_key :: GQLUser.UserPubmedAPIKeyMArgs -> m Int
+    , update_user_epo_api_user :: GQLUser.UserEPOAPIUserMArgs -> m Int
+    , update_user_epo_api_token :: GQLUser.UserEPOAPITokenMArgs -> m Int
     , delete_team_membership :: GQLTeam.TeamDeleteMArgs -> m [Int]
     , update_node_context_category :: GQLCTX.NodeContextCategoryMArgs -> m [Int]
     } deriving (Generic, GQLType)
@@ -127,6 +129,8 @@ rootResolver authenticatedUser policyManager =
                             , tree_branch         = GQLTree.resolveBreadcrumb }
     , mutationResolver = Mutation { update_user_info       = GQLUserInfo.updateUserInfo
                                   , update_user_pubmed_api_key = GQLUser.updateUserPubmedAPIKey
+                                  , update_user_epo_api_user = GQLUser.updateUserEPOAPIUser
+                                  , update_user_epo_api_token = GQLUser.updateUserEPOAPIToken
                                   , delete_team_membership = GQLTeam.deleteTeamMembership
                                   , update_node_context_category = GQLCTX.updateNodeContextCategory }
     , subscriptionResolver = Undefined }

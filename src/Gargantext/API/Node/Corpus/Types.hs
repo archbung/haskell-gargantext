@@ -32,6 +32,7 @@ data Database = Empty
               | HAL
               | IsTex
               | Isidore
+              | EPO
   deriving (Eq, Show, Generic, Enum, Bounded)
 
 instance Arbitrary Database where
@@ -49,6 +50,7 @@ database2origin Arxiv    = ExternalOrigin Types.Arxiv
 database2origin HAL      = ExternalOrigin Types.HAL
 database2origin IsTex    = ExternalOrigin Types.IsTex
 database2origin Isidore  = ExternalOrigin Types.Isidore
+database2origin EPO      = ExternalOrigin Types.EPO
 
 ------------------------------------------------------------------------
 data Datafield = Gargantext

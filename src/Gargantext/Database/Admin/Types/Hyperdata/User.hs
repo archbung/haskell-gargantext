@@ -40,6 +40,8 @@ data HyperdataUser =
                    , _hu_shared         :: !(Maybe HyperdataContact)
                    , _hu_public         :: !(Maybe HyperdataPublic)
                    , _hu_pubmed_api_key :: !(Maybe PUBMED.APIKey)
+                   , _hu_epo_api_user   :: !(Maybe Text)
+                   , _hu_epo_api_token  :: !(Maybe Text)
                    } deriving (Eq, Show, Generic)
 
 instance GQLType HyperdataUser where
@@ -71,7 +73,9 @@ defaultHyperdataUser =
     { _hu_private        = Just defaultHyperdataPrivate
     , _hu_shared         = Just defaultHyperdataContact
     , _hu_public         = Just defaultHyperdataPublic
-    , _hu_pubmed_api_key = Nothing }
+    , _hu_pubmed_api_key = Nothing
+    , _hu_epo_api_user   = Nothing
+    , _hu_epo_api_token  = Nothing }
 
 defaultHyperdataPublic :: HyperdataPublic
 defaultHyperdataPublic = HyperdataPublic "pseudo" [1..10]
@@ -100,7 +104,12 @@ $(deriveJSON (unPrefix "_hpu_") ''HyperdataPublic)
 
 -- | Arbitrary instances
 instance Arbitrary HyperdataUser where
-  arbitrary = HyperdataUser <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = HyperdataUser <$> arbitrary
+                            <*> arbitrary
+                            <*> arbitrary
+                            <*> arbitrary
+                            <*> arbitrary
+                            <*> arbitrary
 
 instance Arbitrary HyperdataPrivate where
   arbitrary = pure defaultHyperdataPrivate

@@ -47,6 +47,18 @@ data UserPubmedAPIKeyMArgs
     , api_key  :: Text }
     deriving (Generic, GQLType)
 
+data UserEPOAPIUserMArgs
+  = UserEPOAPIUserMArgs
+    { user_id  :: Int
+    , api_user :: Text }
+    deriving (Generic, GQLType)
+
+data UserEPOAPITokenMArgs
+  = UserEPOAPITokenMArgs
+    { user_id   :: Int
+    , api_token :: Text }
+    deriving (Generic, GQLType)
+
 -- | Function to resolve user from a query.
 resolveUsers
   :: (CmdCommon env)
@@ -80,5 +92,19 @@ updateUserPubmedAPIKey :: ( CmdCommon env, HasSettings env) =>
                           UserPubmedAPIKeyMArgs -> GqlM' e env Int
 updateUserPubmedAPIKey UserPubmedAPIKeyMArgs { user_id, api_key } = do
   _ <- lift $ DBUser.updateUserPubmedAPIKey (Individu.RootId $ UnsafeMkNodeId user_id) api_key
+
+  pure 1
+
+updateUserEPOAPIUser :: ( CmdCommon env, HasSettings env) =>
+                        UserEPOAPIUserMArgs -> GqlM' e env Int
+updateUserEPOAPIUser UserEPOAPIUserMArgs { user_id, api_user } = do
+  _ <- lift $ DBUser.updateUserEPOAPIUser (Individu.RootId $ UnsafeMkNodeId user_id) api_user
+
+  pure 1
+
+updateUserEPOAPIToken :: ( CmdCommon env, HasSettings env) =>
+                         UserEPOAPITokenMArgs -> GqlM' e env Int
+updateUserEPOAPIToken UserEPOAPITokenMArgs { user_id, api_token } = do
+  _ <- lift $ DBUser.updateUserEPOAPIToken (Individu.RootId $ UnsafeMkNodeId user_id) api_token
 
   pure 1

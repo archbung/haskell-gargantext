@@ -31,6 +31,7 @@ import Data.Conduit.Internal (zipSources)
 import Data.Swagger
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
+import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
@@ -144,6 +145,8 @@ data WithQuery = WithQuery
   , _wq_node_id      :: !Int
   , _wq_flowListWith :: !FlowSocialListWith
   , _wq_pubmedAPIKey :: !(Maybe Text)
+  , _wq_epoAPIUser   :: !(Maybe Text)
+  , _wq_epoAPIToken  :: !(Maybe Text)
   }
   deriving (Show, Eq, Generic)
 
@@ -157,6 +160,8 @@ instance ToSchema WithQuery where
 
 instance Arbitrary WithQuery where
   arbitrary = WithQuery <$> arbitrary
+                        <*> arbitrary
+                        <*> arbitrary
                         <*> arbitrary
                         <*> arbitrary
                         <*> arbitrary
@@ -204,11 +209,15 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
                                          , _wq_datafield = datafield
                                          , _wq_lang = l
                                          , _wq_flowListWith = flw
-                                         , _wq_pubmedAPIKey = mPubmedAPIKey }) maybeLimit jobHandle = do
+                                         , _wq_pubmedAPIKey = mPubmedAPIKey
+                                         , .. }) maybeLimit jobHandle = do
   -- TODO ...
   $(logLocM) DEBUG $ T.pack $ "(cid, dbs) " <> show (cid, dbs)
   $(logLocM) DEBUG $ T.pack $ "datafield  " <> show datafield
   $(logLocM) DEBUG $ T.pack $ "flowListWith " <> show flw
+
+  let mEPOAuthKey = EPO.AuthKey <$> (EPO.User <$> _wq_epoAPIUser)
+                                <*> (EPO.Token <$> _wq_epoAPIToken)
 
   addLanguageToCorpus cid l
 
@@ -233,7 +242,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
       let db = database2origin dbs
       -- mPubmedAPIKey <- getUserPubmedAPIKey user
       -- printDebug "[addToCorpusWithQuery] mPubmedAPIKey" mPubmedAPIKey
-      eTxt <- getDataText db (Multi l) q mPubmedAPIKey maybeLimit
+      eTxt <- getDataText db (Multi l) q mPubmedAPIKey mEPOAuthKey maybeLimit
 
       -- printDebug "[G.A.N.C.New] lTxts" lTxts
       case eTxt of

@@ -69,6 +69,7 @@ import Data.Proxy
 import Data.Set qualified as Set
 import Data.Swagger
 import Data.Text qualified as T
+import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Ngrams.Tools (getTermsWith)
 import Gargantext.API.Ngrams.Types qualified as NT
 import Gargantext.Core (Lang(..), PosTagAlgo(..), NLPServerConfig)
@@ -101,7 +102,7 @@ import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
-import Gargantext.Database.Prelude (DbCmd', DBCmd)
+import Gargantext.Database.Prelude (DbCmd', DBCmd, hasConfig)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
 import Gargantext.Database.Query.Table.Ngrams
 import Gargantext.Database.Query.Table.Node
@@ -116,6 +117,7 @@ import Gargantext.Database.Schema.Node (NodePoly(..), node_id)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Database.Types
 import Gargantext.Prelude hiding (to)
+import Gargantext.Prelude.Config (GargConfig(..))
 import Gargantext.Prelude.Crypto.Hash (Hash)
 import Gargantext.System.Logging
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
@@ -160,12 +162,14 @@ getDataText :: (HasNodeError err)
             -> TermType Lang
             -> API.RawQuery
             -> Maybe PUBMED.APIKey
+            -> Maybe EPO.AuthKey
             -> Maybe API.Limit
             -> DBCmd err (Either API.GetCorpusError DataText)
-getDataText (ExternalOrigin api) la q mPubmedAPIKey li = do
-  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey li
+getDataText (ExternalOrigin api) la q mPubmedAPIKey mAuthKey li = do
+  cfg <- view hasConfig
+  eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey (_gc_epo_api_url cfg) li
   pure $ DataNew <$> eRes
-getDataText (InternalOrigin _) _la q _ _li = do
+getDataText (InternalOrigin _) _la q _ _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
                                            (UserName userMaster)
                                            (Left "")
@@ -180,7 +184,7 @@ getDataText_Debug :: (HasNodeError err)
                   -> Maybe API.Limit
                   -> DBCmd err ()
 getDataText_Debug a l q li = do
-  result <- getDataText a l q Nothing li
+  result <- getDataText a l q Nothing Nothing li
   case result of
     Left  err -> liftBase $ putText $ show err
     Right res -> liftBase $ printDataText res

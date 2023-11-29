@@ -79,6 +79,7 @@ library
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
+      Gargantext.Core.Text.Corpus.API.EPO
       Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.API.OpenAlex
       Gargantext.Core.Text.Corpus.Query
@@ -436,6 +437,7 @@ library
     , duckling ^>= 0.2.0.0
     , ekg-core ^>= 0.1.1.7
     , ekg-json ^>= 0.1.0.7
+    , epo-api-client
     , exceptions ^>= 0.10.4
     , extra ^>= 1.7.9
     , fast-logger ^>= 3.0.5
@@ -466,7 +468,7 @@ library
     , ihaskell ^>= 0.10.2.2
     , ini ^>= 0.4.1
     , insert-ordered-containers ^>= 0.2.5.1
-    , iso639 ^>= 0.1.0.3
+    , iso639
     , jose ^>= 0.8.4
     , json-stream ^>= 0.4.2.4
     , lens ^>= 4.19.2
@@ -499,7 +501,7 @@ library
     , process ^>= 1.6.13.2
     , product-profunctors ^>= 0.11.0.3
     , profunctors ^>= 5.6.2
-    , protolude ^>= 0.3.0
+    , protolude ^>= 0.3.3
     , pureMD5 ^>= 2.1.4
     , quickcheck-instances ^>= 0.3.25.2
     , rake ^>= 0.0.1
@@ -522,6 +524,7 @@ library
     , servant-blaze ^>= 0.9.1
     , servant-cassava ^>= 0.10.1
     , servant-client ^>= 0.18.3
+    , servant-client-core ^>= 0.18.3
     , servant-ekg ^>= 0.3.1
     , servant-flatten ^>= 0.2
     , servant-job >= 0.2.0.0
@@ -672,7 +675,7 @@ executable gargantext-cli
     , gargantext-prelude
     , ini ^>= 0.4.1
     , optparse-generic ^>= 1.4.7
-    , protolude ^>= 0.3.0
+    , protolude ^>= 0.3.3
     , split ^>= 0.2.3.4
     , text ^>= 1.2.4.1
     , unordered-containers ^>= 0.2.16.0
