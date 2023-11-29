@@ -1,3 +1,11 @@
+## Version 0.0.6.9.9.9.4
+
+* [FRONT][FIX][[Docs View] Highlight sometimes broken (#598)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/598)
+* [BACK][CLEAN][Clean up XML code (#280)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/280)
+* [BACK][CLEAN][TextFlow without list (CSV upload) (#287)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/287)
+* [BACK][FEAT][DB obfuscation (#282)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/282)
+* [BACK][FRONT][FEAT] EPO API integration
+
 ## Version 0.0.6.9.9.9.3.2
 
 * [FRONT][FIX][[Node Documents] Frontend enhancement - highlight terms side-by-side with other terms (#615)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/615)
