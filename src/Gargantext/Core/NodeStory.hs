@@ -93,7 +93,6 @@ module Gargantext.Core.NodeStory
 where
 
 import Codec.Serialise.Class
-import Control.Exception (throw)
 import Control.Lens (makeLenses, Getter, (^.), (.~), (%~), non, _Just, at, view)
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -107,7 +106,6 @@ import Data.Pool (Pool, withResource)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 import Data.Semigroup
 import Data.Set qualified as Set
-import Data.Text qualified as Text
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.FromField (FromField(fromField), fromJSONField)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -123,6 +121,7 @@ import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude hiding (to)
+import Gargantext.Prelude.Database
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
 
 ------------------------------------------------------------------------
@@ -296,61 +295,6 @@ $(makeAdaptorAndInstance "pNodeArchiveStory" ''NodeStoryArchivePoly)
 type ArchiveList = Archive NgramsState' NgramsStatePatch'
 
 -- DB stuff
-
-runPGSExecute :: (PGS.ToRow q)
-              => PGS.Connection -> PGS.Query -> q -> IO Int64
-runPGSExecute c qs a = catch (PGS.execute c qs a) printError
-  where
-    printError (SomeException e) = do
-      --q' <- PGS.formatQuery c qs a
-      _ <- panic $ Text.pack $ show e
-      throw (SomeException e)
-
-runPGSExecuteMany :: (PGS.ToRow q)
-                  => PGS.Connection -> PGS.Query -> [q] -> IO Int64
-runPGSExecuteMany c qs a = catch (PGS.executeMany c qs a) printError
-  where
-    printError (SomeException e) = do
-      --q' <- PGS.formatQuery c qs a
-      _ <- panic $ Text.pack $ show e
-      throw (SomeException e)
-
-runPGSReturning :: (PGS.ToRow q, PGS.FromRow r)
-                => PGS.Connection -> PGS.Query -> [q] -> IO [r]
-runPGSReturning c qs a = catch (PGS.returning c qs a) printError
-  where
-    printError (SomeException e) = do
-      --q' <- PGS.formatQuery c qs a
-      _ <- panic $ Text.pack $ show e
-      throw (SomeException e)
-
-
-runPGSQuery :: (PGS.FromRow r, PGS.ToRow q)
-            => PGS.Connection -> PGS.Query -> q -> IO [r]
-runPGSQuery c q a = catch (PGS.query c q a) printError
-  where
-    printError (SomeException e) = do
-      q' <- PGS.formatQuery c q a
-      hPutStrLn stderr q'
-      throw (SomeException e)
-
-runPGSAdvisoryLock :: PGS.Connection -> Int -> IO ()
-runPGSAdvisoryLock c id = do
-  _ <- runPGSQuery c [sql| SELECT pg_advisory_lock(?) |]
-                     (PGS.Only id) :: IO [PGS.Only ()]
-  pure ()
-
-runPGSAdvisoryUnlock :: PGS.Connection -> Int -> IO ()
-runPGSAdvisoryUnlock c id = do
-  _ <- runPGSQuery c [sql| SELECT pg_advisory_unlock(?) |]
-                     (PGS.Only id) :: IO [PGS.Only Bool]
-  pure ()
-
-runPGSAdvisoryXactLock :: PGS.Connection -> Int -> IO ()
-runPGSAdvisoryXactLock c id = do
-  _ <- runPGSQuery c [sql| SELECT pg_advisory_xact_lock(?) |]
-                     (PGS.Only id) :: IO [PGS.Only ()]
-  pure ()
 
 nodeExists :: PGS.Connection -> NodeId -> IO Bool
 nodeExists c nId = (== [PGS.Only True])

@@ -124,7 +124,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-    tag: 9b33568da92f92bfa89c8bd8f05b07b70fd021f9
+    tag: fec7427ba8d1047fd68207afb79139f9dea339e0
 
 source-repository-package
     type: git
