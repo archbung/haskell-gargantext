@@ -7,6 +7,10 @@ Maintainer  : team@gargantext.org
 Stability   : experimental
 Portability : POSIX
 
+See
+https://martin.hoppenheit.info/blog/2023/xml-stream-processing-with-haskell/
+for a tutorial of xml-conduit rendering.
+
 -}
 
 
@@ -18,63 +22,72 @@ Portability : POSIX
 module Gargantext.Core.Viz.Graph.GEXF
   where
 
-import Data.HashMap.Lazy qualified as HashMap
+import Conduit
+import Data.Conduit.Combinators qualified as CC
+import Data.XML.Types qualified as XML
 import Gargantext.Core.Viz.Graph.Types qualified as G
 import Gargantext.Prelude
-import Gargantext.Prelude qualified as P
 import Prelude qualified
-import Xmlbf qualified as Xmlbf
+import Servant (MimeRender(..), MimeUnrender(..))
+import Servant.XML.Conduit (XML)
+import Text.XML.Stream.Render qualified as XML
+
 
 -- Converts to GEXF format
 -- See https://gephi.org/gexf/format/
-instance Xmlbf.ToXml G.Graph where
-  toXml (G.Graph { _graph_nodes = graphNodes
-                 , _graph_edges = graphEdges }) = root graphNodes graphEdges
-    where
-      root :: [G.Node] -> [G.Edge] -> [Xmlbf.Node]
-      root gn ge =
-        Xmlbf.element "gexf" params $ meta <> (graph gn ge)
+graphToXML :: Monad m => G.Graph -> ConduitT i XML.Event m ()
+graphToXML (G.Graph { .. }) = root _graph_nodes _graph_edges
+  where
+    -- root :: [G.Node] -> [G.Edge] -> ConduitT i XML.Event m ()
+    root gn ge =
+      XML.tag "gexf" params $ meta <> (graph gn ge)
         where
-          params = HashMap.fromList [ ("xmlns", "http://www.gexf.net/1.3")
-                                    , ("xmlns:viz", "http://gexf.net/1.3/viz")
-                                    , ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-                                    , ("xsi:schemaLocation", "http://gexf.net/1.3 http://gexf.net/1.3/gexf.xsd")
-                                    , ("version", "1.3") ]
-      meta = Xmlbf.element "meta" params $ creator <> desc
-        where
-          params = HashMap.fromList [ ("lastmodifieddate", "2020-03-13") ]
-      creator = Xmlbf.element "creator" HashMap.empty $ Xmlbf.text "Gargantext.org"
-      desc = Xmlbf.element "description" HashMap.empty $ Xmlbf.text "Gargantext gexf file"
-      graph :: [G.Node] -> [G.Edge] -> [Xmlbf.Node]
-      graph gn ge = Xmlbf.element "graph" params $ (nodes gn) <> (edges ge)
-        where
-          params = HashMap.fromList [ ("mode", "static")
-                                    , ("defaultedgetype", "directed") ]
-      nodes :: [G.Node] -> [Xmlbf.Node]
-      nodes gn = Xmlbf.element "nodes" HashMap.empty $ P.concatMap node' gn
+          params =    XML.attr "xmlns" "http://www.gexf.net/1.3"
+                   <> XML.attr "version" "1.3"
 
-      node' :: G.Node -> [Xmlbf.Node]
-      node' (G.Node { node_id = nId, node_label = l, node_size = w}) =
-        Xmlbf.element "node" params (Xmlbf.element "viz:size" sizeParams [])
-        where
-          params = HashMap.fromList [ ("id", nId)
-                                    , ("label", l) ]
-          sizeParams = HashMap.fromList [ ("value", show w) ]
-      edges :: [G.Edge] -> [Xmlbf.Node]
-      edges gn = Xmlbf.element "edges" HashMap.empty $ P.concatMap edge gn
-      edge :: G.Edge -> [Xmlbf.Node]
-      edge (G.Edge { edge_id = eId
-                   , edge_source = es
-                   , edge_target = et
-                   , edge_weight = ew }) =
-        Xmlbf.element "edge" params []
-        where
-          params = HashMap.fromList [ ("id", eId)
-                                    , ("source", es)
-                                    , ("target", et)
-                                    , ("weight", show ew)]
+    meta = XML.tag "meta" params $ creator <> desc
+      where
+        params = XML.attr "lastmodifieddate" "2020-03-13"
+        creator = XML.tag "creator" mempty $ XML.content "Gargantext.org"
+        desc = XML.tag "description" mempty $ XML.content "Gargantext gexf file"
+
+    graph :: (Monad m) => [G.Node] -> [G.Edge] -> ConduitT i XML.Event m ()
+    graph gn ge = XML.tag "graph" params $ (nodes gn) <> (edges ge)
+      where
+        params = XML.attr "mode" "static"
+              <> XML.attr "defaultedgetype" "directed"
+
+    nodes :: (Monad m) => [G.Node] -> ConduitT i XML.Event m ()
+    nodes gn = XML.tag "nodes" mempty (yieldMany gn .| awaitForever node')
+    node' :: (Monad m) => G.Node -> ConduitT i XML.Event m ()
+    node' (G.Node { .. }) = XML.tag "node" params (XML.tag "viz:size" sizeParams $ XML.content "")
+      where
+        params = XML.attr "id" node_id
+              <> XML.attr "label" node_label
+        sizeParams = XML.attr "value" (show node_size)
+
+    edges :: (Monad m) => [G.Edge] -> ConduitT i XML.Event m ()
+    edges ge = XML.tag "edges" mempty (yieldMany ge .| awaitForever edge')
+    edge' :: (Monad m) => G.Edge -> ConduitT i XML.Event m ()
+    edge' (G.Edge { .. }) = XML.tag "edge" params $ XML.content ""
+      where
+        params = XML.attr "id" edge_id
+              <> XML.attr "source" edge_source
+              <> XML.attr "target" edge_target
+              <> XML.attr "weight" (show edge_weight)
+
+
+instance MimeRender XML G.Graph where
+  mimeRender _ g = runConduitPure (source .| CC.sinkLazyBuilder)
+    where
+      namespaces = [ ("viz", "http://gexf.net/1.3/viz")
+                   , ("xsi", "http://www.w3.org/2001/XMLSchema-instance")
+                   , ("schemaLocation", "http://gexf.net/1.3") ]
+      source = graphToXML g .| XML.renderBuilder (XML.def { XML.rsNamespaces = namespaces })
+      --encoded = source .| mapC TE.encodeUtf8
+
 
 -- just to be able to derive a client for the entire gargantext API,
 -- we however want to avoid sollicitating this instance
-instance Xmlbf.FromXml G.Graph where
-  fromXml = Prelude.error "FromXml Graph: not defined, just a placeholder"
+instance MimeUnrender XML G.Graph where
+  mimeUnrender _ _ = Prelude.error "MimeUnrender Graph: not defined, just a placeholder"

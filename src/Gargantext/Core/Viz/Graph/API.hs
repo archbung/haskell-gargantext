@@ -48,7 +48,7 @@ import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Servant.Job.Async (AsyncJobsAPI)
-import Servant.XML
+import Servant.XML.Conduit (XML)
 
 ------------------------------------------------------------------------
 -- | There is no Delete specific API for Graph since it can be deleted
