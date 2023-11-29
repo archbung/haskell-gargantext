@@ -165,7 +165,9 @@ instance Jobs.MonadJob (GargM Env err) GargJob (Seq JobLog) JobLog where
 
 -- | The /concrete/ 'JobHandle' in use with our 'GargM' (production) monad. Its
 -- constructor it's not exported, to not leak internal details of its implementation.
-data ConcreteJobHandle err = JobHandle {
+data ConcreteJobHandle err =
+    ConcreteNullHandle
+  | JobHandle {
       _jh_id     :: !(SJ.JobID 'SJ.Safe)
     , _jh_logger :: LoggerM (GargM Env err) JobLog
     }
@@ -179,6 +181,7 @@ mkJobHandle jId = JobHandle jId
 
 -- | Updates the status of a 'JobHandle' by using the input 'updateJobStatus' function.
 updateJobProgress :: ConcreteJobHandle err -> (JobLog -> JobLog) -> GargM Env err ()
+updateJobProgress ConcreteNullHandle _ = pure ()
 updateJobProgress hdl@(JobHandle _ logStatus) updateJobStatus =
   Jobs.getLatestJobStatus hdl >>= logStatus . updateJobStatus
 
@@ -189,6 +192,9 @@ instance Jobs.MonadJobStatus (GargM Env err) where
   type JobOutputType  (GargM Env err) = JobLog
   type JobEventType   (GargM Env err) = JobLog
 
+  noJobHandle Proxy = ConcreteNullHandle
+
+  getLatestJobStatus ConcreteNullHandle = pure noJobLog
   getLatestJobStatus (JobHandle jId _) = do
     mb_jb <- Jobs.findJob jId
     case mb_jb of
@@ -203,6 +209,7 @@ instance Jobs.MonadJobStatus (GargM Env err) where
                                    EmptyL -> noJobLog
                                    l :< _ -> l
 
+  withTracer _ ConcreteNullHandle f  = f ConcreteNullHandle
   withTracer extraLogger (JobHandle jId logger) n = n (JobHandle jId (\w -> logger w >> liftIO (extraLogger w)))
 
   markStarted n jh = updateJobProgress jh (const $ jobLogStart (RemainingSteps n))
@@ -275,6 +282,8 @@ instance Jobs.MonadJobStatus (GargM DevEnv err) where
   type JobType        (GargM DevEnv err) = GargJob
   type JobOutputType  (GargM DevEnv err) = JobLog
   type JobEventType   (GargM DevEnv err) = JobLog
+
+  noJobHandle Proxy = DevJobHandle
 
   getLatestJobStatus DevJobHandle = pure noJobLog
 

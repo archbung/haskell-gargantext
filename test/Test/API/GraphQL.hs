@@ -32,4 +32,4 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "POST" "/gql" [r| {
                "query": "{ user_infos(user_id: 2) { ui_id, ui_email } }"
-               } |] `shouldRespondWith'` [jsonFragment| {"data":{"user_infos":[{"ui_id":2,"ui_email":"alice@gargan.text"}]}} |]
+               } |] `shouldRespondWithFragment` [jsonFragment| {"data":{"user_infos":[{"ui_id":2,"ui_email":"alice@gargan.text"}]}} |]

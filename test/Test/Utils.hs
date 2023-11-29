@@ -10,6 +10,7 @@ import Data.Aeson
 import Data.Aeson.QQ.Simple (aesonQQ)
 import Data.Char (isSpace)
 import Language.Haskell.TH.Quote
+import Network.HTTP.Types
 import Network.Wai.Test
 import Prelude
 import Test.Hspec.Expectations
@@ -17,6 +18,7 @@ import Test.Hspec.Wai
 import Test.Hspec.Wai.JSON
 import Test.Hspec.Wai.Matcher
 import Test.Tasty.HUnit
+import qualified Data.Aeson as JSON
 import qualified Data.ByteString.Char8 as B
 import qualified Data.HashMap.Strict as HM
 
@@ -39,11 +41,14 @@ jsonFragment = QuasiQuoter {
 
 newtype JsonFragmentResponseMatcher = JsonFragmentResponseMatcher { getJsonMatcher :: ResponseMatcher }
 
-shouldRespondWith' :: HasCallStack
-                   => WaiSession st SResponse
-                   -> JsonFragmentResponseMatcher
-                   -> WaiExpectation st
-shouldRespondWith' action matcher = do
+-- | Succeeds if the full body matches the input /fragment/. Careful in using this
+-- combinator, as it won't check that the full body matches the input, but rather
+-- that the body contains the input fragment, which might lead to confusion.
+shouldRespondWithFragment :: HasCallStack
+                          => WaiSession st SResponse
+                          -> JsonFragmentResponseMatcher
+                          -> WaiExpectation st
+shouldRespondWithFragment action matcher = do
   r <- action
   forM_ (match r (getJsonMatcher matcher)) (liftIO . expectationFailure)
 
@@ -64,6 +69,14 @@ instance FromValue JsonFragmentResponseMatcher where
 
       breakAt c = fmap (B.drop 1) . B.break (== c)
       strip = B.reverse . B.dropWhile isSpace . B.reverse . B.dropWhile isSpace
+
+shouldRespondWithJSON :: (FromJSON a, ToJSON a, HasCallStack)
+                      => WaiSession st a
+                      -> JsonFragmentResponseMatcher
+                      -> WaiExpectation st
+shouldRespondWithJSON action matcher = do
+  r <- action
+  forM_ (match (SResponse status200 mempty (JSON.encode r)) (getJsonMatcher matcher)) (liftIO . expectationFailure)
 
 containsJSON :: Value -> MatchBody
 containsJSON expected = MatchBody matcher

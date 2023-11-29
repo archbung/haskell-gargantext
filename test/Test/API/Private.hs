@@ -10,10 +10,13 @@ module Test.API.Private (
   , withValidLogin
   , getJSON
   , protected
-  , protectedWith
+  , protectedJSON
+  , postJSONUrlEncoded
   , protectedNewError
+  , protectedWith
   ) where
 
+import Data.Aeson qualified as JSON
 import Data.ByteString.Lazy qualified as L
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
@@ -24,7 +27,7 @@ import Gargantext.Prelude hiding (get)
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp qualified as Wai
-import Network.Wai.Test (SResponse)
+import Network.Wai.Test (SResponse (..))
 import Prelude qualified
 import Servant
 import Servant.Auth.Client ()
@@ -35,29 +38,72 @@ import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAn
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
-import Test.Utils (jsonFragment, shouldRespondWith')
+import Test.Utils (jsonFragment, shouldRespondWithFragment)
+import qualified Data.Map.Strict as Map
+import qualified Data.ByteString.Lazy.Char8 as C8L
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
-protected :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protected :: HasCallStack
+          => Token
+          -> Method
+          -> ByteString
+          -> L.ByteString
+          -> WaiSession () SResponse
 protected tkn mth url = protectedWith mempty tkn mth url
 
-protectedWith :: [Network.HTTP.Types.Header]
+protectedJSON :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
+              => Token
+              -> Method
+              -> ByteString
+              -> JSON.Value
+              -> WaiSession () a
+protectedJSON tkn mth url = protectedJSONWith mempty tkn mth url
+
+protectedJSONWith :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
+                  => [Network.HTTP.Types.Header]
+                  -> Token
+                  -> Method
+                  -> ByteString
+                  -> JSON.Value
+                  -> WaiSession () a
+protectedJSONWith hdrs tkn mth url jsonV = do
+  SResponse{..} <- protectedWith hdrs tkn mth url (JSON.encode jsonV)
+  case JSON.eitherDecode simpleBody of
+    Left err -> Prelude.fail $ "protectedJSON failed when parsing " <> show (typeRep $ Proxy @a) <> ": " <> err
+    Right x  -> pure x
+
+protectedWith :: HasCallStack
+              => [Network.HTTP.Types.Header]
               -> Token
               -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
 protectedWith extraHeaders tkn mth url payload =
-  request mth url ([ (hAccept, "application/json;charset=utf-8")
-                  , (hContentType, "application/json")
-                  , (hAuthorization, "Bearer " <> TE.encodeUtf8 tkn)
-                  ] <> extraHeaders) payload
+  -- Using a map means that if any of the extra headers contains a clashing header name,
+  -- the extra headers will take precedence.
+  let defaultHeaders = [ (hAccept, "application/json;charset=utf-8")
+                       , (hContentType, "application/json")
+                       , (hAuthorization, "Bearer " <> TE.encodeUtf8 tkn)
+                       ]
+      hdrs = Map.toList $ Map.fromList $ defaultHeaders <> extraHeaders
+  in request mth url hdrs payload
 
-protectedNewError :: Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
+protectedNewError :: HasCallStack => Token -> Method -> ByteString -> L.ByteString -> WaiSession () SResponse
 protectedNewError tkn mth url = protectedWith newErrorFormat tkn mth url
   where
     newErrorFormat = [(CI.mk "X-Garg-Error-Scheme", "new")]
 
-getJSON :: ByteString -> WaiSession () SResponse
-getJSON url =
-  request "GET" url [(hContentType, "application/json")] ""
+getJSON :: Token -> ByteString -> WaiSession () SResponse
+getJSON tkn url = protectedWith mempty tkn "GET" url ""
+
+postJSONUrlEncoded :: forall a. (JSON.FromJSON a, Typeable a, HasCallStack)
+                   => Token
+                   -> ByteString
+                   -> L.ByteString
+                   -> WaiSession () a
+postJSONUrlEncoded tkn url queryPaths = do
+  SResponse{..} <- protectedWith [(hContentType, "application/x-www-form-urlencoded")] tkn "POST" url queryPaths
+  case JSON.eitherDecode simpleBody of
+    Left err -> Prelude.fail $ "postJSONUrlEncoded failed when parsing " <> show (typeRep $ Proxy @a) <> ": " <> err <> "\nPayload was: " <> (C8L.unpack simpleBody)
+    Right x  -> pure x
 
 withValidLogin :: (MonadFail m, MonadIO m) => Wai.Port -> Username -> GargPassword -> (Token -> m a) -> m a
 withValidLogin port ur pwd act = do
@@ -119,7 +165,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/node/8") ""
-              `shouldRespondWith'` [jsonFragment| {"id":8,"user_id":2,"name":"alice" } |]
+              `shouldRespondWithFragment` [jsonFragment| {"id":8,"user_id":2,"name":"alice" } |]
 
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do
@@ -135,7 +181,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/tree/8") ""
-              `shouldRespondWith'` [jsonFragment| { "node": {"id":8, "name":"alice", "type": "NodeUser" } } |]
+              `shouldRespondWithFragment` [jsonFragment| { "node": {"id":8, "name":"alice", "type": "NodeUser" } } |]
 
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do

@@ -9,9 +9,11 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeApplications  #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 module Gargantext.API.Ngrams.List
   where
@@ -33,12 +35,11 @@ import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
 import Gargantext.API.Ngrams.Types
-import Gargantext.API.Prelude (GargServer, GargM)
+import Gargantext.API.Prelude (GargServer, GargM, serverError, HasServerError)
 import Gargantext.API.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (reIndexWith)
-import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node (getNode)
@@ -65,34 +66,26 @@ type GETAPI = Summary "Get List"
 getApi :: GargServer GETAPI
 getApi = getJson :<|> getCsv
 
+--
+-- JSON API
+--
+
 ----------------------
 type JSONAPI = Summary "Update List"
           :> "lists"
-            :> Capture "listId" ListId
+          :> Capture "listId" ListId
           :> "add"
           :> "form"
           :> "async"
-            :> AsyncJobs JobLog '[FormUrlEncoded] WithJsonFile JobLog
+          :> AsyncJobs JobLog '[FormUrlEncoded] WithJsonFile JobLog
 
 jsonApi :: ServerT JSONAPI (GargM Env BackendInternalError)
 jsonApi = jsonPostAsync
 
-----------------------
-type CSVAPI = Summary "Update List (legacy v3 CSV)"
-          :> "lists"
-            :> Capture "listId" ListId
-          :> "csv"
-          :> "add"
-          :> "form"
-          :> "async"
-            :> AsyncJobs JobLog '[FormUrlEncoded] WithTextFile JobLog
-
-csvApi :: ServerT CSVAPI (GargM Env BackendInternalError)
-csvApi = csvPostAsync
-
 ------------------------------------------------------------------------
-getJson :: HasNodeStory env err m =>
-       ListId -> m (Headers '[Header "Content-Disposition" Text] NgramsList)
+getJson :: HasNodeStory env err m
+        => ListId
+        -> m (Headers '[Header "Content-Disposition" Text] NgramsList)
 getJson lId = do
   lst <- getNgramsList lId
   pure $ addHeader (concat [ "attachment; filename=GarganText_NgramsList-"
@@ -101,8 +94,9 @@ getJson lId = do
                              ]
                      ) lst
 
-getCsv :: HasNodeStory env err m =>
-       ListId -> m (Headers '[Header "Content-Disposition" Text] NgramsTableMap)
+getCsv :: HasNodeStory env err m
+       => ListId
+       -> m (Headers '[Header "Content-Disposition" Text] NgramsTableMap)
 getCsv lId = do
   lst <- getNgramsList lId
   pure $ case Map.lookup TableNgrams.NgramsTerms lst of
@@ -115,74 +109,92 @@ getCsv lId = do
                 ) _v_data
 
 ------------------------------------------------------------------------
--- TODO : purge list
--- TODO talk
-setList :: HasNodeStory env err m
-        => ListId
-        -> NgramsList
-        -> m Bool
-setList l m  = do
-  -- TODO check with Version for optim
-  -- printDebug "New list as file" l
-  _ <- mapM (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList m
-  -- v <- getNodeStoryVar [l]
-  -- liftBase $ do
-  --   ns <- atomically $ readTVar v
-  --   printDebug "[setList] node story: " ns
-  -- TODO reindex
-  pure True
-
-------------------------------------------------------------------------
-
-toIndexedNgrams :: HashMap Text NgramsId -> Text -> Maybe (Indexed Int Ngrams)
-toIndexedNgrams m t = Indexed <$> i <*> n
-  where
-    i = HashMap.lookup t m
-    n = Just (text2ngrams t)
-
-------------------------------------------------------------------------
 jsonPostAsync :: ServerT JSONAPI (GargM Env BackendInternalError)
 jsonPostAsync lId =
   serveJobsAPI UpdateNgramsListJobJSON $ \jHandle f ->
-    postAsync' lId f jHandle
+    postAsyncJSON lId (_wjf_data f) jHandle
 
-postAsync' :: (FlowCmdM env err m, MonadJobStatus m)
-          => ListId
-          -> WithJsonFile
-          -> JobHandle m
-          -> m ()
-postAsync' l (WithJsonFile m _) jobHandle = do
+------------------------------------------------------------------------
+postAsyncJSON :: (HasNodeStory env err m, MonadJobStatus m)
+              => ListId
+              -> NgramsList
+              -> JobHandle m
+              -> m ()
+postAsyncJSON l ngramsList jobHandle = do
 
   markStarted 2 jobHandle
-  -- printDebug "New list as file" l
-  _ <- setList l m
-  -- printDebug "Done" r
+
+  setList
 
   markProgress 1 jobHandle
 
   corpus_node <- getNode l -- (Proxy :: Proxy HyperdataList)
-  let corpus_id = fromMaybe (panic "") (_node_parent_id corpus_node)
+  let corpus_id = fromMaybe (panic "no parent_id") (_node_parent_id corpus_node)
   _ <- reIndexWith corpus_id l NgramsTerms (Set.fromList [MapTerm, CandidateTerm])
 
   markComplete jobHandle
 
+  where
+    setList :: HasNodeStory env err m => m ()
+    setList = do
+      -- TODO check with Version for optim
+      mapM_ (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList ngramsList
+      -- TODO reindex
+
+
+--
+-- CSV API
+--
+
+----------------------
+type CSVAPI = Summary "Update List (legacy v3 CSV)"
+            :> "lists"
+            :> Capture "listId" ListId
+            :> "csv"
+            :> "add"
+            :> "form"
+            :> "async"
+            :> AsyncJobs JobLog '[FormUrlEncoded] WithTextFile JobLog
+
+csvApi :: ServerT CSVAPI (GargM Env BackendInternalError)
+csvApi = csvPostAsync
+
 ------------------------------------------------------------------------
+csvPostAsync :: ServerT CSVAPI (GargM Env BackendInternalError)
+csvPostAsync lId =
+  serveJobsAPI UpdateNgramsListJobCSV $ \jHandle f -> do
+    case ngramsListFromCSVData (_wtf_data f) of
+      Left err         -> serverError $ err500 { errReasonPhrase = err }
+      Right ngramsList -> postAsyncJSON lId ngramsList jHandle
 
-readCsvText :: Text -> Either Text [(Text, Text, Text)]
-readCsvText t = case eDec of
-  Left err -> Left $ pack err
-  Right dec -> Right $ Vec.toList dec
+-- | Tries converting a text file into an 'NgramList', so that we can reuse the
+-- existing JSON endpoint for the CSV upload.
+ngramsListFromCSVData :: Text -> Either Prelude.String NgramsList
+ngramsListFromCSVData csvData = case decodeCsv of
+  -- /NOTE/ The legacy CSV data only supports terms in imports and exports, so this is
+  -- all we care about.
+  Left err    -> Left $ "Invalid CSV found in ngramsListFromCSVData: " <> err
+  Right terms -> pure $ Map.fromList [ (NgramsTerms, Versioned 0 $ mconcat . Vec.toList $ terms) ]
   where
-    lt = BSL.fromStrict $ P.encodeUtf8 t
-    eDec = Csv.decodeWith
-             (Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (P.ord '\t') })
-             Csv.HasHeader lt :: Either Prelude.String (Vector (Text, Text, Text))
+    binaryData = BSL.fromStrict $ P.encodeUtf8 csvData
 
-parseCsvData :: [(Text, Text, Text)] -> Map NgramsTerm NgramsRepoElement
-parseCsvData lst = Map.fromList $ conv <$> lst
+    decodeCsv :: Either Prelude.String (Vector NgramsTableMap)
+    decodeCsv = Csv.decodeWithP csvToNgramsTableMap
+                               (Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (P.ord '\t') })
+                               Csv.HasHeader
+                               binaryData
+
+-- | Converts a plain CSV 'Record' into an NgramsTableMap
+csvToNgramsTableMap :: Csv.Record -> Csv.Parser NgramsTableMap
+csvToNgramsTableMap record = case Vec.toList record of
+  (map P.decodeUtf8 -> [status, label, forms])
+    -> pure $ conv status label forms
+  _ -> Prelude.fail "csvToNgramsTableMap failed"
+
   where
-    conv (status, label, forms) =
-        (NgramsTerm label, NgramsRepoElement { _nre_size = 1
+    conv :: Text -> Text -> Text -> NgramsTableMap
+    conv status label forms = Map.singleton (NgramsTerm label)
+        $ NgramsRepoElement { _nre_size = 1
                                              , _nre_list = case status == "map" of
                                                              True  -> MapTerm
                                                              False -> case status == "main" of
@@ -196,49 +208,26 @@ parseCsvData lst = Map.fromList $ conv <$> lst
                                                              $ filter (\w -> w /= "" && w /= label)
                                                              $ splitOn "|&|" forms
                                              }
-         )
-
-csvPost :: HasNodeStory env err m
-        => ListId
-        -> Text
-        -> m (Either Text ())
-csvPost l m  = do
-  -- printDebug "[csvPost] l" l
-  -- printDebug "[csvPost] m" m
-  -- status label forms
-  let eLst = readCsvText m
-  case eLst of
-    Left err -> pure $ Left err
-    Right lst -> do
-      let p = parseCsvData lst
-      --printDebug "[csvPost] lst" lst
-      -- printDebug "[csvPost] p" p
-      _ <- setListNgrams l NgramsTerms p
-      -- printDebug "ReIndexing List" l
-      corpus_node <- getNode l -- (Proxy :: Proxy HyperdataList)
-      let corpus_id = fromMaybe (panic "") (_node_parent_id corpus_node)
-      _ <- reIndexWith corpus_id l NgramsTerms (Set.fromList [MapTerm, CandidateTerm])
-
-      pure $ Right ()
-
-------------------------------------------------------------------------
-csvPostAsync :: ServerT CSVAPI (GargM Env BackendInternalError)
-csvPostAsync lId =
-  serveJobsAPI UpdateNgramsListJobCSV $ \jHandle f -> do
-      markStarted 1 jHandle
-      ePost <- csvPost lId (_wtf_data f)
-      case ePost of
-        Left err -> markFailed (Just err) jHandle
-        Right () -> markComplete jHandle
-
-      getLatestJobStatus jHandle >>= printDebug "[csvPostAsync] job ended with joblog: "
 
 ------------------------------------------------------------------------
 
 
 -- | This is for debugging the CSV parser in the REPL
-importCsvFile :: (HasNodeStory env err m)
-              => ListId -> P.FilePath -> m (Either Text ())
+importCsvFile :: forall env err m. (HasNodeStory env err m, HasServerError err, MonadJobStatus m)
+              => ListId -> P.FilePath -> m ()
 importCsvFile lId fp = do
   contents <- liftBase $ P.readFile fp
-  csvPost lId contents
+  case ngramsListFromCSVData contents of
+    Left err         -> serverError $ err500 { errReasonPhrase = err }
+    Right ngramsList -> postAsyncJSON lId ngramsList (noJobHandle @m Proxy)
+
+--
+-- Utils
+--
+
+------------------------------------------------------------------------
+toIndexedNgrams :: HashMap Text NgramsId -> Text -> Maybe (Indexed Int Ngrams)
+toIndexedNgrams m t = Indexed <$> i <*> n
+  where
+    i = HashMap.lookup t m
+    n = Just (text2ngrams t)

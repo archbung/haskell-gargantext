@@ -50,13 +50,16 @@ serveJobsAPI
    , MonadJobStatus m
    , m ~ (GargM Env BackendInternalError)
    , JobEventType m ~ JobOutputType m
+   , MonadLogger m
    )
   => JobType m
   -> (JobHandle m -> input -> m ())
   -> SJ.AsyncJobsServerT' ctI ctO callbacks (JobEventType m) input (JobOutputType m) m
 serveJobsAPI jobType f = Internal.serveJobsAPI mkJobHandle ask jobType jobErrorToGargError $ \env jHandle i -> do
-  putStrLn ("Running job of type: " ++ show jobType)
-  runExceptT $ runReaderT (f jHandle i >> getLatestJobStatus jHandle) env
+  runExceptT $ flip runReaderT env $ do
+    $(logLocM) INFO (T.pack $ "Running job of type: " ++ show jobType)
+    f jHandle i
+    getLatestJobStatus jHandle
 
 parseGargJob :: String -> Maybe GargJob
 parseGargJob s = case s of
