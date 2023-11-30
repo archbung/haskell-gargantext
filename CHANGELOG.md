@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.4.1
+
+* [BACK][FIX] Deps and build
+
 ## Version 0.0.6.9.9.9.4
 
 * [FRONT][FIX][[Docs View] Highlight sometimes broken (#598)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/598)
