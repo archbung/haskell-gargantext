@@ -11,8 +11,8 @@ STORE_DIR="${1:-$DEFAULT_STORE}"
 # `expected_cabal_project_freeze_hash` with the
 # `sha256sum` result calculated on the `cabal.project` and `cabal.project.freeze`.
 # This ensures the files stay deterministic so that CI cache can kick in.
-expected_cabal_project_hash="3c1002c8ed7be226b2e189fdb7debef5b3c43d0f56e44df73d500954074c4568"
-expected_cabal_project_freeze_hash="ee7ee880d93d58e52407e971033440291ddb20023a2e8090aa5b335ecbfbc649"
+expected_cabal_project_hash="2f4a78e2c740f48928f9953c49776d068e68cbc9cd5d0a5577c90dabac6e12c6"
+expected_cabal_project_freeze_hash="8b92667f8d1aac285675108a2b87484adbd9ad7c85679db0ec3d448e32cc6348"
 
 cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-06-24T21:28:46Z'
 

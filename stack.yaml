@@ -22,7 +22,9 @@ allow-newer: true
 
 extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-  commit: 40135d166830690b1101180b79e9fd3663284b2b
+  commit: fec7427ba8d1047fd68207afb79139f9dea339e0
+- git: https://gitlab.iscpif.fr/gargantext/iso639.git
+  commit: eab929d106833ded8011a0d6705135e3fc506a9c
 - git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
   commit: 588e104fe7593210956610cab0041fd16584a4ce
   # Data Mining Libs
@@ -41,6 +43,8 @@ extra-deps:
     - servant-auth/servant-auth/
     - servant-auth/servant-auth-client/
     - servant-auth/servant-auth-server/
+- git: https://gitlab.iscpif.fr/gargantext/servant-xml-conduit.git
+  commit: 339fd608341bd2652cf5c0e9e76a3293acffbea6
 - git: https://github.com/alpmestan/ekg-json.git
   commit: fd7e5d7325939103cd87d0dc592faf644160341c
   # Databases libs
@@ -60,7 +64,9 @@ extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
   commit: eb130c71fa17adaceed6ff66beefbccb13df51ba
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-  commit: 1cf872fb3bd0e3e44af31247833c4b6bb7d0dca5
+  commit: 35a95e7e8da655f868d5420aa29e835a813fa3a2
+- git: https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git
+  commit: 9225d046083853200b9045c8d71161e6a234fc5c
   # NP libs
 - git: https://github.com/alpmestan/servant-job.git
   commit: b4182487cfe479777c11ca19f3c0d47840b376f6
