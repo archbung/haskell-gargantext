@@ -36,6 +36,8 @@ import Gargantext.System.Logging
 import Paths_gargantext qualified as PG -- cabal magic build module
 import Servant
 import Servant.Swagger.UI (swaggerSchemaUIServer)
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Text.Encoding as TE
 
 
 serverGargAPI :: Text -> ServerT GargAPI (GargM Env BackendInternalError)
@@ -70,7 +72,7 @@ server env = do
      :<|> frontEndServer
   where
     transformJSON :: forall a. GargErrorScheme -> GargM Env BackendInternalError a -> Handler a
-    transformJSON GES_old = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env)
+    transformJSON GES_old = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env) . logPanicErrors
     transformJSON GES_new = Handler . withExceptT (frontendErrorToServerError . backendErrorToFrontendError) . (`runReaderT` env) . handlePanicErrors
 
 handlePanicErrors :: GargM Env BackendInternalError a -> GargM Env BackendInternalError a
@@ -82,5 +84,23 @@ handlePanicErrors h = h `catch` handleSomeException
       = do
         $(logLocM) ERROR $ T.pack $ displayException ex
         ReaderT $ \_ -> ExceptT $ pure $ Left $ InternalUnexpectedError se
+      | Just (ber :: BackendInternalError) <- fromException se
+      = throwError ber -- re-throw the uncaught exception via the 'MonadError' instance
+      | otherwise
+      = throwM se -- re-throw the uncaught exception.
+
+-- | Old compat-shim for the old error format, it just logs the exception properly
+-- but otherwise rethrows it /without/ the stacktrace (to not leak internal details).
+logPanicErrors :: GargM Env BackendInternalError a -> GargM Env BackendInternalError a
+logPanicErrors h = h `catch` handleSomeException
+  where
+    handleSomeException :: SomeException -> GargM Env BackendInternalError a
+    handleSomeException se
+      | Just ex@(WithStacktrace _ (UnexpectedPanic uex)) <- fromException se
+      = do
+        $(logLocM) ERROR $ T.pack $ displayException ex
+        throwError $ InternalServerError $ err500 { errBody = BL.fromStrict $ TE.encodeUtf8 uex }
+      | Just (ber :: BackendInternalError) <- fromException se
+      = throwError ber -- re-throw the uncaught exception via the 'MonadError' instance
       | otherwise
       = throwM se -- re-throw the uncaught exception.
