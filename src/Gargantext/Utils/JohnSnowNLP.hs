@@ -21,7 +21,6 @@ import Data.List.Safe qualified as LS
 import Data.Map.Strict qualified as Map
 import Data.Text hiding (map, group, filter, concat, zip)
 import Gargantext.Core (Lang(..))
-import Gargantext.Core.Errors.Types
 import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
 import Gargantext.Core.Types (POS(..))
 import Gargantext.Core.Utils.Prefix (unPrefix)

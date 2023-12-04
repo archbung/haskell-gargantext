@@ -75,7 +75,6 @@ library
       Gargantext.API.Prelude
       Gargantext.API.Routes
       Gargantext.Core
-      Gargantext.Core.Errors.Types
       Gargantext.Core.Mail.Types
       Gargantext.Core.Methods.Similarities
       Gargantext.Core.NLP

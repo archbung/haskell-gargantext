@@ -25,7 +25,7 @@ import Opaleye (limit)
 
 getNodeUser :: NodeId -> DBCmd err (Node HyperdataUser)
 getNodeUser nId = do
-    fromMaybe (panic $ "Node does not exist: " <> (show nId)) . headMay
+    fromMaybe (panicTrace $ "Node does not exist: " <> (show nId)) . headMay
              <$> runOpaQuery (limit 1 $ selectNode (pgNodeId nId))
 
 nodeUserW :: HasDBid NodeType => Maybe Name -> Maybe HyperdataUser -> UserId -> NodeWrite

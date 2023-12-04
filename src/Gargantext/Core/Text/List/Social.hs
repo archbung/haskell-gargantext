@@ -25,7 +25,6 @@ import Data.Vector qualified as V
 import GHC.Generics
 import Gargantext.API.Ngrams.Types (NgramsTerm, NgramsPatch)
 import Gargantext.Core.NodeStory (getNodesArchiveHistory)
-import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Text.List.Social.Find (findListsId)
 import Gargantext.Core.Text.List.Social.Patch (addScorePatches)
 import Gargantext.Core.Text.List.Social.Prelude (FlowCont, FlowListScores)

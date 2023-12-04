@@ -72,7 +72,7 @@ instance FromHttpApiData ListType where
   parseUrlPiece s = Right s'
     where
       s' = case (readMaybe $ unpack s) of
-        Nothing -> panic $ "Cannot read url piece: " <> s
+        Nothing -> panicTrace $ "Cannot read url piece: " <> s
         Just s'' -> s''
 instance ToHttpApiData ListType where
   toUrlPiece = pack . show

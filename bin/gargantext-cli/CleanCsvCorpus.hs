@@ -52,4 +52,4 @@ main = do
       putStrLn ("Mean size of docs:" <> show (CSV.docsSize docs') :: Text)
 
       CSV.writeFile wPath (h, docs')
-    Left e -> panic $ "Error: " <> e
+    Left e -> panicTrace $ "Error: " <> e

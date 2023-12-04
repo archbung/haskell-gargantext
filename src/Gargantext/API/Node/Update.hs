@@ -112,8 +112,8 @@ updateNode nid1 (LinkNodeReq nt nid2) jobHandle = do
   _ <- case nt of
     NodeAnnuaire -> pairing nid2 nid1 Nothing -- defaultList
     NodeCorpus   -> pairing nid1 nid2 Nothing -- defaultList
-    _            -> panic $ "[G.API.N.Update.updateNode] NodeType not implemented"
-                          <> show nt <> " nid1: " <> show nid1 <> " nid2: " <> show nid2
+    _            -> panicTrace $ "[G.API.N.Update.updateNode] NodeType not implemented"
+                               <> show nt <> " nid1: " <> show nid1 <> " nid2: " <> show nid2
 
   markComplete jobHandle
 
@@ -154,7 +154,7 @@ updateNode phyloId (UpdateNodePhylo config) jobHandle = do
   corpusId' <- view node_parent_id <$> getNode phyloId
   markProgress 1 jobHandle
 
-  let corpusId = fromMaybe (panic "") corpusId'
+  let corpusId = fromMaybe (panicTrace "no corpus id") corpusId'
 
   phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
   markProgress 2 jobHandle
@@ -180,7 +180,7 @@ updateNode tId (UpdateNodeParamsTexts _mode) jobHandle = do
   _ <- case corpusId of
     Just cId -> updateDocs cId
     Nothing  -> do
-      _ <- panic "[G.A.N.Update] updateNode/UpdateNodeParamsText: no corpus Id given"
+      _ <- panicTrace "[G.A.N.Update] updateNode/UpdateNodeParamsText: no corpus Id given"
       pure ()
 
   markComplete jobHandle

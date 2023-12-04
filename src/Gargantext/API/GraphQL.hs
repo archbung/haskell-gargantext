@@ -179,4 +179,4 @@ api
   :: (Typeable env, CmdCommon env, HasJobEnv' env, HasSettings env)
   => ServerT API (GargM env BackendInternalError)
 api (SAS.Authenticated auser) = (httpPubApp [] . app auser) :<|> pure httpPlayground
-api _                         = panic "401 in graphql" -- SAS.throwAll (_ServerError # err401)
+api _                         = panicTrace "401 in graphql" -- SAS.throwAll (_ServerError # err401)

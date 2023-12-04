@@ -46,7 +46,6 @@ import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
--- import qualified Gargantext.Defaults as Defaults
 
 ------------------------------------------------------------------------
 type API = Summary " Documents from Write nodes."
@@ -94,7 +93,7 @@ documentsFromWriteNodes authenticatedUser nId Params { selection, lang, paragrap
     Nothing -> do
       let msg = T.pack $ "[G.A.N.DFWN] Node has no corpus parent: " <> show nId
       markFailed (Just msg) jobHandle
-      panic msg
+      panicTrace msg
 
   frameWriteIds <- getChildrenByType nId Notes
 

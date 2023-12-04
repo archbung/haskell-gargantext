@@ -19,6 +19,7 @@ module Gargantext.Core.Ext.IMTUser -- (deserialiseImtUsersFromFile)
 import Codec.Serialise
 import Data.ByteString.Lazy qualified as BL
 import Data.Csv
+import Data.Text qualified as T
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import Gargantext.Core.Text.Corpus.Parsers.CSV
@@ -29,9 +30,9 @@ import System.FilePath.Posix (takeExtension)
 ------------------------------------------------------------------------
 readFile_Annuaire :: FilePath -> IO [HyperdataContact]
 readFile_Annuaire fp = case takeExtension fp of
-    ".csv"  -> readCSVFile_Annuaire fp
-    ".data" -> deserialiseImtUsersFromFile fp
-    _       -> panic "[G.C.E.I.readFile_Annuaire] extension unknown"
+    ".csv"     -> readCSVFile_Annuaire fp
+    ".data"    -> deserialiseImtUsersFromFile fp
+    unknownExt -> panicTrace $ "[G.C.E.I.readFile_Annuaire] extension unknown: " <> T.pack unknownExt
 
 ------------------------------------------------------------------------
 data IMTUser = IMTUser
@@ -119,7 +120,7 @@ readCSVFile_Annuaire' = fmap readCsvHalLazyBS' . BL.readFile
   where
     readCsvHalLazyBS' :: BL.ByteString -> (Header, Vector IMTUser)
     readCsvHalLazyBS' bs = case decodeByNameWith (csvDecodeOptions Tab) bs of
-          Left  e    -> panic (cs e)
+          Left  e    -> panicTrace (cs e)
           Right rows -> rows
 
 ------------------------------------------------------------------------

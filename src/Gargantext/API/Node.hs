@@ -101,7 +101,7 @@ type Roots =  Get    '[JSON] [Node HyperdataUser]
 -- | TODO: access by admin only
 roots :: GargServer Roots
 roots = getNodesWithParentId Nothing
-    :<|> pure (panic "not implemented yet") -- TODO use patch map to update what we need
+    :<|> pure (panicTrace "not implemented yet") -- TODO use patch map to update what we need
 
 -------------------------------------------------------------------
 -- | Node API Types management

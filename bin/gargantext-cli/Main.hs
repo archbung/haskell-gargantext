@@ -95,7 +95,7 @@ main = do
       -- r <- mapConcurrentlyChunked (filterTermsAndCooc patterns) (DM.toList corpus)
       r <-  mapConcurrently (filterTermsAndCooc patterns) (DM.toList corpus)
       writeFile outputFile $ DTL.toStrict $ TLE.decodeUtf8 $ encode (CoocByYears r)
-    Left e -> panic $ "Error: " <> e
+    Left e -> panicTrace $ "Error: " <> e
 
 
 

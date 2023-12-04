@@ -143,7 +143,7 @@ getPhyloDataJson phyloId = do
   let phyloData = fromMaybe phyloCleopatre maybePhyloData
   phyloJson <- liftBase $ phylo2dot2json phyloData
   case parseEither parseJSON phyloJson of
-    Left err -> panic $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
+    Left err -> panicTrace $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
     Right gd -> pure gd
 
 
@@ -173,7 +173,7 @@ postPhylo phyloId _lId = do
     -- _sft = Just (Software "Gargantext" "4")
     -- _prm = initPhyloParam vrs sft (Just q)
   corpusId <- getClosestParentIdByType phyloId NodeCorpus
-  phy <- flowPhyloAPI defaultConfig (fromMaybe (panic "[G.C.V.P.API] no corpus ID found") corpusId) -- params
+  phy <- flowPhyloAPI defaultConfig (fromMaybe (panicTrace "[G.C.V.P.API] no corpus ID found") corpusId) -- params
   -- phyloId <- insertNodes [node NodePhylo "Phylo" (HyperdataPhylo Nothing (Just phy)) (Just corpusId) userId]
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
   pure phyloId

@@ -31,8 +31,8 @@ get :: Lang -> Maybe Isidore.Limit
     -> IO [HyperdataDocument]
 get la l q a = do
   let
-    printErr (DecodeFailure e _) = panic e
-    printErr e                   = panic (show e)
+    printErr (DecodeFailure e _) = panicTrace e
+    printErr e                   = panicTrace (show e)
 
     toIsidoreDocs :: Reply -> [IsidoreDoc]
     toIsidoreDocs (ReplyOnly r) = [r]

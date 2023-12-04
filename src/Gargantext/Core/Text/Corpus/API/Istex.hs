@@ -58,7 +58,7 @@ get la query' maxResults = do
     Right (ISTEX.Documents { _documents_hits }) -> printDebug "[Istex.get] length docs" $ length _documents_hits
   --ISTEX.getMetadataScrollProgress q ((\_ -> pack $ "1m") <$> ml) Nothing progress errorHandler
   case eDocs of
-    Left err -> panic . Text.pack . show $ err
+    Left err -> panicTrace . Text.pack . show $ err
     Right docs -> toDoc' la docs
   --pure $ either (panic . pack . show) (toDoc' la) eDocs
 --  where

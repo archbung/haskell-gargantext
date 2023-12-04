@@ -63,8 +63,8 @@ postUpload :: NodeId
            -> Maybe FileFormat
            -> MultipartData Mem
            -> Cmd err [Hash]
-postUpload _ Nothing _ _ = panic "fileType is a required parameter"
-postUpload _ _ Nothing _ = panic "fileFormat is a required parameter"
+postUpload _ Nothing _ _ = panicTrace "fileType is a required parameter"
+postUpload _ _ Nothing _ = panicTrace "fileFormat is a required parameter"
 postUpload _ (Just _fileType) (Just _fileFormat) multipartData = do
   -- printDebug "File Type: " fileType
   -- printDebug "File format: " fileFormat

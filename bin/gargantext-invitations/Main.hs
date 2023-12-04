@@ -31,7 +31,7 @@ main = do
   params@[iniPath,user,node_id,email] <- getArgs
 
   _ <- if length params /= 4
-      then panic "USAGE: ./gargantext-init gargantext.ini username node_id student@university.edu"
+      then panicTrace "USAGE: ./gargantext-init gargantext.ini username node_id student@university.edu"
       else pure ()
 
   _cfg       <- readConfig         iniPath

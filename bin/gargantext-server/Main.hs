@@ -74,12 +74,12 @@ main = withLogger () $ \ioLogger -> do
         Nothing -> 8008
 
       myIniFile' = case myIniFile of
-          Nothing -> panic "[ERROR] gargantext.ini needed"
+          Nothing -> panicTrace "[ERROR] gargantext.ini needed"
           Just i  -> i
 
   ---------------------------------------------------------------
   let start = case myMode of
-        Mock -> panic "[ERROR] Mock mode unsupported"
+        Mock -> panicTrace "[ERROR] Mock mode unsupported"
         _ -> startGargantext myMode myPort' (unpack myIniFile')
   logMsg ioLogger INFO $ "Starting with "   <> show myMode <> " mode."
   logMsg ioLogger INFO $ "Machine locale: " <> show currentLocale

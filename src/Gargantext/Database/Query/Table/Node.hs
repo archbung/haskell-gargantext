@@ -350,7 +350,7 @@ insertNodesWithParentR pid ns = insertNodesR (set node_parent_id (pgNodeId <$> p
 node2table :: HasDBid NodeType
            => UserId -> Maybe ParentId -> Node' -> NodeWrite
 node2table uid pid (Node' nt txt v []) = Node Nothing Nothing (sqlInt4 $ toDBid nt) (sqlInt4 $ _UserId uid) (fmap pgNodeId pid) (sqlStrictText txt) Nothing (sqlStrictJSONB $ cs $ encode v)
-node2table _ _ (Node' _ _ _ _) = panic "node2table: should not happen, Tree insert not implemented yet"
+node2table _ _ (Node' _ _ _ _) = panicTrace "node2table: should not happen, Tree insert not implemented yet"
 
 
 data Node' = Node' { _n_type :: NodeType
@@ -371,7 +371,7 @@ childWith ::  HasDBid NodeType
            => UserId -> ParentId -> Node' -> NodeWrite
 childWith uId pId (Node' NodeDocument txt v []) = node2table uId (Just pId) (Node' NodeDocument txt v [])
 childWith uId pId (Node' NodeContact  txt v []) = node2table uId (Just pId) (Node' NodeContact txt v [])
-childWith _   _   (Node' _        _   _ _) = panic "This NodeType can not be a child"
+childWith _   _   (Node' _        _   _ _) = panicTrace "This NodeType can not be a child"
 
 
 -- =================================================================== --

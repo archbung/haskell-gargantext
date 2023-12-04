@@ -63,7 +63,7 @@ pipeline :: FromJSON e => URL -> ClientEnv -> ScraperInput
                        -> (e -> IO ()) -> IO JobLog
 pipeline scrapyurl client_env input log_status = do
   e <- runJobMLog client_env log_status $ callScraper scrapyurl input
-  either (panic . show) pure e -- TODO throwError
+  either (panicTrace . show) pure e -- TODO throwError
 
 -- TODO integrate to ServerT
 --  use:

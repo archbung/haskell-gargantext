@@ -46,7 +46,6 @@ import Data.Text qualified as Text
 import Data.Traversable
 import GHC.Base (String)
 import Gargantext.Core
-import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Text (sentences, HasText(..))
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)

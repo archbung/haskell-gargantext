@@ -129,7 +129,7 @@ postAsyncJSON l ngramsList jobHandle = do
   markProgress 1 jobHandle
 
   corpus_node <- getNode l -- (Proxy :: Proxy HyperdataList)
-  let corpus_id = fromMaybe (panic "no parent_id") (_node_parent_id corpus_node)
+  let corpus_id = fromMaybe (panicTrace "no parent_id") (_node_parent_id corpus_node)
   _ <- reIndexWith corpus_id l NgramsTerms (Set.fromList [MapTerm, CandidateTerm])
 
   markComplete jobHandle

@@ -30,7 +30,6 @@ import Gargantext.Core.Types (TermsCount)
 import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Prelude hiding (concat)
 import GHC.Exts (sortWith)
-import Prelude (error)
 
 ------------------------------------------------------------------------
 
@@ -77,8 +76,8 @@ buildPatterns = sortWith (Down . _pat_length) . concatMap buildPattern
   where
     buildPattern (label, alts) = map f $ map (\alt -> filter (/= "") alt) (label : alts)
       where
-        f alt | "" `elem` alt = error ("buildPatterns: ERR1" <> show(label))
-              | null alt      = error "buildPatterns: ERR2"
+        f alt | "" `elem` alt = errorTrace ("buildPatterns: ERR1" <> show(label))
+              | null alt      = errorTrace "buildPatterns: ERR2"
               | otherwise     =
                 Pattern (KMP.build alt) (length alt) label
                         --(Terms label $ Set.empty) -- TODO check stems

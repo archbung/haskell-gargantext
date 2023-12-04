@@ -46,7 +46,7 @@ deleteNode :: (CmdCommon env, HasNodeError err)
 deleteNode u nodeId = do
   node' <- N.getNode nodeId
   case (view node_typename node') of
-    nt | nt == toDBid NodeUser -> panic "[G.D.A.D.deleteNode] Not allowed to delete NodeUser (yet)"
+    nt | nt == toDBid NodeUser -> panicTrace "[G.D.A.D.deleteNode] Not allowed to delete NodeUser (yet)"
     nt | nt == toDBid NodeTeam -> do
       uId   <- getUserId u
       if _node_user_id node' == uId

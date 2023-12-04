@@ -36,7 +36,7 @@ main = do
 
   params@[iniPath] <- getArgs
   _ <- if length params /= 1
-         then panic "Usage: ./gargantext-upgrade gargantext.ini"
+         then panicTrace "Usage: ./gargantext-upgrade gargantext.ini"
          else pure ()
 
   putStrLn $ List.unlines

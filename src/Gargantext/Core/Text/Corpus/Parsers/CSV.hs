@@ -496,6 +496,6 @@ readWeightedCsv :: FilePath -> IO (Header, Vector Csv')
 readWeightedCsv fp =
   fmap (\bs ->
     case decodeByNameWith (csvDecodeOptions Tab) bs of
-      Left e       -> panic (pack e)
+      Left e       -> panicTrace (pack e)
       Right corpus -> corpus
     ) $ BL.readFile fp

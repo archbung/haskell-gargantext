@@ -29,7 +29,6 @@ import Gargantext.API.Public qualified as Public
 import Gargantext.API.Routes
 import Gargantext.API.Swagger (swaggerDoc)
 import Gargantext.API.ThrowAll (serverPrivateGargAPI)
-import Gargantext.Core.Errors.Types
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Prelude hiding (Handler, catch)
 import Gargantext.Prelude.Config (gc_url_backend_api)

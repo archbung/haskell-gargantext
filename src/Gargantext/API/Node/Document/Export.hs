@@ -11,7 +11,6 @@ Portability : POSIX
 module Gargantext.API.Node.Document.Export
   where
 
--- import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Control.Lens (view)
 import Data.Csv (encodeDefaultOrderedByName)
 import Data.Version (showVersion)
@@ -46,7 +45,7 @@ getDocumentsJSON :: NodeId
 getDocumentsJSON nodeUserId pId = do
   uId <- view node_user_id <$> getNodeUser nodeUserId
   mcId <- getClosestParentIdByType pId NodeCorpus
-  let cId = maybe (panic "[G.A.N.D.Export] Node has no parent") identity mcId
+  let cId = maybe (panicTrace "[G.A.N.D.Export] Node has no parent") identity mcId
   docs <- runViewDocuments cId False Nothing Nothing Nothing Nothing Nothing
   pure $ addHeader (T.concat [ "attachment; filename=GarganText_DocsList-"
                              , T.pack $ show pId

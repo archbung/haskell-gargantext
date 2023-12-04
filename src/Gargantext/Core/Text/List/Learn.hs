@@ -83,7 +83,7 @@ type Param = Double
 
 grid :: (MonadBase IO m)
      => Param -> Param -> Train -> [Tests] -> m (Maybe Model)
-grid _ _ _ []  = panic "Gargantext.Core.Text.List.Learn.grid : empty test data"
+grid _ _ _ []  = panicTrace "Gargantext.Core.Text.List.Learn.grid : empty test data"
 grid s e tr te = do
   let
     grid' :: (MonadBase IO m)

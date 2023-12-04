@@ -27,7 +27,6 @@ import Data.List qualified as List
 import Data.Maybe
 import Data.Monoid
 import Data.Text qualified as T
-import Gargantext.Core.Errors.Types
 import Gargantext.Core.Utils.Prefix
 import Gargantext.Prelude
 import Prelude ((!!))

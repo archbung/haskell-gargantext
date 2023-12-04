@@ -100,7 +100,7 @@ documentUpload nId doc = do
   mcId <- getClosestParentIdByType' nId NodeCorpus
   let cId = case mcId of
         Just c  -> c
-        Nothing -> panic $ T.pack $ "[G.A.N.DU] Node has no corpus parent: " <> show nId
+        Nothing -> panicTrace $ T.pack $ "[G.A.N.DU] Node has no corpus parent: " <> show nId
 
   let mDateS = Just $ view du_date doc
   let (theFullDate, (year, month, day)) = mDateSplit mDateS

@@ -114,7 +114,6 @@ import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (toDBid)
-import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config ()

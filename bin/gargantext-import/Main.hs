@@ -43,7 +43,7 @@ main = do
     tt = (Multi EN)
     format = CsvGargV3 -- CsvHal --WOS
     limit' = case (readMaybe limit :: Maybe Limit) of
-      Nothing -> panic $ "Cannot read limit: " <> (Text.pack limit)
+      Nothing -> panicTrace $ "Cannot read limit: " <> (Text.pack limit)
       Just l  -> l
     corpus :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
     corpus = flowCorpusFile (UserName $ cs user) (Left (cs name :: Text)) limit' tt  format Plain corpusPath Nothing DevJobHandle

@@ -71,7 +71,7 @@ instance GargDB.SaveFile NewWithFile where
   saveFile' fp (NewWithFile b64d _ _) = do
     let eDecoded = BSB64.decode $ encodeUtf8 b64d
     case eDecoded of
-      Left err -> panic $ T.pack $ "Error decoding: " <> err
+      Left err -> panicTrace $ T.pack $ "Error decoding: " <> err
       Right decoded -> BS.writeFile fp decoded
     -- BS.writeFile fp $ BSB64.decodeLenient $ TE.encodeUtf8 b64d
 

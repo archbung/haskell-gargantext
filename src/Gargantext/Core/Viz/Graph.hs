@@ -19,7 +19,6 @@ import Data.ByteString.Lazy as DBL (readFile, writeFile)
 import Data.HashMap.Strict (HashMap, lookup)
 import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types (NgramsTerm(..), NgramsRepoElement(..), mSetToList)
-import Gargantext.Core.Errors.Types (panicTrace)
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))

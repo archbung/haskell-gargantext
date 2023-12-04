@@ -27,7 +27,6 @@ import Servant.API
 import Test.QuickCheck
 import Control.Exception (throw)
 import Prelude (userError)
-import Gargantext.Core.Errors.Types (WithStacktrace(..))
 
 ------------------------------------------------------------------------
 -- | Language of a Text

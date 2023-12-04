@@ -189,7 +189,7 @@ databaseParameters fp = do
   let val' key = unpack $ val ini "database" key
   let dbPortRaw = val' "DB_PORT"
   let dbPort = case (readMaybe dbPortRaw :: Maybe Word16) of
-        Nothing -> panic $ "DB_PORT incorrect: " <> (pack dbPortRaw)
+        Nothing -> panicTrace $ "DB_PORT incorrect: " <> (pack dbPortRaw)
         Just d  -> d
 
   pure $ PGS.ConnectInfo { PGS.connectHost     = val' "DB_HOST"

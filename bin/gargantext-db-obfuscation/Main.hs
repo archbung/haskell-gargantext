@@ -34,7 +34,8 @@ module Main where
 import Data.Text qualified as T
 import Database.PostgreSQL.Simple qualified as PSQL
 import Database.PostgreSQL.Simple.SqlQQ (sql)
-import Gargantext.Database.Admin.Config (nodeTypeId)
+import Gargantext.Core (toDBid)
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Node (NodeType(..))
 import Gargantext.Prelude hiding (option)
 import Gargantext.Prelude.Database (runPGSExecute, runPGSQuery)
@@ -99,7 +100,7 @@ main = do
 
 obfuscateNotes :: PSQL.Connection -> IO ()
 obfuscateNotes c = do
-  let nt = nodeTypeId Notes
+  let nt = toDBid Notes
   
   _ <- runPGSExecute c [sql|UPDATE nodes SET name = concat('notes-', id) WHERE typename = ?;|] (PSQL.Only nt)
 

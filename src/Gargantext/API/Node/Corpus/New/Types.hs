@@ -30,7 +30,7 @@ instance FromHttpApiData FileType where
   parseUrlPiece "WOS"       = pure WOS
   parseUrlPiece "Iramuteq"  = pure Iramuteq
   parseUrlPiece "JSON"      = pure JSON
-  parseUrlPiece s           = panic $ "[G.A.A.Node.Corpus.New] File Type not implemented (yet): " <> s
+  parseUrlPiece s           = panicTrace $ "[G.A.A.Node.Corpus.New] File Type not implemented (yet): " <> s
 instance ToHttpApiData FileType where
   toUrlPiece = pack . show
 

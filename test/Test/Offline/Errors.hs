@@ -3,8 +3,8 @@
 module Test.Offline.Errors (tests) where
 
 import Control.Exception
+import Gargantext.Prelude.Error
 import Gargantext.Core (fromDBid)
-import Gargantext.Core.Errors.Types
 import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Node
 import Prelude

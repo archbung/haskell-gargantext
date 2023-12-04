@@ -221,7 +221,7 @@ instance Functor NgramsT where
 
 -----------------------------------------------------------------------
 withMap :: HashMap Text NgramsId -> Text -> NgramsId
-withMap m n = maybe (panic $ "[G.D.S.Ngrams.withMap] Should not happen" <> (show n))
+withMap m n = maybe (panicTrace $ "[G.D.S.Ngrams.withMap] Should not happen" <> (show n))
                     identity (HashMap.lookup n m)
 
 indexNgramsT :: HashMap Text NgramsId -> NgramsT Ngrams -> NgramsT (Indexed Int Ngrams)

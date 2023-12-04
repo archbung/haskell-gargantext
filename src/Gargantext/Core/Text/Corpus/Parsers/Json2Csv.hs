@@ -44,7 +44,7 @@ type FilePathOut = FilePath
 
 json2csv :: FilePathIn -> FilePathOut -> IO ()
 json2csv fin fout = do
-  patents <- maybe (panic "json2csv error") identity <$> readPatents fin
+  patents <- maybe (panicTrace "json2csv error") identity <$> readPatents fin
   writeFile fout (headerCsvGargV3, fromList $ map patent2csvDoc patents)
 
 patent2csvDoc :: Patent -> CsvDoc
