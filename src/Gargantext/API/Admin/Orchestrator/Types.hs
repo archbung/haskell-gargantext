@@ -23,7 +23,7 @@ import Test.QuickCheck.Arbitrary
 
 ------------------------------------------------------------------------
 instance Arbitrary a => Arbitrary (JobStatus 'Safe a) where
-  arbitrary = panic "TODO"
+  arbitrary = panicTrace "TODO"
 
 instance Arbitrary a => Arbitrary (JobOutput a) where
   arbitrary = JobOutput <$> arbitrary

@@ -33,9 +33,6 @@ module Gargantext.API.Errors.Types (
 
   -- * Generating test cases
   , genFrontendErr
-
-  -- * Attaching callstacks to exceptions
-  , WithStacktrace(..)
   ) where
 
 import Control.Exception
@@ -93,6 +90,7 @@ data BackendInternalError
   | InternalAuthenticationError !AuthenticationError
   | InternalServerError         !ServerError
   | InternalJobError            !Jobs.JobError
+  | InternalUnexpectedError     !SomeException
   deriving (Show, Typeable)
 
 makePrisms ''BackendInternalError
@@ -190,6 +188,10 @@ data instance ToFrontendErrorData 'EC_500__node_not_implemented_yet =
 
 newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_not_found =
   FE_node_lookup_failed_not_found { nenf_node_id :: NodeId }
+  deriving (Show, Eq, Generic)
+
+newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found =
+  FE_node_lookup_failed_parent_not_found { nepnf_node_id :: NodeId }
   deriving (Show, Eq, Generic)
 
 newtype instance ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found =
@@ -294,13 +296,22 @@ data instance ToFrontendErrorData 'EC_500__job_unknown_job =
   FE_job_unknown_job { jeuj_job_id :: Int }
   deriving (Show, Eq, Generic)
 
+data instance ToFrontendErrorData 'EC_500__job_generic_exception =
+  FE_job_generic_exception { jege_error :: T.Text }
+  deriving (Show, Eq, Generic)
+
+--
+-- server errors
+--
+
 data instance ToFrontendErrorData 'EC_500__internal_server_error =
   FE_internal_server_error { ise_error :: T.Text }
   deriving (Show, Eq, Generic)
 
-data instance ToFrontendErrorData 'EC_500__job_generic_exception =
-  FE_job_generic_exception { jege_error :: T.Text }
+data instance ToFrontendErrorData 'EC_405__not_allowed =
+  FE_not_allowed { isena_error :: T.Text }
   deriving (Show, Eq, Generic)
+
 
 ----------------------------------------------------------------------------
 -- JSON instances. It's important to have nice and human readable instances.
@@ -342,6 +353,14 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) wh
   parseJSON = withObject "FE_node_lookup_failed_not_found" $ \o -> do
     nenf_node_id <- o .: "node_id"
     pure FE_node_lookup_failed_not_found{..}
+
+instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
+  toJSON (FE_node_lookup_failed_parent_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
+
+instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
+  parseJSON = withObject "FE_node_lookup_failed_parent_not_found" $ \o -> do
+    nepnf_node_id <- o .: "node_id"
+    pure FE_node_lookup_failed_parent_not_found{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
   toJSON (FE_node_lookup_failed_user_not_found userId) = object [ "user_id" .= toJSON userId ]
@@ -465,6 +484,14 @@ instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
     ise_error <- o .: "error"
     pure FE_internal_server_error{..}
 
+instance ToJSON (ToFrontendErrorData 'EC_405__not_allowed) where
+  toJSON FE_not_allowed{..} = object [ "error" .= toJSON isena_error ]
+
+instance FromJSON (ToFrontendErrorData 'EC_405__not_allowed) where
+  parseJSON = withObject "FE_not_allowed" $ \o -> do
+    isena_error <- o .: "error"
+    pure FE_not_allowed{..}
+
 
 --
 -- tree errors
@@ -564,6 +591,9 @@ genFrontendErr be = do
     EC_404__node_lookup_failed_not_found
       -> do nodeId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_lookup_failed_not_found nodeId)
+    EC_404__node_lookup_failed_parent_not_found
+      -> do nodeId <- arbitrary
+            pure $ mkFrontendErr' txt (FE_node_lookup_failed_parent_not_found nodeId)
     EC_404__node_lookup_failed_user_not_found
       -> do userId <- arbitrary
             pure $ mkFrontendErr' txt (FE_node_lookup_failed_user_not_found userId)
@@ -612,6 +642,10 @@ genFrontendErr be = do
     EC_500__internal_server_error
       -> do err <- arbitrary
             pure $ mkFrontendErr' txt $ FE_internal_server_error err
+
+    EC_405__not_allowed
+      -> do err <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_not_allowed err
 
     -- tree errors
     EC_404__tree_root_not_found
@@ -672,6 +706,9 @@ instance FromJSON FrontendError where
       EC_404__node_lookup_failed_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) <- o .: "data"
         pure FrontendError{..}
+      EC_404__node_lookup_failed_parent_not_found -> do
+        (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) <- o .: "data"
+        pure FrontendError{..}
       EC_404__node_lookup_failed_user_not_found -> do
         (fe_data :: ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) <- o .: "data"
         pure FrontendError{..}
@@ -719,6 +756,9 @@ instance FromJSON FrontendError where
       -- internal server error
       EC_500__internal_server_error -> do
         (fe_data :: ToFrontendErrorData 'EC_500__internal_server_error) <- o .: "data"
+        pure FrontendError{..}
+      EC_405__not_allowed -> do
+        (fe_data :: ToFrontendErrorData 'EC_405__not_allowed) <- o .: "data"
         pure FrontendError{..}
 
       -- tree errors

@@ -14,8 +14,9 @@ module Gargantext.Core.Text.List.Social.Find
 -- findList imports
 import Control.Lens (view)
 
+import Gargantext.Core (toDBid)
 import Gargantext.Core.Types.Individu
-import Gargantext.Database.Admin.Config
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node.Error
@@ -28,7 +29,7 @@ findListsId :: (HasNodeError err, HasTreeError err)
             => User -> NodeMode -> DBCmd err [NodeId]
 findListsId u mode = do
   rootId <- getRootId u
-  ns <- map (view dt_nodeId) <$> filter ((== nodeTypeId NodeList) . (view dt_typeId))
+  ns <- map (view dt_nodeId) <$> filter ((== toDBid NodeList) . (view dt_typeId))
                              <$> findNodes' rootId mode
   pure ns
 

@@ -53,7 +53,7 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.SqlQQ
 import Gargantext.Core
 import Gargantext.Core.Types.Main (NodeTree(..), Tree(..))
-import Gargantext.Database.Admin.Config (fromNodeTypeId, nodeTypeId, fromNodeTypeId)
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Hyperdata.Any (HyperdataAny)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (runPGSQuery, DBCmd)
@@ -248,7 +248,7 @@ findNodesId r nt = tail
                 <$> map _dt_nodeId
                 <$> dbTree r nt
 
-findNodesWithType :: RootId -> [NodeType] -> [NodeType] -> DBCmd err [DbTreeNode]
+findNodesWithType :: HasCallStack => RootId -> [NodeType] -> [NodeType] -> DBCmd err [DbTreeNode]
 findNodesWithType root target through =
   filter isInTarget <$> dbTree root through
     where
@@ -282,9 +282,8 @@ toTree m =
             -- m' ^.. at (Just $ _dt_nodeId root) . _Just . each . to (toTree' m')
             toListOf (at (Just $ _dt_nodeId root) . _Just . each . to (toTree' m')) m'
 
-toNodeTree :: DbTreeNode
-            -> NodeTree
-toNodeTree (DbTreeNode nId tId _ n) = NodeTree n (fromNodeTypeId tId) nId
+toNodeTree :: HasCallStack => DbTreeNode -> NodeTree
+toNodeTree (DbTreeNode nId tId _ n) = NodeTree n (fromDBid tId) nId
 
 ------------------------------------------------------------------------
 toTreeParent :: [DbTreeNode]
@@ -353,7 +352,7 @@ dbTree rootId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId tId pId n)
     SELECT * from tree;
     |] (rootId, In typename)
   where
-    typename = map nodeTypeId ns
+    typename = map toDBid ns
     ns = case nodeTypes of
       [] -> allNodeTypes
       _  -> nodeTypes
@@ -447,7 +446,7 @@ recursiveParents nodeId nodeTypes = map (\(nId, tId, pId, n) -> DbTreeNode nId t
     ) SELECT id, typename, parent_id, name FROM recursiveParents ORDER BY original_order DESC;
     |] (nodeId, In typename)
   where
-    typename = map nodeTypeId ns
+    typename = map toDBid ns
     ns = case nodeTypes of
       [] -> allNodeTypes
       _  -> nodeTypes

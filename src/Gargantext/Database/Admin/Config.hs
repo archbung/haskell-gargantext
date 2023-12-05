@@ -20,9 +20,9 @@ module Gargantext.Database.Admin.Config
     where
 
 import Control.Lens (view)
-import Data.List (lookup)
-import Data.Text (pack)
 import Gargantext.Core (HasDBid(..))
+import Data.Bimap qualified as Bimap
+import Data.Bimap (Bimap)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
@@ -38,61 +38,9 @@ userArbitrary :: Text
 userArbitrary = "user1"
 
 instance HasDBid NodeType where
-  toDBid  = nodeTypeId
-  fromDBid = fromNodeTypeId
+  toDBid   n   = nodeTypes Bimap.! n -- nodeTypes is total, this cannot fail by construction
+  lookupDBid i = Bimap.lookupR i nodeTypes
 
-
-nodeTypeId :: NodeType -> NodeTypeId
-nodeTypeId n =
-  case n of
-    NodeUser          -> 1
-    NodeFolder        -> 2
-    NodeFolderPrivate -> 20
-    NodeFolderShared  -> 21
-    NodeTeam          -> 210
-    NodeFolderPublic  -> 22
-    NodeCorpusV3      -> 3
-    NodeCorpus        -> 30
-    NodeAnnuaire      -> 31
-    NodeTexts         -> 40
-    NodeDocument      -> 4
-    NodeContact       -> 41
-  --NodeSwap   -> 19
-
-----  Lists
-    NodeList      -> 5
-    NodeListCooc  -> 50
-    NodeModel -> 52
-
-----  Scores
---    NodeOccurrences -> 10
-    NodeGraph       -> 9
-    NodePhylo       -> 90
---    NodeChart       -> 7
-    NodeDashboard   -> 71
---    NodeNoteBook    -> 88
-
-    NodeFile        -> 101
-
-    Notes    -> 991
-    Calc     -> 992
-    NodeFrameNotebook -> 993
-    NodeFrameVisio    -> 994
-
---  Cooccurrences -> 9
---
---  Specclusion  -> 11
---  Genclusion   -> 18
---  Cvalue       -> 12
---
---  TfidfCorpus  -> 13
---  TfidfGlobal  -> 14
---
---  TirankLocal  -> 16
---  TirankGlobal -> 17
-
---  Node management
---  NodeFavorites    -> 15
 
 hasNodeType :: forall a. Node a -> NodeType -> Bool
 hasNodeType n nt = (view node_typename n) == (toDBid nt)
@@ -102,12 +50,28 @@ isInNodeTypes n ts = elem (view node_typename n) (map toDBid ts)
 
 -- | Nodes are typed in the database according to a specific ID
 --
-nodeTypeInv :: [(NodeTypeId, NodeType)]
-nodeTypeInv = map swap nodeTypes
-
-nodeTypes :: [(NodeType, NodeTypeId)]
-nodeTypes = [ (n, toDBid n) | n <- allNodeTypes ]
-
-fromNodeTypeId :: NodeTypeId -> NodeType
-fromNodeTypeId tId = fromMaybe (panic $ pack $ "Type Id " <> show tId <> " does not exist")
-                               (lookup tId nodeTypeInv)
+nodeTypes :: Bimap NodeType NodeTypeId
+nodeTypes = Bimap.fromList $ allNodeTypes <&> \n -> case n of
+    NodeUser          -> (n, 1)
+    NodeFolder        -> (n, 2)
+    NodeFolderPrivate -> (n, 20)
+    NodeFolderShared  -> (n, 21)
+    NodeTeam          -> (n, 210)
+    NodeFolderPublic  -> (n, 22)
+    NodeCorpusV3      -> (n, 3)
+    NodeCorpus        -> (n, 30)
+    NodeAnnuaire      -> (n, 31)
+    NodeTexts         -> (n, 40)
+    NodeDocument      -> (n, 4)
+    NodeContact       -> (n, 41)
+    NodeList          -> (n, 5)
+    NodeListCooc      -> (n, 50)
+    NodeModel         -> (n, 52)
+    NodeGraph         -> (n, 9)
+    NodePhylo         -> (n, 90)
+    NodeDashboard     -> (n, 71)
+    NodeFile          -> (n, 101)
+    Notes             -> (n, 991)
+    Calc              -> (n, 992)
+    NodeFrameNotebook -> (n, 993)
+    NodeFrameVisio    -> (n, 994)

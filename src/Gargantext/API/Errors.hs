@@ -64,11 +64,19 @@ backendErrorToFrontendError = \case
     -> internalServerErrorToFrontendError internalServerError
   InternalJobError jobError
     -> jobErrorToFrontendError jobError
+  -- As this carries a 'SomeException' which might exposes sensible
+  -- information, we do not send to the frontend its content.
+  InternalUnexpectedError _
+    -> let msg = T.pack $ "An unexpected error occurred. Please check your server logs."
+       in mkFrontendErr' msg $ FE_internal_server_error msg
 
 internalServerErrorToFrontendError :: ServerError -> FrontendError
 internalServerErrorToFrontendError = \case
-  ServerError{..} ->
-    mkFrontendErr' (T.pack errReasonPhrase) $ FE_internal_server_error (TL.toStrict $ TE.decodeUtf8 $ errBody)
+  ServerError{..}
+    | errHTTPCode == 405
+    -> mkFrontendErr' (T.pack errReasonPhrase) $ FE_not_allowed (TL.toStrict $ TE.decodeUtf8 $ errBody)
+    | otherwise
+    -> mkFrontendErr' (T.pack errReasonPhrase) $ FE_internal_server_error (TL.toStrict $ TE.decodeUtf8 $ errBody)
 
 jobErrorToFrontendError :: JobError -> FrontendError
 jobErrorToFrontendError = \case
@@ -110,6 +118,8 @@ nodeErrorToFrontendError ne = case ne of
     -> case reason of
          NodeDoesNotExist nid
            -> mkFrontendErrShow $ FE_node_lookup_failed_not_found nid
+         NodeParentDoesNotExist nid
+           -> mkFrontendErrShow $ FE_node_lookup_failed_parent_not_found nid
          UserDoesNotExist uid
            -> mkFrontendErrShow $ FE_node_lookup_failed_user_not_found uid
          UserNameDoesNotExist uname

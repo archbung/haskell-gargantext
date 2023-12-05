@@ -24,10 +24,11 @@ import Codec.Serialise (Serialise())
 import Control.Lens (over)
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
+import Data.Bimap (Bimap)
+import Data.Bimap qualified as Bimap
 import Data.ByteString.Char8 qualified as B
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
-import Data.Map.Strict (fromList, lookup)
 import Data.Text (splitOn, pack, strip)
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.FromField (returnError, ResultError(..))
@@ -124,7 +125,7 @@ instance FromField NgramsType where
         else
           returnError ConversionFailed fld dat
 instance ToField NgramsType where
-  toField nt = toField $ ngramsTypeId nt
+  toField nt = toField $ toDBid nt
 
 
 ngramsTypes :: [NgramsType]
@@ -149,22 +150,22 @@ instance DefaultFromField (Nullable SqlInt4) NgramsTypeId
     defaultFromField = fromPGSFromField
 
 pgNgramsType :: NgramsType -> Field SqlInt4
-pgNgramsType = pgNgramsTypeId . ngramsTypeId
+pgNgramsType = pgNgramsTypeId . NgramsTypeId . toDBid
 
 pgNgramsTypeId :: NgramsTypeId -> Field SqlInt4
 pgNgramsTypeId (NgramsTypeId n) = sqlInt4 n
 
-ngramsTypeId :: NgramsType -> NgramsTypeId
-ngramsTypeId Authors     = 1
-ngramsTypeId Institutes  = 2
-ngramsTypeId Sources     = 3
-ngramsTypeId NgramsTerms = 4
+-- | Bidirectional map between an 'NgramsType' and its id.
+-- /NOTE/ This function is total in its domain by construction.
+ngramsTypeIds :: Bimap NgramsType NgramsTypeId
+ngramsTypeIds = Bimap.fromList $ [minBound .. maxBound] <&> \nt -> case nt of
+  Authors     -> (nt, 1)
+  Institutes  -> (nt, 2)
+  Sources     -> (nt, 3)
+  NgramsTerms -> (nt, 4)
 
 fromNgramsTypeId :: NgramsTypeId -> Maybe NgramsType
-fromNgramsTypeId id = lookup id
-                    $ fromList [ (ngramsTypeId nt,nt)
-                               | nt <- [minBound .. maxBound] :: [NgramsType]
-                               ]
+fromNgramsTypeId nid = Bimap.lookupR nid ngramsTypeIds
 
 unNgramsTypeId :: NgramsTypeId -> Int
 unNgramsTypeId (NgramsTypeId i) = i
@@ -173,8 +174,8 @@ toNgramsTypeId :: Int -> NgramsTypeId
 toNgramsTypeId i = NgramsTypeId i
 
 instance HasDBid NgramsType where
-  toDBid   = unNgramsTypeId . ngramsTypeId
-  fromDBid = fromMaybe (panic "NgramsType id not indexed") . fromNgramsTypeId . toNgramsTypeId
+  toDBid nt  = unNgramsTypeId $ ngramsTypeIds Bimap.! nt -- cannot fail
+  lookupDBid = fromNgramsTypeId . toNgramsTypeId
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -220,7 +221,7 @@ instance Functor NgramsT where
 
 -----------------------------------------------------------------------
 withMap :: HashMap Text NgramsId -> Text -> NgramsId
-withMap m n = maybe (panic $ "[G.D.S.Ngrams.withMap] Should not happen" <> (show n))
+withMap m n = maybe (panicTrace $ "[G.D.S.Ngrams.withMap] Should not happen" <> (show n))
                     identity (HashMap.lookup n m)
 
 indexNgramsT :: HashMap Text NgramsId -> NgramsT Ngrams -> NgramsT (Indexed Int Ngrams)

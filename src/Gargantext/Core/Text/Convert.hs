@@ -26,7 +26,7 @@ risPress2csvWrite f = do
   eContents <- parseFile RisPresse Plain (f <> ".ris")
   case eContents of
     Right contents -> writeDocs2Csv (f <> ".csv") contents
-    Left e         -> panic $ "Error: " <> e
+    Left e         -> panicTrace $ "Error: " <> e
 
 
 

@@ -187,7 +187,7 @@ type MinNgramSize = Int
 -- language agnostic extraction
 -- TODO: newtype BlockText
 termsUnsupervised :: TermType Lang -> Text -> [TermsWithCount]
-termsUnsupervised (Unsupervised { _tt_model = Nothing }) = panic "[termsUnsupervised] no model"
+termsUnsupervised (Unsupervised { _tt_model = Nothing }) = panicTrace "[termsUnsupervised] no model"
 termsUnsupervised (Unsupervised { _tt_model = Just _tt_model, .. }) =
                map (\(t, cnt) -> (text2term _tt_lang t, cnt))
              . groupWithCounts

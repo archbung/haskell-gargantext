@@ -114,7 +114,7 @@ unbound' l = map (map (unbound l))
 
 toWikiResult :: [Maybe Text] -> WikiResult
 toWikiResult (c:t:u:ys:ye:yf:_) = WikiResult c t u ys ye yf
-toWikiResult _                  = panic "[G.C.T.C.Parsers.Wikidata.toWikiResult] error"
+toWikiResult _                  = panicTrace "[G.C.T.C.Parsers.Wikidata.toWikiResult] error"
 
 wikidataRoute :: EndPoint
 wikidataRoute = "https://query.wikidata.org/sparql"

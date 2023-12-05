@@ -14,6 +14,7 @@ Portability : POSIX
 module Gargantext.API.Ngrams.Tools
   where
 
+-- import Gargantext.Core.NodeStoryFile qualified as NSF
 import Control.Lens (_Just, (^.), at, view, At, Index, IxValue)
 import Control.Monad.Reader
 import Data.HashMap.Strict (HashMap)
@@ -21,13 +22,12 @@ import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.Validity
+import GHC.Conc (TVar, readTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
--- import Gargantext.Core.NodeStoryFile qualified as NSF
 import Gargantext.Core.Types (ListType(..), NodeId, ListId)
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
-import GHC.Conc (TVar, readTVar)
 
 
 mergeNgramsElement :: NgramsRepoElement -> NgramsRepoElement -> NgramsRepoElement
@@ -134,7 +134,7 @@ filterListWithRootHashMap lt m = snd <$> HM.filter isMapTerm m
     isMapTerm (l, maybeRoot) = case maybeRoot of
       Nothing -> l == lt
       Just  r -> case HM.lookup r m of
-        Nothing -> panic $ "[Garg.API.Ngrams.Tools] filterListWithRootHashMap, unknown key: " <> unNgramsTerm r
+        Nothing -> panicTrace $ "[Garg.API.Ngrams.Tools] filterListWithRootHashMap, unknown key: " <> unNgramsTerm r
         Just  (l',_) -> l' == lt
 
 filterListWithRoot :: [ListType]
@@ -145,7 +145,7 @@ filterListWithRoot lt m = snd <$> HM.filter isMapTerm m
     isMapTerm (l, maybeRoot) = case maybeRoot of
       Nothing -> elem l lt
       Just  r -> case HM.lookup r m of
-        Nothing -> panic $ "[Garg.API.Ngrams.Tools] filterListWithRoot, unknown key: " <> unNgramsTerm r
+        Nothing -> panicTrace $ "[Garg.API.Ngrams.Tools] filterListWithRoot, unknown key: " <> unNgramsTerm r
         Just  (l',_) -> elem l' lt
 
 groupNodesByNgrams :: ( Ord a
@@ -160,7 +160,7 @@ groupNodesByNgrams syn occs = HM.fromListWith (<>) occs'
   where
     occs' = map toSyn (HM.toList occs)
     toSyn (t,ns) = case syn ^. at t of
-      Nothing -> panic $ "[Garg.API.Ngrams.Tools.groupNodesByNgrams] unknown key: " <> unNgramsTerm t
+      Nothing -> panicTrace $ "[Garg.API.Ngrams.Tools.groupNodesByNgrams] unknown key: " <> unNgramsTerm t
       Just  r -> case r of
         Nothing  -> (t, ns)
         Just  r' -> (r',ns)

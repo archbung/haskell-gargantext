@@ -124,11 +124,11 @@ updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
   -- lift $ printDebug "[updateUserInfo] ui_id" ui_id
   users <- lift (getUsersWithNodeHyperdata (Individu.UserDBId $ UnsafeMkUserId ui_id))
   case users of
-    [] -> panic $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
+    [] -> panicTrace $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
     ((UserLight { .. }, node_u):_) -> do
       testAuthUser <- lift $ authUser (nId node_u) token
       case testAuthUser of
-        Invalid -> panic "[updateUserInfo] failed to validate user"
+        Invalid -> panicTrace "[updateUserInfo] failed to validate user"
         Valid -> do
           let u_hyperdata = node_u ^. node_hyperdata
           -- lift $ printDebug "[updateUserInfo] u" u

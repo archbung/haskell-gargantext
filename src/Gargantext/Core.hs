@@ -9,20 +9,24 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Gargantext.Core
   where
 
 import Data.Aeson
 import Data.LanguageCodes qualified as ISO639
-import Data.Map qualified as Map
+import Data.Bimap qualified as Bimap
+import Data.Bimap (Bimap)
 import Data.Morpheus.Types (GQLType)
 import Data.Swagger
 import Data.Text (pack)
 import Gargantext.Prelude hiding (All)
 import Servant.API
 import Test.QuickCheck
+import Control.Exception (throw)
+import Prelude (userError)
 
 ------------------------------------------------------------------------
 -- | Language of a Text
@@ -131,35 +135,34 @@ allLangs :: [Lang]
 allLangs = [minBound .. maxBound]
 
 class HasDBid a where
-  toDBid   :: a   -> Int
-  fromDBid :: Int -> a
+  toDBid     :: a   -> Int
+  lookupDBid :: Int -> Maybe a
 
 -- NOTE: We try to use numeric codes for countries
 -- https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
 -- https://en.wikipedia.org/wiki/ISO_3166-1_numeric#004
-dbIds :: [(Lang, Int)]
-dbIds = [ (All, 0  )
-        , (DE , 276)
-        , (EL , 300)
-        , (EN , 2  )
-        , (ES , 724)
-        , (FR , 1  )
-        , (IT , 380)
-        , (PL , 616)
-        , (PT , 620)
-        , (RU , 643)
-        , (UK , 804)
-        , (ZH , 156)
-        ]
+-- The pattern matching ensures this mapping will always be total
+-- once we add a new 'Lang'.
+langIds :: Bimap Lang Int
+langIds = Bimap.fromList $ allLangs <&> \lid -> case lid of
+  All -> (lid, 0)
+  DE  -> (lid, 276)
+  EL  -> (lid, 300)
+  EN  -> (lid, 2)
+  ES  -> (lid, 724)
+  FR  -> (lid, 1)
+  IT  -> (lid, 380)
+  PL  -> (lid, 616)
+  PT  -> (lid, 620)
+  RU  -> (lid, 643)
+  UK  -> (lid, 804)
+  ZH  -> (lid, 156)
 
 instance HasDBid Lang where
-  toDBid lang = case Map.lookup lang $ Map.fromList dbIds of
-                    Just la -> la
-                    Nothing -> panic "[G.Core] Add this lang to DB ids"
-
-  fromDBid dbId = case Map.lookup dbId $ Map.fromList $ map swap dbIds of
-                    Just la -> la
-                    Nothing -> panic "HasDBid lang, not implemented"
+  -- /NOTE/ this lookup cannot fail because 'dbIds' is defined as a total function
+  -- over its domain.
+  toDBid lang     = langIds Bimap.! lang
+  lookupDBid dbId = Bimap.lookupR dbId langIds
 
 ------------------------------------------------------------------------
 data NLPServerConfig = NLPServerConfig
@@ -179,7 +182,17 @@ instance HasDBid PosTagAlgo where
   toDBid CoreNLP        = 1
   toDBid JohnSnowServer = 2
   toDBid Spacy          = 3
-  fromDBid 1 = CoreNLP
-  fromDBid 2 = JohnSnowServer
-  fromDBid 3 = Spacy
-  fromDBid _ = panic "HasDBid posTagAlgo : Not implemented"
+  lookupDBid 1          = Just CoreNLP
+  lookupDBid 2          = Just JohnSnowServer
+  lookupDBid 3          = Just Spacy
+  lookupDBid _          = Nothing
+
+
+-- | Tries to convert the given integer into the relevant DB identifier, failing
+-- with an error if the conversion cannot be performed.
+fromDBid :: forall a. (HasCallStack, HasDBid a, Typeable a) => Int -> a
+fromDBid i = case lookupDBid i of
+  Nothing ->
+    let err = userError $ "HasDBid " <> show (typeRep (Proxy :: Proxy a)) <> " not found or not implemented."
+    in throw $ WithStacktrace callStack err
+  Just v  -> v

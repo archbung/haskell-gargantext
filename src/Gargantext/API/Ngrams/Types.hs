@@ -791,7 +791,7 @@ ngramsTypeFromTabType tabType =
       Authors    -> TableNgrams.Authors
       Institutes -> TableNgrams.Institutes
       Terms      -> TableNgrams.NgramsTerms
-      _          -> panic $ here <> "No Ngrams for this tab"
+      _          -> panicTrace $ here <> "No Ngrams for this tab"
       -- TODO: This `panic` would disapear with custom NgramsType.
 
 ----

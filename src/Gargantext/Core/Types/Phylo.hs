@@ -242,7 +242,7 @@ mkObject gvid commonData objectTypeData =
   in case (commonDataJSON, objectTypeDataJSON, header) of
     (Object hdr, Object cdJSON, Object etDataJSON)
       -> Object $ hdr <> cdJSON <> etDataJSON
-    _ -> panic "[Gargantext.Core.Types.Phylo.mkObject] impossible: commonData, header or objectTypeDataJSON didn't convert back to JSON Object."
+    _ -> panicTrace "[Gargantext.Core.Types.Phylo.mkObject] impossible: commonData, header or objectTypeDataJSON didn't convert back to JSON Object."
 
 data GroupToNodeData
   = GroupToNodeData
@@ -491,7 +491,7 @@ mkGraphData GraphData{..} =
       datJSON = toJSON _gd_data
   in case (hdrJSON, datJSON) of
     (Object a, Object b) -> Object $ a <> b
-    _ -> panic "[Gargantext.Core.Types.Phylo.mkGraphData] impossible: header or data didn't convert back to JSON Object."
+    _ -> panicTrace "[Gargantext.Core.Types.Phylo.mkGraphData] impossible: header or data didn't convert back to JSON Object."
 
 instance FromJSON GraphData where
   parseJSON = withObject "GraphData" $ \o -> do
@@ -529,7 +529,7 @@ mkEdge edgeType gvid commonData edgeTypeData =
   in case (commonDataJSON, edgeTypeDataJSON, header) of
     (Object hdr, Object cdJSON, Object etDataJSON)
       -> Object $ hdr <> cdJSON <> etDataJSON
-    _ -> panic "[Gargantext.Core.Types.Phylo.mkEdge] impossible: commonData, header or edgeTypeDataJSON didn't convert back to JSON Object."
+    _ -> panicTrace "[Gargantext.Core.Types.Phylo.mkEdge] impossible: commonData, header or edgeTypeDataJSON didn't convert back to JSON Object."
 
 
 instance FromJSON EdgeData where

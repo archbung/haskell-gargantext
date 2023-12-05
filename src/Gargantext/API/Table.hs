@@ -142,7 +142,7 @@ postTableApi cId tq = case tq of
      $(logLocM) DEBUG $ "New search with query " <> getRawQuery q
      searchInCorpus' cId False q (Just o) (Just l) (Just order)
    Trash -> searchInCorpus' cId True  q (Just o) (Just l) (Just order)
-   x     -> panic $ "not implemented in tableApi " <> (show x)
+   x     -> panicTrace $ "not implemented in tableApi " <> (show x)
 
 getTableHashApi :: (CmdM env err m, HasNodeError err, MonadLogger m)
                 => NodeId
@@ -204,7 +204,7 @@ getTable' cId ft o l order query year =
     (Just Trash)     -> runViewDocuments cId True  o l order query year
     (Just MoreFav)   -> moreLike cId o l order IsFav
     (Just MoreTrash) -> moreLike cId o l order IsTrash
-    x     -> panic $ "not implemented in getTable: " <> (show x)
+    x     -> panicTrace $ "not implemented in getTable: " <> (show x)
 
 
 getPair :: ContactId -> Maybe TabType
@@ -214,4 +214,4 @@ getPair cId ft o l order =
   case ft of
     (Just Docs)  -> runViewAuthorsDoc cId False o l order
     (Just Trash) -> runViewAuthorsDoc cId True  o l order
-    _     -> panic $ "not implemented: get Pairing" <> (show ft)
+    _     -> panicTrace $ "not implemented: get Pairing" <> (show ft)

@@ -42,6 +42,7 @@ import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import Web.HttpApiData (readTextData)
+import Gargantext.Database.Query.Table.Node.Error
 
 ------------------------------------------------------------------------
 type PhyloAPI = Summary "Phylo API"
@@ -125,8 +126,8 @@ type GetPhylo =  QueryParam "listId"      ListId
 -- TODO fix parameters to default config that should be in Node
 getPhylo :: PhyloId -> GargServer GetPhylo
 getPhylo phyloId lId _level _minSizeBranch = do
-  corpusId <- fromMaybe (panic $ "[G.C.V.Phylo.API] no parent for NodeId " <> (show phyloId))
-          <$> getClosestParentIdByType phyloId NodeCorpus
+  corpusId <- maybe (nodeLookupError $ NodeParentDoesNotExist phyloId) pure
+              =<< getClosestParentIdByType phyloId NodeCorpus
   listId   <- case lId of
                 Nothing -> defaultList corpusId
                 Just ld -> pure ld
@@ -142,7 +143,7 @@ getPhyloDataJson phyloId = do
   let phyloData = fromMaybe phyloCleopatre maybePhyloData
   phyloJson <- liftBase $ phylo2dot2json phyloData
   case parseEither parseJSON phyloJson of
-    Left err -> panic $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
+    Left err -> panicTrace $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
     Right gd -> pure gd
 
 
@@ -172,7 +173,7 @@ postPhylo phyloId _lId = do
     -- _sft = Just (Software "Gargantext" "4")
     -- _prm = initPhyloParam vrs sft (Just q)
   corpusId <- getClosestParentIdByType phyloId NodeCorpus
-  phy <- flowPhyloAPI defaultConfig (fromMaybe (panic "[G.C.V.P.API] no corpus ID found") corpusId) -- params
+  phy <- flowPhyloAPI defaultConfig (fromMaybe (panicTrace "[G.C.V.P.API] no corpus ID found") corpusId) -- params
   -- phyloId <- insertNodes [node NodePhylo "Phylo" (HyperdataPhylo Nothing (Just phy)) (Just corpusId) userId]
   _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
   pure phyloId

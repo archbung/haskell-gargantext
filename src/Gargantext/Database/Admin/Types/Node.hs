@@ -425,7 +425,7 @@ data NodeType = NodeUser
               | Notes | Calc | NodeFrameVisio | NodeFrameNotebook
               | NodeFile
 
-  deriving (Show, Read, Eq, Generic, Bounded, Enum)
+  deriving (Show, Read, Eq, Ord, Generic, Bounded, Enum)
 
 
 instance GQLType NodeType
@@ -446,7 +446,7 @@ instance ToField NodeType where
 
 
 allNodeTypes :: [NodeType]
-allNodeTypes = [minBound ..]
+allNodeTypes = [minBound .. maxBound]
 
 defaultName :: NodeType -> Text
 defaultName NodeUser       = "User"

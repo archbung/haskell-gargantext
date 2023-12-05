@@ -19,6 +19,7 @@ data BackendErrorCode
     EC_404__node_list_not_found
   | EC_404__node_root_not_found
   | EC_404__node_lookup_failed_not_found
+  | EC_404__node_lookup_failed_parent_not_found
   | EC_400__node_lookup_failed_user_too_many_roots
   | EC_404__node_lookup_failed_user_not_found
   | EC_404__node_lookup_failed_username_not_found
@@ -41,6 +42,7 @@ data BackendErrorCode
   | EC_500__tree_too_many_roots
   -- internal server errors
   | EC_500__internal_server_error
+  | EC_405__not_allowed
   -- job errors
   | EC_500__job_invalid_id_type
   | EC_500__job_expired

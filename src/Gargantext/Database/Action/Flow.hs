@@ -264,7 +264,7 @@ flowCorpusFile u n _l la ft ff fp mfslw jobHandle = do
       flowCorpus u n la mfslw (fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
       --let docs = splitEvery 500 $ take l parsed
       --flowCorpus u n la mfslw (yieldMany $ map (map toHyperdataDocument) docs) logStatus
-    Left e       -> panic $ "Error: " <> e
+    Left e       -> panicTrace $ "Error: " <> e
 
 ------------------------------------------------------------------------
 -- | TODO improve the needed type to create/update a corpus
@@ -510,7 +510,7 @@ viewUniqId' :: UniqId a
             -> (Hash, a)
 viewUniqId' d = maybe err (\h -> (h,d)) (view uniqId d)
       where
-        err = panic "[ERROR] Database.Flow.toInsert"
+        err = panicTrace "[ERROR] Database.Flow.toInsert"
 
 
 toInserted :: [ReturnId]

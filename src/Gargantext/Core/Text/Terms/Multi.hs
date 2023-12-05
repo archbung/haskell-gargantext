@@ -67,7 +67,7 @@ tokenTags (NLPServerConfig { server = Spacy, url }) l txt = do
 --   if txt == ""
 --      then pure [[]]
 --      else tokenTagsWith FR txt SpacyNLP.nlp
-tokenTags _ l  _   = panic $ "[G.C.T.T.Multi] Lang NLP API not implemented yet " <> (show l)
+tokenTags _ l  _   = panicTrace $ "[G.C.T.T.Multi] Lang NLP API not implemented yet " <> (show l)
 
 tokenTagsWith :: Lang -> Text -> NLP_API -> IO [[TokenTag]]
 tokenTagsWith lang txt nlp = map (groupTokens lang)

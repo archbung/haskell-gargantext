@@ -63,7 +63,7 @@ devSettings jwkFile = do
     , _logLevelLimit = LevelDebug
 --    , _dbServer = "localhost"
     , _sendLoginEmails = LogEmailToConsole
-    , _scrapydUrl = fromMaybe (panic "Invalid scrapy URL") $ parseBaseUrl "http://localhost:6800"
+    , _scrapydUrl = fromMaybe (panicTrace "Invalid scrapy URL") $ parseBaseUrl "http://localhost:6800"
     , _cookieSettings = defaultCookieSettings { cookieXsrfSetting = Just xsrfCookieSetting } -- TODO-SECURITY tune
     , _jwtSettings = defaultJWTSettings jwk -- TODO-SECURITY tune
     }
@@ -177,7 +177,7 @@ newEnv logger port file = do
   !manager_env  <- newTlsManager
   !settings'    <- devSettings devJwkFile <&> appPort .~ port -- TODO read from 'file'
   when (port /= settings' ^. appPort) $
-    panic "TODO: conflicting settings of port"
+    panicTrace "TODO: conflicting settings of port"
 
   !config_env   <- readConfig file
   prios         <- withLogger () $ \ioLogger -> Jobs.readPrios ioLogger (file <> ".jobs")

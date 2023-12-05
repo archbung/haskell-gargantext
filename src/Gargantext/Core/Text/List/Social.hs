@@ -86,13 +86,13 @@ instance FromHttpApiData FlowSocialListWith
     parseUrlPiece "My lists first"    = pure $ FlowSocialListWithPriority { fslw_priority = MySelfFirst }
     parseUrlPiece "Others lists first" = pure $ FlowSocialListWithPriority { fslw_priority = OthersFirst }
     parseUrlPiece "NoList"          = pure $ NoList True
-    parseUrlPiece x                 = panic $ "[G.C.T.L.Social] TODO FromHttpApiData FlowSocialListWith error: " <> (show x)
+    parseUrlPiece x                 = panicTrace $ "[G.C.T.L.Social] TODO FromHttpApiData FlowSocialListWith error: " <> (show x)
 
 instance ToHttpApiData   FlowSocialListWith where
     toUrlPiece (FlowSocialListWithPriority  MySelfFirst) = "MySelfFirst"
     toUrlPiece (FlowSocialListWithPriority  OthersFirst) = "OtherListsFirst"
     toUrlPiece (NoList _) = "NoList"
-    toUrlPiece (FlowSocialListWithLists _)  = panic "[G.C.T.L.Social] TODO ToHttpApiData FlowSocialListWith"
+    toUrlPiece (FlowSocialListWithLists _)  = panicTrace "[G.C.T.L.Social] TODO ToHttpApiData FlowSocialListWith"
 
 data FlowSocialListPriority = MySelfFirst | OthersFirst
   deriving (Eq, Show, Generic, Enum, Bounded)
@@ -124,7 +124,7 @@ flowSocialList :: ( HasNodeError err
 flowSocialList Nothing u = flowSocialList' MySelfFirst u
 flowSocialList (Just (FlowSocialListWithPriority p))  u = flowSocialList' p u
 flowSocialList (Just (FlowSocialListWithLists    ls)) _ = getHistoryScores ls
-flowSocialList (Just (NoList _))                     _u = panic "[G.C.T.L.Social] Should not be executed"
+flowSocialList (Just (NoList _))                     _u = panicTrace "[G.C.T.L.Social] Should not be executed"
 
 flowSocialList' :: ( HasNodeError err
                    , HasTreeError err

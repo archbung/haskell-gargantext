@@ -107,7 +107,7 @@ csvToDocs parser patterns time path =
                                        Nothing
                                        []
                                        time
-                     ) <$> snd <$> either (\err -> panic $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
+                     ) <$> snd <$> either (\err -> panicTrace $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
     Csv' limit -> Vector.toList
       <$> Vector.take limit
       <$> Vector.map (\row -> Document (toPhyloDate  (csv'_publication_year row) (csv'_publication_month row) (csv'_publication_day row) time)
@@ -139,7 +139,7 @@ fileToDocsDefault parser path timeUnits lst =
         if (length periods < 3)
          then fileToDocsDefault parser path (tail timeUnits) lst
          else pure docs
-    else panic "this corpus is incompatible with the phylomemy reconstruction"
+    else panicTrace "this corpus is incompatible with the phylomemy reconstruction"
 
 -- on passe à passer la time unit dans la conf envoyé au phyloMaker
 -- dans le phyloMaker si default est true alors dans le setDefault ou pense à utiliser la TimeUnit de la conf 

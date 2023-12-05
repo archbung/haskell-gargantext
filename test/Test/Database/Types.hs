@@ -27,7 +27,6 @@ import Database.PostgreSQL.Simple qualified as PG
 import Database.Postgres.Temp qualified as Tmp
 import Gargantext hiding (to)
 import Gargantext.API.Admin.EnvTypes
-import Gargantext.API.Admin.EnvTypes qualified as EnvTypes
 import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
@@ -73,12 +72,15 @@ newtype TestMonad a = TestMonad { runTestMonad :: ReaderT TestEnv IO a }
            , MonadIO
            )
 
+data TestJobHandle = TestNoJobHandle
+
 instance MonadJobStatus TestMonad where
-  type JobHandle      TestMonad = EnvTypes.ConcreteJobHandle BackendInternalError
+  type JobHandle      TestMonad = TestJobHandle
   type JobType        TestMonad = GargJob
   type JobOutputType  TestMonad = JobLog
   type JobEventType   TestMonad = JobLog
 
+  noJobHandle _         = TestNoJobHandle
   getLatestJobStatus _  = TestMonad (pure noJobLog)
   withTracer _ jh n     = n jh
   markStarted _ _       = TestMonad $ pure ()

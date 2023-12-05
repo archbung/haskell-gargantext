@@ -29,4 +29,4 @@ infixr 4 ?!
 
 -- Reverse infix form of "fromJust" with a custom error message
 (?!) :: Maybe a -> String -> a
-(?!) ma' msg = ma' ?| panic (T.pack msg)
+(?!) ma' msg = ma' ?| panicTrace (T.pack msg)

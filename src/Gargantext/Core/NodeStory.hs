@@ -113,9 +113,10 @@ import Database.PostgreSQL.Simple.ToField qualified as PGS
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Gargantext.API.Ngrams.Types
+import Gargantext.Core (toDBid)
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
 import Gargantext.Core.Utils.Prefix (unPrefix)
-import Gargantext.Database.Admin.Config (nodeTypeId)
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
@@ -303,7 +304,7 @@ nodeExists c nId = (== [PGS.Only True])
 
 getNodesIdWithType :: PGS.Connection -> NodeType -> IO [NodeId]
 getNodesIdWithType c nt = do
-  ns <- runPGSQuery c query (PGS.Only $ nodeTypeId nt)
+  ns <- runPGSQuery c query (PGS.Only $ toDBid nt)
   pure $ map (\(PGS.Only nId) -> UnsafeMkNodeId nId) ns
   where
     query :: PGS.Query
@@ -746,4 +747,4 @@ fixNodeStoryVersions = do
         [PGS.Only (Just maxVersion)] -> do
           _ <- runPGSExecute c updateVerQuery (maxVersion, nId, ngramsType)
           pure ()
-        _ -> panic "Should get only 1 result!"
+        _ -> panicTrace "Should get only 1 result!"

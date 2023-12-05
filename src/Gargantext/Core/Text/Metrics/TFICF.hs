@@ -47,11 +47,11 @@ tficf :: TficfContext Count Total
 tficf (TficfInfra (Count ic) (Total it) )
       (TficfSupra (Count sc) (Total st) )
             | it >= ic && st >= sc && it <= st = (it/ic) * log (st/sc)
-            | otherwise                        = panic
+            | otherwise                        = panicTrace
                                                $ "[ERR]"
                                                <> path
                                                <> " Frequency impossible"
-tficf _ _ = panic $ "[ERR]" <> path <> "Undefined for these contexts"
+tficf _ _ = panicTrace $ "[ERR]" <> path <> "Undefined for these contexts"
 
 
 sortTficf :: Ordering

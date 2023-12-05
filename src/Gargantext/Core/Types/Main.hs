@@ -19,7 +19,7 @@ module Gargantext.Core.Types.Main where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
-import Data.Map.Strict (fromList, lookup)
+import Data.Bimap (Bimap)
 import Data.Swagger
 import Data.Text (unpack, pack)
 import Gargantext.Core
@@ -29,6 +29,7 @@ import Gargantext.Prelude
 import Servant.API (FromHttpApiData(..), ToHttpApiData(..))
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
+import qualified Data.Bimap as Bimap
 
 type CorpusName = Text
 ------------------------------------------------------------------------
@@ -71,7 +72,7 @@ instance FromHttpApiData ListType where
   parseUrlPiece s = Right s'
     where
       s' = case (readMaybe $ unpack s) of
-        Nothing -> panic $ "Cannot read url piece: " <> s
+        Nothing -> panicTrace $ "Cannot read url piece: " <> s
         Just s'' -> s''
 instance ToHttpApiData ListType where
   toUrlPiece = pack . show
@@ -79,21 +80,20 @@ instance ToHttpApiData ListType where
 type ListTypeId = Int
 
 instance HasDBid ListType where
-  toDBid   = listTypeId
-  fromDBid = (fromMaybe (panic "Instance HasDBid fromDBid ListType")) .  fromListTypeId
+  toDBid  lt = listTypeIds Bimap.! lt -- cannot fail, see /NOTE/ below.
+  lookupDBid = fromListTypeId
 
 -- FIXME Candidate: 0 and Stop : 1
-listTypeId :: ListType -> ListTypeId
-listTypeId StopTerm      = 0
-listTypeId CandidateTerm = 1
-listTypeId MapTerm       = 2
+-- | Bidirectional map between a 'ListType' and a 'ListTypeId'.
+-- /NOTE/: The way this is constructed is total in its domain.
+listTypeIds :: Bimap ListType ListTypeId
+listTypeIds = Bimap.fromList $ [minBound .. maxBound] <&> \lt -> case lt of
+  StopTerm      -> (lt, 0)
+  CandidateTerm -> (lt, 1)
+  MapTerm       -> (lt, 2)
 
 fromListTypeId :: ListTypeId -> Maybe ListType
-fromListTypeId i = lookup i
-                 $ fromList
-                 [ (listTypeId l, l)
-                 | l <- [StopTerm, CandidateTerm, MapTerm]
-                 ]
+fromListTypeId = flip Bimap.lookupR listTypeIds
 
 -- data Metrics = Occurrences | Cooccurrences | Specclusion | Genclusion | Cvalue
 --              | TfidfCorpus | TfidfGlobal   | TirankLocal | TirankGlobal

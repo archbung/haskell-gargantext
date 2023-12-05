@@ -124,7 +124,6 @@ import Gargantext.Prelude hiding (log, to, toLower, (%))
 import Gargantext.Prelude.Clock (hasTime, getTime)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import GHC.Conc (readTVar, writeTVar)
-import Prelude (error)
 import Servant hiding (Patch)
 
 {-
@@ -215,7 +214,7 @@ ngramsStatePatchConflictResolution _ngramsType _ngramsTerm
 --   they do not extend history,
 --   they do not bump version.
 insertNewOnly :: a -> Maybe b -> a
-insertNewOnly m = maybe m (const $ error "insertNewOnly: impossible")
+insertNewOnly m = maybe m (const $ errorTrace "insertNewOnly: impossible")
   -- TODO error handling
 
 {- unused

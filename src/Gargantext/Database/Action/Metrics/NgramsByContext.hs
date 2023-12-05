@@ -31,7 +31,7 @@ import Gargantext.Core
 import Gargantext.Data.HashMap.Strict.Utils as HM
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId (..), MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
-import Gargantext.Database.Schema.Ngrams (ngramsTypeId, NgramsType(..))
+import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
 
 -- | fst is size of Supra Corpus
@@ -72,7 +72,7 @@ getContextsByNgramsUser cId nt =
         runPGSQuery queryNgramsByContextUser
                     ( cId'
                     , toDBid NodeDocument
-                    , ngramsTypeId nt'
+                    , toDBid nt'
            --         , 100 :: Int -- limit
            --         , 0   :: Int -- offset
                     )
@@ -118,7 +118,7 @@ getOccByNgramsOnlyFast cId lId nt = do
       run cId' lId' nt' = runPGSQuery query
                 ( cId'
                 , lId'
-                , ngramsTypeId nt'
+                , toDBid nt'
                 )
 
       query :: DPS.Query
@@ -186,7 +186,7 @@ selectNgramsOccurrencesOnlyByContextUser_withSample cId int nt tms =
                 , cId
                 , Values fields ((DPS.Only . unNgramsTerm) <$> (List.take 10000 tms))
                 , cId
-                , ngramsTypeId nt
+                , toDBid nt
                 )
     where
       fields = [QualifiedIdentifier Nothing "text"]
@@ -221,7 +221,7 @@ selectNgramsOccurrencesOnlyByContextUser_withSample' cId int nt =
                 , toDBid NodeDocument
                 , cId
                 , cId
-                , ngramsTypeId nt
+                , toDBid nt
                 )
 
 queryNgramsOccurrencesOnlyByContextUser_withSample' :: DPS.Query
@@ -285,7 +285,7 @@ selectNgramsOnlyByContextUser cId ls nt tms =
                          (DPS.Only <$> map DPS.toField ls)
                 , cId
                 , toDBid NodeDocument
-                , ngramsTypeId nt
+                , toDBid nt
                 )
     where
       fields = [QualifiedIdentifier Nothing "text"]
@@ -330,7 +330,7 @@ selectNgramsOnlyByDocUser dId ls nt tms =
                 , Values [QualifiedIdentifier Nothing "int4"]
                          (DPS.Only <$> (map DPS.toField ls))
                 , dId
-                , ngramsTypeId nt
+                , toDBid nt
                 )
     where
       fields = [QualifiedIdentifier Nothing "text"]
@@ -370,7 +370,7 @@ selectNgramsByContextMaster :: HasDBid NodeType
 selectNgramsByContextMaster n ucId mcId p = runPGSQuery
                                queryNgramsByContextMaster'
                                  ( ucId
-                                 , ngramsTypeId NgramsTerms
+                                 , toDBid NgramsTerms
                                  , toDBid   NodeDocument
                                  , p
                                  , toDBid   NodeDocument
@@ -378,7 +378,7 @@ selectNgramsByContextMaster n ucId mcId p = runPGSQuery
                                  , n
                                  , mcId
                                  , toDBid   NodeDocument
-                                 , ngramsTypeId NgramsTerms
+                                 , toDBid NgramsTerms
                                  )
 
 -- | TODO fix context_node_ngrams relation

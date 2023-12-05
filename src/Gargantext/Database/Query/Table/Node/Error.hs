@@ -9,7 +9,22 @@ Stability   : experimental
 Portability : POSIX
 -}
 
-module Gargantext.Database.Query.Table.Node.Error where
+module Gargantext.Database.Query.Table.Node.Error (
+  -- * Types
+    NodeError(..)
+  , NodeCreationError(..)
+  , NodeLookupError(..)
+
+  -- * Classes
+  , HasNodeError(..)
+
+  -- * Functions
+  , errorWith
+  , nodeError
+  , nodeCreationError
+  , nodeLookupError
+  , catchNodeError
+  ) where
 
 import Control.Lens (Prism', (#), (^?))
 import Data.Aeson
@@ -37,13 +52,15 @@ renderNodeCreationFailed = \case
 
 data NodeLookupError
   = NodeDoesNotExist     NodeId
+  | NodeParentDoesNotExist NodeId
   | UserDoesNotExist     UserId
   | UserNameDoesNotExist Username
   | UserHasTooManyRoots UserId [NodeId]
 
 renderNodeLookupFailed :: NodeLookupError -> T.Text
 renderNodeLookupFailed = \case
-  NodeDoesNotExist nid -> "node with id " <> T.pack (show nid) <> " couldn't be found."
+  NodeDoesNotExist nid   -> "node with id " <> T.pack (show nid) <> " couldn't be found."
+  NodeParentDoesNotExist nid -> "no parent for node with id " <> T.pack (show nid) <> "."
   UserDoesNotExist uid -> "user with id " <> T.pack (show uid) <> " couldn't be found."
   UserNameDoesNotExist uname -> "user with username '" <> uname <> " couldn't be found."
   UserHasTooManyRoots uid roots -> "user with id " <> T.pack (show uid) <> " has too many roots: [" <> T.intercalate "," (map (T.pack . show) roots)
@@ -96,6 +113,16 @@ nodeError :: ( MonadError e m
              , HasNodeError e)
           => NodeError -> m a
 nodeError ne = throwError $ _NodeError # ne
+
+nodeCreationError :: ( MonadError e m, HasNodeError e)
+                  => NodeCreationError
+                  -> m a
+nodeCreationError ne = throwError $ _NodeError # NodeCreationFailed ne
+
+nodeLookupError :: ( MonadError e m, HasNodeError e)
+                => NodeLookupError
+                -> m a
+nodeLookupError ne = throwError $ _NodeError # NodeLookupFailed ne
 
 catchNodeError :: (MonadError e m, HasNodeError e) => m a -> (NodeError -> m a) -> m a
 catchNodeError f g = catchError f (\e -> maybe (throwError e) g (e ^? _NodeError))

@@ -107,7 +107,7 @@ updateUserInfo (UserInfoMArgs { ui_id, .. }) = do
   lift $ printDebug "[updateUserInfo] ui_id" ui_id
   users <- lift (getUsersWithNodeHyperdata ui_id)
   case users of
-    [] -> panic $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
+    [] -> panicTrace $ "[updateUserInfo] User with id " <> (T.pack $ show ui_id) <> " doesn't exist."
     ((_u, node_u):_) -> do
       let u_hyperdata = node_u ^. node_hyperdata
       -- lift $ printDebug "[updateUserInfo] u" u

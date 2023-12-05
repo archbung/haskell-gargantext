@@ -31,7 +31,6 @@ import Gargantext.Database.Schema.Ngrams
 import Gargantext.Prelude hiding (get)
 import Network.Wai.Handler.Warp qualified as Wai
 import Paths_gargantext (getDataFileName)
-import Prelude (error)
 import Test.API.Private (withValidLogin, protectedJSON, postJSONUrlEncoded, getJSON)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
 import Test.Database.Types
@@ -84,7 +83,7 @@ pollUntilFinished :: HasCallStack
 pollUntilFinished tkn port mkUrlPiece = go 60
   where
    go :: Int -> JobPollHandle -> WaiSession () JobPollHandle
-   go 0 h  = error $ T.unpack $ "pollUntilFinished exhausted attempts. Last found JobPollHandle: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
+   go 0 h  = panicTrace $ "pollUntilFinished exhausted attempts. Last found JobPollHandle: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
    go n h = case _jph_status h == "IsPending" || _jph_status h == "IsRunning" of
     True -> do
       liftIO $ threadDelay 1_000_000
@@ -92,7 +91,7 @@ pollUntilFinished tkn port mkUrlPiece = go 60
       go (n-1) h'
     False
      | _jph_status h == "IsFailure"
-     -> error $ T.unpack $ "JobPollHandle contains a failure: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
+     -> panicTrace $ "JobPollHandle contains a failure: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
      | otherwise
      -> pure h
 

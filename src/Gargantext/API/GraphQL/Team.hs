@@ -73,7 +73,7 @@ dbTeam nodeId = do
       shared_folder_id = unNodeId fId
     }
     uId Node { _node_user_id } = _node_user_id
-    getUsername [] = panic "[resolveTeam] Team creator doesn't exist"
+    getUsername [] = panicTrace "[resolveTeam] Team creator doesn't exist"
     getUsername ((UserLight {userLight_username}, _):_) = userLight_username
 
 -- TODO: list as argument
@@ -83,11 +83,11 @@ deleteTeamMembership TeamDeleteMArgs { token, shared_folder_id, team_node_id } =
   teamNode <- lift $ getNode $ UnsafeMkNodeId team_node_id
   userNodes <- lift (getUsersWithNodeHyperdata $ Individu.UserDBId $ uId teamNode)
   case userNodes of
-    [] -> panic $ "[deleteTeamMembership] User with id " <> T.pack (show $ uId teamNode) <> " doesn't exist."
+    [] -> panicTrace $ "[deleteTeamMembership] User with id " <> T.pack (show $ uId teamNode) <> " doesn't exist."
     (( _, node_u):_) -> do
       testAuthUser <- lift $ authUser (nId node_u) token
       case testAuthUser of
-        Invalid -> panic "[deleteTeamMembership] failed to validate user"
+        Invalid -> panicTrace "[deleteTeamMembership] failed to validate user"
         Valid -> do
           lift $ deleteMemberShip [(UnsafeMkNodeId shared_folder_id, UnsafeMkNodeId team_node_id)]
   where

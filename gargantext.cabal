@@ -413,6 +413,7 @@ library
     , base >=4.7 && <5
     , base16-bytestring ^>= 1.0.2.0
     , base64-bytestring ^>= 1.1.0.0
+    , bimap >= 0.5.0
     , blaze-html ^>= 0.9.1.2
     , blaze-markup ^>= 0.8.2.8
     , blaze-svg ^>= 0.3.6.1
@@ -947,6 +948,7 @@ test-suite garg-test-tasty
       Test.Ngrams.NLP
       Test.Ngrams.Query
       Test.Ngrams.Query.PaginationCorpus
+      Test.Offline.Errors
       Test.Offline.JSON
       Test.Parsers.Date
       Test.Parsers.Types

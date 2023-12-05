@@ -37,7 +37,7 @@ main = do
   params@[iniPath] <- getArgs
 
   _ <- if length params /= 1
-      then panic "USAGE: ./gargantext-init gargantext.ini"
+      then panicTrace "USAGE: ./gargantext-init gargantext.ini"
       else pure ()
 
   putStrLn ("Enter master user (gargantua) _password_ :" :: Text)

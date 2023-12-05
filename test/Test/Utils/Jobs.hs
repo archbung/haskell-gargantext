@@ -228,6 +228,7 @@ instance MonadJobStatus MyDummyMonad where
   type JobOutputType  MyDummyMonad = JobLog
   type JobEventType   MyDummyMonad = JobLog
 
+  noJobHandle _               = noJobHandle (Proxy :: Proxy (GargM Env BackendInternalError))
   getLatestJobStatus jId      = MyDummyMonad (getLatestJobStatus jId)
   withTracer _ jh n           = n jh
   markStarted n jh            = MyDummyMonad (markStarted n jh)

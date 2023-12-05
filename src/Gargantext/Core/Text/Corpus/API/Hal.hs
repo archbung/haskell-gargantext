@@ -30,7 +30,7 @@ import Servant.Client (ClientError)
 get :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO [HyperdataDocument]
 get la q ml = do
   eDocs <- HAL.getMetadataWith [q] (Just 0) (fromIntegral <$> ml) la
-  either (panic . pack . show) (\d -> mapM (toDoc' la) $ HAL._docs d) eDocs
+  either (panicTrace . pack . show) (\d -> mapM (toDoc' la) $ HAL._docs d) eDocs
 
 getC :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 getC la q ml = do

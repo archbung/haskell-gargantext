@@ -119,7 +119,7 @@ updateScatter' cId listId tabType maybeLimit = do
                                                      , m_y = s2
                                                      , m_cat = listType t ngs' })
                  $ fmap normalizeLocal scores
-    listType t m = maybe (panic errorMsg) fst $ HashMap.lookup t m
+    listType t m = maybe (panicTrace errorMsg) fst $ HashMap.lookup t m
     errorMsg     = "API.Node.metrics: key absent"
 
   node <- getNodeWith listId (Proxy :: Proxy HyperdataList)

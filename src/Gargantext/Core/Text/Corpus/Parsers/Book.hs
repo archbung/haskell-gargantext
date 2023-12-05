@@ -73,7 +73,7 @@ fileNameInfo fp = toFileInfo xs
   where
     xs = DT.splitOn "_" $ DT.pack fp
     toFileInfo (a:b:_) = FileInfo (DT.splitOn "-and-" a) (cs b)
-    toFileInfo _       = panic "error"
+    toFileInfo _       = panicTrace "error"
 
 ---------------------------------------------------------------------
 publiToHyperdata :: Int -> Publi -> HyperdataDocument

@@ -88,7 +88,7 @@ fromCsvListFile :: FilePath -> IO (Header, Vector CsvList)
 fromCsvListFile fp = do
     csvData <- BL.readFile fp
     case decodeByNameWith csvDecodeOptions csvData of
-      Left e        -> panic (pack e)
+      Left e        -> panicTrace (pack e)
       Right csvList -> pure csvList
 ------------------------------------------------------------------------
 toCsvListFile :: FilePath -> (Header, Vector CsvList) -> IO ()

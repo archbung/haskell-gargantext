@@ -58,7 +58,7 @@ graphV3ToGraphWithFiles g1 g2 = do
   -- GraphV3 <- IO Fichier
   graph <- DBL.readFile g1
   let newGraph = case DA.decode graph :: Maybe GraphV3 of
-        Nothing -> panic (Text.pack "no graph")
+        Nothing -> panicTrace "no graph"
         Just new -> new
 
   DBL.writeFile g2 (DA.encode $ graphV3ToGraph newGraph)

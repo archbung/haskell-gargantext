@@ -20,8 +20,6 @@ module Gargantext.API.Node.Corpus.New
       where
 
 
--- import Servant.Multipart
--- import Test.QuickCheck (elements)
 import Conduit
 import Control.Lens hiding (elements, Empty)
 import Data.Aeson
@@ -307,7 +305,7 @@ addToCorpusWithForm user cid nwf jobHandle = do
   let data' = case (nwf ^. wf_fileformat) of
         Plain -> cs (nwf ^. wf_data)
         ZIP   -> case BSB64.decode $ TE.encodeUtf8 (nwf ^. wf_data) of
-          Left err -> panic $ T.pack "[addToCorpusWithForm] error decoding base64: " <> T.pack err
+          Left err -> panicTrace $ T.pack "[addToCorpusWithForm] error decoding base64: " <> T.pack err
           Right decoded -> decoded
   eDocsC <- liftBase $ parseC (nwf ^. wf_fileformat) data'
   case eDocsC of
@@ -325,7 +323,7 @@ addToCorpusWithForm user cid nwf jobHandle = do
                                           , ")" ]
                           let panicMsg = T.concat $ T.pack <$> panicMsg'
                           --logStatus $ jobLogFailTotalWithMessage panicMsg jobLog
-                          panic panicMsg
+                          panicTrace panicMsg
                         else
                           pure doc)
                   .| mapC toHyperdataDocument

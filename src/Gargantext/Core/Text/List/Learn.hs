@@ -51,7 +51,7 @@ trainList x y = (train x y) . trainList'
     vecs2maps = map (IntMap.fromList . (zip [1..]) . Vec.toList)
 
 
-predictList :: Model -> [Vec.Vector Double] -> IO [Maybe ListType]
+predictList :: HasCallStack => Model -> [Vec.Vector Double] -> IO [Maybe ListType]
 predictList (ModelSVM m _ _) vs = map (Just . fromDBid . round) <$> predict m vs
 
 ------------------------------------------------------------------------
@@ -83,7 +83,7 @@ type Param = Double
 
 grid :: (MonadBase IO m)
      => Param -> Param -> Train -> [Tests] -> m (Maybe Model)
-grid _ _ _ []  = panic "Gargantext.Core.Text.List.Learn.grid : empty test data"
+grid _ _ _ []  = panicTrace "Gargantext.Core.Text.List.Learn.grid : empty test data"
 grid s e tr te = do
   let
     grid' :: (MonadBase IO m)

@@ -78,7 +78,7 @@ startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
             (\(_ :: SomeException) -> pure $ Right False)
           case r of
             Right True -> pure ()
-            _ -> panic $
+            _ -> panicTrace $
               "You must run 'gargantext-init " <> pack file <>
               "' before running gargantext-server (only the first time)."
 

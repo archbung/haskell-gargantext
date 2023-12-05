@@ -285,7 +285,7 @@ withParser RIS      = RIS.parser
 withParser Iramuteq = Iramuteq.parser
 --withParser ODT = odtParser
 --withParser XML = xmlParser
-withParser _   = panic "[ERROR] Parser not implemented yet"
+withParser _   = panicTrace "[ERROR] Parser not implemented yet"
 
 runParser :: FileType -> DB.ByteString
           -> IO (Either Text [[(DB.ByteString, DB.ByteString)]])

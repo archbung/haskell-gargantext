@@ -16,11 +16,11 @@ Triggers on NodesNodes table.
 module Gargantext.Database.Admin.Trigger.NodesContexts
   where
 
+-- (ListId, CorpusId, NodeId)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Gargantext.Core
-import Gargantext.Database.Admin.Config
+import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
--- (ListId, CorpusId, NodeId)
 import Gargantext.Database.Prelude (execPGSQuery, DBCmd)
 import Gargantext.Prelude
 import qualified Database.PostgreSQL.Simple as DPS
@@ -28,7 +28,7 @@ import qualified Database.PostgreSQL.Simple as DPS
 type MasterListId = ListId
 
 triggerInsertCount :: MasterListId -> DBCmd err Int64
-triggerInsertCount lId = execPGSQuery query (lId, nodeTypeId NodeList)
+triggerInsertCount lId = execPGSQuery query (lId, toDBid NodeList)
   where
     query :: DPS.Query
     query = [sql|
@@ -64,7 +64,7 @@ triggerInsertCount lId = execPGSQuery query (lId, nodeTypeId NodeList)
 
 
 triggerUpdateAdd :: MasterListId -> DBCmd err Int64
-triggerUpdateAdd lId = execPGSQuery query (lId, nodeTypeId NodeList)
+triggerUpdateAdd lId = execPGSQuery query (lId, toDBid NodeList)
   where
     query :: DPS.Query
     query = [sql|
@@ -104,7 +104,7 @@ triggerUpdateAdd lId = execPGSQuery query (lId, nodeTypeId NodeList)
 
 
 triggerUpdateDel :: MasterListId -> DBCmd err Int64
-triggerUpdateDel lId = execPGSQuery query (lId, nodeTypeId NodeList)
+triggerUpdateDel lId = execPGSQuery query (lId, toDBid NodeList)
   where
     query :: DPS.Query
     query = [sql|

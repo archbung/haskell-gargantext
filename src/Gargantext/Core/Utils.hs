@@ -66,7 +66,7 @@ groupWithCounts = map f
                 . List.group
                 . List.sort
   where
-    f [] = panic "[groupWithCounts] impossible"
+    f [] = panicTrace "[groupWithCounts] impossible"
     f ts@(t:_) = (t, length ts)
 
 addTuples :: (Num a, Num b) => (a, b) -> (a, b) -> (a, b)
