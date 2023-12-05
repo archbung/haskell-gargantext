@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.9.4.3
+
+
+* [BACK][LOGS][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
+* [BACK][ADM] Build Deps / test / cabal
+
 ## Version 0.0.6.9.9.9.4.2
 
 * [BACK][FIX] Deps and build
