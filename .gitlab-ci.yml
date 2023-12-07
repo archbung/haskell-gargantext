@@ -1,5 +1,5 @@
 # Optimising CI speed by using tips from https://blog.nimbleways.com/let-s-make-faster-gitlab-ci-cd-pipelines/
-image: adinapoli/gargantext:v2.3
+image: adinapoli/gargantext:v3.0
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"

@@ -45,6 +45,10 @@ flag test-crypto
   default: False
   manual: True
 
+flag enable-ghc-clippy
+  default: False
+  manual: True
+
 library
   exposed-modules:
       Gargantext
@@ -397,6 +401,9 @@ library
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fplugin=Clippy -fprint-potential-instances
   if flag(test-crypto)
     cpp-options: -DTEST_CRYPTO
+  if flag(enable-ghc-clippy)
+    build-depends:
+      ghc-clippy-plugin ^>= 0.0.0.1
   build-depends:
       HSvm ^>= 0.1.1.3.22
     , KMP ^>= 0.2.0.0
@@ -459,7 +466,6 @@ library
     , fullstop ^>= 0.1.4
     , gargantext-graph >=0.1.0.0
     , gargantext-prelude
-    , ghc-clippy-plugin ^>= 0.0.0.1
     , graphviz ^>= 2999.20.1.0
     , hashable ^>= 1.3.0.0
     , haskell-igraph ^>= 0.10.4
@@ -474,7 +480,9 @@ library
     , http-media ^>= 0.8.0.0
     , http-types ^>= 0.12.3
     , hxt ^>= 9.3.1.22
-    , ihaskell ^>= 0.10.2.2
+    , ihaskell >= 0.11.0.0
+    -- necessary for ihaskell to build
+    , ipython-kernel >= 0.11.0.0
     , ini ^>= 0.4.1
     , insert-ordered-containers ^>= 0.2.5.1
     , iso639
@@ -526,21 +534,20 @@ library
     , scientific ^>= 0.3.7.0
     , semigroups ^>= 0.19.2
     , serialise ^>= 0.2.4.0
-    , servant ^>= 0.18.3
+    , servant >= 0.18.3 && < 0.20
     , servant-auth ^>= 0.4.0.0
     , servant-auth-client ^>= 0.4.1.0
     , servant-auth-server ^>=0.4.6.0
     , servant-auth-swagger ^>= 0.2.10.1
     , servant-blaze ^>= 0.9.1
     , servant-cassava ^>= 0.10.1
-    , servant-client ^>= 0.18.3
-    , servant-client-core ^>= 0.18.3
+    , servant-client >= 0.18.3 && < 0.20
+    , servant-client-core >= 0.18.3 && < 0.20
     , servant-ekg ^>= 0.3.1
     , servant-flatten ^>= 0.2
     , servant-job >= 0.2.0.0
-    , servant-mock ^>= 0.8.7
     , servant-multipart ^>= 0.12.1
-    , servant-server ^>= 0.18.3
+    , servant-server >= 0.18.3 && < 0.20
     , servant-swagger ^>= 1.1.10
     , servant-swagger-ui ^>= 0.3.5.3.5.0
     , servant-xml-conduit >= 0.1.0.4

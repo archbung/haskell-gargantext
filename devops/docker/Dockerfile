@@ -10,7 +10,7 @@ ARG CORENLP=4.5.4
 ARG CORE
 COPY ./shell.nix                                       /builds/gargantext/shell.nix
 COPY ./nix/pkgs.nix                                    /builds/gargantext/nix/pkgs.nix
-COPY ./nix/pinned-22.05.nix                            /builds/gargantext/nix/pinned-22.05.nix
+COPY ./nix/pinned-23.11.nix                            /builds/gargantext/nix/pinned-23.11.nix
 COPY ./nix/overlays/Cabal-3.10.1.0.nix                 /builds/gargantext/nix/overlays/Cabal-3.10.1.0.nix
 COPY ./nix/overlays/cabal-install-3.10.1.0.nix         /builds/gargantext/nix/overlays/cabal-install-3.10.1.0.nix
 COPY ./nix/overlays/cabal-install-solver-3.10.1.0.nix  /builds/gargantext/nix/overlays/cabal-install-solver-3.10.1.0.nix
