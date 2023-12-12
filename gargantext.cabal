@@ -18,6 +18,7 @@ license-file:   LICENSE
 build-type:     Simple
 data-files:
     bench-data/phylo/issue-290.json
+    bench-data/phylo/issue-290-small.json
     devops/postgres/extensions.sql
     devops/postgres/schema.sql
     ekg-assets/index.html
@@ -1156,12 +1157,14 @@ benchmark garg-bench
   main-is:       Main.hs
   hs-source-dirs: bench
   type:          exitcode-stdio-1.0
+  other-modules:
+      Paths_gargantext
   build-depends: base
                , bytestring
                , deepseq
                , gargantext
                , gargantext-prelude
                , tasty-bench
-  ghc-options:   "-with-rtsopts=-A32m"
+  ghc-options:   "-with-rtsopts=-T -A32m"
   if impl(ghc >= 8.6)
     ghc-options: "-with-rtsopts=--nonmoving-gc"

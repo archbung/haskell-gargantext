@@ -4,7 +4,6 @@ module Main where
 
 import Control.DeepSeq
 import Gargantext.Core.Types.Individu
-import Gargantext.Core.Types.Phylo
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo)
 import Gargantext.Core.Viz.Phylo.PhyloMaker (toPhylo)
@@ -40,7 +39,8 @@ phyloConfig = PhyloConfig {
 
 main :: IO ()
 main = do
-  issue290Phylo <- force . setConfig phyloConfig <$> (readPhylo =<< getDataFileName "bench-data/phylo/issue-290.json")
+  _issue290Phylo     <- force . setConfig phyloConfig <$> (readPhylo =<< getDataFileName "bench-data/phylo/issue-290.json")
+  issue290PhyloSmall <- force . setConfig phyloConfig <$> (readPhylo =<< getDataFileName "bench-data/phylo/issue-290-small.json")
   defaultMain
     [ bgroup "Benchmarks"
       [ bgroup "User creation" [
@@ -49,7 +49,7 @@ main = do
           whnfIO (toUserHash $ NewUser "alfredo" "alfredo@well-typed.com" (GargPassword "rabbit"))
       ]
       , bgroup "Phylo" [
-          bench "toPhylo" $ nf toPhylo issue290Phylo
+          bench "toPhylo (small)" $ nf toPhylo issue290PhyloSmall
       ]
       ]
     ]
