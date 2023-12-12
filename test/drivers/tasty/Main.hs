@@ -19,6 +19,7 @@ import qualified Test.Ngrams.NLP              as NLP
 import qualified Test.Ngrams.Query            as NgramsQuery
 import qualified Test.Offline.JSON            as JSON
 import qualified Test.Offline.Errors          as Errors
+import qualified Test.Offline.Phylo           as Phylo
 import qualified Test.Parsers.Date            as PD
 import qualified Test.Utils.Crypto            as Crypto
 import qualified Test.Utils.Jobs              as Jobs
@@ -48,4 +49,5 @@ main = do
     , CorpusQuery.tests
     , JSON.tests
     , Errors.tests
+    , Phylo.tests
     ]

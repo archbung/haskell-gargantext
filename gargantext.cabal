@@ -34,6 +34,7 @@ data-files:
     test-data/ngrams/simple.csv
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
+    test-data/phylo/issue-290-small.golden.json
     test-data/test_config.ini
     .clippy.dhall
 
@@ -952,6 +953,7 @@ test-suite garg-test-tasty
       Test.Ngrams.Query.PaginationCorpus
       Test.Offline.Errors
       Test.Offline.JSON
+      Test.Offline.Phylo
       Test.Parsers.Date
       Test.Parsers.Types
       Test.Parsers.WOS
@@ -1050,7 +1052,6 @@ test-suite garg-test-hspec
       Test.API.Authentication
       Test.API.Errors
       Test.API.GraphQL
-      Test.API.Phylo
       Test.API.Private
       Test.API.Setup
       Test.API.UpdateList
