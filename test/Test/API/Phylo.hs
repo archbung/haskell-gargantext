@@ -5,98 +5,31 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Test.API.UpdateList (
+module Test.API.Phylo (
     tests
-  , newCorpusForUser
-  , JobPollHandle(..)
-  , pollUntilFinished
   ) where
 
-import Data.Aeson qualified as JSON
 import Data.Aeson.QQ
-import Data.ByteString.Lazy qualified as BL
 import Data.String (fromString)
 import Data.Text qualified as T
-import Data.Text.Encoding qualified as T
 import Data.Text.IO qualified as TIO
 import Fmt
-import Gargantext.API.Admin.Auth.Types (Token)
-import Gargantext.API.Admin.Orchestrator.Types
 import Gargantext.API.Ngrams.List ( ngramsListFromCSVData )
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Individu
-import Gargantext.Database.Action.User
-import Gargantext.Database.Admin.Types.Hyperdata.Corpus
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Prelude hiding (get)
-import Network.Wai.Handler.Warp qualified as Wai
 import Paths_gargantext (getDataFileName)
 import Test.API.Private (withValidLogin, protectedJSON, postJSONUrlEncoded, getJSON)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
-import Test.Database.Types
+import Test.API.UpdateList (JobPollHandle(..), pollUntilFinished, newCorpusForUser)
 import Test.Hspec
-import Test.Hspec.Wai.Internal (withApplication, WaiSession)
+import Test.Hspec.Wai.Internal (withApplication)
 import Test.Hspec.Wai.JSON (json)
 import Test.Hspec.Wai (shouldRespondWith)
 import Web.FormUrlEncoded
 import qualified Data.Map.Strict as Map
-
-data JobPollHandle = JobPollHandle {
-    _jph_id     :: !Text
-  , _jph_log    :: [JobLog]
-  , _jph_status :: !Text
-  , _jph_error  :: !(Maybe Text)
-    } deriving Show
-
-instance JSON.FromJSON JobPollHandle where
-  parseJSON = JSON.withObject "JobPollHandle" $ \o -> do
-    _jph_id     <- o JSON..: "id"
-    _jph_log    <- o JSON..: "log"
-    _jph_status <- o JSON..: "status"
-    _jph_error  <- o JSON..:? "error"
-    pure JobPollHandle{..}
-
-instance JSON.ToJSON JobPollHandle where
-  toJSON JobPollHandle{..} = JSON.object [
-      "id"      JSON..= JSON.toJSON _jph_id
-    , "log"     JSON..= JSON.toJSON _jph_log
-    , "status"  JSON..= JSON.toJSON _jph_status
-    , "error"   JSON..= JSON.toJSON _jph_error
-    ]
-
-newCorpusForUser :: TestEnv -> T.Text -> IO NodeId
-newCorpusForUser env uname = flip runReaderT env $ runTestMonad $ do
-  uid      <- getUserId (UserName uname)
-  parentId <- getRootId (UserName uname)
-  let corpusName = "Test_Corpus"
-  (corpusId:_) <- mk (Just corpusName) (Nothing :: Maybe HyperdataCorpus) parentId uid
-  pure corpusId
-
--- | Poll the given URL every second until it finishes.
--- Retries up to 60 times (i.e. for 1 minute, before giving up)
-pollUntilFinished :: HasCallStack
-                  => Token
-                  -> Wai.Port
-                  -> (JobPollHandle -> Builder)
-                  -> JobPollHandle
-                  -> WaiSession () JobPollHandle
-pollUntilFinished tkn port mkUrlPiece = go 60
-  where
-   go :: Int -> JobPollHandle -> WaiSession () JobPollHandle
-   go 0 h  = panicTrace $ "pollUntilFinished exhausted attempts. Last found JobPollHandle: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
-   go n h = case _jph_status h == "IsPending" || _jph_status h == "IsRunning" of
-    True -> do
-      liftIO $ threadDelay 1_000_000
-      h' <- protectedJSON tkn "GET" (mkUrl port $ mkUrlPiece h) ""
-      go (n-1) h'
-    False
-     | _jph_status h == "IsFailure"
-     -> panicTrace $ "JobPollHandle contains a failure: " <> T.decodeUtf8 (BL.toStrict $ JSON.encode h)
-     | otherwise
-     -> pure h
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do

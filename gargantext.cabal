@@ -1048,6 +1048,7 @@ test-suite garg-test-hspec
       Test.API.Authentication
       Test.API.Errors
       Test.API.GraphQL
+      Test.API.Phylo
       Test.API.Private
       Test.API.Setup
       Test.API.UpdateList

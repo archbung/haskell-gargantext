@@ -1,26 +1,36 @@
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
 import Gargantext.Prelude
 
+import Control.Monad
+import Data.Text (isInfixOf)
 import Shelly hiding (FilePath)
 import System.IO
 import System.Process
+import Test.Hspec
+import qualified Data.Text as T
 import qualified Test.API                     as API
 import qualified Test.Database.Operations     as DB
 
-import Test.Hspec
 
 startCoreNLPServer :: IO ProcessHandle
 startCoreNLPServer = do
   devNull <- openFile "/dev/null" WriteMode
   let p = proc "./startServer.sh" []
-  (_, _, _, hdl) <- createProcess $ p { cwd = Just "devops/coreNLP/stanford-corenlp-current"
+  (_, _, _, hdl) <- (createProcess $ p { cwd = Just "devops/coreNLP/stanford-corenlp-current"
                     , delegate_ctlc = True
                     , create_group = True
                     , std_out = UseHandle devNull
                     , std_err = UseHandle devNull
-                    }
+                    }) `catch` \e -> case e of
+                                           _ | True <- "does not exist" `isInfixOf` (T.pack . show @SomeException $ e)
+                                             -> fail $ "Cannot execute the 'startServer.sh' script. If this is the " <>
+                                                       "first time you are running the tests, you have to run " <>
+                                                       "cd devops/coreNLP && ./build.sh first. You have to run it only once, " <>
+                                                       "and then you are good to go for the time being."
+                                             | otherwise -> throwIO e
   pure hdl
 
 stopCoreNLPServer :: ProcessHandle -> IO ()
