@@ -50,6 +50,8 @@ import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary
+import Gargantext.Utils.UTCTime (timeMeasured)
+import Gargantext.System.Logging
 
 ------------------------------------------------------------------------
 type API = Summary " Update node according to NodeType params"
@@ -94,7 +96,11 @@ api nId =
   serveJobsAPI UpdateNodeJob $ \jHandle p ->
     updateNode nId p jHandle
 
-updateNode :: (HasNodeStory env err m, HasSettings env, MonadJobStatus m)
+updateNode :: (HasNodeStory env err m
+              , HasSettings env
+              , MonadJobStatus m
+              , MonadLogger m
+              )
            => NodeId
            -> UpdateNodeParams
            -> JobHandle m
@@ -156,7 +162,7 @@ updateNode phyloId (UpdateNodePhylo config) jobHandle = do
 
   let corpusId = fromMaybe (panicTrace "no corpus id") corpusId'
 
-  phy <- flowPhyloAPI (subConfigAPI2config config) corpusId
+  phy <- timeMeasured "updateNode.flowPhyloAPI" $ flowPhyloAPI (subConfigAPI2config config) corpusId
   markProgress 2 jobHandle
 
 {-
@@ -166,7 +172,7 @@ updateNode phyloId (UpdateNodePhylo config) jobHandle = do
                    , _scst_events    = Just []
                    }
 -}
-  _ <- updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
+  _ <- timeMeasured "updateNode.updateHyperdataPhylo" $ updateHyperdata phyloId (HyperdataPhylo Nothing (Just phy))
 
   -- TODO: catch the error of sendMail if userId is not found, then debug
   -- sendMail (UserDBId userId)

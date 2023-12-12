@@ -12,6 +12,8 @@ Portability : POSIX
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Gargantext.Core.Viz.Phylo.API.Tools
   where
@@ -47,6 +49,7 @@ import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude hiding (to)
+import Gargantext.System.Logging
 import Prelude qualified
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
@@ -88,15 +91,15 @@ phylo2dot2json phylo = do
       Just v  -> pure v
 
 
-flowPhyloAPI :: (HasNodeStory env err m, HasNodeError err)
+flowPhyloAPI :: (HasNodeStory env err m, HasNodeError err, MonadLogger m)
              => PhyloConfig -> CorpusId -> m Phylo
 flowPhyloAPI config cId = do
   corpus <- corpusIdtoDocuments (timeUnit config) cId
-  let phyloWithCliques = toPhyloWithoutLink corpus config
+  let !phyloWithCliques = toPhyloWithoutLink corpus config
   -- writePhylo phyloWithCliquesFile phyloWithCliques
-  printDebug "PhyloConfig old: " config
+  $(logLocM) DEBUG $ "PhyloConfig old: " <> show config
 
-  pure $ toPhylo $ setConfig config phyloWithCliques
+  pure $! toPhylo $! setConfig config phyloWithCliques
 
 --------------------------------------------------------------------
 corpusIdtoDocuments :: (HasNodeStory env err m, HasNodeError err)
