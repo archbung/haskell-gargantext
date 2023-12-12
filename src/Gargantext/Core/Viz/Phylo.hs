@@ -26,6 +26,7 @@ one 8, e54847.
 
 module Gargantext.Core.Viz.Phylo where
 
+import Control.DeepSeq
 import Control.Lens (makeLenses)
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON)
@@ -62,7 +63,7 @@ data SeaElevation =
     | Adaptative
       { _adap_steps :: Double }
     | Evolving
-      { _evol_neighborhood :: Bool }      
+      { _evol_neighborhood :: Bool }
     deriving (Show,Generic,Eq)
 
 instance ToSchema SeaElevation
@@ -74,8 +75,8 @@ data PhyloSimilarity =
     | WeightedLogSim
       { _wls_sensibility     :: Double
       , _wls_minSharedNgrams :: Int }
-    | Hamming 
-      { _hmg_sensibility     :: Double 
+    | Hamming
+      { _hmg_sensibility     :: Double
       , _hmg_minSharedNgrams :: Int}
 
     deriving (Show,Generic,Eq)
@@ -188,7 +189,6 @@ data PhyloConfig =
             , exportFilter   :: [Filter]
             } deriving (Show,Generic,Eq)
 
-
 --------------------------------
 -- | SubConfig API & 1Click | --
 --------------------------------
@@ -205,8 +205,8 @@ data PhyloSubConfigAPI =
 
 
 subConfigAPI2config :: PhyloSubConfigAPI -> PhyloConfig
-subConfigAPI2config subConfig = defaultConfig 
-                                           { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 2 
+subConfigAPI2config subConfig = defaultConfig
+                                           { similarity     = WeightedLogJaccard (_sc_phyloProximity subConfig) 2
                                            , phyloSynchrony = ByProximityThreshold (_sc_phyloSynchrony subConfig) 0 AllBranches MergeAllGroups
                                            , phyloQuality   = Quality (_sc_phyloQuality   subConfig) 3
                                            , timeUnit       = _sc_timeUnit       subConfig
@@ -217,7 +217,7 @@ subConfigAPI2config subConfig = defaultConfig
 
 --------------------------
 -- | SubConfig 1Click | --
---------------------------  
+--------------------------
 
 defaultConfig :: PhyloConfig
 defaultConfig =
@@ -474,7 +474,6 @@ data PhyloScale =
 instance ToSchema PhyloScale where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_phylo_")
 
-
 type PhyloGroupId  = (PhyloScaleId, Int)
 
 -- | BranchId : (a scale, a sequence of branch index)
@@ -552,18 +551,15 @@ data Filter = ByBranchSize { _branch_size :: Double } deriving (Show,Generic,Eq)
 instance ToSchema Filter where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "")
 
-
 data Order = Asc | Desc deriving (Show,Generic,Eq, ToSchema)
 
 data Sort = ByBirthDate { _sort_order :: Order } | ByHierarchy {_sort_order :: Order } deriving (Show,Generic,Eq)
 instance ToSchema Sort where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_sort_")
 
-
 data Tagger = MostInclusive | MostEmergentInclusive | MostEmergentTfIdf deriving (Show,Generic,Eq)
 instance ToSchema Tagger where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "")
-
 
 data PhyloLabel =
       BranchLabel
@@ -654,3 +650,30 @@ instance FromJSON PhyloGroup
 instance ToJSON PhyloGroup
 
 $(deriveJSON (unPrefix "_foundations_"  ) ''PhyloFoundations)
+
+-- NFData instances
+
+instance NFData CorpusParser
+instance NFData ListParser
+instance NFData SeaElevation
+instance NFData PhyloSimilarity
+instance NFData SynchronyScope
+instance NFData SynchronyStrategy
+instance NFData Synchrony
+instance NFData MaxCliqueFilter
+instance NFData Cluster
+instance NFData Quality
+instance NFData PhyloConfig
+instance NFData Software
+instance NFData PhyloParam
+instance NFData PhyloFoundations
+instance NFData PhyloCounts
+instance NFData PhyloSources
+instance NFData Phylo
+instance NFData PhyloPeriod
+instance NFData PhyloScale
+instance NFData Filter
+instance NFData Order
+instance NFData Sort
+instance NFData Tagger
+instance NFData PhyloLabel

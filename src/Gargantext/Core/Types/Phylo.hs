@@ -26,6 +26,7 @@ Phylomemy was first described in Chavalarias, D., Cointet, J.-P., 2013. Phylomem
 
 module Gargantext.Core.Types.Phylo where
 
+import Control.DeepSeq
 import Control.Lens (makeLenses)
 import Control.Monad.Fail (fail)
 import Data.Aeson
@@ -51,6 +52,8 @@ data Phylo = Phylo { _phylo_Duration :: (Start, End)
                    , _phylo_Periods  :: [PhyloPeriod]
                    } deriving (Generic)
 
+instance NFData Phylo
+
 -- | UTCTime in seconds since UNIX epoch
 type Start   = POSIXTime
 type End     = POSIXTime
@@ -66,6 +69,8 @@ data PhyloPeriod = PhyloPeriod { _phylo_PeriodId     :: PhyloPeriodId
                                , _phylo_PeriodLevels :: [PhyloLevel]
                                } deriving (Generic)
 
+instance NFData PhyloPeriod
+
 type PhyloPeriodId = (Start, End)
 
 -- | PhyloLevel : levels of phylomemy on level axis
@@ -78,6 +83,8 @@ data PhyloLevel = PhyloLevel { _phylo_LevelId     :: PhyloLevelId
                              , _phylo_LevelGroups :: [PhyloGroup]
                              } deriving (Generic)
 
+instance NFData PhyloLevel
+
 type PhyloLevelId = (PhyloPeriodId, Int)
 
 -- | PhyloGroup : group of ngrams at each level and step
@@ -88,13 +95,15 @@ type PhyloLevelId = (PhyloPeriodId, Int)
 data PhyloGroup = PhyloGroup { _phylo_GroupId            :: PhyloGroupId
                              , _phylo_GroupLabel         :: Maybe Text
                              , _phylo_GroupNgrams        :: [NgramId]
-                   
+
                              , _phylo_GroupPeriodParents :: [Edge]
                              , _phylo_GroupPeriodChilds  :: [Edge]
-                   
+
                              , _phylo_GroupLevelParents  :: [Edge]
                              , _phylo_GroupLevelChilds   :: [Edge]
                              } deriving (Generic)
+
+instance NFData PhyloGroup
 
 type PhyloGroupId = (PhyloLevelId, Int)
 type Edge         = (PhyloGroupId, Weight)

@@ -19,7 +19,7 @@ module Gargantext.Core.Viz.Phylo.API.Tools
   where
 
 import Control.Lens hiding (Context)
-import Data.Aeson (Value, decodeFileStrict, eitherDecode, encode)
+import Data.Aeson (Value, decodeFileStrict, encode, eitherDecodeFileStrict')
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Map.Strict qualified as Map
 import Data.Proxy
@@ -54,6 +54,7 @@ import Prelude qualified
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
 import System.Process qualified as Shell
+import Gargantext.Utils.UTCTime (timeMeasured)
 
 --------------------------------------------------------------------
 getPhyloData :: HasNodeError err
@@ -99,7 +100,12 @@ flowPhyloAPI config cId = do
   -- writePhylo phyloWithCliquesFile phyloWithCliques
   $(logLocM) DEBUG $ "PhyloConfig old: " <> show config
 
-  pure $! toPhylo $! setConfig config phyloWithCliques
+  _ <- timeMeasured "flowPhyloAPI.phyloWithCliques" (pure $! phyloWithCliques)
+
+  let !phyloConfigured = setConfig config phyloWithCliques
+  _ <- timeMeasured "flowPhyloAPI.phyloConfigured" (pure $! phyloConfigured)
+
+  pure $! toPhylo phyloConfigured
 
 --------------------------------------------------------------------
 corpusIdtoDocuments :: (HasNodeStory env err m, HasNodeError err)
@@ -195,13 +201,8 @@ writePhylo path phylo = Lazy.writeFile path $ encode phylo
 
 readPhylo :: [Char] -> IO Phylo
 readPhylo path = do
-  phyloJson <- (eitherDecode <$> readJson path) :: IO (Either Prelude.String Phylo)
-  case phyloJson of
-    Left err -> do
-      putStrLn err
-      undefined
-    Right phylo -> pure phylo
-
+  phyloJson <- eitherDecodeFileStrict' @Phylo path
+  either errorTrace pure phyloJson
 
 -- | To read and decode a Json file
 readJson :: FilePath -> IO Lazy.ByteString
