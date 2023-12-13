@@ -15,6 +15,15 @@ rec {
                           ];
                 })
            else pkgs.haskell.compiler.ghc8107;
+  graphviz = pkgs.graphviz.overrideAttrs (finalAttrs: previousAttrs: {
+                # Increase the YY_BUF_SIZE, see https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/290#note_9015
+                patches = [
+                            (pkgs.fetchpatch {
+                              url = "https://gist.githubusercontent.com/adinapoli/e93ca7b1d714d27f4af537716b03e3bb/raw/b9cc297c3465878da2d18ee92a3f9b8273923493/graphviz-yy-buf-size.patch";
+                              sha256 = "sha256-8Q3tf37iYaPV50P+Vf/n263ordECiu5eKwONCy3ynV8=";
+                            })
+                          ];
+                });
   haskell1 = pkgs.haskell // {
       packages = pkgs.haskell.packages // {
         ghc8107 = pkgs.haskell.packages.ghc8107.override {
