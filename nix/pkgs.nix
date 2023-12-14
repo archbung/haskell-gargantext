@@ -125,8 +125,8 @@ rec {
     expat
     icu
     graphviz
-    llvm_15
-    clang_15
+    llvm_11
+    clang_11
     gcc7
     igraph_0_10_4
     libpqxx

@@ -72,27 +72,20 @@ extra-deps:
   commit: 1370fea1939e2378ce344e512d80671ac700e787
   # Accelerate Linear Algebra and specific instances
 - git: https://github.com/AccelerateHS/accelerate.git
-  # latest version from github (2023-12-13)
   commit: 334d05519436bb7f20f9926ec76418f5b8afa359
 - git: https://github.com/alpmestan/accelerate-arithmetic.git
   commit: a110807651036ca2228a76507ee35bbf7aedf87a
 - git: https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git
   commit: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
-- git: https://github.com/AccelerateHS/accelerate-llvm.git
-  # latest version from github (2023-12-13)
-  commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
+- git: https://github.com/alpmestan/accelerate-llvm.git
+  commit: 944f5a4aea35ee6aedb81ea754bf46b131fce9e3
   subdirs:
     - accelerate-llvm/
     - accelerate-llvm-native/
-- github: llvm-hs/llvm-hs
-  commit: e4b3cfa47e72f094ab109884f18acfc666b0fb7d  # llvm-15
-  # commit: 423220bffac4990d019fc088c46c5f25310d5a33  # llvm-12
-  subdirs:
-    - llvm-hs
-    - llvm-hs-pure
 - git: https://github.com/adinapoli/wikiparsec.git
   commit: b3519a0351ae9515497680571f76200c24dedb53
   # Gargantext-graph
+- eigen-3.3.7.0@sha256:7c24a86426b238e02ba0ac2179cc44997518b443a13828ed7a791fe49a6dffa5,82060
 - git: https://github.com/alpmestan/sparse-linear.git
   commit: bc6ca8058077b0b5702ea4b88bd4189cfcad267a
   subdirs:
@@ -103,6 +96,10 @@ extra-deps:
     - packages/base
 - git: https://github.com/chessai/eigen.git
   commit: 1790fdf9138970dde0dbabf8b270698145a4a88c
+- git: https://github.com/adinapoli/llvm-hs.git
+  commit: 787dddc034c94fbe5322b3a3c766c153c9259306
+  subdirs:
+    - llvm-hs-pure
   # Mercury is a reputable Haskell company.
 - git: https://github.com/MercuryTechnologies/ekg-json.git
   commit: 232db57d6ce0940fcc902adf30a9ed3f3561f21d
