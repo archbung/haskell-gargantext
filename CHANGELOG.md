@@ -1,5 +1,9 @@
-## Version 0.0.6.9.9.9.4.3
+## Version 0.0.6.9.9.9.4.4
 
+* [FRONT][FIX][trim / deblank missing in invitations modal box (#618)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/618)
+* [FRONT][FIX][[Breadcrumb] Remove unnecessary informations (#616)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/616)
+
+## Version 0.0.6.9.9.9.4.3
 
 * [BACK][LOGS][A consistent error format for Gargantext (#267)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/267)
 * [BACK][ADM] Build Deps / test / cabal
