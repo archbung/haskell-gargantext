@@ -156,10 +156,11 @@ source-repository-package
     location: https://github.com/chessai/eigen.git
     tag: 1790fdf9138970dde0dbabf8b270698145a4a88c
 
+-- llvm-12 with support for GHC 9.4.*
 source-repository-package
     type: git
     location: https://github.com/adinapoli/llvm-hs.git
-    tag: 787dddc034c94fbe5322b3a3c766c153c9259306
+    tag: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
     subdir: llvm-hs-pure
 
 source-repository-package

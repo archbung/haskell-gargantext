@@ -1,34 +1,16 @@
-{ pkgs       ? import ./pinned-23.11.nix {} }:
+{ pkgs       ? import ./pinned-23.05.nix {} }:
 
 rec {
   inherit pkgs;
-  # If we are on a Mac, in order to build successfully with cabal we need a bit more work.
-  ghc = if pkgs.stdenv.isDarwin
-           then haskell1.compiler.ghc947.overrideAttrs (finalAttrs: previousAttrs: {
-                # See https://github.com/NixOS/nixpkgs/pull/149942/files
-                patches = previousAttrs.patches ++ [
-                            # Reverts the linking behavior of GHC to not resolve `-libc++` to `c++`.
-                            (pkgs.fetchpatch {
-                              url = "https://gist.githubusercontent.com/adinapoli/bf722db15f72763bf79dff13a3104b6f/raw/21e4fe65e71e721aece563b0c39be6ba1ace5b28/ghc947-macOS-loadArchive-fix.patch";
-                              sha256 = "sha256-0rWN6nGIVlB65QBGX3PaHPQFCitGGC8wTJg8kPJu5KQ=";
-                            })
-                          ];
-                })
-           else pkgs.haskell.compiler.ghc947;
-  haskell1 = pkgs.haskell // {
-      packages = pkgs.haskell.packages // {
-        ghc947 = pkgs.haskell.packages.ghc947.override {
-          overrides = self: super: {
-            #directory            = self.callPackage ./overlays/directory-1.3.7.1.nix {};
-            #process              = self.callPackage ./overlays/process-1.6.17.0.nix {};
-            #hackage-security     = self.callPackage ./overlays/hackage-security-0.6.2.3.nix {};
-            #Cabal                = self.callPackage ./overlays/Cabal-3.10.1.0.nix {};
-            #Cabal-syntax         = self.callPackage ./overlays/Cabal-syntax-3.10.1.0.nix {};
-            #cabal-install-solver = self.callPackage ./overlays/cabal-install-solver-3.10.1.0.nix {};
-            #cabal-install        = self.callPackage ./overlays/cabal-install-3.10.1.0.nix {};
-          };
-        };
-      };
+  ghc947 = pkgs.callPackage ./overlays/ghc947.nix {
+      bootPkgs = pkgs.haskell.packages.ghc8107;
+      inherit (pkgs.buildPackages.python3Packages) sphinx;
+      # Need to use apple's patched xattr until
+      # https://github.com/xattr/xattr/issues/44 and
+      # https://github.com/xattr/xattr/issues/55 are solved.
+      inherit (pkgs.buildPackages.darwin) xattr autoSignDarwinBinariesHook;
+      buildTargetLlvmPackages = pkgs.pkgsBuildTarget.llvmPackages_12;
+      llvmPackages = pkgs.llvmPackages_12;
   };
   #cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables haskell1.packages.ghc947.cabal-install;
   graphviz = pkgs.graphviz.overrideAttrs (finalAttrs: previousAttrs: {
@@ -44,7 +26,7 @@ rec {
   igraph_0_10_4 = pkgs.igraph.overrideAttrs (finalAttrs: previousAttrs: {
     version = "0.10.4";
 
-    nativeBuildInputs = previousAttrs.nativeBuildInputs or [] ++ [ pkgs.gcc7 pkgs.clang_11 ];
+    nativeBuildInputs = previousAttrs.nativeBuildInputs or [] ++ [ pkgs.clang_12 ];
 
     src = pkgs.fetchFromGitHub {
       owner = "igraph";
@@ -99,7 +81,7 @@ rec {
 
   });
   hsBuildInputs = [
-    ghc
+    ghc947
     #cabal_install_3_10_1_0
   ];
   nonhsBuildInputs = with pkgs; [
@@ -121,12 +103,11 @@ rec {
     zlib
     blas
     gfortran7
-    #    gfortran7.cc.lib
     expat
     icu
     graphviz
-    llvm_11
-    clang_11
+    llvm_12
+    clang_12
     gcc7
     igraph_0_10_4
     libpqxx
