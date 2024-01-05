@@ -41,9 +41,9 @@ toDoc la (ISTEX.Document i t a ab d s) = do
                            , _hd_uniqIdBdd = Nothing
                            , _hd_page      = Nothing
                            , _hd_title     = t
-                           , _hd_authors = Just $ foldl (\x y -> x <> ", " <> y) "" (map ISTEX._author_name a)
-                           , _hd_institutes = Just $ foldl (\x y -> x <> ", " <> y) "" (concat $ (map ISTEX._author_affiliations) a)
-                           , _hd_source = Just $ foldl (\x y -> x <> ", " <> y) "" (ISTEX._source_title s)
+                           , _hd_authors = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" (map ISTEX._author_name a)
+                           , _hd_institutes = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" (concat $ (map ISTEX._author_affiliations) a)
+                           , _hd_source = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" (ISTEX._source_title s)
                            , _hd_abstract = ab
                            , _hd_publication_date = fmap (T.pack . show) utctime
                            , _hd_publication_year = pub_year
