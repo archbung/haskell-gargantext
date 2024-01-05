@@ -3,6 +3,7 @@
 rec {
   inherit pkgs;
   ghc947 = pkgs.callPackage ./overlays/ghc947.nix {
+      stdenv = pkgs.clang12Stdenv;
       bootPkgs = pkgs.haskell.packages.ghc8107;
       inherit (pkgs.buildPackages.python3Packages) sphinx;
       # Need to use apple's patched xattr until
@@ -11,8 +12,9 @@ rec {
       inherit (pkgs.buildPackages.darwin) xattr autoSignDarwinBinariesHook;
       buildTargetLlvmPackages = pkgs.pkgsBuildTarget.llvmPackages_12;
       llvmPackages = pkgs.llvmPackages_12;
+      targetCC = pkgs.clang12Stdenv.cc;
   };
-  #cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables haskell1.packages.ghc947.cabal-install;
+  cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables pkgs.haskell.packages.ghc947.cabal-install;
   graphviz = pkgs.graphviz.overrideAttrs (finalAttrs: previousAttrs: {
                 # Increase the YY_BUF_SIZE, see https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/290#note_9015
                 patches = [
@@ -82,7 +84,7 @@ rec {
   });
   hsBuildInputs = [
     ghc947
-    #cabal_install_3_10_1_0
+    cabal_install_3_10_1_0
   ];
   nonhsBuildInputs = with pkgs; [
     bzip2
@@ -106,8 +108,8 @@ rec {
     expat
     icu
     graphviz
-    llvm_12
     clang_12
+    llvm_12
     gcc7
     igraph_0_10_4
     libpqxx
@@ -119,8 +121,11 @@ rec {
   shellHook = ''
     export LD_LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}:$LD_LIBRARY_PATH"
     export LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}"
+    export PATH="${pkgs.clang_12}/bin:$PATH"
+    export NIX_CC="${pkgs.clang_12}"
+    export CC="${pkgs.clang_12}/bin/clang"
   '';
-  shell = pkgs.mkShell {
+  shell = pkgs.mkShell.override { stdenv = pkgs.clang12Stdenv; } {
     name = "gargantext-shell";
     buildInputs = hsBuildInputs ++ nonhsBuildInputs;
     inherit shellHook;

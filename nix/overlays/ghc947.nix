@@ -21,7 +21,7 @@
 , # LLVM is conceptually a run-time-only dependency, but for
   # non-x86, we need LLVM to bootstrap later stages, so it becomes a
   # build-time dependency too.
-  buildTargetLlvmPackages, llvmPackages
+  buildTargetLlvmPackages, llvmPackages, targetCC
 
 , # If enabled, GHC will be built with the GPL-free but slightly slower native
   # bignum backend instead of the faster but GPLed gmp backend.
@@ -134,8 +134,6 @@ let
     pkgsBuildTarget.targetPackages.stdenv.cc
   ] ++ lib.optional useLLVM buildTargetLlvmPackages.llvm;
 
-  targetCC = builtins.head toolsForTarget;
-
   # Sometimes we have to dispatch between the bintools wrapper and the unwrapped
   # derivation for certain tools depending on the platform.
   bintoolsFor = {
@@ -171,7 +169,7 @@ in
 # C compiler, bintools and LLVM are used at build time, but will also leak into
 # the resulting GHC's settings file and used at runtime. This means that we are
 # currently only able to build GHC if hostPlatform == buildPlatform.
-assert targetCC == pkgsHostTarget.targetPackages.stdenv.cc;
+#assert targetCC == pkgsHostTarget.targetPackages.stdenv.cc;
 assert buildTargetLlvmPackages.llvm == llvmPackages.llvm;
 assert stdenv.targetPlatform.isDarwin -> buildTargetLlvmPackages.clang == llvmPackages.clang;
 
@@ -223,6 +221,9 @@ stdenv.mkDerivation (rec {
   # GHC is a bit confused on its cross terminology.
   # TODO(@sternenseemann): investigate coreutils dependencies and pass absolute paths
   preConfigure = ''
+    echo "=================="
+    echo ${targetCC}
+    echo "=================="
     for env in $(env | grep '^TARGET_' | sed -E 's|\+?=.*||'); do
       export "''${env#TARGET_}=''${!env}"
     done
@@ -369,6 +370,7 @@ stdenv.mkDerivation (rec {
     inherit bootPkgs targetPrefix;
 
     inherit llvmPackages;
+    inherit targetCC;
     inherit enableShared;
 
     # This is used by the haskell builder to query

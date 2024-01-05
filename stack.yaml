@@ -77,8 +77,8 @@ extra-deps:
   commit: a110807651036ca2228a76507ee35bbf7aedf87a
 - git: https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git
   commit: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
-- git: https://github.com/alpmestan/accelerate-llvm.git
-  commit: 944f5a4aea35ee6aedb81ea754bf46b131fce9e3
+- git: https://github.com/AccelerateHS/accelerate-llvm.git
+  commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
   subdirs:
     - accelerate-llvm/
     - accelerate-llvm-native/
@@ -97,8 +97,9 @@ extra-deps:
 - git: https://github.com/chessai/eigen.git
   commit: 1790fdf9138970dde0dbabf8b270698145a4a88c
 - git: https://github.com/adinapoli/llvm-hs.git
-  commit: 787dddc034c94fbe5322b3a3c766c153c9259306
+  commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
   subdirs:
+    - llvm-hs
     - llvm-hs-pure
   # Mercury is a reputable Haskell company.
 - git: https://github.com/MercuryTechnologies/ekg-json.git
@@ -106,6 +107,9 @@ extra-deps:
   # Temporary fork of boolexpr
 - git: https://github.com/adinapoli/boolexpr.git
   commit: 91928b5d7f9342e9865dde0d94862792d2b88779
+  # Temporary fork of duckling
+- git: https://github.com/adinapoli/duckling.git
+  commit: d84d64d79cbdd2efb874cbb1bc804ac013e848e2
   # Others dependencies (using stack resolver)
 - HSvm-0.1.1.3.22
 - KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
@@ -113,7 +117,6 @@ extra-deps:
 - Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
 - context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
 - dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147
-- duckling-0.2.0.0@sha256:84becd4e48ee3676cdd6fe5745a77ee60e365ea730cd759610c8a7738f3eb4a6,60543
 - full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
 - fullstop-0.1.4@sha256:80a3e382ef53551bb936e7da8b2825621df0ea169af1212debcb0a90010b30c8,2044
 - ghc-clippy-plugin-0.0.0.1
