@@ -114,7 +114,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
-    tag: 588e104fe7593210956610cab0041fd16584a4ce
+    tag: 2cc9f625beb81cd431fc64d902f4572fb3c577db
 
 source-repository-package
     type: git
@@ -154,7 +154,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/chessai/eigen.git
-    tag: 1790fdf9138970dde0dbabf8b270698145a4a88c
+    tag: 8fff32a43df743c8c83428a86dd566a0936a4fba
 
 -- llvm-12 with support for GHC 9.4.*
 source-repository-package

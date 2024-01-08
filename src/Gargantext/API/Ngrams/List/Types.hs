@@ -9,12 +9,9 @@ Portability : POSIX
 
 -}
 
-
-module Gargantext.API.Ngrams.List.Types where
-
---{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeOperators     #-}
 
+module Gargantext.API.Ngrams.List.Types where
 
 --import Control.Lens hiding (elements, Indexed)
 import Data.Aeson

@@ -85,7 +85,8 @@ extra-deps:
 - git: https://github.com/adinapoli/wikiparsec.git
   commit: b3519a0351ae9515497680571f76200c24dedb53
   # Gargantext-graph
-- eigen-3.3.7.0@sha256:7c24a86426b238e02ba0ac2179cc44997518b443a13828ed7a791fe49a6dffa5,82060
+- git: https://github.com/chessai/eigen.git
+  commit: 8fff32a43df743c8c83428a86dd566a0936a4fba
 - git: https://github.com/alpmestan/sparse-linear.git
   commit: bc6ca8058077b0b5702ea4b88bd4189cfcad267a
   subdirs:
@@ -119,7 +120,6 @@ extra-deps:
 - dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147
 - full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
 - fullstop-0.1.4@sha256:80a3e382ef53551bb936e7da8b2825621df0ea169af1212debcb0a90010b30c8,2044
-- ghc-clippy-plugin-0.0.0.1
 - hgal-2.0.0.2@sha256:13d58afd0668b9cb881c612eff8488a0e289edd4bbffa893df4beee60cfeb73b,653
 - hsparql-0.3.8
 - hspec-2.11.1
