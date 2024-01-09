@@ -110,7 +110,9 @@ extra-deps:
   commit: 91928b5d7f9342e9865dde0d94862792d2b88779
   # Temporary fork of duckling
 - git: https://github.com/adinapoli/duckling.git
-  commit: d84d64d79cbdd2efb874cbb1bc804ac013e848e2
+  commit: 23603a832117e5352d5b0fb9bb1110228324b35a
+- git: https://github.com/adinapoli/text16-compat.git
+  commit: 85533b5d597e6fc5498411b4bcfc76380ec80d71
   # Others dependencies (using stack resolver)
 - HSvm-0.1.1.3.22
 - KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562

@@ -3,7 +3,7 @@
 rec {
   inherit pkgs;
   ghc947 = pkgs.callPackage ./overlays/ghc947.nix {
-      stdenv = pkgs.clang12Stdenv;
+      stdenv = pkgs.gccStdenv;
       bootPkgs = pkgs.haskell.packages.ghc8107;
       inherit (pkgs.buildPackages.python3Packages) sphinx;
       # Need to use apple's patched xattr until
@@ -110,7 +110,7 @@ rec {
     graphviz
     clang_12
     llvm_12
-    gcc7
+    gcc12
     igraph_0_10_4
     libpqxx
     libsodium
@@ -121,11 +121,11 @@ rec {
   shellHook = ''
     export LD_LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}:$LD_LIBRARY_PATH"
     export LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}"
-    export PATH="${pkgs.clang_12}/bin:$PATH"
-    export NIX_CC="${pkgs.clang_12}"
-    export CC="${pkgs.clang_12}/bin/clang"
+    export PATH="${pkgs.gccStdenv}/bin:$PATH"
+    export NIX_CC="${pkgs.gccStdenv}"
+    export CC="${pkgs.gccStdenv}/bin/gcc"
   '';
-  shell = pkgs.mkShell.override { stdenv = pkgs.clang12Stdenv; } {
+  shell = pkgs.mkShell.override { stdenv = pkgs.gccStdenv; } {
     name = "gargantext-shell";
     buildInputs = hsBuildInputs ++ nonhsBuildInputs;
     inherit shellHook;

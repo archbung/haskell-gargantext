@@ -207,8 +207,8 @@ stdenv.mkDerivation (rec {
   ] ++ (if stdenv.isDarwin
            then [ # Reverts the linking behavior of GHC to not resolve `-libc++` to `c++`.
                     (fetchpatch {
-                      url = "https://gist.githubusercontent.com/adinapoli/bf722db15f72763bf79dff13a3104b6f/raw/21e4fe65e71e721aece563b0c39be6ba1ace5b28/ghc947-macOS-loadArchive-fix.patch";
-                      sha256 = "sha256-0rWN6nGIVlB65QBGX3PaHPQFCitGGC8wTJg8kPJu5KQ=";
+                      url = "https://gist.githubusercontent.com/adinapoli/bf722db15f72763bf79dff13a3104b6f/raw/362da0aa3db5c530e0d276183ba68569f216d65a/ghc947-macOS-loadArchive-fix.patch";
+                      sha256 = "sha256-0tHrkWRKFWUewj3uIA0DujVCXo1qgX2lA5p0MIsAHYs=";
                     })
                 ]
            else []);
