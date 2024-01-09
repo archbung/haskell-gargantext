@@ -35,6 +35,7 @@ import Gargantext.API.Node.Corpus.New.Types (FileFormat(..), FileType(..))
 import Gargantext.API.Node.Types (NewWithForm(..))
 import Gargantext.API.Prelude
 import Gargantext.Core (Lang)
+import Gargantext.Core.NodeStory (HasNodeArchiveStoryImmediateSaver)
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Action.Flow.Types
@@ -70,7 +71,10 @@ api authenticatedUser nId =
 
 
 
-frameCalcUploadAsync :: (HasConfig env, FlowCmdM env err m, MonadJobStatus m)
+frameCalcUploadAsync :: ( HasConfig env
+                        , FlowCmdM env err m
+                        , MonadJobStatus m
+                        , HasNodeArchiveStoryImmediateSaver env )
                      => AuthenticatedUser
                      -- ^ The logged-in user
                      -> NodeId
