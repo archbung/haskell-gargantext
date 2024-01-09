@@ -30,11 +30,9 @@ import Control.Lens (Prism', (#), (^?))
 import Data.Aeson
 import Data.Text qualified as T
 import Gargantext.Core.Types.Individu
-
-import Prelude hiding (null, id, map, sum, show)
-
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..), ContextId, UserId, ParentId)
 import Gargantext.Prelude hiding (sum, head)
+import Prelude hiding (null, id, map, sum, show)
 import Prelude qualified
 
 data NodeCreationError
@@ -42,6 +40,9 @@ data NodeCreationError
   | UserParentDoesNotExist  UserId
   | UserHasNegativeId       UserId
   | InsertNodeFailed        UserId ParentId
+  deriving (Show, Eq, Generic)
+
+instance ToJSON NodeCreationError
 
 renderNodeCreationFailed :: NodeCreationError -> T.Text
 renderNodeCreationFailed = \case
@@ -56,13 +57,16 @@ data NodeLookupError
   | UserDoesNotExist     UserId
   | UserNameDoesNotExist Username
   | UserHasTooManyRoots UserId [NodeId]
+  deriving (Show, Eq, Generic)
+
+instance ToJSON NodeLookupError
 
 renderNodeLookupFailed :: NodeLookupError -> T.Text
 renderNodeLookupFailed = \case
   NodeDoesNotExist nid   -> "node with id " <> T.pack (show nid) <> " couldn't be found."
   NodeParentDoesNotExist nid -> "no parent for node with id " <> T.pack (show nid) <> "."
   UserDoesNotExist uid -> "user with id " <> T.pack (show uid) <> " couldn't be found."
-  UserNameDoesNotExist uname -> "user with username '" <> uname <> " couldn't be found."
+  UserNameDoesNotExist uname -> "user with username '" <> uname <> "' couldn't be found."
   UserHasTooManyRoots uid roots -> "user with id " <> T.pack (show uid) <> " has too many roots: [" <> T.intercalate "," (map (T.pack . show) roots)
 
 ------------------------------------------------------------------------
@@ -95,11 +99,29 @@ instance Prelude.Show NodeError
     show (DoesNotExist n)   = "Node does not exist (" <> show n <> ")"
 
 instance ToJSON NodeError where
+  toJSON (DoesNotExist n) =
+    object [ ( "error", "Node does not exist" )
+           , ( "node", toJSON n ) ]
   toJSON (NoListFound listId) =
     object [ ( "error", "No list found" )
            , ( "listId", toJSON listId ) ]
+  toJSON (NodeError e) =
+    object [ ( "error", "Node error" )
+           , ( "exception", toJSON $ T.pack $ show e ) ]
+  toJSON (NoUserFound ur) =
+    object [ ( "error", "No user found" )
+           , ( "user", toJSON ur ) ]
+  toJSON (NodeCreationFailed reason) =
+    object [ ( "error", "Node creation failed" )
+           , ( "reason", toJSON reason ) ]
+  toJSON (NodeLookupFailed reason) =
+    object [ ( "error", "Node lookup failed" )
+           , ( "reason", toJSON reason ) ]
+  toJSON (NoContextFound n) =
+    object [ ( "error", "No context found" )
+           , ( "node", toJSON n ) ]
   toJSON err =
-    object [ ( "error", String $ T.pack $ show err ) ]
+    object [ ( "error", toJSON $ T.pack $ show err ) ]
 
 class HasNodeError e where
   _NodeError :: Prism' e NodeError

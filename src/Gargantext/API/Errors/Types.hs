@@ -260,6 +260,11 @@ data instance ToFrontendErrorData 'EC_403__login_failed_error =
   deriving (Show, Eq, Generic)
 
 
+data instance ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password =
+  FE_login_failed_invalid_username_or_password
+  deriving (Show, Eq, Generic)
+
+
 --
 -- Tree errors
 --
@@ -472,6 +477,15 @@ instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
     lfe_node_id <- o .: "node_id"
     pure FE_login_failed_error{..}
 
+
+instance ToJSON (ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) where
+  toJSON FE_login_failed_invalid_username_or_password =
+    object []
+
+instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) where
+  parseJSON = withObject "FE_login_failed_invalid_username_or_password" $ \_o -> do
+    pure FE_login_failed_invalid_username_or_password
+
 --
 -- internal server errors
 --
@@ -638,6 +652,10 @@ genFrontendErr be = do
             uid <- arbitrary
             pure $ mkFrontendErr' txt $ FE_login_failed_error nid uid
 
+    EC_403__login_failed_invalid_username_or_password
+      -> do
+            pure $ mkFrontendErr' txt $ FE_login_failed_invalid_username_or_password
+
     -- internal error
     EC_500__internal_server_error
       -> do err <- arbitrary
@@ -751,6 +769,10 @@ instance FromJSON FrontendError where
       -- authentication errors
       EC_403__login_failed_error -> do
         (fe_data :: ToFrontendErrorData 'EC_403__login_failed_error) <- o .: "data"
+        pure FrontendError{..}
+
+      EC_403__login_failed_invalid_username_or_password -> do
+        (fe_data :: ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) <- o .: "data"
         pure FrontendError{..}
 
       -- internal server error

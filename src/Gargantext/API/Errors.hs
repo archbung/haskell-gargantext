@@ -93,6 +93,8 @@ authErrorToFrontendError = \case
   -- externally).
   LoginFailed nid uid _
     -> mkFrontendErr' "Invalid username/password, or invalid session token." $ FE_login_failed_error nid uid
+  InvalidUsernameOrPassword
+    -> mkFrontendErr' "Invalid username or password." $ FE_login_failed_invalid_username_or_password
 
 nodeErrorToFrontendError :: NodeError -> FrontendError
 nodeErrorToFrontendError ne = case ne of
