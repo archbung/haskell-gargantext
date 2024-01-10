@@ -114,11 +114,7 @@ withValidLogin port ur pwd act = do
   result <- liftIO $ runClientM (auth_api authPayload) clientEnv
   case result of
     Left err  -> liftIO $ throwIO $ Prelude.userError (show err)
-    Right res
-      | Just tkn <- _authRes_valid res
-      -> act (_authVal_token tkn)
-      | otherwise
-      -> Prelude.fail $ "No token found in " <> show res
+    Right res -> act $ _authRes_token res
 
 
 tests :: Spec
