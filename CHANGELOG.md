@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.4.5
+
+* [FRONT][FIX][The first change in the map term is never taken into account (#622)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/622)
+* [BACK][FIX][[Istex import] Changes in the parser: documents sources are wrong (JSON from ZIP file) (#293)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/293)
+
 ## Version 0.0.6.9.9.9.4.4
 
 * [FRONT][FIX][trim / deblank missing in invitations modal box (#618)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/618)
