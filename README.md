@@ -74,21 +74,6 @@ cabal update
 cabal install
 ```
 
-#### Section for Developers only
-
-Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
-
-```shell
-cabal v2-install stack2cabal-1.0.14
-```
-
-And finally:
-
-```shell
-stack2cabal --no-run-hpack -p '2023-06-25'
-cabal v2-build
-```
-
 #### With Stack
 
 Install [Stack (or Haskell Tool Stack)](https://docs.haskellstack.org/en/stable/):
@@ -110,8 +95,23 @@ stack build --fast
 ```
 
 
-
 #### Keeping the cabal.project updated with stack.yaml
+
+(Section for Developers using cabal only)
+
+Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
+
+```shell
+cabal v2-install stack2cabal-1.0.14
+```
+
+And finally:
+
+```shell
+stack2cabal --no-run-hpack -p '2023-06-25'
+cabal v2-build
+```
+
 
 Simply run:
 
