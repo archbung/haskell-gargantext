@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.4.7
+
+* [BACK][LOGS][Add server options to obfuscate credentials from logs (#298)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/298)
+* [BACK][DOC] README
+
 ## Version 0.0.6.9.9.9.4.6
 
 * [FRONT][FIX][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
