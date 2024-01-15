@@ -97,7 +97,9 @@ get apiKey q l = do
   eRes <- runReaderT PubMed.getMetadataWithC (Config { apiKey  = Just apiKey
                                                      , query   = getRawQuery q
                                                      , perPage = Just 200
-                                                     , mWebEnv = Nothing })
+                                                     , mWebEnv = Nothing
+                                                     , enableDebugLogs = False
+                                                     })
   let takeLimit = case l of
         Nothing -> mapC identity
         Just l' -> takeC $ getLimit l'

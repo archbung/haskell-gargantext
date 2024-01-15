@@ -54,7 +54,7 @@ extra-deps:
   commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
   # External Data API connectors
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
-  commit: 234ad423fa682307ff4843ae4acd725dcc6ffc55
+  commit: 300764df4f78ea6175535f9b78b884cc2aa9da61
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
   commit: 9b1bd17f3ed38eab83e675bb68278922217a9c73
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
@@ -147,6 +147,7 @@ extra-deps:
 - tasty-hspec-1.2.0.3
 - tmp-postgres-1.34.1.0
 - vector-0.12.3.0@sha256:0ae2c1ba86f0077910be242ec6802cc3d7725fe7b2bea6987201aa3737b239b5,7953
+- wai-3.2.4
 
 # For the graph clustering
 ghc-options:

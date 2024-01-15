@@ -14,13 +14,13 @@ STORE_DIR="${1:-$DEFAULT_STORE}"
 expected_cabal_project_hash="69e03370a602f40243373515ff884a2cd50dc02eb6f52cd23ba9016a61fe8069"
 expected_cabal_project_freeze_hash="796f0109611f3381278b1885ae1fa257c4177b99885eb04701938f1107c06ee5"
 
-cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-11-23T20:05:40Z'
+cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-12-10T10:34:46Z'
 
 # Install stack2cabal if it can't be found.
 if ! stack2cabal --help &> /dev/null
 then
     echo "stack2cabal could not be found"
-    cabal --store-dir=$STORE_DIR v2-install --index-state="2023-11-23T20:05:40Z" stack2cabal-1.0.14 --overwrite-policy=always
+    cabal --store-dir=$STORE_DIR v2-install --index-state="2023-12-10T10:34:46Z" stack2cabal-1.0.14 --overwrite-policy=always
 fi
 stack2cabal --no-run-hpack -p '2023-11-23 20:05:40'
 
