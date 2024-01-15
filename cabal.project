@@ -99,7 +99,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
-    tag: c1aba6034ceddcd1cdd0378c3841068c96accca7
+    tag: 9b1bd17f3ed38eab83e675bb68278922217a9c73
 
 source-repository-package
     type: git
@@ -140,6 +140,11 @@ source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/iso639.git
     tag: eab929d106833ded8011a0d6705135e3fc506a9c
+
+source-repository-package
+    type: git
+    location: https://gitlab.iscpif.fr/gargantext/servant-xml-conduit.git
+    tag: 339fd608341bd2652cf5c0e9e76a3293acffbea6
 
 source-repository-package
     type: git
