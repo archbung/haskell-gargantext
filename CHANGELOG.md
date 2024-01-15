@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.4.6
+
+* [FRONT][FIX][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
+
 ## Version 0.0.6.9.9.9.4.5
 
 * [FRONT][FIX][The first change in the map term is never taken into account (#622)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/622)
