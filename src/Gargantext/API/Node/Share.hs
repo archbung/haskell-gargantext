@@ -38,7 +38,7 @@ import Test.QuickCheck.Arbitrary
 
 ------------------------------------------------------------------------
 data ShareNodeParams = ShareTeamParams   { username :: Text  }
-                     | SharePublicParams { node_id  :: NodeId}
+                     | SharePublicParams { node_id  :: NodeId }
   deriving (Generic)
 ------------------------------------------------------------------------
 -- TODO unPrefix "pn_" FromJSON, ToJSON, ToSchema, adapt frontend.

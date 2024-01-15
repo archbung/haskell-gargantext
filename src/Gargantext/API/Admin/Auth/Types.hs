@@ -23,7 +23,7 @@ import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
 import Gargantext.Database.Admin.Types.Node (NodeId(..), ListId, DocId, UserId (..))
 import Gargantext.Prelude hiding (reverse)
 import Servant.Auth.Server
-import Test.QuickCheck (elements, oneof)
+import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
 import qualified Crypto.JWT as Jose
 
@@ -35,19 +35,10 @@ data AuthRequest = AuthRequest { _authReq_username :: Username
                                }
   deriving (Generic)
 
--- TODO: Use an HTTP error to wrap AuthInvalid
-data AuthResponse = AuthResponse { _authRes_valid :: Maybe AuthValid
-                                 , _authRes_inval :: Maybe AuthInvalid
+data AuthResponse = AuthResponse { _authRes_token   :: Token
+                                 , _authRes_tree_id :: TreeId
+                                 , _authRes_user_id :: UserId
                                  }
-  deriving (Generic, Eq, Show)
-
-data AuthInvalid = AuthInvalid { _authInv_message :: Text }
-  deriving (Generic, Eq, Show)
-
-data AuthValid = AuthValid { _authVal_token   :: Token
-                           , _authVal_tree_id :: TreeId
-                           , _authVal_user_id :: UserId
-                           }
   deriving (Generic, Eq, Show)
 
 type Token  = Text
@@ -73,6 +64,7 @@ instance FromJWT AuthenticatedUser
 
 data AuthenticationError
   = LoginFailed NodeId UserId Jose.Error
+  | InvalidUsernameOrPassword
   deriving (Show, Eq)
 
 -- TODO-SECURITY why is the CookieSettings necessary?
@@ -93,22 +85,7 @@ $(deriveJSON (unPrefix "_authRes_") ''AuthResponse)
 instance ToSchema AuthResponse where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authRes_")
 instance Arbitrary AuthResponse where
-  arbitrary = oneof [ AuthResponse Nothing . Just      <$> arbitrary
-                    , flip AuthResponse Nothing . Just <$> arbitrary ]
-
-$(deriveJSON (unPrefix "_authInv_") ''AuthInvalid)
-instance ToSchema AuthInvalid where
-  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authInv_")
-instance Arbitrary AuthInvalid where
-  arbitrary = elements [ AuthInvalid m
-                       | m <- [ "Invalid user", "Invalid password"]
-                       ]
-
-$(deriveJSON (unPrefix "_authVal_") ''AuthValid)
-instance ToSchema AuthValid where
-  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authVal_")
-instance Arbitrary AuthValid where
-  arbitrary = elements [ AuthValid to' tr u
+  arbitrary = elements [ AuthResponse to' tr u
                        | to' <- ["token0", "token1"]
                        , tr <- map UnsafeMkNodeId [1..3]
                        , u <-  map UnsafeMkUserId [1..3]
@@ -140,5 +117,4 @@ $(deriveJSON (unPrefix "_fpGet_") ''ForgotPasswordGet)
 instance ToSchema ForgotPasswordGet where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpGet_")
 
-makeLenses ''AuthValid
 makeLenses ''AuthResponse

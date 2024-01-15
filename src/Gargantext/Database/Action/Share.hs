@@ -72,7 +72,7 @@ membersOfQuery (_NodeId -> teamId) = proc () -> do
   (nn, n, u) <- nodeNode_node_User -< ()
   restrict -< (nn ^. nn_node2_id) .== sqlInt4 teamId
   returnA -< ( user_username <$> u
-             , view node_id <$> n)
+             , view node_id <$> n )
 
 
 nodeNode_node_User :: O.Select ( NodeNodeRead

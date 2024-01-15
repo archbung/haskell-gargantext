@@ -29,7 +29,9 @@ import Prelude qualified
 
 -- FIXME UserName used twice
 data User = UserDBId UserId | UserName Text | RootId NodeId
-  deriving (Eq)
+  deriving (Show, Eq, Generic)
+
+instance ToJSON User
 
 renderUser :: User -> T.Text
 renderUser = \case

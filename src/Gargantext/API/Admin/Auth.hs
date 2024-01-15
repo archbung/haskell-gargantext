@@ -119,9 +119,11 @@ auth :: (HasSettings env, HasAuthenticationError err, DbCmd' env err m)
 auth (AuthRequest u p) = do
   checkAuthRequest' <- checkAuthRequest u p
   case checkAuthRequest' of
-    InvalidUser     -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid username or password")
-    InvalidPassword -> pure $ AuthResponse Nothing (Just $ AuthInvalid "Invalid username or password")
-    Valid to trId uId   -> pure $ AuthResponse (Just $ AuthValid to trId uId) Nothing
+    InvalidUser     -> do
+      throwError $ _AuthenticationError # InvalidUsernameOrPassword
+    InvalidPassword -> do
+      throwError $ _AuthenticationError # InvalidUsernameOrPassword
+    Valid to trId uId   -> pure $ AuthResponse to trId uId
 
 --type instance BasicAuthCfg = BasicAuthData -> IO (AuthResult AuthenticatedUser)
 
