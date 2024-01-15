@@ -53,7 +53,7 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 Verify the installation is complete with
 ```shell
 nix-env --version
-nix-env (Nix) 2.16.0
+nix-env (Nix) 2.19.2
 ```
 
 **Important:** Before building the project with either `stack` or `cabal` you need to be in the correct Nix shell, which will fetch all the required system dependencies. To do so, just type:
@@ -74,6 +74,7 @@ cabal update
 cabal install
 ```
 
+#### Section for Developers only
 
 Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
 
