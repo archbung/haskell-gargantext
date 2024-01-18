@@ -3,7 +3,7 @@ FROM ubuntu:jammy
 ## NOTA BENE: In order for this to be built successfully, you have to run ./devops/coreNLP/build.sh first.
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GHC=8.10.7
+ARG GHC=9.4.7
 ARG STACK=2.7.3
 ARG CABAL=3.10.1.0
 ARG CORENLP=4.5.4
