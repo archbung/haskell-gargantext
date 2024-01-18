@@ -1,19 +1,18 @@
-{ pkgs       ? import ./pinned-23.05.nix {} }:
+{ pkgs       ? import ./pinned-23.11.nix {} }:
 
 rec {
   inherit pkgs;
-  ghc947 = pkgs.callPackage ./overlays/ghc947.nix {
-      stdenv = pkgs.gccStdenv;
-      bootPkgs = pkgs.haskell.packages.ghc8107;
-      inherit (pkgs.buildPackages.python3Packages) sphinx;
-      # Need to use apple's patched xattr until
-      # https://github.com/xattr/xattr/issues/44 and
-      # https://github.com/xattr/xattr/issues/55 are solved.
-      inherit (pkgs.buildPackages.darwin) xattr autoSignDarwinBinariesHook;
-      buildTargetLlvmPackages = pkgs.pkgsBuildTarget.llvmPackages_12;
-      llvmPackages = pkgs.llvmPackages_12;
-      targetCC = pkgs.clang12Stdenv.cc;
-  };
+  ghc947 = if pkgs.stdenv.isDarwin
+           then pkgs.haskell.compiler.ghc947.overrideAttrs (finalAttrs: previousAttrs: {
+                patches = previousAttrs.patches ++ [
+                            # Reverts the linking behavior of GHC to not resolve `-libc++` to `c++`.
+                            (pkgs.fetchpatch {
+                              url = "https://gist.githubusercontent.com/adinapoli/bf722db15f72763bf79dff13a3104b6f/raw/362da0aa3db5c530e0d276183ba68569f216d65a/ghc947-macOS-loadArchive-fix.patch";
+                              sha256 = "sha256-0tHrkWRKFWUewj3uIA0DujVCXo1qgX2lA5p0MIsAHYs=";
+                            })
+                          ];
+                })
+           else pkgs.haskell.compiler.ghc947;
   cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables pkgs.haskell.packages.ghc947.cabal-install;
   graphviz = pkgs.graphviz.overrideAttrs (finalAttrs: previousAttrs: {
                 # Increase the YY_BUF_SIZE, see https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/290#note_9015
