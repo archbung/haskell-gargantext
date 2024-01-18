@@ -113,6 +113,7 @@ rec {
     igraph_0_10_4
     libpqxx
     libsodium
+    zeromq
   ] ++ ( lib.optionals stdenv.isDarwin [
        darwin.apple_sdk.frameworks.Accelerate
        ]);
