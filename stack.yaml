@@ -6,19 +6,9 @@ flags:
         library-only: true
 extra-package-dbs: []
 skip-ghc-check: true
+system-ghc: true
 packages:
 - .
-
-docker:
-  enable: false
-  repo: 'cgenie/stack-build:lts-18.18-garg'
-  run-args:
-    - '--publish=8008:8008'
-
-nix:
-  enable: false
-  add-gc-roots: true
-  shell-file: nix/stack-shell.nix
 
 allow-newer: true
 
@@ -95,8 +85,6 @@ extra-deps:
   commit: b9fca8beee0f23c17a6b2001ec834d071709e6e7
   subdirs:
     - packages/base
-- git: https://github.com/chessai/eigen.git
-  commit: 1790fdf9138970dde0dbabf8b270698145a4a88c
 - git: https://github.com/adinapoli/llvm-hs.git
   commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
   subdirs:
@@ -114,14 +102,13 @@ extra-deps:
 - git: https://github.com/adinapoli/text16-compat.git
   commit: 85533b5d597e6fc5498411b4bcfc76380ec80d71
   # Others dependencies (using stack resolver)
-- HSvm-0.1.1.3.22
-- KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
-- MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
-- Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
 - context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
 - dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147
-- full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
+- fast-tagsoup-1.0.14@sha256:5aacc569a6ab9633077bb181f6bd6a4dde3ebc7a8b844d2fe7b1920a0cf0ba9f,1343
+- fclabels-2.0.5.1@sha256:0ec200ff51561ed6ee60fa52d47427cd4bbbb3ace618884465ce2b27840cc1d7,4621
 - fullstop-0.1.4@sha256:80a3e382ef53551bb936e7da8b2825621df0ea169af1212debcb0a90010b30c8,2044
+- full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
+- ghc-parser-0.2.6.0@sha256:0b0cbceb3bd2762cef201dc54ae302d7918bed23b2f85ffd99c1c8b6a9df32b6,1579
 - hgal-2.0.0.2@sha256:13d58afd0668b9cb881c612eff8488a0e289edd4bbffa893df4beee60cfeb73b,653
 - hsparql-0.3.8
 - hspec-2.11.1
@@ -129,30 +116,44 @@ extra-deps:
 - hspec-discover-2.11.1
 - hspec-expectations-0.8.3
 - hstatistics-0.3.1
+- HSvm-0.1.1.3.22
 - ihaskell-0.11.0.0
 - ipython-kernel-0.11.0.0
+- KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
 - located-base-0.1.1.1@sha256:7c6395f2b6fbf2d5f76c3514f774423838c0ea94e1c6a5530dd3c94b30c9d1c8,1904
 - logging-effect-1.3.12@sha256:72d168dd09887649ba9501627219b6027cbec2d5541931555b7885b133785ce3,1679
 - logict-0.8.0.0
+- MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
 - monad-logger-aeson-0.2.0.0
+- morpheus-graphql-0.24.3
+- morpheus-graphql-app-0.24.3
+- morpheus-graphql-client-0.24.3
+- morpheus-graphql-code-gen-0.24.3
+- morpheus-graphql-code-gen-utils-0.24.3
+- morpheus-graphql-core-0.24.3
+- morpheus-graphql-server-0.24.3
+- morpheus-graphql-subscriptions-0.24.3
+- morpheus-graphql-tests-0.24.3
 - rake-0.0.1@sha256:3380f6567fb17505d1095b7f32222c0b631fa04126ad39726c84262da99c08b3,2025
 - random-1.2.1
 - recover-rtti-0.4.3
+- servant-0.20.1
+- servant-auth-server-0.4.8.0@sha256:f21b8b6a0a31811f31d9b1c1e8a1ca68a0f470cab4ffe8b9c2a41b7649492bb2,5521
+- servant-auth-swagger-0.2.10.2@sha256:eda169d986faf562b6f43ac90d48c4fcf895dc235dd002d523ad582ec9be833f,2909
+- servant-client-core-0.20
 - servant-ekg-0.3.1@sha256:19bd9dc3943983da8e79d6f607614c68faea4054fb889d508c8a2b67b6bdd448,2203
 - servant-flatten-0.2@sha256:276896f7c5cdec5b8f8493f6205fded0cc602d050b58fdb09a6d7c85c3bb0837,1234
 - servant-mock-0.8.7@sha256:64cb3e52bbd51ab6cb25e3f412a99ea712c6c26f1efd117f01a8d1664df49c67,2306
+- servant-server-0.20
+- snap-server-1.1.2.1@sha256:8ea05b9b068c1e86be77073107eadc177d7eec93724963c063877478a062b229,15471
 - stemmer-0.5.2@sha256:823aec56249ec2619f60a2c0d1384b732894dbbbe642856d337ebfe9629a0efd,4082
 - taggy-0.2.1@sha256:7bc55ddba178971dc6052163597f0445a0a2b5b0ca0e84ce651d53d722e3c265,4662
 - taggy-lens-0.1.2@sha256:091ca81d02bd3d7fb493dce0148e1a38f25eb178a1ebd751043a23239e5e3265,3009
 - tasty-hspec-1.2.0.3
 - tmp-postgres-1.34.1.0
+- Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
 - vector-0.12.3.0@sha256:0ae2c1ba86f0077910be242ec6802cc3d7725fe7b2bea6987201aa3737b239b5,7953
 - wai-3.2.4
-- morpheus-graphql-0.24.3
-- morpheus-graphql-app-0.24.3
-- morpheus-graphql-core-0.24.3
-- morpheus-graphql-server-0.24.3
-- morpheus-graphql-subscriptions-0.24.3
 
 # For the graph clustering
 ghc-options:

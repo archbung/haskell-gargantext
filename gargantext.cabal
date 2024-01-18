@@ -498,9 +498,13 @@ library
     , monad-logger ^>= 0.3.36
     , morpheus-graphql >= 0.17.0 && < 0.25
     , morpheus-graphql-app >= 0.17.0 && < 0.25
+    , morpheus-graphql-client >= 0.17.0 && < 0.25
+    , morpheus-graphql-code-gen >= 0.17.0 && < 0.25
+    , morpheus-graphql-code-gen-utils >= 0.17.0 && < 0.25
     , morpheus-graphql-core >= 0.17.0 && < 0.25
     , morpheus-graphql-server >= 0.17.0 && < 0.25
     , morpheus-graphql-subscriptions >= 0.17.0 && < 0.25
+    , morpheus-graphql-tests >= 0.17.0 && < 0.25
     , mtl ^>= 2.2.2
     , natural-transformation ^>= 0.4
     , network-uri ^>= 2.6.4.1

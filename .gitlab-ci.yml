@@ -26,6 +26,7 @@ stack:
   script:
     - echo "Building the project from '$CI_PROJECT_DIR'"
     - nix-shell --run "stack build --no-terminal --fast --dry-run"
+  allow_failure: true
 
 cabal:
   stage: cabal

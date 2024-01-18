@@ -20,7 +20,7 @@ import Data.Kind (Type)
 import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import Prelude
-import Servant.API
+import Servant.API.Alternative
 
 import Gargantext.Utils.Jobs.Map
 import Gargantext.Utils.Jobs.Monad

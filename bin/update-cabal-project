@@ -11,8 +11,8 @@ STORE_DIR="${1:-$DEFAULT_STORE}"
 # `expected_cabal_project_freeze_hash` with the
 # `sha256sum` result calculated on the `cabal.project` and `cabal.project.freeze`.
 # This ensures the files stay deterministic so that CI cache can kick in.
-expected_cabal_project_hash="52c9f9895eea755555fc434657e8bba3f53211c77a24a173da337ee887024854"
-expected_cabal_project_freeze_hash="92cba3fe5ddb3e30bf7c3dfbf2470f21da6eceb30f14feea9b70be8257e7cfc4"
+expected_cabal_project_hash="18ab030988f53446ea717e1f4c7206fab10494d73c37108eebac78094fbf206b"
+expected_cabal_project_freeze_hash="813bbd4fe878104d09b0f2afe46b3e4cef5a541fb1454b965836f2d7a0f0e99e"
 
 cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-12-10T10:34:46Z'
 
@@ -20,7 +20,7 @@ cabal --store-dir=$STORE_DIR v2-update 'hackage.haskell.org,2023-12-10T10:34:46Z
 if ! stack2cabal --help &> /dev/null
 then
     echo "stack2cabal could not be found"
-    cabal --store-dir=$STORE_DIR v2-install --index-state="2023-12-10T10:34:46Z" stack2cabal-1.0.14 --overwrite-policy=always
+    cabal --store-dir=$STORE_DIR v2-install --index-state="2023-12-10T10:34:46Z" --constraint 'Cabal==3.6.3.0' stack2cabal-1.0.14 --overwrite-policy=always
 fi
 stack2cabal --no-run-hpack -p '2023-11-23 20:05:40'
 

@@ -9,8 +9,25 @@ packages:
 
 source-repository-package
     type: git
+    location: https://github.com/AccelerateHS/accelerate.git
+    tag: 334d05519436bb7f20f9926ec76418f5b8afa359
+
+source-repository-package
+    type: git
+    location: https://github.com/AccelerateHS/accelerate-llvm.git
+    tag: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
+    subdir: accelerate-llvm-native/
+            accelerate-llvm/
+
+source-repository-package
+    type: git
     location: https://github.com/adinapoli/boolexpr.git
     tag: 91928b5d7f9342e9865dde0d94862792d2b88779
+
+source-repository-package
+    type: git
+    location: https://github.com/adinapoli/duckling.git
+    tag: 23603a832117e5352d5b0fb9bb1110228324b35a
 
 source-repository-package
     type: git
@@ -19,25 +36,25 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://github.com/adinapoli/llvm-hs.git
+    tag: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
+    subdir: llvm-hs
+            llvm-hs-pure
+
+source-repository-package
+    type: git
+    location: https://github.com/adinapoli/text16-compat.git
+    tag: 85533b5d597e6fc5498411b4bcfc76380ec80d71
+
+source-repository-package
+    type: git
     location: https://github.com/adinapoli/wikiparsec.git
     tag: b3519a0351ae9515497680571f76200c24dedb53
 
 source-repository-package
     type: git
-    location: https://github.com/AccelerateHS/accelerate.git
-    tag: 334d05519436bb7f20f9926ec76418f5b8afa359
-
-source-repository-package
-    type: git
     location: https://github.com/alpmestan/accelerate-arithmetic.git
     tag: a110807651036ca2228a76507ee35bbf7aedf87a
-
-source-repository-package
-    type: git
-    location: https://github.com/AccelerateHS/accelerate-llvm.git
-    tag: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
-    subdir: accelerate-llvm-native/
-            accelerate-llvm/
 
 source-repository-package
     type: git
@@ -58,6 +75,11 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://github.com/chessai/eigen.git
+    tag: 8fff32a43df743c8c83428a86dd566a0936a4fba
+
+source-repository-package
+    type: git
     location: https://github.com/delanoe/data-time-segment.git
     tag: 10a416b9f6c443866b36479c3441ebb3bcdeb7ef
 
@@ -70,11 +92,6 @@ source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git
     tag: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
-
-source-repository-package
-    type: git
-    location: https://gitlab.iscpif.fr/gargantext/patches-class.git
-    tag: 3668d28607867a88b2dfc62158139b3cfd629ddb
 
 source-repository-package
     type: git
@@ -114,7 +131,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
-    tag: 2cc9f625beb81cd431fc64d902f4572fb3c577db
+    tag: 588e104fe7593210956610cab0041fd16584a4ce
 
 source-repository-package
     type: git
@@ -143,27 +160,13 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://gitlab.iscpif.fr/gargantext/patches-class.git
+    tag: 3668d28607867a88b2dfc62158139b3cfd629ddb
+
+source-repository-package
+    type: git
     location: https://gitlab.iscpif.fr/gargantext/servant-xml-conduit.git
     tag: 339fd608341bd2652cf5c0e9e76a3293acffbea6
-
-source-repository-package
-    type: git
-    location: https://github.com/robstewart57/rdf4h.git
-    tag: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
-
-source-repository-package
-    type: git
-    location: https://github.com/chessai/eigen.git
-    tag: 8fff32a43df743c8c83428a86dd566a0936a4fba
-
--- llvm-12 with support for GHC 9.4.*
-source-repository-package
-    type: git
-    location: https://github.com/adinapoli/llvm-hs.git
-    tag: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
-    subdir:
-      llvm-hs
-      llvm-hs-pure
 
 source-repository-package
     type: git
@@ -172,13 +175,8 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/adinapoli/duckling.git
-    tag: 23603a832117e5352d5b0fb9bb1110228324b35a
-
-source-repository-package
-    type: git
-    location: https://github.com/adinapoli/text16-compat.git
-    tag: 85533b5d597e6fc5498411b4bcfc76380ec80d71
+    location: https://github.com/robstewart57/rdf4h.git
+    tag: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
 
 allow-older: *
 allow-newer: *
