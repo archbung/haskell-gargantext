@@ -73,8 +73,6 @@ defaultHyperdataDocument = case decode docExample of
 data StatusV3  = StatusV3 { statusV3_error  :: !(Maybe Text)
                           , statusV3_action :: !(Maybe Text)
                       } deriving (Show, Generic)
-$(deriveJSON (unPrefix "statusV3_") ''StatusV3)
-
 
 ------------------------------------------------------------------------
 data HyperdataDocumentV3 = HyperdataDocumentV3 { _hdv3_publication_day    :: !(Maybe Int)
@@ -140,12 +138,25 @@ arbitraryHyperdataDocuments =
 instance Hyperdata HyperdataDocument
 instance Hyperdata HyperdataDocumentV3
 ------------------------------------------------------------------------
-$(makeLenses ''HyperdataDocument)
-makePrisms ''HyperdataDocument
-
-$(makeLenses ''HyperdataDocumentV3)
-
 -- $(deriveJSON (unPrefix "_hd_") ''HyperdataDocument)
+instance ToSchema HyperdataDocument where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema (unPrefixSwagger "_hd_") proxy
+    & mapped.schema.description ?~ "Document Hyperdata"
+    & mapped.schema.example ?~ toJSON defaultHyperdataDocument
+
+{-
+-- | For now HyperdataDocumentV3 is not exposed with the API
+instance ToSchema HyperdataDocumentV3 where
+  declareNamedSchema proxy =
+    genericDeclareNamedSchema (unPrefixSwagger "hyperdataDocumentV3_") proxy
+    & mapped.schema.description ?~ "Document Hyperdata for Garg V3"
+    & mapped.schema.example ?~ toJSON defaultHyperdataDocumentV3
+-}
+
+--
+-- JSON instances
+--
 
 instance FromJSON HyperdataDocument
   where
@@ -167,24 +178,13 @@ instance ToJSON HyperdataDocument
 
 
 
+$(deriveJSON (unPrefix "statusV3_") ''StatusV3)
 $(deriveJSON (unPrefix "_hdv3_") ''HyperdataDocumentV3)
 
-instance ToSchema HyperdataDocument where
-  declareNamedSchema proxy =
-    genericDeclareNamedSchema (unPrefixSwagger "_hd_") proxy
-    & mapped.schema.description ?~ "Document Hyperdata"
-    & mapped.schema.example ?~ toJSON defaultHyperdataDocument
+--
+-- FromField/ToField instances
+--
 
-{-
--- | For now HyperdataDocumentV3 is not exposed with the API
-instance ToSchema HyperdataDocumentV3 where
-  declareNamedSchema proxy =
-    genericDeclareNamedSchema (unPrefixSwagger "hyperdataDocumentV3_") proxy
-    & mapped.schema.description ?~ "Document Hyperdata for Garg V3"
-    & mapped.schema.example ?~ toJSON defaultHyperdataDocumentV3
--}
-
-------------------------------------------------------------------------
 instance FromField HyperdataDocument
   where
     fromField = fromField'
@@ -193,14 +193,12 @@ instance FromField HyperdataDocumentV3
   where
     fromField = fromField'
 
--------
 instance ToField HyperdataDocument where
   toField = toJSONField
 
 instance ToField HyperdataDocumentV3 where
   toField = toJSONField
 
-------------------------------------------------------------------------
 instance DefaultFromField SqlJsonb HyperdataDocument
   where
     defaultFromField = fromPGSFromField
@@ -208,4 +206,10 @@ instance DefaultFromField SqlJsonb HyperdataDocument
 instance DefaultFromField SqlJsonb HyperdataDocumentV3
   where
     defaultFromField = fromPGSFromField
-------------------------------------------------------------------------
+
+--
+-- Lenses
+--
+$(makeLenses ''HyperdataDocument)
+makePrisms ''HyperdataDocument
+$(makeLenses ''HyperdataDocumentV3)

@@ -475,38 +475,38 @@ makeLenses ''PhyloEdge
 ------------------------
 
 
-$(deriveJSON (unPrefix "_phylo_"       ) ''Phylo       )
+$(deriveJSON (unPrefix "_phylo_group"  ) ''PhyloGroup  )
+$(deriveJSON (unPrefix "_phylo_level"  ) ''PhyloLevel  )
 $(deriveJSON (unPrefix "_phylo_foundations"  ) ''PhyloFoundations  )
 $(deriveJSON (unPrefix "_phylo_period" ) ''PhyloPeriod )
-$(deriveJSON (unPrefix "_phylo_level"  ) ''PhyloLevel  )
-$(deriveJSON (unPrefix "_phylo_group"  ) ''PhyloGroup  )
 $(deriveJSON (unPrefix "_phyloFis_"    ) ''PhyloFis    )
---
-$(deriveJSON (unPrefix "_software_"    ) ''Software    )
-$(deriveJSON (unPrefix "_phyloParam_"  ) ''PhyloParam  )
---
-$(deriveJSON defaultOptions ''Filter    )
-$(deriveJSON defaultOptions ''Metric    )
-$(deriveJSON defaultOptions ''Cluster   )
-$(deriveJSON defaultOptions ''Proximity )
---
-$(deriveJSON (unPrefix "_fis_" )     ''FisParams     )
-$(deriveJSON (unPrefix "_hamming_" ) ''HammingParams )
-$(deriveJSON (unPrefix "_louvain_" ) ''LouvainParams )
-$(deriveJSON (unPrefix "_rc_" )      ''RCParams      )
-$(deriveJSON (unPrefix "_wlj_" )     ''WLJParams     )
 --
 $(deriveJSON (unPrefix "_lb_" )      ''LBParams      )
 $(deriveJSON (unPrefix "_sb_" )      ''SBParams      )
 --
+$(deriveJSON (unPrefix "_fis_" )     ''FisParams     )
+$(deriveJSON (unPrefix "_hamming_" ) ''HammingParams )
+$(deriveJSON (unPrefix "_wlj_" )     ''WLJParams     )
+--
+$(deriveJSON defaultOptions ''Filter    )
+$(deriveJSON defaultOptions ''Metric    )
+$(deriveJSON defaultOptions ''Proximity )
+$(deriveJSON (unPrefix "_louvain_" ) ''LouvainParams )
+$(deriveJSON (unPrefix "_rc_" )      ''RCParams      )
+$(deriveJSON defaultOptions ''Cluster   )
 $(deriveJSON (unPrefix "_q_" )  ''PhyloQueryBuild  )
-$(deriveJSON (unPrefix "_pv_" ) ''PhyloView   )
+--
+$(deriveJSON (unPrefix "_software_"    ) ''Software    )
+$(deriveJSON (unPrefix "_phyloParam_"  ) ''PhyloParam  )
+$(deriveJSON (unPrefix "_phylo_"       ) ''Phylo       )
+--
 $(deriveJSON (unPrefix "_pb_" ) ''PhyloBranch )
-$(deriveJSON (unPrefix "_pe_" ) ''PhyloEdge   )
-$(deriveJSON (unPrefix "_pn_" ) ''PhyloNode   )
-
 $(deriveJSON defaultOptions ''Filiation )
+$(deriveJSON (unPrefix "_pn_" ) ''PhyloNode   )
 $(deriveJSON defaultOptions ''EdgeType  )
+$(deriveJSON (unPrefix "_pe_" ) ''PhyloEdge   )
+$(deriveJSON (unPrefix "_pv_" ) ''PhyloView   )
+
 
 ---------------------------
 -- | Swagger instances | --

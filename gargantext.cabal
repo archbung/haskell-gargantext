@@ -45,6 +45,10 @@ flag test-crypto
   default: False
   manual: True
 
+flag disable-db-obfuscation-executable
+  default: False
+  manual: True
+
 library
   exposed-modules:
       Gargantext
@@ -165,6 +169,7 @@ library
       Gargantext.Utils.Jobs.Settings
       Gargantext.Utils.Jobs.State
       Gargantext.Utils.SpacyNLP
+      Gargantext.Utils.SpacyNLP.Types
       Gargantext.Utils.Tuple
       Gargantext.Utils.Zip
   other-modules:
@@ -491,10 +496,11 @@ library
     , matrix ^>= 0.3.6.1
     , monad-control ^>= 1.0.3.1
     , monad-logger ^>= 0.3.36
-    , morpheus-graphql ^>= 0.17.0
-    , morpheus-graphql-app ^>= 0.17.0
-    , morpheus-graphql-core ^>= 0.17.0
-    , morpheus-graphql-subscriptions ^>= 0.17.0
+    , morpheus-graphql >= 0.17.0 && < 0.25
+    , morpheus-graphql-app >= 0.17.0 && < 0.25
+    , morpheus-graphql-core >= 0.17.0 && < 0.25
+    , morpheus-graphql-server >= 0.17.0 && < 0.25
+    , morpheus-graphql-subscriptions >= 0.17.0 && < 0.25
     , mtl ^>= 2.2.2
     , natural-transformation ^>= 0.4
     , network-uri ^>= 2.6.4.1
@@ -547,6 +553,7 @@ library
     , servant-xml-conduit >= 0.1.0.4
     , simple-reflect ^>= 0.3.3
     , singletons ^>= 2.7
+    , singletons-th >= 3.1
     , split ^>= 0.2.3.4
     , stemmer ^>= 0.5.2
     , stm ^>= 2.5.0.1
@@ -714,15 +721,18 @@ executable gargantext-db-obfuscation
       RecordWildCards
       StrictData
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
-  build-depends:
-      base
-    , extra
-    , gargantext
-    , gargantext-prelude
-    , optparse-simple
-    , postgresql-simple ^>= 0.6.4
-    , text
-  default-language: Haskell2010
+  if flag(disable-db-obfuscation-executable)
+    buildable: False
+  else
+    build-depends:
+        base
+      , extra
+      , gargantext
+      , gargantext-prelude
+      , optparse-simple
+      , postgresql-simple ^>= 0.6.4
+      , text
+    default-language: Haskell2010
 
 executable gargantext-import
   main-is: Main.hs

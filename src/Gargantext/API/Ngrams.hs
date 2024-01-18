@@ -120,7 +120,7 @@ import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select
 import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
-import Gargantext.Prelude hiding (log, to, toLower, (%))
+import Gargantext.Prelude hiding (log, to, toLower, (%), isInfixOf)
 import Gargantext.Prelude.Clock (hasTime, getTime)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import GHC.Conc (readTVar, writeTVar)

@@ -701,7 +701,7 @@ clearHistory (NodeStory ns) = NodeStory $ ns & (traverse . a_history) .~ emptyHi
 currentVersion :: (HasNodeStory env err m) => ListId -> m Version
 currentVersion listId = do
   pool <- view connPool
-  nls <- withResource pool $ \c -> liftBase $ getNodeStory c listId
+  nls <- liftBase $ withResource pool $ \c -> liftBase $ getNodeStory c listId
   pure $ nls ^. unNodeStory . at listId . _Just . a_version
 
 
@@ -711,7 +711,7 @@ currentVersion listId = do
 fixNodeStoryVersions :: (HasNodeStory env err m) => m ()
 fixNodeStoryVersions = do
   pool <- view connPool
-  _ <- withResource pool $ \c -> liftBase $ PGS.withTransaction c $ do
+  _ <- liftBase $ withResource pool $ \c -> liftBase $ PGS.withTransaction c $ do
     nIds <- runPGSQuery c [sql| SELECT id FROM nodes WHERE ? |] (PGS.Only True) :: IO [PGS.Only Int64]
     -- printDebug "[fixNodeStoryVersions] nIds" nIds
     mapM_ (\(PGS.Only nId) -> do

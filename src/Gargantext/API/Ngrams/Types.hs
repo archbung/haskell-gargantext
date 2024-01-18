@@ -84,8 +84,6 @@ instance ToParamSchema TabType
 instance ToJSON        TabType
 instance FromJSON      TabType
 instance ToSchema      TabType
-instance Arbitrary     TabType where
-  arbitrary = elements [minBound .. maxBound]
 instance FromJSONKey TabType where
   fromJSONKey = genericFromJSONKey defaultJSONKeyOptions
 instance ToJSONKey TabType where
@@ -161,13 +159,10 @@ deriveJSON (unPrefix "_nre_") ''NgramsRepoElement
 makeLenses ''NgramsRepoElement
 instance ToSchema NgramsRepoElement where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_nre_")
-instance Serialise NgramsRepoElement
 instance FromField NgramsRepoElement where
   fromField = fromJSONField
 instance ToField NgramsRepoElement where
   toField = toJSONField
-
-instance Serialise (MSet NgramsTerm)
 
 data NgramsElement =
      NgramsElement { _ne_ngrams      :: NgramsTerm
@@ -197,9 +192,6 @@ newNgramsElement mayList ngrams =
 
 instance ToSchema NgramsElement where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_ne_")
-instance Arbitrary NgramsElement where
-  arbitrary = elements [newNgramsElement Nothing "sport"]
-
 
 ------------------------------------------------------------------------
 newtype NgramsTable = NgramsTable [NgramsElement]
@@ -257,9 +249,6 @@ mockTable = NgramsTable
   where
     rp n = Just $ RootParent n n
 
-instance Arbitrary NgramsTable where
-  arbitrary = pure mockTable
-
 instance ToSchema NgramsTable
 
 ------------------------------------------------------------------------
@@ -283,10 +272,6 @@ instance ToParamSchema OrderBy
 instance FromJSON  OrderBy
 instance ToJSON    OrderBy
 instance ToSchema  OrderBy
-instance Arbitrary OrderBy
-  where
-    arbitrary = elements [minBound..maxBound]
-
 
 -- | A query on a 'NgramsTable'.
 data NgramsSearchQuery = NgramsSearchQuery
@@ -367,8 +352,6 @@ instance ToSchema a => ToSchema (PatchSet a)
 
 type AddRem = Replace (Maybe ())
 
-instance Serialise AddRem
-
 remPatch, addPatch :: AddRem
 remPatch = replace (Just ()) Nothing
 addPatch = replace Nothing (Just ())
@@ -387,9 +370,6 @@ unPatchMSet (PatchMSet a) = a
 
 type ConflictResolutionPatchMSet a = a -> ConflictResolutionReplace (Maybe ())
 type instance ConflictResolution (PatchMSet a) = ConflictResolutionPatchMSet a
-
-instance (Serialise a, Ord a) => Serialise (PatchMap a AddRem)
-instance (Serialise a, Ord a) => Serialise (PatchMSet a)
 
 -- TODO this breaks module abstraction
 makePrisms ''PM.PatchMap
@@ -419,18 +399,11 @@ instance (Ord a, ToJSON a) => ToJSON (PatchMSet a) where
 instance (Ord a, FromJSON a) => FromJSON (PatchMSet a) where
   parseJSON = fmap (_PatchMSetIso #) . parseJSON
 
-instance (Ord a, Arbitrary a) => Arbitrary (PatchMSet a) where
-  arbitrary = (PatchMSet . PM.fromMap) <$> arbitrary
-
 instance ToSchema a => ToSchema (PatchMSet a) where
   -- TODO
   declareNamedSchema _ = wellNamedSchema "" (Proxy :: Proxy TODO)
 
 type instance Patched (PatchMSet a) = MSet a
-
-instance (Eq a, Arbitrary a) => Arbitrary (Replace a) where
-  arbitrary = uncurry replace <$> arbitrary
-    -- If they happen to be equal then the patch is Keep.
 
 instance ToSchema a => ToSchema (Replace a) where
   declareNamedSchema (_ :: Proxy (Replace a)) = do
@@ -475,19 +448,11 @@ instance ToSchema NgramsPatch where
                 , ("old",      nreSch)
                 , ("new",      nreSch)
                 ]
-instance Arbitrary NgramsPatch where
-  arbitrary = frequency [ (9, NgramsPatch <$> arbitrary <*> (replace <$> arbitrary <*> arbitrary))
-                        , (1, NgramsReplace <$> arbitrary <*> arbitrary)
-                        ]
-instance Serialise NgramsPatch
 instance FromField NgramsPatch where
   fromField = fromJSONField
 instance ToField NgramsPatch where
   toField = toJSONField
 
-instance Serialise (Replace ListType)
-
-instance Serialise ListType
 
 type NgramsPatchIso =
   MaybePatch NgramsRepoElement (PairPatch (PatchMSet NgramsTerm) (Replace ListType))
@@ -554,9 +519,6 @@ newtype NgramsTablePatch = NgramsTablePatch (PatchMap NgramsTerm NgramsPatch)
 
 mkNgramsTablePatch :: Map NgramsTerm NgramsPatch -> NgramsTablePatch
 mkNgramsTablePatch = NgramsTablePatch . PM.fromMap
-
-instance Serialise NgramsTablePatch
-instance Serialise (PatchMap NgramsTerm NgramsPatch)
 
 instance FromField NgramsTablePatch
   where
@@ -690,9 +652,6 @@ instance Action NgramsTablePatch (Maybe NgramsTableMap) where
     fmap (execState (reParentNgramsTablePatch p)) .
     act (p ^. _NgramsTablePatch)
 
-instance Arbitrary NgramsTablePatch where
-  arbitrary = NgramsTablePatch <$> PM.fromMap <$> arbitrary
-
 -- Should it be less than an Lens' to preserve PatchMap's abstraction.
 -- ntp_ngrams_patches :: Lens' NgramsTablePatch (Map NgramsTerm NgramsPatch)
 -- ntp_ngrams_patches = _NgramsTablePatch .  undefined
@@ -709,8 +668,6 @@ deriveJSON (unPrefix "_v_") ''Versioned
 makeLenses ''Versioned
 instance (Typeable a, ToSchema a) => ToSchema (Versioned a) where
   declareNamedSchema = wellNamedSchema "_v_"
-instance Arbitrary a => Arbitrary (Versioned a) where
-  arbitrary = Versioned 1 <$> arbitrary -- TODO 1 is constant so far
 ------------------------------------------------------------------------
 type Count = Int
 
@@ -724,8 +681,6 @@ deriveJSON (unPrefix "_vc_") ''VersionedWithCount
 makeLenses ''VersionedWithCount
 instance (Typeable a, ToSchema a) => ToSchema (VersionedWithCount a) where
   declareNamedSchema = wellNamedSchema "_vc_"
-instance Arbitrary a => Arbitrary (VersionedWithCount a) where
-  arbitrary = VersionedWithCount 1 1 <$> arbitrary -- TODO 1 is constant so far
 
 toVersionedWithCount :: Count -> Versioned a -> VersionedWithCount a
 toVersionedWithCount count (Versioned version data_) = VersionedWithCount version count data_
@@ -749,8 +704,6 @@ instance (ToJSON s, ToJSON p) => ToJSON (Repo s p) where
   toJSON     = genericToJSON     $ unPrefix "_r_"
   toEncoding = genericToEncoding $ unPrefix "_r_"
 
-instance (Serialise s, Serialise p) => Serialise (Repo s p)
-
 makeLenses ''Repo
 
 initRepo :: Monoid s => Repo s p
@@ -771,11 +724,6 @@ type RepoCmdM   env err m =
 
 
 -- Instances
-instance Arbitrary NgramsRepoElement where
-  arbitrary = elements $ map ngramsElementToRepo ns
-    where
-      NgramsTable ns = mockTable
-
 instance FromHttpApiData (Map TableNgrams.NgramsType (Versioned NgramsTableMap))
   where
     parseUrlPiece x = maybeToEither x (decode $ cs x)
@@ -814,3 +762,51 @@ instance ToSchema UpdateTableNgramsCharts where
 
 ------------------------------------------------------------------------
 type NgramsList = (Map TableNgrams.NgramsType (Versioned NgramsTableMap))
+
+--
+-- Serialise instances
+--
+
+instance Serialise ListType
+instance Serialise NgramsRepoElement
+instance Serialise NgramsTablePatch
+instance Serialise (PatchMap NgramsTerm NgramsPatch)
+instance Serialise (MSet NgramsTerm)
+instance Serialise AddRem
+instance Serialise NgramsPatch
+instance Serialise (Replace ListType)
+instance (Serialise a, Ord a) => Serialise (PatchMap a AddRem)
+instance (Serialise a, Ord a) => Serialise (PatchMSet a)
+instance (Serialise s, Serialise p) => Serialise (Repo s p)
+
+--
+-- Arbitrary instances
+--
+instance Arbitrary     TabType where
+  arbitrary = elements [minBound .. maxBound]
+instance Arbitrary NgramsElement where
+  arbitrary = elements [newNgramsElement Nothing "sport"]
+instance Arbitrary NgramsTable where
+  arbitrary = pure mockTable
+instance Arbitrary OrderBy
+  where
+    arbitrary = elements [minBound..maxBound]
+instance (Ord a, Arbitrary a) => Arbitrary (PatchMSet a) where
+  arbitrary = (PatchMSet . PM.fromMap) <$> arbitrary
+instance (Eq a, Arbitrary a) => Arbitrary (Replace a) where
+  arbitrary = uncurry replace <$> arbitrary
+    -- If they happen to be equal then the patch is Keep.
+instance Arbitrary NgramsPatch where
+  arbitrary = frequency [ (9, NgramsPatch <$> arbitrary <*> (replace <$> arbitrary <*> arbitrary))
+                        , (1, NgramsReplace <$> arbitrary <*> arbitrary)
+                        ]
+instance Arbitrary NgramsTablePatch where
+  arbitrary = NgramsTablePatch <$> PM.fromMap <$> arbitrary
+instance Arbitrary a => Arbitrary (Versioned a) where
+  arbitrary = Versioned 1 <$> arbitrary -- TODO 1 is constant so far
+instance Arbitrary a => Arbitrary (VersionedWithCount a) where
+  arbitrary = VersionedWithCount 1 1 <$> arbitrary -- TODO 1 is constant so far
+instance Arbitrary NgramsRepoElement where
+  arbitrary = elements $ map ngramsElementToRepo ns
+    where
+      NgramsTable ns = mockTable

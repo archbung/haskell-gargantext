@@ -8,6 +8,8 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+{-# OPTIONS_GHC -Wno-deprecations #-} -- FIXME(adn) GraphQL will need updating.
+
 module Gargantext.API.GraphQL.Utils where
 
 import Control.Lens.Getter (view)

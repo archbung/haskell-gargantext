@@ -34,10 +34,11 @@ Notes for current implementation:
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-{-# LANGUAGE ConstraintKinds   #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE StandaloneDeriving  #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Gargantext.Core.Text.Terms.Eleve where
 

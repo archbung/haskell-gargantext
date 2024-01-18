@@ -52,15 +52,10 @@ data AuthenticatedUser = AuthenticatedUser
   , _auth_user_id :: UserId
   } deriving (Generic)
 
-$(deriveJSON (JSON.defaultOptions { JSON.fieldLabelModifier = tail . dropWhile ((/=) '_') . tail }) ''AuthenticatedUser)
-
 makeLenses ''AuthenticatedUser
 
 instance ToSchema AuthenticatedUser where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authUser_")
-
-instance ToJWT AuthenticatedUser
-instance FromJWT AuthenticatedUser
 
 data AuthenticationError
   = LoginFailed NodeId UserId Jose.Error
@@ -71,7 +66,6 @@ data AuthenticationError
 type AuthContext = '[JWTSettings, CookieSettings] -- , BasicAuthCfg
 
 -- | Instances
-$(deriveJSON (unPrefix "_authReq_") ''AuthRequest)
 instance ToSchema AuthRequest where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authReq_")
 
@@ -81,7 +75,6 @@ instance Arbitrary AuthRequest where
                        , p <- arbitraryPassword
                        ]
 
-$(deriveJSON (unPrefix "_authRes_") ''AuthResponse)
 instance ToSchema AuthResponse where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_authRes_")
 instance Arbitrary AuthResponse where
@@ -101,20 +94,43 @@ type Password = Text
 
 data ForgotPasswordRequest = ForgotPasswordRequest { _fpReq_email :: Email }
   deriving (Generic )
-$(deriveJSON (unPrefix "_fpReq_") ''ForgotPasswordRequest)
 instance ToSchema ForgotPasswordRequest where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpReq_")
 
 data ForgotPasswordResponse = ForgotPasswordResponse { _fpRes_status :: Text }
   deriving (Generic )
-$(deriveJSON (unPrefix "_fpRes_") ''ForgotPasswordResponse)
 instance ToSchema ForgotPasswordResponse where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpRes_")
 
 data ForgotPasswordGet = ForgotPasswordGet {_fpGet_password :: Password}
   deriving (Generic )
-$(deriveJSON (unPrefix "_fpGet_") ''ForgotPasswordGet)
 instance ToSchema ForgotPasswordGet where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_fpGet_")
 
+--
+-- Lenses
+--
+
+makeLenses ''AuthValid
+>>>>>>> b7657056 (Fix compilation errors due to switch to GHC 9.4.7)
 makeLenses ''AuthResponse
+
+--
+-- JSON instances
+--
+
+$(deriveJSON (JSON.defaultOptions { JSON.fieldLabelModifier = tail . dropWhile ((/=) '_') . tail }) ''AuthenticatedUser)
+$(deriveJSON (unPrefix "_authReq_") ''AuthRequest)
+$(deriveJSON (unPrefix "_authInv_") ''AuthInvalid)
+$(deriveJSON (unPrefix "_authVal_") ''AuthValid)
+$(deriveJSON (unPrefix "_authRes_") ''AuthResponse)
+$(deriveJSON (unPrefix "_fpReq_") ''ForgotPasswordRequest)
+$(deriveJSON (unPrefix "_fpRes_") ''ForgotPasswordResponse)
+$(deriveJSON (unPrefix "_fpGet_") ''ForgotPasswordGet)
+
+--
+-- JWT instances
+--
+
+instance ToJWT AuthenticatedUser
+instance FromJWT AuthenticatedUser

@@ -104,17 +104,11 @@ messages =  toMessage $ [ (400, ["Ill formed query             "])
 instance Arbitrary Message where
     arbitrary = elements messages
 
-instance FromJSON Message
-instance ToJSON   Message
-
 instance ToSchema Message
 -----------------------------------------------------------------------
 data Counts = Counts { results :: [Either Message Count]
                      } deriving (Eq, Show, Generic)
 
-
-instance FromJSON Counts
-instance ToJSON   Counts
 
 instance Arbitrary Counts where
     arbitrary = elements [Counts [ Right (Count Pubmed (Just 20 ))
@@ -131,8 +125,6 @@ data Count = Count { count_name    :: Scraper
                    }
                    deriving (Eq, Show, Generic)
 
-$(deriveJSON (unPrefix "count_") ''Count)
-
 instance ToSchema Count where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "count_")
 --instance Arbitrary Count where
@@ -141,3 +133,16 @@ instance ToSchema Count where
 -----------------------------------------------------------------------
 count :: Monad m => Query -> m Counts
 count _ = undefined
+
+--
+-- JSON instances
+--
+
+instance FromJSON Message
+instance ToJSON   Message
+
+$(deriveJSON (unPrefix "count_") ''Count)
+
+instance FromJSON Counts
+instance ToJSON   Counts
+

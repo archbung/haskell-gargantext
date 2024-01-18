@@ -46,7 +46,7 @@ flowPhylo :: (HasNodeStory env err m, HasDBid NodeType)
           -> m Phylo
 flowPhylo cId = do
 
-  corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
+  corpus_node <- getNodeWith cId (Proxy @HyperdataCorpus)
   let lang = withDefaultLanguage $ view (node_hyperdata . to _hc_lang) corpus_node
   list'    <- defaultList cId
   termList <- HashMap.toList <$> getTermsWith (Text.words . unNgramsTerm) [list'] NgramsTerms (Set.singleton MapTerm)
