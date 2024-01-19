@@ -16,6 +16,7 @@ module Gargantext.API.GraphQL.Team where
 
 import Data.Morpheus.Types (GQLType, ResolverM)
 import Data.Text qualified as T
+import Gargantext.API.Admin.Auth.Types (AuthenticationError(..))
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Errors.Types
 import Gargantext.API.GraphQL.Types (GqlM)
@@ -86,10 +87,12 @@ deleteTeamMembership TeamDeleteMArgs { token, shared_folder_id, team_node_id } =
     [] -> panicTrace $ "[deleteTeamMembership] User with id " <> T.pack (show $ uId teamNode) <> " doesn't exist."
     (( _, node_u):_) -> do
       testAuthUser <- lift $ authUser (nId node_u) token
-      case testAuthUser of
-        Invalid -> panicTrace "[deleteTeamMembership] failed to validate user"
+      lift $ case testAuthUser of
+        -- Invalid -> panicTrace "[deleteTeamMembership] failed to validate user"
+        Invalid -> do
+          throwError $ InternalAuthenticationError $ UserNotAuthorized (uId node_u) "This user is not team owner"
         Valid -> do
-          lift $ deleteMemberShip [(UnsafeMkNodeId shared_folder_id, UnsafeMkNodeId team_node_id)]
+          deleteMemberShip [(UnsafeMkNodeId shared_folder_id, UnsafeMkNodeId team_node_id)]
   where
     uId Node { _node_user_id } = _node_user_id
     nId Node { _node_id } = _node_id

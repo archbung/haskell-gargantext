@@ -12,6 +12,7 @@ module Gargantext.API.Errors (
   -- * Conversion functions
   , backendErrorToFrontendError
   , frontendErrorToServerError
+  , frontendErrorToGQLServerError
 
   -- * Temporary shims
   , showAsServantJSONErr
@@ -20,6 +21,10 @@ module Gargantext.API.Errors (
 import Prelude
 
 import Control.Exception
+import Data.Aeson qualified as JSON
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as TL
+import Data.Text.Lazy.Encoding qualified as TE
 import Data.Validity ( prettyValidation )
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Errors.Class as Class
@@ -28,20 +33,19 @@ import Gargantext.API.Errors.Types as Types
 import Gargantext.Database.Query.Table.Node.Error hiding (nodeError)
 import Gargantext.Database.Query.Tree hiding (treeError)
 import Gargantext.Utils.Jobs.Monad (JobError(..))
+import Network.HTTP.Types.Status qualified as HTTP
 import Servant.Server
-import qualified Data.Aeson as JSON
-import qualified Data.Text as T
-import qualified Network.HTTP.Types.Status as HTTP
-import qualified Data.Text.Lazy.Encoding as TE
-import qualified Data.Text.Lazy as TL
 
 $(deriveHttpStatusCode ''BackendErrorCode)
 
 data GargErrorScheme
   = -- | The old error scheme.
     GES_old
-    -- | The new error scheme, that returns a 'FrontendError'.
+  -- | The new error scheme, that returns a 'FrontendError'.
   | GES_new
+  -- | Error scheme for GraphQL, has to be slightly different
+  --   {errors: [{message, extensions: { ... }}]}
+  --   https://spec.graphql.org/June2018/#sec-Errors
     deriving (Show, Eq)
 
 -- | Transforms a backend internal error into something that the frontend
@@ -49,26 +53,56 @@ data GargErrorScheme
 -- as we later encode this into a 'ServerError' in the main server handler.
 backendErrorToFrontendError :: BackendInternalError -> FrontendError
 backendErrorToFrontendError = \case
-  InternalNodeError nodeError
-    -> nodeErrorToFrontendError nodeError
-  InternalTreeError treeError
-    -> treeErrorToFrontendError treeError
-  InternalValidationError validationError
-    -> mkFrontendErr' "A validation error occurred"
-         $ FE_validation_error $ case prettyValidation validationError of
-             Nothing -> "unknown_validation_error"
-             Just v  -> T.pack v
   InternalAuthenticationError authError
     -> authErrorToFrontendError authError
-  InternalServerError internalServerError
-    -> internalServerErrorToFrontendError internalServerError
+  InternalNodeError nodeError
+    -> nodeErrorToFrontendError nodeError
   InternalJobError jobError
     -> jobErrorToFrontendError jobError
+  InternalServerError internalServerError
+    -> internalServerErrorToFrontendError internalServerError
+  InternalTreeError treeError
+    -> treeErrorToFrontendError treeError
   -- As this carries a 'SomeException' which might exposes sensible
   -- information, we do not send to the frontend its content.
   InternalUnexpectedError _
     -> let msg = T.pack $ "An unexpected error occurred. Please check your server logs."
        in mkFrontendErr' msg $ FE_internal_server_error msg
+  InternalValidationError validationError
+    -> mkFrontendErr' "A validation error occurred"
+         $ FE_validation_error $ case prettyValidation validationError of
+             Nothing -> "unknown_validation_error"
+             Just v  -> T.pack v
+
+frontendErrorToGQLServerError :: FrontendError -> ServerError
+frontendErrorToGQLServerError fe@(FrontendError diag ty _) =
+  ServerError { errHTTPCode     = HTTP.statusCode $ backendErrorTypeToErrStatus ty
+              , errReasonPhrase = T.unpack diag
+              , errBody         = JSON.encode (GraphQLError fe)
+              , errHeaders      = mempty
+              }
+
+authErrorToFrontendError :: AuthenticationError -> FrontendError
+authErrorToFrontendError = \case
+  -- For now, we ignore the Jose error, as they are too specific
+  -- (i.e. they should be logged internally to Sentry rather than shared
+  -- externally).
+  LoginFailed nid uid _
+    -> mkFrontendErr' "Invalid username/password, or invalid session token." $ FE_login_failed_error nid uid
+  InvalidUsernameOrPassword
+    -> mkFrontendErr' "Invalid username or password." $ FE_login_failed_invalid_username_or_password
+  UserNotAuthorized uId msg
+    -> mkFrontendErr' "User not authorized. " $ FE_user_not_authorized uId msg
+
+-- | Converts a 'FrontendError' into a 'ServerError' that the servant app can
+-- return to the frontend.
+frontendErrorToServerError :: FrontendError -> ServerError
+frontendErrorToServerError fe@(FrontendError diag ty _) =
+  ServerError { errHTTPCode     = HTTP.statusCode $ backendErrorTypeToErrStatus ty
+              , errReasonPhrase = T.unpack diag
+              , errBody         = JSON.encode fe
+              , errHeaders      = mempty
+              }
 
 internalServerErrorToFrontendError :: ServerError -> FrontendError
 internalServerErrorToFrontendError = \case
@@ -85,16 +119,6 @@ jobErrorToFrontendError = \case
   InvalidMacID macId -> mkFrontendErrNoDiagnostic $ FE_job_invalid_mac macId
   UnknownJob jobId   -> mkFrontendErrNoDiagnostic $ FE_job_unknown_job jobId
   JobException err   -> mkFrontendErrNoDiagnostic $ FE_job_generic_exception (T.pack $ displayException err)
-
-authErrorToFrontendError :: AuthenticationError -> FrontendError
-authErrorToFrontendError = \case
-  -- For now, we ignore the Jose error, as they are too specific
-  -- (i.e. they should be logged internally to Sentry rather than shared
-  -- externally).
-  LoginFailed nid uid _
-    -> mkFrontendErr' "Invalid username/password, or invalid session token." $ FE_login_failed_error nid uid
-  InvalidUsernameOrPassword
-    -> mkFrontendErr' "Invalid username or password." $ FE_login_failed_invalid_username_or_password
 
 nodeErrorToFrontendError :: NodeError -> FrontendError
 nodeErrorToFrontendError ne = case ne of
@@ -146,16 +170,6 @@ treeErrorToFrontendError te = case te of
   NoRoot             -> mkFrontendErrShow FE_tree_root_not_found
   EmptyRoot          -> mkFrontendErrShow FE_tree_empty_root
   TooManyRoots roots -> mkFrontendErrShow $ FE_tree_too_many_roots roots
-
--- | Converts a 'FrontendError' into a 'ServerError' that the servant app can
--- return to the frontend.
-frontendErrorToServerError :: FrontendError -> ServerError
-frontendErrorToServerError fe@(FrontendError diag ty _) =
-  ServerError { errHTTPCode     = HTTP.statusCode $ backendErrorTypeToErrStatus ty
-              , errReasonPhrase = T.unpack diag
-              , errBody         = JSON.encode fe
-              , errHeaders      = mempty
-              }
 
 showAsServantJSONErr :: BackendInternalError -> ServerError
 showAsServantJSONErr (InternalNodeError err@(NoListFound {}))  = err404 { errBody = JSON.encode err }
