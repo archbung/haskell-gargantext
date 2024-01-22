@@ -21,7 +21,9 @@ import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import Prelude
 import Servant.API.Alternative
+import Servant.API.ContentTypes
 
+import Gargantext.API.Errors.Types (BackendInternalError)
 import Gargantext.Utils.Jobs.Map
 import Gargantext.Utils.Jobs.Monad
 
@@ -33,16 +35,16 @@ import qualified Servant.Job.Core as SJ
 import qualified Servant.Job.Types as SJ
 
 serveJobsAPI
-  :: ( Ord t, Exception e, MonadError e m
+  :: ( Ord t, MonadError BackendInternalError m
      , MonadJob m t (Seq event) output
-     , ToJSON e, ToJSON event, ToJSON output
+     , ToJSON event, ToJSON output, MimeRender JSON output
      , Foldable callback
      )
   => (SJ.JobID 'SJ.Safe -> LoggerM m event -> JobHandle m)
   -> m env
   -> t
-  -> (JobError -> e)
-  -> (env -> JobHandle m -> input -> IO (Either e output))
+  -> (JobError -> BackendInternalError)
+  -> (env -> JobHandle m -> input -> IO (Either BackendInternalError output))
   -> SJ.AsyncJobsServerT' ctI ctO callback event input output m
 serveJobsAPI newJobHandle getenv t joberr f
      = newJob newJobHandle getenv t f (SJ.JobInput undefined Nothing)
@@ -50,10 +52,10 @@ serveJobsAPI newJobHandle getenv t joberr f
   :<|> serveJobAPI t joberr
 
 serveJobAPI
-  :: forall (m :: Type -> Type) e t event output.
-     (Ord t, MonadError e m, MonadJob m t (Seq event) output)
+  :: forall (m :: Type -> Type) t event output.
+     (Ord t, MonadError BackendInternalError m, MonadJob m t (Seq event) output, MimeRender JSON output)
   => t
-  -> (JobError -> e)
+  -> (JobError -> BackendInternalError)
   -> SJ.JobID 'SJ.Unsafe
   -> SJ.AsyncJobServerT event output m
 serveJobAPI t joberr jid' = wrap' (killJob t)
@@ -72,14 +74,15 @@ serveJobAPI t joberr jid' = wrap' (killJob t)
         wrap' g limit offset = wrap (g limit offset)
 
 newJob
-  :: ( Ord t, Exception e, MonadJob m t (Seq event) output
-     , ToJSON e, ToJSON event, ToJSON output
+  :: ( Ord t, MonadJob m t (Seq event) output
+     , ToJSON event, ToJSON output
+     , MimeRender JSON output
      , Foldable callbacks
      )
   => (SJ.JobID 'SJ.Safe -> LoggerM m event -> JobHandle m)
   -> m env
   -> t
-  -> (env -> JobHandle m -> input -> IO (Either e output))
+  -> (env -> JobHandle m -> input -> IO (Either BackendInternalError output))
   -> SJ.JobInput callbacks input
   -> m (SJ.JobStatus 'SJ.Safe event)
 newJob newJobHandle getenv jobkind f input = do
