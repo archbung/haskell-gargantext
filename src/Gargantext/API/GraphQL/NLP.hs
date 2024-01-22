@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Gargantext.API.GraphQL.NLP
   ( Lang(..)
@@ -18,9 +18,10 @@ import Gargantext.Prelude
 import Protolude
 import qualified Data.Map.Strict as Map
 
-data LanguagesArgs
-  = LanguagesArgs
-    { } deriving (Generic, GQLType)
+newtype LanguagesArgs
+  = LanguagesArgs ()
+    deriving stock (Generic)
+    deriving anyclass (GQLType)
 
 type LanguagesMap = Map.Map Lang NLPServer
 
@@ -33,7 +34,7 @@ data NLPServer = NLPServer
 
 resolveLanguages
   :: HasNLPServer env => LanguagesArgs -> GqlM e env LanguagesMap
-resolveLanguages LanguagesArgs { } = do
+resolveLanguages ( LanguagesArgs () ) = do
   -- pure $ allLangs
   lift $ do
     ns <- view nlpServer
