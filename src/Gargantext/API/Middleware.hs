@@ -15,6 +15,7 @@ import Data.ByteString qualified as BS
 import Data.ByteString.Char8 qualified as C8
 import Data.CaseInsensitive qualified as CI
 import Data.List qualified as L
+import Data.String
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
 import Network.HTTP.Types
@@ -38,7 +39,7 @@ logStdoutDevSanitised = mkRequestLogger $ defaultRequestLoggerSettings { outputF
 -- >>> "{\"a\": 100, \"b\": 200}" & atKey "c" ?~ String "300"
 -- "{\"a\":100,\"b\":200,\"c\":\"300\"}"
 atKey :: L.AsValue t => T.Text -> Traversal' t (Maybe A.Value)
-atKey i = L._Object . at i
+atKey i = L._Object . at (fromString $ T.unpack i)
 {-# INLINE atKey #-}
 
 customOutput :: OutputFormatterWithDetailsAndHeaders

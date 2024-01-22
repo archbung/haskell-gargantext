@@ -111,8 +111,6 @@ instance ToSchema ForgotPasswordGet where
 -- Lenses
 --
 
-makeLenses ''AuthValid
->>>>>>> b7657056 (Fix compilation errors due to switch to GHC 9.4.7)
 makeLenses ''AuthResponse
 
 --
@@ -121,8 +119,6 @@ makeLenses ''AuthResponse
 
 $(deriveJSON (JSON.defaultOptions { JSON.fieldLabelModifier = tail . dropWhile ((/=) '_') . tail }) ''AuthenticatedUser)
 $(deriveJSON (unPrefix "_authReq_") ''AuthRequest)
-$(deriveJSON (unPrefix "_authInv_") ''AuthInvalid)
-$(deriveJSON (unPrefix "_authVal_") ''AuthValid)
 $(deriveJSON (unPrefix "_authRes_") ''AuthResponse)
 $(deriveJSON (unPrefix "_fpReq_") ''ForgotPasswordRequest)
 $(deriveJSON (unPrefix "_fpRes_") ''ForgotPasswordResponse)
