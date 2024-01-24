@@ -114,6 +114,7 @@ rec {
     libpqxx
     libsodium
     zeromq
+    curl
   ] ++ ( lib.optionals stdenv.isDarwin [
        darwin.apple_sdk.frameworks.Accelerate
        ]);
