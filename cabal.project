@@ -90,6 +90,11 @@ source-repository-package
 
 source-repository-package
     type: git
+    location: https://gitlab.iscpif.fr/gargantext/patches-class
+    tag: 3668d28607867a88b2dfc62158139b3cfd629ddb
+
+source-repository-package
+    type: git
     location: https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git
     tag: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
 
