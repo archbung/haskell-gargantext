@@ -671,8 +671,8 @@ genFrontendErr be = do
     EC_404__tree_empty_root
       -> pure $ mkFrontendErr' txt $ FE_tree_empty_root
     EC_500__tree_too_many_roots
-      -> do nodes <- arbitrary
-            pure $ mkFrontendErr' txt $ FE_tree_too_many_roots nodes
+      -> do nodes <- getNonEmpty <$> arbitrary
+            pure $ mkFrontendErr' txt $ FE_tree_too_many_roots (NE.fromList nodes)
 
     -- job errors
     EC_500__job_invalid_id_type

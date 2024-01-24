@@ -143,11 +143,11 @@ whitespace :: Tokenizer
 whitespace xs = E [Right w | w <- T.words xs ]
 
 instance Monad (EitherList a) where
-    return x = E [Right x]
+    return = pure
     E xs >>= f = E $ concatMap (either (return . Left) (unE . f)) xs
 
 instance Applicative (EitherList a) where
-    pure = pure
+    pure x = E [Right x]
     f <*> x = f `ap` x
 
 instance Functor (EitherList a) where

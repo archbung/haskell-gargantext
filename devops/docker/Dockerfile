@@ -1,16 +1,16 @@
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 ## NOTA BENE: In order for this to be built successfully, you have to run ./devops/coreNLP/build.sh first.
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GHC=8.10.7
+ARG GHC=9.4.7
 ARG STACK=2.7.3
 ARG CABAL=3.10.1.0
 ARG CORENLP=4.5.4
 ARG CORE
 COPY ./shell.nix                                       /builds/gargantext/shell.nix
 COPY ./nix/pkgs.nix                                    /builds/gargantext/nix/pkgs.nix
-COPY ./nix/pinned-22.05.nix                            /builds/gargantext/nix/pinned-22.05.nix
+COPY ./nix/pinned-23.11.nix                            /builds/gargantext/nix/pinned-23.11.nix
 COPY ./nix/overlays/Cabal-3.10.1.0.nix                 /builds/gargantext/nix/overlays/Cabal-3.10.1.0.nix
 COPY ./nix/overlays/cabal-install-3.10.1.0.nix         /builds/gargantext/nix/overlays/cabal-install-3.10.1.0.nix
 COPY ./nix/overlays/cabal-install-solver-3.10.1.0.nix  /builds/gargantext/nix/overlays/cabal-install-solver-3.10.1.0.nix
@@ -34,13 +34,13 @@ RUN apt-get update && \
       git \
       gnupg2 \
       libffi-dev \
-      libffi7 \
+      libffi8 \
       libgmp-dev \
       libgmp10 \
       libncurses-dev \
-      libncurses5 \
+      libncurses6 \
       libnuma-dev \
-      libtinfo5 \
+      libtinfo6 \
       locales \
       lsb-release \
       software-properties-common \
@@ -50,7 +50,7 @@ RUN apt-get update && \
       vim \
       xz-utils \
       zlib1g-dev \
-      openjdk-18-jdk \
+      openjdk-21-jdk \
       unzip && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     mkdir -m 0755 /nix && groupadd -r nixbld && chown root /nix && \

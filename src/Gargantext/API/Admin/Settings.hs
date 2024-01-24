@@ -24,7 +24,8 @@ import Control.Lens
 import Control.Monad.Logger (LogLevel(..))
 import Control.Monad.Reader
 import Data.ByteString.Lazy qualified as L
-import Data.Pool (Pool, createPool)
+import Data.Pool (Pool)
+import qualified Data.Pool as Pool
 import Database.PostgreSQL.Simple (Connection, connect, close, ConnectInfo)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Types
@@ -217,7 +218,7 @@ newEnv logger port file = do
     }
 
 newPool :: ConnectInfo -> IO (Pool Connection)
-newPool param = createPool (connect param) close 1 (60*60) 8
+newPool param = Pool.newPool $ Pool.setNumStripes (Just 1) $ Pool.defaultPoolConfig (connect param) close (60*60) 8
 
 {-
 cleanEnv :: (HasConfig env, HasRepo env) => env -> IO ()

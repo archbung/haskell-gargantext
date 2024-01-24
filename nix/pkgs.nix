@@ -1,20 +1,19 @@
-{ pkgs       ? import ./pinned-22.05.nix {} }:
+{ pkgs       ? import ./pinned-23.11.nix {} }:
 
 rec {
   inherit pkgs;
-  # If we are on a Mac, in order to build successfully with cabal we need a bit more work.
-  ghc = if pkgs.stdenv.isDarwin
-           then haskell1.compiler.ghc8107.overrideAttrs (finalAttrs: previousAttrs: {
-                # See https://github.com/NixOS/nixpkgs/pull/149942/files
+  ghc947 = if pkgs.stdenv.isDarwin
+           then pkgs.haskell.compiler.ghc947.overrideAttrs (finalAttrs: previousAttrs: {
                 patches = previousAttrs.patches ++ [
                             # Reverts the linking behavior of GHC to not resolve `-libc++` to `c++`.
                             (pkgs.fetchpatch {
-                              url = "https://raw.githubusercontent.com/input-output-hk/haskell.nix/613ec38dbd62ab7929178c9c7ffff71df9bb86be/overlays/patches/ghc/ghc-macOS-loadArchive-fix.patch";
-                              sha256 = "0IUpuzjZb1G+gP3q6RnwQbW4mFzc/OZ/7QqZy+57kx0=";
+                              url = "https://gist.githubusercontent.com/adinapoli/bf722db15f72763bf79dff13a3104b6f/raw/362da0aa3db5c530e0d276183ba68569f216d65a/ghc947-macOS-loadArchive-fix.patch";
+                              sha256 = "sha256-0tHrkWRKFWUewj3uIA0DujVCXo1qgX2lA5p0MIsAHYs=";
                             })
                           ];
                 })
-           else pkgs.haskell.compiler.ghc8107;
+           else pkgs.haskell.compiler.ghc947;
+  cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables pkgs.haskell.packages.ghc947.cabal-install;
   graphviz = pkgs.graphviz.overrideAttrs (finalAttrs: previousAttrs: {
                 # Increase the YY_BUF_SIZE, see https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/290#note_9015
                 patches = [
@@ -24,25 +23,11 @@ rec {
                             })
                           ];
                 });
-  haskell1 = pkgs.haskell // {
-      packages = pkgs.haskell.packages // {
-        ghc8107 = pkgs.haskell.packages.ghc8107.override {
-          overrides = self: super: {
-            directory            = self.callPackage ./overlays/directory-1.3.7.0.nix {};
-            process              = self.callPackage ./overlays/process-1.6.15.0.nix {};
-            hackage-security     = self.callPackage ./overlays/hackage-security-0.6.2.3.nix {};
-            Cabal                = self.callPackage ./overlays/Cabal-3.10.1.0.nix {};
-            Cabal-syntax         = self.callPackage ./overlays/Cabal-syntax-3.10.1.0.nix {};
-            cabal-install-solver = self.callPackage ./overlays/cabal-install-solver-3.10.1.0.nix {};
-            cabal-install        = self.callPackage ./overlays/cabal-install-3.10.1.0.nix {};
-          };
-        };
-      };
-  };
-  cabal_install_3_10_1_0 = pkgs.haskell.lib.compose.justStaticExecutables haskell1.packages.ghc8107.cabal-install;
 
   igraph_0_10_4 = pkgs.igraph.overrideAttrs (finalAttrs: previousAttrs: {
     version = "0.10.4";
+
+    nativeBuildInputs = previousAttrs.nativeBuildInputs or [] ++ [ pkgs.clang_12 ];
 
     src = pkgs.fetchFromGitHub {
       owner = "igraph";
@@ -77,7 +62,7 @@ rec {
       "-DIGRAPH_USE_INTERNAL_GMP=OFF"
       "-DIGRAPH_USE_INTERNAL_PLFIT=OFF"
       "-DIGRAPH_GLPK_SUPPORT=ON"
-      "-DIGRAPH_GRAPHML_SUPPORT=ON"
+      "-DIGRAPH_GRAPHML_SUPPORT=OFF"
       "-DIGRAPH_OPENMP_SUPPORT=ON"
       "-DIGRAPH_ENABLE_LTO=AUTO"
       "-DIGRAPH_ENABLE_TLS=ON"
@@ -97,7 +82,7 @@ rec {
 
   });
   hsBuildInputs = [
-    ghc
+    ghc947
     cabal_install_3_10_1_0
   ];
   nonhsBuildInputs = with pkgs; [
@@ -113,20 +98,22 @@ rec {
     lapack
     lzma
     pcre
-    pkgconfig
+    pkg-config
     postgresql
     xz
     zlib
     blas
     gfortran7
-    #    gfortran7.cc.lib
     expat
     icu
     graphviz
-    llvm_9
+    clang_12
+    llvm_12
+    gcc12
     igraph_0_10_4
     libpqxx
     libsodium
+    zeromq
   ] ++ ( lib.optionals stdenv.isDarwin [
        darwin.apple_sdk.frameworks.Accelerate
        ]);
@@ -134,8 +121,11 @@ rec {
   shellHook = ''
     export LD_LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}:$LD_LIBRARY_PATH"
     export LIBRARY_PATH="${pkgs.gfortran7.cc.lib}:${libPaths}"
+    export PATH="${pkgs.gccStdenv}/bin:$PATH"
+    export NIX_CC="${pkgs.gccStdenv}"
+    export CC="${pkgs.gccStdenv}/bin/gcc"
   '';
-  shell = pkgs.mkShell {
+  shell = pkgs.mkShell.override { stdenv = pkgs.gccStdenv; } {
     name = "gargantext-shell";
     buildInputs = hsBuildInputs ++ nonhsBuildInputs;
     inherit shellHook;

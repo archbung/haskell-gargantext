@@ -41,8 +41,8 @@ instance Arbitrary Metric
                        <*> arbitrary
                        <*> arbitrary
 
-deriveJSON (unPrefix "metrics_") ''Metrics
 deriveJSON (unPrefix "m_") ''Metric
+deriveJSON (unPrefix "metrics_") ''Metrics
 
 
 newtype ChartMetrics a = ChartMetrics { chartMetrics_data :: a }

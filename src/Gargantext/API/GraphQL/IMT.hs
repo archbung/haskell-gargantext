@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module Gargantext.API.GraphQL.IMT
   ( School(..)
@@ -13,10 +13,11 @@ import Gargantext.API.GraphQL.Types
 import Gargantext.Core.Ext.IMT (School(..), schools)
 import Gargantext.Prelude
 
-data SchoolsArgs
-  = SchoolsArgs
-    { } deriving (Generic, GQLType)
+newtype SchoolsArgs
+  = SchoolsArgs ()
+    deriving stock (Generic)
+    deriving anyclass (GQLType)
 
 resolveSchools
   :: SchoolsArgs -> GqlM e env [School]
-resolveSchools SchoolsArgs { } = pure $ schools
+resolveSchools (SchoolsArgs ()) = pure $ schools

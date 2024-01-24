@@ -13,14 +13,14 @@ import Language.Haskell.TH.Quote
 import Network.HTTP.Types
 import Network.Wai.Test
 import Prelude
+import qualified Data.Aeson as JSON
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.ByteString.Char8 as B
 import Test.Hspec.Expectations
 import Test.Hspec.Wai
 import Test.Hspec.Wai.JSON
 import Test.Hspec.Wai.Matcher
 import Test.Tasty.HUnit
-import qualified Data.Aeson as JSON
-import qualified Data.ByteString.Char8 as B
-import qualified Data.HashMap.Strict as HM
 
 -- | Marks the input 'Assertion' as pending, by ignoring any exception
 -- thrown by it.
@@ -87,5 +87,5 @@ containsJSON expected = MatchBody matcher
 
     isSubsetOf :: Value -> Value -> Bool
     isSubsetOf (Object sub) (Object sup) =
-      all (\(key, value) -> HM.lookup key sup == Just value) (HM.toList sub)
+      all (\(key, value) -> KM.lookup key sup == Just value) (KM.toList sub)
     isSubsetOf x y = x == y

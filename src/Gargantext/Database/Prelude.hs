@@ -119,7 +119,7 @@ fromInt64ToInt = fromIntegral
 mkCmd :: (Connection -> IO a) -> DBCmd err a
 mkCmd k = do
   pool <- view connPool
-  withResource pool (liftBase . k)
+  liftBase $ withResource pool (liftBase . k)
 
 runCmd :: (HasConnectionPool env)
        => env

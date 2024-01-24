@@ -659,7 +659,7 @@ reIndexWith :: ( HasNodeStory env err m )
             -> m ()
 reIndexWith cId lId nt lts = do
   -- printDebug "(cId,lId,nt,lts)" (cId, lId, nt, lts)
-  corpus_node <- getNodeWith cId (Proxy @ HyperdataCorpus)
+  corpus_node <- getNodeWith cId (Proxy @HyperdataCorpus)
   let corpusLang = withDefaultLanguage $ view (node_hyperdata . to _hc_lang) corpus_node
 
   -- Getting [NgramsTerm]

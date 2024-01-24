@@ -24,7 +24,7 @@ module Gargantext.Core.Text.Corpus.Parsers.Date
 
 import Data.Aeson (toJSON, Value)
 import Data.Aeson qualified as Json
-import Data.HashMap.Strict as HM hiding (map)
+import Data.Aeson.KeyMap as KM hiding (map)
 import Data.HashSet qualified as HashSet
 import Data.List qualified as List
 import Data.Text (unpack, splitOn, replace)
@@ -184,7 +184,7 @@ getTimeValue rt = case head rt of
 
 extractValue :: Maybe Value -> Maybe Text
 extractValue (Just (Json.Object object)) =
-  case HM.lookup "value" object of
+  case KM.lookup "value" object of
     Just (Json.String date) -> Just date
     _                  -> Nothing
 extractValue _ = Nothing
