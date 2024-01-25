@@ -14,7 +14,7 @@ allow-newer: true
 
 extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-  commit: 5a8dc3a0a1a4774ec2eb9df5f0f0b0a7dd172f09
+  commit: 618f711a530df56caefbb1577c4bf3d5ff45e214
 - git: https://gitlab.iscpif.fr/gargantext/iso639.git
   commit: eab929d106833ded8011a0d6705135e3fc506a9c
 - git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
