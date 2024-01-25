@@ -84,6 +84,9 @@ rec {
   hsBuildInputs = [
     ghc947
     cabal_install_3_10_1_0
+    pkgs.haskellPackages.alex
+    pkgs.haskellPackages.happy
+    pkgs.haskellPackages.pretty-show
   ];
   nonhsBuildInputs = with pkgs; [
     bzip2
@@ -114,6 +117,7 @@ rec {
     libpqxx
     libsodium
     zeromq
+    curl
   ] ++ ( lib.optionals stdenv.isDarwin [
        darwin.apple_sdk.frameworks.Accelerate
        ]);
