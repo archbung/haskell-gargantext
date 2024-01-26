@@ -102,7 +102,7 @@ stack build --fast
 Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
 
 ```shell
-cabal v2-install stack2cabal-1.0.14
+cabal v2-install --index-state="2023-12-10T10:34:46Z" --constraint 'Cabal==3.6.3.0' stack2cabal-1.0.14 --overwrite-policy=always
 ```
 
 And finally:
