@@ -1,3 +1,11 @@
+## Version 0.0.6.9.9.9.4.8
+
+* [BACK][GHC][Upgrade] Upgrade to 947
+* [BACK][FIX][[API HAL] Remove useless first 2 characters before authors and sources: &quot;, &quot; (#296)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/296)
+* [BACK][FIX][Add server options to obfuscate credentials from logs (#298)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/298)
+* [BACK][FIX][[Corpus HAL] (Backend) Remove/comment the HAL &quot;All&quot; lang choice (#299)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/299)
+* [FRONT][FIX][[Corpus HAL] Remove/comment the HAL &quot;All&quot; lang choice (#624)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/624)
+
 ## Version 0.0.6.9.9.9.4.7
 
 * [BACK][LOGS][Add server options to obfuscate credentials from logs (#298)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/298)
