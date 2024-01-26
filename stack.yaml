@@ -40,7 +40,7 @@ extra-deps:
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
   commit: bfa9069b4ff70f341ca3244e8aff9e83eb4b8b73
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git
-  commit: 3db385e767d2100d8abe900833c6e7de3ac55e1b
+  commit: 4ae2cd37ad8ebb3a43398f3f189752fd14b051ab
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
   commit: eb130c71fa17adaceed6ff66beefbccb13df51ba
 - git: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
