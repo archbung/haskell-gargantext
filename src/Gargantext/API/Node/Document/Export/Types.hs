@@ -94,6 +94,6 @@ type API = Summary "Document Export"
                :<|> "csv"
                :> Get '[PlainText] (Headers '[Servant.Header "Content-Disposition" Text] Text)) -- [Document])
 
-$(deriveJSON (unPrefix "_de_") ''DocumentExport)
-$(deriveJSON (unPrefix "_d_") ''Document)
 $(deriveJSON (unPrefix "_ng_") ''Ngrams)
+$(deriveJSON (unPrefix "_d_") ''Document)
+$(deriveJSON (unPrefix "_de_") ''DocumentExport)

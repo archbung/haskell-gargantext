@@ -216,43 +216,6 @@ data ObjectData =
   | Layer        !GvId !GraphDataData  !LayerData
   deriving (Show, Eq, Generic)
 
-instance ToJSON ObjectData where
-  toJSON = \case
-    GroupToNode gvid commonData nodeTypeData
-      -> mkObject gvid (Left commonData) nodeTypeData
-    BranchToNode gvid commonData nodeTypeData
-      -> mkObject gvid (Left commonData) nodeTypeData
-    PeriodToNode gvid commonData nodeTypeData
-      -> mkObject gvid (Left commonData) nodeTypeData
-    Layer gvid graphData nodeTypeData
-      -> mkObject gvid (Right graphData) nodeTypeData
-
-instance FromJSON ObjectData where
-  parseJSON = withObject "ObjectData" $ \o -> do
-    _gvid        <- o .: "_gvid"
-    -- try to parse the graph data first. If we succeed, then we are dealing with
-    -- the 'Layer', otherwise we the rest, but for the rest we can avoid re-parsing
-    -- the 'NodeCommonData' every time.
-    case parseMaybe @_ @GraphDataData parseJSON (Object o) of
-      Nothing
-        -> do commonData <- parseJSON (Object o)
-              ((GroupToNode  <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)) <|>
-               (BranchToNode <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)) <|>
-               (PeriodToNode <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)))
-      Just gd
-        -> Layer <$> pure _gvid <*> pure gd <*> parseJSON (Object o)
-
-
-mkObject :: ToJSON a => GvId -> Either NodeCommonData GraphDataData -> a -> Value
-mkObject gvid commonData objectTypeData =
-  let commonDataJSON   = either toJSON toJSON commonData
-      objectTypeDataJSON = toJSON objectTypeData
-      header           = object $ [ "_gvid"    .= toJSON gvid ]
-  in case (commonDataJSON, objectTypeDataJSON, header) of
-    (Object hdr, Object cdJSON, Object etDataJSON)
-      -> Object $ hdr <> cdJSON <> etDataJSON
-    _ -> panicTrace "[Gargantext.Core.Types.Phylo.mkObject] impossible: commonData, header or objectTypeDataJSON didn't convert back to JSON Object."
-
 data GroupToNodeData
   = GroupToNodeData
     { _gtn_bId        :: Text
@@ -474,17 +437,23 @@ data BranchToGroupData
     , _btg_style :: Maybe Text
     } deriving (Show, Eq, Generic)
 
--- | Lenses
-makeLenses ''Phylo
-makeLenses ''PhyloPeriod
-makeLenses ''PhyloLevel
-makeLenses ''PhyloGroup
-
 -- | JSON instances
-$(deriveJSON (unPrefix "_phylo_"       ) ''Phylo       )
-$(deriveJSON (unPrefix "_phylo_Period" ) ''PhyloPeriod )
-$(deriveJSON (unPrefix "_phylo_Level"  ) ''PhyloLevel  )
-$(deriveJSON (unPrefix "_phylo_Group"  ) ''PhyloGroup  )
+instance ToJSON GvId where
+  toJSON GvId{..} = toJSON _GvId
+instance FromJSON GvId where
+  parseJSON v = GvId <$> parseJSON v
+
+-- /NOTE/ We need to define /after/ the JSON istance for 'GvId' due to GHC stage limitation.
+mkObject :: ToJSON a => GvId -> Either NodeCommonData GraphDataData -> a -> Value
+mkObject gvid commonData objectTypeData =
+  let commonDataJSON   = either toJSON toJSON commonData
+      objectTypeDataJSON = toJSON objectTypeData
+      header           = object $ [ "_gvid"    .= toJSON gvid ]
+  in case (commonDataJSON, objectTypeDataJSON, header) of
+    (Object hdr, Object cdJSON, Object etDataJSON)
+      -> Object $ hdr <> cdJSON <> etDataJSON
+    _ -> panicTrace "[Gargantext.Core.Types.Phylo.mkObject] impossible: commonData, header or objectTypeDataJSON didn't convert back to JSON Object."
+
 
 instance ToJSON GraphData where
   toJSON = mkGraphData
@@ -511,11 +480,6 @@ instance FromJSON GraphData where
     _gd_strict        <- o .: "strict"
     _gd_data          <- parseJSON (Object o)
     pure GraphData{..}
-
-instance ToJSON GvId where
-  toJSON GvId{..} = toJSON _GvId
-instance FromJSON GvId where
-  parseJSON v = GvId <$> parseJSON v
 
 instance ToJSON EdgeData where
   toJSON = \case
@@ -608,6 +572,38 @@ instance FromJSON BranchToGroupData where
     _btg_style     <- o .:? "style"
     pure BranchToGroupData{..}
 
+instance ToJSON ObjectData where
+  toJSON = \case
+    GroupToNode gvid commonData nodeTypeData
+      -> mkObject gvid (Left commonData) nodeTypeData
+    BranchToNode gvid commonData nodeTypeData
+      -> mkObject gvid (Left commonData) nodeTypeData
+    PeriodToNode gvid commonData nodeTypeData
+      -> mkObject gvid (Left commonData) nodeTypeData
+    Layer gvid graphData nodeTypeData
+      -> mkObject gvid (Right graphData) nodeTypeData
+
+instance FromJSON ObjectData where
+  parseJSON = withObject "ObjectData" $ \o -> do
+    _gvid        <- o .: "_gvid"
+    -- try to parse the graph data first. If we succeed, then we are dealing with
+    -- the 'Layer', otherwise we the rest, but for the rest we can avoid re-parsing
+    -- the 'NodeCommonData' every time.
+    case parseMaybe @_ @GraphDataData parseJSON (Object o) of
+      Nothing
+        -> do commonData <- parseJSON (Object o)
+              ((GroupToNode  <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)) <|>
+               (BranchToNode <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)) <|>
+               (PeriodToNode <$> pure _gvid <*> pure commonData <*> parseJSON (Object o)))
+      Just gd
+        -> Layer <$> pure _gvid <*> pure gd <*> parseJSON (Object o)
+
+
+
+$(deriveJSON (unPrefix "_phylo_Group"  ) ''PhyloGroup  )
+$(deriveJSON (unPrefix "_phylo_Level"  ) ''PhyloLevel  )
+$(deriveJSON (unPrefix "_phylo_Period" ) ''PhyloPeriod )
+$(deriveJSON (unPrefix "_phylo_"       ) ''Phylo       )
 
 -- | ToSchema instances
 instance ToSchema Phylo where
@@ -637,7 +633,9 @@ instance ToSchema GraphDataData where
 instance ToSchema GraphData where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_gd_")
 
--- | Arbitrary instances
+--
+-- Arbitrary instances
+--
 instance Arbitrary LayerData where
   arbitrary = LayerData <$> arbitrary
 instance Arbitrary NodeCommonData where
@@ -723,3 +721,13 @@ instance Arbitrary GraphDataData where
                             <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
                             <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
                             <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+--
+-- Lenses
+--
+
+makeLenses ''Phylo
+makeLenses ''PhyloPeriod
+makeLenses ''PhyloLevel
+makeLenses ''PhyloGroup
+

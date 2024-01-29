@@ -121,11 +121,11 @@ userTable = Table "auth_user"
                   }
       )
 
+$(deriveJSON (unPrefix "userLight_") ''UserLight)
+$(deriveJSON (unPrefix "user_") ''UserPoly)
+
 instance FromField UserLight where
   fromField = fromField'
 
 instance FromField UserDB where
   fromField = fromField'
-
-$(deriveJSON (unPrefix "userLight_") ''UserLight)
-$(deriveJSON (unPrefix "user_") ''UserPoly)

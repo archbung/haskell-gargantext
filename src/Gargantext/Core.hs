@@ -75,7 +75,7 @@ instance ToSchema Lang where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 instance FromHttpApiData Lang
   where
-    parseUrlPiece "All" = pure All
+    -- parseUrlPiece "All" = pure All
     parseUrlPiece "DE"  = pure DE
     parseUrlPiece "EL"  = pure EL
     parseUrlPiece "EN"  = pure EN

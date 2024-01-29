@@ -9,7 +9,8 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Gargantext.API.Ngrams.Tools
   where

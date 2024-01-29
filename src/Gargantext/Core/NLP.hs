@@ -64,7 +64,7 @@ nlpServerConfigFromURI _ = Nothing
 nlpServerMap :: NLPConfig -> NLPServerMap
 nlpServerMap (NLPConfig { .. }) =
   Map.fromList $ catMaybes $
-    [ uncurryMaybeSecond (All, nlpServerConfigFromURI _nlp_all) ] ++
+    [ uncurryMaybeSecond (EN, nlpServerConfigFromURI _nlp_default) ] ++
     ((\lang ->
         uncurryMaybeSecond (lang, Map.lookup (show lang) _nlp_languages >>= nlpServerConfigFromURI ))
       <$> allLangs)

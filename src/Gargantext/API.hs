@@ -45,6 +45,7 @@ import Gargantext.API.Admin.EnvTypes (Env, Mode(..))
 import Gargantext.API.Admin.Settings (newEnv)
 import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings)
 import Gargantext.API.EKG
+import Gargantext.API.Middleware (logStdoutDevSanitised)
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Routes
 import Gargantext.API.Server (server)
@@ -58,7 +59,7 @@ import Network.Wai.Handler.Warp hiding (defaultSettings)
 import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.RequestLogger
 import Paths_gargantext (getDataDir)
-import Servant
+import Servant hiding (Header)
 import System.Cron.Schedule qualified as Cron
 import System.FilePath
 
@@ -210,7 +211,10 @@ makeDevMiddleware mode = do
     --pure (warpS, logWare . checkOriginAndHost . corsMiddleware)
     case mode of
       Prod -> pure $ logStdout . corsMiddleware
-      _    -> pure $ logStdoutDev . corsMiddleware
+      _    -> do
+        loggerMiddleware <- logStdoutDevSanitised
+        pure $ loggerMiddleware . corsMiddleware
+
 
 ---------------------------------------------------------------------
 -- | API Global

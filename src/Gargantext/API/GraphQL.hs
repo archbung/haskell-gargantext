@@ -22,7 +22,7 @@ import Data.ByteString.Lazy.Char8 ( ByteString )
 import Data.Morpheus ( App, deriveApp )
 import Data.Morpheus.Server ( httpPlayground )
 import Data.Morpheus.Subscriptions ( Event (..), httpPubApp )
-import Data.Morpheus.Types ( GQLRequest, GQLResponse, GQLType, RootResolver(..), Undefined(..) )
+import Data.Morpheus.Types ( GQLRequest, GQLResponse, GQLType, RootResolver(..), Undefined, defaultRootResolver)
 import Data.Proxy
 import Gargantext.API.Admin.Auth.Types (AuthenticatedUser)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog)
@@ -111,7 +111,7 @@ rootResolver
   -> AccessPolicyManager
   -> RootResolver (GargM env BackendInternalError) e Query Mutation Undefined
 rootResolver authenticatedUser policyManager =
-  RootResolver
+  defaultRootResolver
     { queryResolver = Query { annuaire_contacts   = GQLA.resolveAnnuaireContacts
                             , context_ngrams      = GQLCTX.resolveContextNgrams
                             , contexts            = GQLCTX.resolveNodeContext
@@ -133,7 +133,7 @@ rootResolver authenticatedUser policyManager =
                                   , update_user_epo_api_token = GQLUser.updateUserEPOAPIToken
                                   , delete_team_membership = GQLTeam.deleteTeamMembership
                                   , update_node_context_category = GQLCTX.updateNodeContextCategory }
-    , subscriptionResolver = Undefined }
+    }
 
 -- | Main GraphQL "app".
 app

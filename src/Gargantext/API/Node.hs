@@ -190,62 +190,6 @@ nodeNodeAPI p uId cId nId = withAccess (Proxy :: Proxy (NodeNodeAPI a)) Proxy uI
     nodeNodeAPI' = getNodeWith nId p
 
 ------------------------------------------------------------------------
--- TODO: make the NodeId type indexed by `a`, then we no longer need the proxy.
-nodeAPI :: forall proxy a.
-       ( HyperdataC a, Show a
-       ) => proxy a
-         -> AuthenticatedUser
-         -> NodeId
-         -> ServerT (NodeAPI a) (GargM Env BackendInternalError)
-nodeAPI p authenticatedUser targetNode =
-  withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode targetNode) nodeAPI'
-  where
-
-    userRootId = RootId $ authenticatedUser ^. auth_node_id
-
-    nodeAPI' :: ServerT (NodeAPI a) (GargM Env BackendInternalError)
-    nodeAPI' =  withPolicy authenticatedUser (nodeChecks targetNode) (getNodeWith targetNode p)
-           :<|> rename                                targetNode
-           :<|> postNode            authenticatedUser targetNode
-           :<|> postNodeAsyncAPI    authenticatedUser targetNode
-           :<|> FrameCalcUpload.api authenticatedUser targetNode
-           :<|> putNode                               targetNode
-           :<|> Update.api                            targetNode
-           :<|> Action.deleteNode   userRootId        targetNode
-           :<|> getChildren                           targetNode p
-
-           -- TODO gather it
-           :<|> tableApi                              targetNode
-           :<|> apiNgramsTableCorpus                  targetNode
-
-           :<|> catApi                                targetNode
-           :<|> scoreApi                              targetNode
-           :<|> Search.api                            targetNode
-           :<|> Share.api           userRootId        targetNode
-           -- Pairing Tools
-           :<|> pairWith                              targetNode
-           :<|> pairs                                 targetNode
-           :<|> getPair                               targetNode
-
-           -- VIZ
-           :<|> scatterApi                            targetNode
-           :<|> chartApi                              targetNode
-           :<|> pieApi                                targetNode
-           :<|> treeApi                               targetNode
-           :<|> phyloAPI                              targetNode
-           :<|> moveNode           userRootId         targetNode
-           -- :<|> nodeAddAPI id'
-           -- :<|> postUpload id'
-           :<|> Share.unPublish                       targetNode
-
-           :<|> fileApi                               targetNode
-           :<|> fileAsyncApi       authenticatedUser  targetNode
-
-           :<|> DFWN.api           authenticatedUser  targetNode
-           :<|> DocumentUpload.api                    targetNode
-
-
-------------------------------------------------------------------------
 data RenameNode = RenameNode { r_name :: Text }
   deriving (Generic)
 
@@ -374,5 +318,59 @@ instance ToSchema  RenameNode
 instance Arbitrary RenameNode where
   arbitrary = elements [RenameNode "test"]
 
+------------------------------------------------------------------------
+-- TODO: make the NodeId type indexed by `a`, then we no longer need the proxy.
+nodeAPI :: forall proxy a.
+       ( HyperdataC a, Show a, MimeUnrender JSON a
+       ) => proxy a
+         -> AuthenticatedUser
+         -> NodeId
+         -> ServerT (NodeAPI a) (GargM Env BackendInternalError)
+nodeAPI p authenticatedUser targetNode =
+  withAccess (Proxy :: Proxy (NodeAPI a)) Proxy authenticatedUser (PathNode targetNode) nodeAPI'
+  where
 
--------------------------------------------------------------
+    userRootId = RootId $ authenticatedUser ^. auth_node_id
+
+    nodeAPI' :: ServerT (NodeAPI a) (GargM Env BackendInternalError)
+    nodeAPI' =  withPolicy authenticatedUser (nodeChecks targetNode) (getNodeWith targetNode p)
+           :<|> rename                                targetNode
+           :<|> postNode            authenticatedUser targetNode
+           :<|> postNodeAsyncAPI    authenticatedUser targetNode
+           :<|> FrameCalcUpload.api authenticatedUser targetNode
+           :<|> putNode                               targetNode
+           :<|> Update.api                            targetNode
+           :<|> Action.deleteNode   userRootId        targetNode
+           :<|> getChildren                           targetNode p
+
+           -- TODO gather it
+           :<|> tableApi                              targetNode
+           :<|> apiNgramsTableCorpus                  targetNode
+
+           :<|> catApi                                targetNode
+           :<|> scoreApi                              targetNode
+           :<|> Search.api                            targetNode
+           :<|> Share.api           userRootId        targetNode
+           -- Pairing Tools
+           :<|> pairWith                              targetNode
+           :<|> pairs                                 targetNode
+           :<|> getPair                               targetNode
+
+           -- VIZ
+           :<|> scatterApi                            targetNode
+           :<|> chartApi                              targetNode
+           :<|> pieApi                                targetNode
+           :<|> treeApi                               targetNode
+           :<|> phyloAPI                              targetNode
+           :<|> moveNode           userRootId         targetNode
+           -- :<|> nodeAddAPI id'
+           -- :<|> postUpload id'
+           :<|> Share.unPublish                       targetNode
+
+           :<|> fileApi                               targetNode
+           :<|> fileAsyncApi       authenticatedUser  targetNode
+
+           :<|> DFWN.api           authenticatedUser  targetNode
+           :<|> DocumentUpload.api                    targetNode
+
+

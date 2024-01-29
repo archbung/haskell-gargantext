@@ -2,7 +2,7 @@
 
 module Main where
 
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (isInfixOf)
 
 import Control.Monad
 import Data.Text (isInfixOf)

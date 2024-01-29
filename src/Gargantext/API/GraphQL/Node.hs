@@ -15,7 +15,7 @@ Portability : POSIX
 module Gargantext.API.GraphQL.Node where
 
 import Data.Aeson
-import Data.HashMap.Strict qualified as HashMap
+import Data.Aeson.KeyMap qualified as KM
 import Data.Morpheus.Types ( GQLType )
 import Data.Text qualified as T
 import Gargantext.API.Admin.Auth.Types
@@ -126,7 +126,7 @@ toCorpus N.Node { .. } = Corpus { id = NN.unNodeId _node_id
 
 pubmedAPIKeyFromValue :: Value -> Maybe PUBMED.APIKey
 pubmedAPIKeyFromValue (Object kv) =
-  case HashMap.lookup "pubmed_api_key" kv of
+  case KM.lookup "pubmed_api_key" kv of
     Nothing -> Nothing
     Just v  -> case fromJSON v of
       Error _    -> Nothing

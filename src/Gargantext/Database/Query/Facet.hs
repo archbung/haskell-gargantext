@@ -15,6 +15,7 @@ Portability : POSIX
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
 ------------------------------------------------------------------------
 module Gargantext.Database.Query.Facet
   ( runViewAuthorsDoc

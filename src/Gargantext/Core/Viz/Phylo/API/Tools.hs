@@ -114,7 +114,7 @@ corpusIdtoDocuments timeUnit corpusId = do
   docs <- selectDocNodes corpusId
   lId  <- defaultList corpusId
   termList <- getTermList lId MapTerm NgramsTerms
-  corpus_node <- getNodeWith corpusId (Proxy @ HyperdataCorpus)
+  corpus_node <- getNodeWith corpusId (Proxy @HyperdataCorpus)
   let corpusLang = view (node_hyperdata . to _hc_lang) corpus_node
 
   let patterns = case termList of

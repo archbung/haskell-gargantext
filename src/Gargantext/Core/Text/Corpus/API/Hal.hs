@@ -56,8 +56,8 @@ toDoc' la (HAL.Corpus { .. }) = do
                          , _hd_uniqIdBdd = Nothing
                          , _hd_page = Nothing
                          , _hd_title = Just $ intercalate " " _corpus_title
-                         , _hd_authors = Just $ foldl (\x y -> x <> ", " <> y) "" _corpus_authors_names
-                         , _hd_institutes = Just $ foldl (\x y -> x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
+                         , _hd_authors = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" _corpus_authors_names
+                         , _hd_institutes = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
                          , _hd_source = Just $ maybe "Nothing" identity _corpus_source
                          , _hd_abstract = Just abstract
                          , _hd_publication_date = fmap show utctime

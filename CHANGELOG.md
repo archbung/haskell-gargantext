@@ -1,3 +1,25 @@
+## Version 0.0.6.9.9.9.4.8
+
+* [BACK][GHC][Upgrade] Upgrade to 947
+* [BACK][FIX][[API HAL] Remove useless first 2 characters before authors and sources: &quot;, &quot; (#296)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/296)
+* [BACK][FIX][Add server options to obfuscate credentials from logs (#298)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/298)
+* [BACK][FIX][[Corpus HAL] (Backend) Remove/comment the HAL &quot;All&quot; lang choice (#299)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/299)
+* [FRONT][FIX][[Corpus HAL] Remove/comment the HAL &quot;All&quot; lang choice (#624)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/624)
+
+## Version 0.0.6.9.9.9.4.7
+
+* [BACK][LOGS][Add server options to obfuscate credentials from logs (#298)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/298)
+* [BACK][DOC] README
+
+## Version 0.0.6.9.9.9.4.6
+
+* [FRONT][FIX][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
+
+## Version 0.0.6.9.9.9.4.5
+
+* [FRONT][FIX][The first change in the map term is never taken into account (#622)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/622)
+* [BACK][FIX][[Istex import] Changes in the parser: documents sources are wrong (JSON from ZIP file) (#293)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/293)
+
 ## Version 0.0.6.9.9.9.4.4
 
 * [FRONT][FIX][trim / deblank missing in invitations modal box (#618)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/618)

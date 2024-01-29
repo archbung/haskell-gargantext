@@ -47,7 +47,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
                 | Status{..} <- simpleStatus
                 ->liftIO $ do
                     statusCode `shouldBe` 404
-                    simpleBody `shouldBe` [r|{"node":99,"error":"Node does not exist"}|]
+                    simpleBody `shouldBe` [r|{"error":"Node does not exist","node":99}|]
 
       it "returns the new error if header X-Garg-Error-Scheme: new is passed" $ \((_testEnv, port), app) -> do
         withApplication app $ do

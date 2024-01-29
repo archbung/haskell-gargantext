@@ -98,9 +98,9 @@ makeLenses ''HyperdataPrivate
 makeLenses ''HyperdataPublic
 
 -- | All Json instances
-$(deriveJSON (unPrefix "_hu_")  ''HyperdataUser)
 $(deriveJSON (unPrefix "_hpr_") ''HyperdataPrivate)
 $(deriveJSON (unPrefix "_hpu_") ''HyperdataPublic)
+$(deriveJSON (unPrefix "_hu_")  ''HyperdataUser)
 
 -- | Arbitrary instances
 instance Arbitrary HyperdataUser where

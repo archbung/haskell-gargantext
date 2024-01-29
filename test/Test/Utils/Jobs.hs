@@ -254,7 +254,7 @@ withJob :: Env
         -> IO (SJ.JobStatus 'SJ.Safe JobLog)
 withJob env f = runMyDummyMonad env $ MyDummyMonad $
   -- the job type doesn't matter in our tests, we use a random one, as long as it's of type 'GargJob'.
-  newJob @_ @BackendInternalError mkJobHandle (pure env) RecomputeGraphJob (\_ hdl input ->
+  newJob @_ mkJobHandle (pure env) RecomputeGraphJob (\_ hdl input ->
     runMyDummyMonad env $ (Right <$> (f hdl input >> getLatestJobStatus hdl))) (SJ.JobInput () Nothing)
 
 withJob_ :: Env

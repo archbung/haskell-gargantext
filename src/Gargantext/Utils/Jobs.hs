@@ -10,6 +10,7 @@ Portability : POSIX
 
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 module Gargantext.Utils.Jobs (
   -- * Serving the JOBS API
     serveJobsAPI

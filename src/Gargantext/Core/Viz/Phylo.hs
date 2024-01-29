@@ -625,9 +625,6 @@ makeLenses ''PhyloBranch
 -- | JSON instances | --
 ------------------------
 
-instance FromJSON Phylo
-instance ToJSON Phylo
-
 instance FromJSON PhyloSources
 instance ToJSON PhyloSources
 
@@ -650,6 +647,9 @@ instance FromJSON PhyloGroup
 instance ToJSON PhyloGroup
 
 $(deriveJSON (unPrefix "_foundations_"  ) ''PhyloFoundations)
+
+instance FromJSON Phylo
+instance ToJSON Phylo
 
 -- NFData instances
 
@@ -677,3 +677,4 @@ instance NFData Order
 instance NFData Sort
 instance NFData Tagger
 instance NFData PhyloLabel
+

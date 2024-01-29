@@ -39,7 +39,7 @@ import Gargantext.API.Node.Corpus.Types
 import Gargantext.API.Node.Corpus.Update (addLanguageToCorpus)
 import Gargantext.API.Node.Types
 import Gargantext.Core (Lang(..), withDefaultLanguage, defaultLanguage)
-import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion)
+import Gargantext.Core.NodeStory (HasNodeStoryImmediateSaver, HasNodeArchiveStoryImmediateSaver, currentVersion, NgramsStatePatch')
 import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.Corpus.Parsers qualified as Parser (FileType(..), parseFormatC)
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
@@ -51,7 +51,7 @@ import Gargantext.Database.Action.Mail (sendMail)
 import Gargantext.Database.Action.Node (mkNodeWithParent)
 import Gargantext.Database.Action.User (getUserId)
 import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..))
+import Gargantext.Database.Admin.Types.Node (CorpusId, NodeType(..), ParentId)
 import Gargantext.Database.GargDB qualified as GargDB
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getNodeWith, getOrMkList)
@@ -252,10 +252,7 @@ addToCorpusWithQuery user cid (WithQuery { _wq_query = q
           corpusId <- flowDataText user txt (Multi l) cid (Just flw) jobHandle
           $(logLocM) DEBUG $ T.pack $ "corpus id " <> show corpusId
 
-          userId <- getUserId user
-          listId <- getOrMkList cid userId
-          v <- currentVersion listId
-          _ <- commitStatePatch listId (Versioned v mempty)
+          _ <- commitCorpus cid user
           
           -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
           sendMail user
@@ -275,7 +272,10 @@ type AddWithForm = Summary "Add with FormUrlEncoded to corpus endpoint"
    :> "async"
      :> AsyncJobs JobLog '[FormUrlEncoded] NewWithForm JobLog
 
-addToCorpusWithForm :: (FlowCmdM env err m, MonadJobStatus m)
+addToCorpusWithForm :: ( FlowCmdM env err m
+                       , MonadJobStatus m
+                       , HasNodeStoryImmediateSaver env
+                       , HasNodeArchiveStoryImmediateSaver env )
                     => User
                     -> CorpusId
                     -> NewWithForm
@@ -343,6 +343,8 @@ addToCorpusWithForm user cid nwf jobHandle = do
                           (count, transPipe liftBase docsC') -- TODO fix number of docs
                           --(map (map toHyperdataDocument) docs)
                           jobHandle
+
+      _ <- commitCorpus cid user
 
       -- printDebug "Extraction finished   : " cid
       -- printDebug "sending email" ("xxxxxxxxxxxxxxxxxxxxx" :: Text)
@@ -422,3 +424,17 @@ addToCorpusWithFile user cid nwf@(NewWithFile _d (withDefaultLanguage -> l) fNam
   sendMail user
 
   markComplete jobHandle
+
+
+
+--- UTILITIES
+
+commitCorpus :: ( FlowCmdM env err m
+                , HasNodeArchiveStoryImmediateSaver env
+                , HasNodeStoryImmediateSaver env )
+             => ParentId -> User -> m (Versioned NgramsStatePatch')
+commitCorpus cid user = do  
+  userId <- getUserId user
+  listId <- getOrMkList cid userId
+  v <- currentVersion listId
+  commitStatePatch listId (Versioned v mempty)

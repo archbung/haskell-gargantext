@@ -1,5 +1,5 @@
 # Optimising CI speed by using tips from https://blog.nimbleways.com/let-s-make-faster-gitlab-ci-cd-pipelines/
-image: adinapoli/gargantext:v2.3
+image: adinapoli/gargantext:v3.2
 
 variables:
   STACK_ROOT: "${CI_PROJECT_DIR}/.stack-root"
@@ -26,6 +26,7 @@ stack:
   script:
     - echo "Building the project from '$CI_PROJECT_DIR'"
     - nix-shell --run "stack build --no-terminal --fast --dry-run"
+  allow_failure: false
 
 cabal:
   stage: cabal

@@ -193,6 +193,20 @@ instance Arbitrary HyperdataContact where
 -- | Specific Gargantext instance
 instance Hyperdata HyperdataContact
 
+-- | All lenses
+makeLenses ''ContactWho
+makeLenses ''ContactWhere
+makeLenses ''ContactTouch
+makeLenses ''ContactMetaData
+makeLenses ''HyperdataContact
+
+-- | All Json instances
+$(deriveJSON (unPrefix "_ct_") ''ContactTouch)
+$(deriveJSON (unPrefix "_cw_") ''ContactWho)
+$(deriveJSON (unPrefix "_cw_") ''ContactWhere)
+$(deriveJSON (unPrefix "_cm_") ''ContactMetaData)
+$(deriveJSON (unPrefix "_hc_") ''HyperdataContact)
+
 -- | Database (Posgresql-simple instance)
 instance FromField HyperdataContact where
   fromField = fromField'
@@ -207,16 +221,3 @@ instance DefaultFromField (Nullable SqlJsonb) HyperdataContact where
 
 
 
--- | All lenses
-makeLenses ''ContactWho
-makeLenses ''ContactWhere
-makeLenses ''ContactTouch
-makeLenses ''ContactMetaData
-makeLenses ''HyperdataContact
-
--- | All Json instances
-$(deriveJSON (unPrefix "_cw_") ''ContactWho)
-$(deriveJSON (unPrefix "_cw_") ''ContactWhere)
-$(deriveJSON (unPrefix "_ct_") ''ContactTouch)
-$(deriveJSON (unPrefix "_cm_") ''ContactMetaData)
-$(deriveJSON (unPrefix "_hc_") ''HyperdataContact)
