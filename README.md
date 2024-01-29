@@ -39,12 +39,16 @@ Disclaimer: since this project is still in development, this document remains in
   ```
 ### Installation
 
-This project can be built with either Stack or Cabal. For historical reasons, we generate a `cabal.project` from the `stack.yaml`, and we do not commit the former to the repo, to have a single "source of truth".
-However, it's always possible to generate a `cabal.project` thanks to [stack2cabal](https://hackage.haskell.org/package/stack2cabal).
+This project can be built with either Stack or Cabal. We keep up-to-date the `cabal.project` (which allows us
+to build with `cabal` by default) but we support `stack` thanks to thanks to
+[cabal2stack](https://github.com/iconnect/cabal2stack), which allows us to generate a valid `stack.yaml` from
+a `cabal.project`. Due to the fact gargantext requires a particular set of system dependencies (C++ libraries,
+toolchains, etc) we use [nix](https://nixos.org/) to setup an environment with all the required system
+dependencies, in a sandboxed and isolated fashion.
 
 #### Install Nix 
 
-Gargantext requires [Nix](https://github.com/NixOS/nix) to provide system dependencies (for example, C libraries), but its use is limited to that. In order to install [Nix](https://nixos.org/download.html):
+As said, Gargantext requires [Nix](https://github.com/NixOS/nix) to provide system dependencies (for example, C libraries), but its use is limited to that. In order to install [Nix](https://nixos.org/download.html):
 
 ```shell
 sh <(curl -L https://nixos.org/nix/install) --daemon
@@ -62,7 +66,7 @@ nix-env (Nix) 2.19.2
 nix-shell
 ```
 
-This will take a bit of time the first time.
+This will take a bit of time as it has to download/build the dependencies, but this will be needed only the first time.
 
 ### Build: choose cabal (new) or stack (old)
 
@@ -72,6 +76,13 @@ First, into `nix-shell`:
 ```shell
 cabal update
 cabal install
+```
+
+Alternatively, if you want to run the command "from the outside", in your current shell:
+
+```
+nix-shell --run "cabal update"
+nix-shell --run "cabal install"
 ```
 
 #### With Stack
@@ -95,28 +106,32 @@ stack build --fast
 ```
 
 
-#### Keeping the cabal.project updated with stack.yaml
+#### Keeping the stack.yaml updated with the cabal.project
 
-(Section for Developers using cabal only)
+(Section for Developers using stack only)
 
-Once you have a valid version of `cabal`, building requires generating a valid `cabal.project`. This can be done by installing `stack2cabal`:
+Once you have a valid version of `stack`, building requires generating a valid `stack.yaml`.
+This can be obtained by installing `cabal2stack`:
 
 ```shell
-cabal v2-install --index-state="2023-12-10T10:34:46Z" --constraint 'Cabal==3.6.3.0' stack2cabal-1.0.14 --overwrite-policy=always
+git clone https://github.com/iconnect/cabal2stack.git
+cd cabal2stack
 ```
+
+Then, depending on what build system you are using, either build with `cabal install --overwrite-policy=always` or `stack install`.
 
 And finally:
 
 ```shell
-stack2cabal --no-run-hpack -p '2023-06-25'
-cabal v2-build
+cabal2stack --system-ghc --allow-newer --resolver lts-21.17 --resolver-file devops/stack/lts-21.17.yaml -o stack.yaml
+stack build
 ```
 
-
-Simply run:
+The good news is that you don't have to do all of this manually; during development, after modifying the
+`cabal.project`, it's enough to do:
 
 ```shell
-./bin/update-cabal-project
+./bin/update-project-dependencies
 ```
 
 ## Initialization <a name="init"></a>
@@ -184,10 +199,10 @@ When a devlopment is needed on libraries (for instance, the HAL crawler in https
       - turn off (temporarily) the `hal` in `source-repository-package` 
    2. When changes work and tests are OK, commit in repo `hal`
 2. When changes are commited / merged:
-   1. Get the hash id, and edit `stack.yaml` with the **new commit id**
-   2. run `./bin/update-cabal-project`
-      - get an error that sha256 don't match, so update the `./bin/update-cabal-project` with new sha256 hash
-      - run again `./bin/update-cabal-project` (to make sure it's a fixed point now)
+   1. Get the hash id, and edit `cabal.project` with the **new commit id**
+   2. run `./bin/update-project-dependencies`
+      - get an error that sha256 don't match, so update the `./bin/update-project-dependencies` with new sha256 hash
+      - run again `./bin/update-project-dependencies` (to make sure it's a fixed point now)
 
 > Note: without `stack.yaml` we would have to only fix `cabal.project` -> `source-repository-package` commit id. Sha256 is there to make sure CI reruns the tests.
 
