@@ -72,8 +72,8 @@ addPhyloScale lvl phylo =
                                    (PhyloScale (phyloPrd ^. phylo_periodPeriod) (phyloPrd ^. phylo_periodPeriodStr) lvl empty))) phylo
 
 
-toNextScale :: Phylo -> [PhyloGroup] -> Phylo
-toNextScale phylo groups =
+toNextScale :: ToPhyloOptions -> Phylo -> [PhyloGroup] -> Phylo
+toNextScale opts phylo groups =
     let curLvl = getLastLevel phylo
         oldGroups = fromList $ map (\g -> (getGroupId g, getLevelParentId g)) groups
         newGroups = concat $ groupsToBranches'
@@ -86,7 +86,7 @@ toNextScale phylo groups =
                   $ fromListWith (++) $ map (\g -> (getLevelParentId g, [g])) groups
 
         newPeriods = fromListWith (++) $ map (\g -> (g ^. phylo_groupPeriod, [g])) newGroups
-    in  traceSynchronyEnd 
+    in  traceSynchronyEnd opts
       $ over ( phylo_periods . traverse . phylo_periodScales . traverse
              --  6) update each period at curLvl + 1
              . filtered (\phyloLvl -> phyloLvl ^. phylo_scaleScale == (curLvl + 1)))
@@ -205,8 +205,8 @@ levelUpAncestors groups =
          in g & phylo_groupAncestors .~ ancestors'
       ) groups
 
-synchronicClustering :: Phylo -> Phylo
-synchronicClustering phylo =
+synchronicClustering :: ToPhyloOptions -> Phylo -> Phylo
+synchronicClustering opts phylo =
     let prox = similarity $ getConfig phylo
         sync = phyloSynchrony $ getConfig phylo
         docs = getDocsByDate phylo
@@ -215,9 +215,9 @@ synchronicClustering phylo =
                      $ map processDynamics
                      $ chooseClusteringStrategy sync
                      $ phyloLastScale 
-                     $ traceSynchronyStart phylo
+                     $ traceSynchronyStart opts phylo
         newBranches' = newBranches `using` parList rdeepseq
-     in toNextScale phylo $ levelUpAncestors $ concat newBranches'
+     in toNextScale opts phylo $ levelUpAncestors $ concat newBranches'
 
 
 -- synchronicDistance :: Phylo -> Level -> String

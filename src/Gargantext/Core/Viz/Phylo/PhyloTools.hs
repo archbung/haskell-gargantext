@@ -8,11 +8,89 @@ Stability   : experimental
 Portability : POSIX
 -}
 
+{-# LANGUAGE ViewPatterns              #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-{-# LANGUAGE ViewPatterns      #-}
+module Gargantext.Core.Viz.Phylo.PhyloTools (
 
-module Gargantext.Core.Viz.Phylo.PhyloTools where
+   -- * Types
+     ToPhyloOptions(..)
+
+  , addMemoryPointers
+  , addPointers
+  , commonPrefix
+  , coocToDiago
+  , elemIndex'
+  , filterSimilarity
+  , findDefaultLevel
+  , findMaxima
+  , getConfig
+  , getCoocByDate
+  , getDocsByDate
+  , getGroupId
+  , getGroupNgrams
+  , getGroupsFromScale
+  , getGroupsFromScalePeriods
+  , getInMap
+  , getLadder
+  , getLastLevel
+  , getLastRootsFreq
+  , getLevel
+  , getLevelParentId
+  , getMinSharedNgrams
+  , getPeriodIds
+  , getPeriodPointers
+  , getPhyloSeaRiseStart
+  , getPhyloSeaRiseSteps
+  , getRoots
+  , getRootsCountByDate
+  , getRootsFreq
+  , getSeaElevation
+  , getSimilarity
+  , getSources
+  , getTimeFrame
+  , getTimePeriod
+  , getTimeScale
+  , getTimeStep
+  , groupByField
+  , groupsToBranches'
+  , idToPrd
+  , idxToLabel
+  , idxToLabel'
+  , isNested
+  , isRoots
+  , keepFilled
+  , listToCombi'
+  , listToMatrix
+  , listToSeq
+  , mergeBranchIds
+  , mergeMeta
+  , ngramsToCooc
+  , ngramsToDensity
+  , ngramsToIdx
+  , ngramsToLabel
+  , periodsToYears
+  , phyloLastScale
+  , relatedComponents
+  , setConfig
+  , sourcesToIdx
+  , sumCooc
+  , toFstDate
+  , toLstDate
+  , toPeriods
+  , toRelatedComponents
+  , toTimeScale
+  , traceSynchronyEnd
+  , traceSynchronyStart
+  , updatePeriods
+  , updatePhyloGroups
+  , updateQuality
+
+  -- * Tracing the Phylo algorithm (deprecated, trace from pure code is bade)
+  , traceMatchEnd
+  , traceTemporalMatching
+  , traceToPhylo
+  ) where
 
 import Control.Lens hiding (Level)
 import Data.List (union, nub, init, tail, partition, nubBy, (!!))
@@ -31,6 +109,14 @@ import Gargantext.Core.Viz.Phylo
 import Gargantext.Prelude hiding (empty)
 import Prelude (read)
 import Text.Printf
+
+-- | Options to use with the 'toPhylo' function and others.
+newtype ToPhyloOptions
+  = ToPhyloOptions
+  { -- | If 'True', enable debug logs.
+    tpoptsDebugLogs :: Bool
+  } deriving (Show, Eq)
+
 
 ------------
 -- | Io | --
@@ -54,10 +140,6 @@ printIOComment cmt =
 --------------
 -- | Misc | --
 --------------
-
--- truncate' :: Double -> Int -> Double
--- truncate' x n = (fromIntegral (floor (x * t))) / t
---     where t = 10^n
 
 truncate' :: Double -> Int -> Double
 truncate' x n = (fromIntegral $ (floor (x * t) :: Int)) / t
@@ -634,13 +716,15 @@ updateQuality quality phylo = phylo { _phylo_quality = quality }
 updateLevel :: Double -> Phylo -> Phylo
 updateLevel level phylo = phylo { _phylo_level = level }
 
-traceToPhylo :: Scale -> Phylo -> Phylo
-traceToPhylo lvl phylo =
-    trace ("\n" <> "-- | End of phylo making at scale " <> show (lvl) <> " with "
+traceToPhylo :: ToPhyloOptions -> Scale -> Phylo -> Phylo
+traceToPhylo ToPhyloOptions{..} lvl phylo =
+    traceIt ("\n" <> "-- | End of phylo making at scale " <> show (lvl) <> " with "
                 <> show (length $ getGroupsFromScale lvl phylo) <> " groups and "
                 <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale lvl phylo)
                 <> " branches" <> "\n" :: Text
           ) phylo
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 --------------------
 -- | Clustering | --
@@ -700,21 +784,25 @@ toRelatedComponents nodes edges =
    in map (\cluster -> map (\gId -> ref ! gId) cluster) clusters
 
 
-traceSynchronyEnd :: Phylo -> Phylo
-traceSynchronyEnd phylo =
-    trace ( "-- | End synchronic clustering at scale " <> show (getLastLevel phylo)
+traceSynchronyEnd :: ToPhyloOptions -> Phylo -> Phylo
+traceSynchronyEnd ToPhyloOptions{..} phylo =
+    traceIt ( "-- | End synchronic clustering at scale " <> show (getLastLevel phylo)
             <> " with " <> show (length $ getGroupsFromScale (getLastLevel phylo) phylo) <> " groups"
             <> " and "  <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale (getLastLevel phylo) phylo)
             <> " branches" <> "\n" :: Text
           ) phylo
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
-traceSynchronyStart :: Phylo -> Phylo
-traceSynchronyStart phylo =
-    trace ( "\n" <> "-- | Start synchronic clustering at scale " <> show (getLastLevel phylo)
+traceSynchronyStart :: ToPhyloOptions -> Phylo -> Phylo
+traceSynchronyStart ToPhyloOptions{..} phylo =
+    traceIt ( "\n" <> "-- | Start synchronic clustering at scale " <> show (getLastLevel phylo)
                  <> " with " <> show (length $ getGroupsFromScale (getLastLevel phylo) phylo) <> " groups"
                  <> " and "  <> show (length $ nub $ map _phylo_groupBranchId $ getGroupsFromScale (getLastLevel phylo) phylo)
                  <> " branches" <> "\n" :: Text
           ) phylo
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 
 -------------------
@@ -748,13 +836,31 @@ intersectInit acc lst lst' =
 branchIdsToSimilarity :: PhyloBranchId -> PhyloBranchId -> Double -> Double -> Double
 branchIdsToSimilarity id id' thrInit thrStep = thrInit + thrStep * (fromIntegral $ length $ intersectInit [] (snd id) (snd id'))
 
-ngramsInBranches :: [[PhyloGroup]] -> [Int]
-ngramsInBranches branches = nub $ foldl (\acc g -> acc ++ (g ^. phylo_groupNgrams)) [] $ concat branches
+traceMatchEnd :: ToPhyloOptions -> [PhyloGroup] -> [PhyloGroup]
+traceMatchEnd ToPhyloOptions{..} groups =
+    traceIt ("\n" <> "-- | End temporal matching with " <> show (length $ nub $ map (\g -> g ^. phylo_groupBranchId) groups)
+                                                         <> " branches and " <> show (length groups) <> " groups" <> "\n" :: Text) groups
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 
-traceMatchSuccess :: Double -> Double -> Double -> [[[PhyloGroup]]] -> [[[PhyloGroup]]]
-traceMatchSuccess thr qua qua' nextBranches =
-    trace ( "\n" <> "-- local branches : "
+traceTemporalMatching :: ToPhyloOptions -> [PhyloGroup] -> [PhyloGroup]
+traceTemporalMatching ToPhyloOptions{..} groups =
+    traceIt ( "\n" <> "-- | Start temporal matching for " <> show(length groups) <> " groups" <> "\n" :: Text ) groups
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
+
+--
+-- Unused functions (remove at some point)
+--
+
+_ngramsInBranches :: [[PhyloGroup]] -> [Int]
+_ngramsInBranches branches = nub $ foldl (\acc g -> acc ++ (g ^. phylo_groupNgrams)) [] $ concat branches
+
+
+_traceMatchSuccess :: ToPhyloOptions -> Double -> Double -> Double -> [[[PhyloGroup]]] -> [[[PhyloGroup]]]
+_traceMatchSuccess ToPhyloOptions{..} thr qua qua' nextBranches =
+    traceIt ( "\n" <> "-- local branches : "
             <> (Text.pack $ init $ show ((init . init . snd)
                                           $ (head' "trace" $ head' "trace" $ head' "trace" nextBranches) ^. phylo_groupBranchId))
             <> ",(1.." <> show (length nextBranches) <> ")]"
@@ -763,50 +869,48 @@ traceMatchSuccess thr qua qua' nextBranches =
             <> " - for the local threshold "  <> show (thr)
             <> " ( quality : " <> show (qua) <> " < " <> show(qua') <> ")\n" :: Text
           ) nextBranches
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 
-traceMatchFailure :: Double -> Double -> Double -> [[PhyloGroup]] -> [[PhyloGroup]]
-traceMatchFailure thr qua qua' branches =
-    trace ( "\n" <> "-- local branches : "
+_traceMatchFailure :: ToPhyloOptions -> Double -> Double -> Double -> [[PhyloGroup]] -> [[PhyloGroup]]
+_traceMatchFailure ToPhyloOptions{..} thr qua qua' branches =
+    traceIt ( "\n" <> "-- local branches : "
             <> (Text.pack $ init $ show ((init . snd) $ (head' "trace" $ head' "trace" branches) ^. phylo_groupBranchId))
             <> ",(1.." <> show (length branches) <> ")]"
             <> " | " <> show (length $ concat branches) <> " groups" <> "\n"
             <> " - split with failure for the local threshold " <> show (thr)
             <> " ( quality : " <> show (qua) <> " > " <> show(qua') <> ")\n" :: Text
         ) branches
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 
-traceMatchNoSplit :: [[PhyloGroup]] -> [[PhyloGroup]]
-traceMatchNoSplit branches =
-    trace ( "\n" <> "-- local branches : "
+_traceMatchNoSplit :: ToPhyloOptions -> [[PhyloGroup]] -> [[PhyloGroup]]
+_traceMatchNoSplit ToPhyloOptions{..} branches =
+    traceIt ( "\n" <> "-- local branches : "
             <> (Text.pack $ init $ show ((init . snd) $ (head' "trace" $ head' "trace" branches) ^. phylo_groupBranchId))
             <> ",(1.." <> show (length branches) <> ")]"
             <> " | " <> show (length $ concat branches) <> " groups" <> "\n"
             <> " - unable to split in smaller branches" <> "\n" :: Text
         ) branches
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
 
-traceMatchLimit :: [[PhyloGroup]] -> [[PhyloGroup]]
-traceMatchLimit branches =
-    trace ( "\n" <> "-- local branches : "
+_traceMatchLimit :: ToPhyloOptions -> [[PhyloGroup]] -> [[PhyloGroup]]
+_traceMatchLimit ToPhyloOptions{..} branches =
+    traceIt ( "\n" <> "-- local branches : "
             <> (Text.pack $ init $ show ((init . snd) $ (head' "trace" $ head' "trace" branches) ^. phylo_groupBranchId))
             <> ",(1.." <> show (length branches) <> ")]"
             <> " | " <> show (length $ concat branches) <> " groups" <> "\n"
             <> " - unable to increase the threshold above 1" <> "\n" :: Text
         ) branches
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const
 
-
-traceMatchEnd :: [PhyloGroup] -> [PhyloGroup]
-traceMatchEnd groups =
-    trace ("\n" <> "-- | End temporal matching with " <> show (length $ nub $ map (\g -> g ^. phylo_groupBranchId) groups)
-                                                         <> " branches and " <> show (length groups) <> " groups" <> "\n" :: Text) groups
-
-
-traceTemporalMatching :: [PhyloGroup] -> [PhyloGroup]
-traceTemporalMatching groups =
-    trace ( "\n" <> "-- | Start temporal matching for " <> show(length groups) <> " groups" <> "\n" :: Text ) groups
-
-
-traceGroupsProxi :: [Double] -> [Double]
-traceGroupsProxi l =
-    trace ( "\n" <> "-- | " <> show(List.length l) <> " computed pairs of groups Similarity" <> "\n" :: Text ) l
+_traceGroupsProxi :: ToPhyloOptions -> [Double] -> [Double]
+_traceGroupsProxi ToPhyloOptions{..} l =
+    traceIt ( "\n" <> "-- | " <> show(List.length l) <> " computed pairs of groups Similarity" <> "\n" :: Text ) l
+  where
+    traceIt = if tpoptsDebugLogs then trace else flip const

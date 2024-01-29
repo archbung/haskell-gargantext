@@ -11,7 +11,21 @@ Portability : POSIX
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-module Gargantext.Core.Viz.Phylo.PhyloMaker where
+module Gargantext.Core.Viz.Phylo.PhyloMaker (
+    toPhylo
+  , toPhyloWithOptions
+  , toPhyloWithoutLink
+
+  , appendGroups
+  , clusterToGroup
+  , docsToTimeScaleCooc
+  , docsToTimeScaleNb
+  , findSeaLadder
+  , groupDocsByPeriod
+  , initPhylo
+  , joinRoots
+  , toSeriesOfClustering
+  ) where
 
 
 import Control.Lens hiding (Level)
@@ -43,17 +57,23 @@ data Phylo' = PhyloBase { _phylo'_phyloBase :: Phylo}
             | PhyloN    { _phylo'_flatPhylo :: Phylo}
 
 
+
 toPhylo' :: Phylo' -> [Document] -> TermList -> PhyloConfig -> Phylo
 toPhylo' (PhyloN    phylo) = toPhylo'
 toPhylo' (PhyloBase phylo) = toPhylo
 -}
 
--- TODO an adaptative synchronic clustering with a slider
-
 toPhylo :: Phylo -> Phylo
-toPhylo phylowithoutLink = traceToPhylo (phyloScale $ getConfig phylowithoutLink) $
+toPhylo = toPhyloWithOptions (ToPhyloOptions True)
+
+-- TODO an adaptative synchronic clustering with a slider
+-- FIXME(adn) Currently we emit traces from pure code(!!). This is obviously not very nice
+-- and it breaks referencial transparency; we ought to fix it, but in order to smooth out
+-- the compatibility story, for now we keep the status quo.
+toPhyloWithOptions :: ToPhyloOptions -> Phylo -> Phylo
+toPhyloWithOptions phyloOpts phylowithoutLink = traceToPhylo phyloOpts (phyloScale $ getConfig phylowithoutLink) $
     if (phyloScale $ getConfig phylowithoutLink) > 1
-      then foldl' (\phylo' _ -> synchronicClustering phylo') phyloAncestors [2..(phyloScale $ getConfig phylowithoutLink)]
+      then foldl' (\phylo' _ -> synchronicClustering phyloOpts phylo') phyloAncestors [2..(phyloScale $ getConfig phylowithoutLink)]
       else phyloAncestors
     where
         --------------------------------------
@@ -64,7 +84,7 @@ toPhylo phylowithoutLink = traceToPhylo (phyloScale $ getConfig phylowithoutLink
               else phyloWithLinks
         --------------------------------------
         phyloWithLinks :: Phylo
-        phyloWithLinks = temporalMatching (getLadder phylowithoutLink) phylowithoutLink
+        phyloWithLinks = temporalMatching phyloOpts (getLadder phylowithoutLink) phylowithoutLink
         --------------------------------------
 
 
