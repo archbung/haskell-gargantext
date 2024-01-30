@@ -50,7 +50,7 @@ bench:
       - .cabal/
     policy: pull-push
   script:
-    - nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --ghc-options='-O2 -fclear-plugins'"
+    - nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --flags +no-phylo-debug-logs --ghc-options='-O2 -fclear-plugins'"
   allow_failure: true
 
 test:
@@ -84,7 +84,7 @@ test:
       mkdir -p /builds/gargantext/haskell-gargantext/devops/coreNLP/stanford-corenlp-current
       cp -R /root/devops/coreNLP/stanford-corenlp-${CORENLP}/* /builds/gargantext/haskell-gargantext/devops/coreNLP/stanford-corenlp-current/
 
-      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext; $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags test-crypto --ghc-options='-O0 -fclear-plugins'\""
+      nix-shell --run "chown -R test:test /root/.config/ && su -m test -c \"export PATH=$PATH:$TEST_NIX_PATH && cd /builds/gargantext/haskell-gargantext; $CABAL --store-dir=$CABAL_STORE_DIR v2-test --test-show-details=streaming --flags 'test-crypto no-phylo-debug-logs' --ghc-options='-O0 -fclear-plugins'\""
       chown -R root:root dist-newstyle/
       chown -R root:root /root/
       chown -R root:root $CABAL_STORE_DIR
