@@ -702,17 +702,17 @@ toPhyloExport phylo = exportToDot phylo
 
 traceExportBranches :: [PhyloBranch] -> [PhyloBranch]
 traceExportBranches branches =
-  trace ("\n"
+  tracePhylo ("\n"
          <> "-- | Export " <> show(length branches) <> " branches" :: Text) branches
 
 tracePhyloAncestors :: [[PhyloGroup]] -> [[PhyloGroup]]
 tracePhyloAncestors groups =
-  trace ( "-- | Found " <> show(length $ concat $ map _phylo_groupAncestors $ concat groups)
+  tracePhylo ( "-- | Found " <> show(length $ concat $ map _phylo_groupAncestors $ concat groups)
           <> " ancestors" :: Text) groups
 
 tracePhyloInfo :: Phylo -> Phylo
 tracePhyloInfo phylo =
-  trace ("\n"  <> "##########################" <> "\n\n" <> "-- | Phylo with level = "
+  tracePhylo ("\n"  <> "##########################" <> "\n\n" <> "-- | Phylo with level = "
          <> show(getLevel phylo) <> " applied to "
          <> show(length $ Vector.toList $ getRoots phylo) <> " foundations" :: Text
         ) phylo
@@ -720,7 +720,7 @@ tracePhyloInfo phylo =
 
 traceExportGroups :: [PhyloGroup] -> [PhyloGroup]
 traceExportGroups groups =
-  trace ("\n" <> "-- | Export "
+  tracePhylo ("\n" <> "-- | Export "
          <> show(length $ nub $ map (\g -> g ^. phylo_groupBranchId) groups) <> " branches, "
          <> show(length groups) <> " groups and "
          <> show(length $ nub $ concat $ map (\g -> g ^. phylo_groupNgrams) groups) <> " terms" :: Text

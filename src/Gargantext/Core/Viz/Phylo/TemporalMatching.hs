@@ -662,7 +662,7 @@ seaLevelRise fdt similarity lambda minBranch frequency ladder rise frame periods
     else
       -- start breaking up all the possible branches for the current similarity threshold
       let thr = List.head ladder
-          branches'  = trace ( "threshold = " <> (T.pack $ printf "%.3f" thr)
+          branches'  = tracePhylo ( "threshold = " <> (T.pack $ printf "%.3f" thr)
                                <> " F(λ) = " <> (T.pack $ printf "%.5f" (toPhyloQuality fdt lambda frequency (map fst branches)))
                                <> " ξ = " <> (T.pack $ printf "%.5f" (globalAccuracy frequency (map fst branches)))
                                <> " ρ = " <> (T.pack $ printf "%.5f" (globalRecall frequency (map fst branches)))
