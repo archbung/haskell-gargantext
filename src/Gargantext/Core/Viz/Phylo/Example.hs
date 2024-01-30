@@ -41,22 +41,19 @@ phyloExport = dotToFile "/home/qlobbe/data/phylo/output/cesar_cleopatre_V2.dot" 
 phyloDot :: DotGraph DotId
 phyloDot = toPhyloExport phyloCleopatre
 
-phyloOpts :: ToPhyloOptions
-phyloOpts = ToPhyloOptions True -- enable debug logs
-
 --------------------------------------------------
 -- | STEP 4 | -- Process the synchronic clustering
 --------------------------------------------------
 
 phyloCleopatre :: Phylo
-phyloCleopatre = synchronicClustering phyloOpts $ toHorizon flatPhylo
+phyloCleopatre = synchronicClustering $ toHorizon flatPhylo
 
 -----------------------------------------------
 -- | STEP 3 | -- Build the Level 1 of the Phylo
 -----------------------------------------------
 
 flatPhylo :: Phylo
-flatPhylo = temporalMatching phyloOpts (getLadder emptyPhylo') emptyPhylo'
+flatPhylo = temporalMatching (getLadder emptyPhylo') emptyPhylo'
 
 emptyPhylo' :: Phylo
 emptyPhylo' = joinRoots

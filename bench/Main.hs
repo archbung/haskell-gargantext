@@ -49,7 +49,7 @@ main = do
           whnfIO (toUserHash $ NewUser "alfredo" "alfredo@well-typed.com" (GargPassword "rabbit"))
       ]
       , bgroup "Phylo" [
-          bench "toPhylo (small)" $ nf (toPhyloWithOptions (ToPhyloOptions False) issue290PhyloSmall
+          bench "toPhylo (small)" $ nf toPhylo issue290PhyloSmall
       ]
       ]
     ]

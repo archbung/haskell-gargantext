@@ -679,9 +679,9 @@ seaLevelRise fdt similarity lambda minBranch frequency ladder rise frame periods
 {- 
 -- start the temporal matching process up, recover the resulting branches and update the groups (at scale 1) consequently
 -}
-temporalMatching :: ToPhyloOptions -> [Double] -> Phylo -> Phylo
-temporalMatching opts ladder phylo = updatePhyloGroups 1
-                         (Map.fromList $ map (\g -> (getGroupId g,g)) $ traceMatchEnd opts $ concat branches)
+temporalMatching :: [Double] -> Phylo -> Phylo
+temporalMatching ladder phylo = updatePhyloGroups 1
+                         (Map.fromList $ map (\g -> (getGroupId g,g)) $ traceMatchEnd $ concat branches)
                          (updateQuality quality phylo)
   where
     -------
@@ -718,4 +718,4 @@ temporalMatching opts ladder phylo = updatePhyloGroups 1
                          (getDocsByDate phylo)
                          (getCoocByDate phylo)
                          ((phylo ^. phylo_foundations) ^. foundations_rootsInGroups)
-                         (traceTemporalMatching opts $ getGroupsFromScale 1 phylo)
+                         (traceTemporalMatching $ getGroupsFromScale 1 phylo)
