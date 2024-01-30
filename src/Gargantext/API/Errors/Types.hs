@@ -20,6 +20,7 @@ module Gargantext.API.Errors.Types (
   -- * The internal backend type and an enumeration of all possible backend error types
   , BackendErrorCode(..)
   , BackendInternalError(..)
+  , GraphQLError(..)
   , ToFrontendErrorData(..)
 
   -- * Constructing frontend errors
@@ -37,35 +38,33 @@ module Gargantext.API.Errors.Types (
 
 import Control.Exception
 import Control.Lens (makePrisms)
-import Data.Aeson as JSON
+import Control.Monad.Fail (fail)
+import Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.:), (.=), object, withObject, toJSON)
 import Data.Aeson.Types (typeMismatch, emptyArray)
+import Data.List.NonEmpty qualified as NE
 import Data.Singletons.TH
-import Data.List.NonEmpty (NonEmpty)
+import Data.Text qualified as T
 import Data.Typeable
 import Data.Validity (Validation(..), ValidationChain (..), prettyValidation)
 import GHC.Generics
 import GHC.Stack
+import Gargantext.API.Admin.Auth.Types (AuthenticationError)
 import Gargantext.API.Errors.Class
 import Gargantext.API.Errors.TH
 import Gargantext.API.Errors.Types.Backend
 import Gargantext.Core.Types (HasValidationError(..))
+import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node.Error
 import Gargantext.Database.Query.Tree.Error
+import Gargantext.Prelude hiding (Location, WithStacktrace)
 import Gargantext.Utils.Dict
-import Prelude
+import Gargantext.Utils.Jobs.Monad qualified as Jobs
 import Servant (ServerError)
 import Servant.Job.Core
+import Servant.Job.Types qualified as SJ
 import Test.QuickCheck
 import Test.QuickCheck.Instances.Text ()
-import qualified Data.Text as T
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
-import qualified Servant.Job.Types as SJ
-import Text.Read (readMaybe)
-import qualified Data.List.NonEmpty as NE
-import Data.Maybe
-import Gargantext.API.Admin.Auth.Types (AuthenticationError)
-import Gargantext.Core.Types.Individu
 
 -- | A 'WithStacktrace' carries an error alongside its
 -- 'CallStack', to be able to print the correct source location
@@ -83,14 +82,18 @@ instance Exception e => Exception (WithStacktrace e) where
 -------------------------------------------------------------------
 -- | An internal error which can be emitted from the backend and later
 -- converted into a 'FrontendError', for later consumption.
+
+
+
+
 data BackendInternalError
-  = InternalNodeError           !NodeError
-  | InternalTreeError           !TreeError
-  | InternalValidationError     !Validation
-  | InternalAuthenticationError !AuthenticationError
-  | InternalServerError         !ServerError
+  = InternalAuthenticationError !AuthenticationError
   | InternalJobError            !Jobs.JobError
+  | InternalNodeError           !NodeError
+  | InternalServerError         !ServerError
+  | InternalTreeError           !TreeError
   | InternalUnexpectedError     !SomeException
+  | InternalValidationError     !Validation
   deriving (Show, Typeable)
 
 makePrisms ''BackendInternalError
@@ -265,6 +268,12 @@ data instance ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_pass
   deriving (Show, Eq, Generic)
 
 
+data instance ToFrontendErrorData 'EC_403__user_not_authorized =
+  FE_user_not_authorized { una_user_id :: UserId
+                         , una_msg     :: T.Text }
+  deriving (Show, Eq, Generic)
+
+
 --
 -- Tree errors
 --
@@ -326,34 +335,29 @@ data instance ToFrontendErrorData 'EC_405__not_allowed =
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_list_not_found) where
   toJSON (FE_node_list_not_found lid) =
-    JSON.object [ "list_id" .= toJSON lid ]
-
+    object [ "list_id" .= toJSON lid ]
 instance FromJSON (ToFrontendErrorData 'EC_404__node_list_not_found) where
   parseJSON = withObject "FE_node_list_not_found" $ \o -> do
     lnf_list_id <- o .: "list_id"
     pure FE_node_list_not_found{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_root_not_found) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_404__node_root_not_found) where
   parseJSON _ = pure FE_node_root_not_found
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_corpus_not_found) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_404__node_corpus_not_found) where
   parseJSON _ = pure FE_node_corpus_not_found
-
+  
 instance ToJSON (ToFrontendErrorData 'EC_500__node_not_implemented_yet) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_500__node_not_implemented_yet) where
   parseJSON _ = pure FE_node_not_implemented_yet
-
+  
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) where
   toJSON (FE_node_lookup_failed_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) where
   parseJSON = withObject "FE_node_lookup_failed_not_found" $ \o -> do
     nenf_node_id <- o .: "node_id"
@@ -361,7 +365,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_not_found) wh
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
   toJSON (FE_node_lookup_failed_parent_not_found nodeId) = object [ "node_id" .= toJSON nodeId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_found) where
   parseJSON = withObject "FE_node_lookup_failed_parent_not_found" $ \o -> do
     nepnf_node_id <- o .: "node_id"
@@ -369,7 +372,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_parent_not_fo
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
   toJSON (FE_node_lookup_failed_user_not_found userId) = object [ "user_id" .= toJSON userId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_found) where
   parseJSON = withObject "FE_node_lookup_failed_user_not_found" $ \o -> do
     nenf_user_id <- o .: "user_id"
@@ -377,7 +379,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_user_not_foun
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found) where
   toJSON (FE_node_lookup_failed_username_not_found username) = object [ "username" .= toJSON username ]
-
 instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_found) where
   parseJSON = withObject "FE_node_lookup_failed_username_not_found" $ \o -> do
     nenf_username <- o .: "username"
@@ -385,7 +386,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_lookup_failed_username_not_
 
 instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id) where
   toJSON (FE_node_creation_failed_user_negative_id userId) = object [ "user_id" .= toJSON userId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_user_negative_id) where
   parseJSON = withObject "FE_node_creation_failed_user_negative_id" $ \o -> do
     neuni_user_id <- o .: "user_id"
@@ -394,7 +394,6 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_user_negati
 instance ToJSON (ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots) where
   toJSON (FE_node_lookup_failed_user_too_many_roots userId roots) =
     object [ "user_id" .= toJSON userId, "roots" .= toJSON roots ]
-
 instance FromJSON (ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many_roots) where
   parseJSON = withObject "FE_node_lookup_failed_user_too_many_roots" $ \o -> do
     netmr_user_id <- o .: "user_id"
@@ -403,7 +402,6 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_lookup_failed_user_too_many
 
 instance ToJSON (ToFrontendErrorData 'EC_404__node_context_not_found) where
   toJSON (FE_node_context_not_found cId) = object [ "context_id" .= toJSON cId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_404__node_context_not_found) where
   parseJSON = withObject "FE_node_context_not_found" $ \o -> do
     necnf_context_id <- o .: "context_id"
@@ -411,7 +409,6 @@ instance FromJSON (ToFrontendErrorData 'EC_404__node_context_not_found) where
 
 instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) where
   toJSON (FE_node_creation_failed_no_parent uId) = object [ "user_id" .= toJSON uId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) where
   parseJSON = withObject "FE_node_creation_failed_no_parent" $ \o -> do
     necnp_user_id <- o .: "user_id"
@@ -420,7 +417,6 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_no_parent) 
 instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists) where
   toJSON FE_node_creation_failed_parent_exists{..} =
     object [ "user_id" .= toJSON necpe_user_id, "parent_id" .= toJSON necpe_parent_id ]
-
 instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_parent_exists) where
   parseJSON = withObject "FE_node_creation_failed_parent_exists" $ \o -> do
     necpe_user_id   <- o .: "user_id"
@@ -429,8 +425,7 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_parent_exis
 
 instance ToJSON (ToFrontendErrorData 'EC_400__node_creation_failed_insert_node) where
   toJSON FE_node_creation_failed_insert_node{..} =
-    JSON.object [ "user_id" .= toJSON necin_user_id, "parent_id" .= necin_parent_id ]
-
+    object [ "user_id" .= toJSON necin_user_id, "parent_id" .= necin_parent_id ]
 instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_insert_node) where
   parseJSON = withObject "FE_node_creation_failed_insert_node" $ \o -> do
     necin_user_id   <- o .: "user_id"
@@ -439,16 +434,14 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_creation_failed_insert_node
 
 instance ToJSON (ToFrontendErrorData 'EC_500__node_generic_exception) where
   toJSON FE_node_generic_exception{..} =
-    JSON.object [ "error" .= nege_error ]
-
+    object [ "error" .= nege_error ]
 instance FromJSON (ToFrontendErrorData 'EC_500__node_generic_exception) where
   parseJSON = withObject "FE_node_generic_exception" $ \o -> do
     nege_error <- o .: "error"
     pure FE_node_generic_exception{..}
 
 instance ToJSON (ToFrontendErrorData 'EC_400__node_needs_configuration) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_400__node_needs_configuration) where
   parseJSON _ = pure FE_node_needs_configuration
 
@@ -458,7 +451,6 @@ instance FromJSON (ToFrontendErrorData 'EC_400__node_needs_configuration) where
 
 instance ToJSON (ToFrontendErrorData 'EC_400__validation_error) where
   toJSON (FE_validation_error val) = toJSON val
-
 instance FromJSON (ToFrontendErrorData 'EC_400__validation_error) where
   parseJSON (String txt) = pure $ FE_validation_error txt
   parseJSON ty           = typeMismatch "FE_validation_error" ty
@@ -470,7 +462,6 @@ instance FromJSON (ToFrontendErrorData 'EC_400__validation_error) where
 instance ToJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
   toJSON FE_login_failed_error{..} =
     object [ "user_id" .= toJSON lfe_user_id, "node_id" .= toJSON lfe_node_id ]
-
 instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
   parseJSON = withObject "FE_login_failed_error" $ \o -> do
     lfe_user_id <- o .: "user_id"
@@ -481,10 +472,18 @@ instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_error) where
 instance ToJSON (ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) where
   toJSON FE_login_failed_invalid_username_or_password =
     object []
-
 instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) where
   parseJSON = withObject "FE_login_failed_invalid_username_or_password" $ \_o -> do
     pure FE_login_failed_invalid_username_or_password
+
+instance ToJSON (ToFrontendErrorData 'EC_403__user_not_authorized) where
+  toJSON FE_user_not_authorized { .. } =
+    object [ "user_id" .= toJSON una_user_id, "msg" .= toJSON una_msg ]
+instance FromJSON (ToFrontendErrorData 'EC_403__user_not_authorized) where
+  parseJSON = withObject "FE_user_not_authorized" $ \o -> do
+    una_user_id <- o .: "user_id"
+    una_msg     <- o .: "msg"
+    pure FE_user_not_authorized { .. }
 
 --
 -- internal server errors
@@ -492,7 +491,6 @@ instance FromJSON (ToFrontendErrorData 'EC_403__login_failed_invalid_username_or
 
 instance ToJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
   toJSON FE_internal_server_error{..} = object [ "error" .= toJSON ise_error ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
   parseJSON = withObject "FE_internal_server_error" $ \o -> do
     ise_error <- o .: "error"
@@ -500,7 +498,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__internal_server_error) where
 
 instance ToJSON (ToFrontendErrorData 'EC_405__not_allowed) where
   toJSON FE_not_allowed{..} = object [ "error" .= toJSON isena_error ]
-
 instance FromJSON (ToFrontendErrorData 'EC_405__not_allowed) where
   parseJSON = withObject "FE_not_allowed" $ \o -> do
     isena_error <- o .: "error"
@@ -512,21 +509,18 @@ instance FromJSON (ToFrontendErrorData 'EC_405__not_allowed) where
 --
 
 instance ToJSON (ToFrontendErrorData 'EC_404__tree_root_not_found) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_404__tree_root_not_found) where
   parseJSON _ = pure FE_tree_root_not_found
 
 instance ToJSON (ToFrontendErrorData 'EC_404__tree_empty_root) where
-  toJSON _ = JSON.Null
-
+  toJSON _ = Null
 instance FromJSON (ToFrontendErrorData 'EC_404__tree_empty_root) where
   parseJSON _ = pure FE_tree_empty_root
 
 instance ToJSON (ToFrontendErrorData 'EC_500__tree_too_many_roots) where
   toJSON (FE_tree_too_many_roots roots) =
     object [ "node_ids" .= NE.toList roots ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__tree_too_many_roots) where
   parseJSON = withObject "FE_tree_too_many_roots" $ \o -> do
     tmr_roots <- o .: "node_ids"
@@ -539,7 +533,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__tree_too_many_roots) where
 instance ToJSON (ToFrontendErrorData 'EC_500__job_invalid_id_type) where
   toJSON (FE_job_invalid_id_type idTy) =
     object [ "type" .= toJSON idTy ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_id_type) where
   parseJSON = withObject "FE_job_invalid_id_type" $ \o -> do
     jeiit_type <- o .: "type"
@@ -548,7 +541,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_id_type) where
 instance ToJSON (ToFrontendErrorData 'EC_500__job_expired) where
   toJSON (FE_job_expired jobId) =
     object [ "job_id" .= toJSON jobId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__job_expired) where
   parseJSON = withObject "FE_job_expired" $ \o -> do
     jee_job_id <- o .: "job_id"
@@ -557,7 +549,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__job_expired) where
 instance ToJSON (ToFrontendErrorData 'EC_500__job_invalid_mac) where
   toJSON (FE_job_invalid_mac mac) =
     object [ "mac" .= toJSON mac ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_mac) where
   parseJSON = withObject "FE_job_invalid_mac" $ \o -> do
     jeim_mac <- o .: "mac"
@@ -566,7 +557,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__job_invalid_mac) where
 instance ToJSON (ToFrontendErrorData 'EC_500__job_unknown_job) where
   toJSON (FE_job_unknown_job jobId) =
     object [ "job_id" .= toJSON jobId ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__job_unknown_job) where
   parseJSON = withObject "FE_job_unknown_job" $ \o -> do
     jeuj_job_id <- o .: "job_id"
@@ -575,7 +565,6 @@ instance FromJSON (ToFrontendErrorData 'EC_500__job_unknown_job) where
 instance ToJSON (ToFrontendErrorData 'EC_500__job_generic_exception) where
   toJSON (FE_job_generic_exception err) =
     object [ "error" .= toJSON err ]
-
 instance FromJSON (ToFrontendErrorData 'EC_500__job_generic_exception) where
   parseJSON = withObject "FE_job_generic_exception" $ \o -> do
     jege_error <- o .: "error"
@@ -656,6 +645,12 @@ genFrontendErr be = do
       -> do
             pure $ mkFrontendErr' txt $ FE_login_failed_invalid_username_or_password
 
+    EC_403__user_not_authorized
+      -> do
+            uid <- arbitrary
+            msg <- arbitrary
+            pure $ mkFrontendErr' txt $ FE_user_not_authorized uid msg
+
     -- internal error
     EC_500__internal_server_error
       -> do err <- arbitrary
@@ -692,7 +687,7 @@ genFrontendErr be = do
             pure $ mkFrontendErr' txt $ FE_job_generic_exception err
 
 instance ToJSON BackendErrorCode where
-  toJSON = JSON.String . T.pack . show
+  toJSON = String . T.pack . show
 
 instance FromJSON BackendErrorCode where
   parseJSON (String s) = case readMaybe (T.unpack s) of
@@ -702,10 +697,10 @@ instance FromJSON BackendErrorCode where
 
 instance ToJSON FrontendError where
   toJSON (FrontendError diag ty dt) =
-    JSON.object [ "diagnostic" .= toJSON diag
-                , "type"       .= toJSON ty
-                , "data"       .= toJSON dt
-                ]
+    object [ "diagnostic" .= toJSON diag
+           , "type"       .= toJSON ty
+           , "data"       .= toJSON dt
+           ]
 
 instance FromJSON FrontendError where
   parseJSON = withObject "FrontendError" $ \o -> do
@@ -775,6 +770,10 @@ instance FromJSON FrontendError where
         (fe_data :: ToFrontendErrorData 'EC_403__login_failed_invalid_username_or_password) <- o .: "data"
         pure FrontendError{..}
 
+      EC_403__user_not_authorized -> do
+        (fe_data :: ToFrontendErrorData 'EC_403__user_not_authorized) <- o .: "data"
+        pure FrontendError{..}
+
       -- internal server error
       EC_500__internal_server_error -> do
         (fe_data :: ToFrontendErrorData 'EC_500__internal_server_error) <- o .: "data"
@@ -810,3 +809,26 @@ instance FromJSON FrontendError where
       EC_500__job_generic_exception -> do
         (fe_data :: ToFrontendErrorData 'EC_500__job_generic_exception) <- o .: "data"
         pure FrontendError{..}
+
+
+
+
+----------------
+--- GraphQL Errors are just FrontendError wrapped in
+-- { error: { message, extensions: { ... } } }
+-- (see https://spec.graphql.org/June2018/#sec-Errors)
+
+newtype GraphQLError = GraphQLError FrontendError
+deriving instance Show GraphQLError
+deriving instance Eq GraphQLError
+instance ToJSON GraphQLError where
+  toJSON (GraphQLError fe@(FrontendError diag _ty _dt)) =
+    object [ "errors" .= toJSON [ object [ "message" .= toJSON diag
+                                         , "extensions" .= toJSON fe ] ] ]
+instance FromJSON GraphQLError where
+  parseJSON = withObject "GraphQLError" $ \o -> do
+    errors <- o .: "errors"
+    fe <- case errors of
+      [] -> fail "No errors provided"
+      (x:_) -> withObject "FrontendError" (\fo -> fo .: "extensions") x
+    pure $ GraphQLError fe

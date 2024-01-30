@@ -37,6 +37,7 @@ data BackendErrorCode
   -- authentication errors
   | EC_403__login_failed_error
   | EC_403__login_failed_invalid_username_or_password
+  | EC_403__user_not_authorized
   -- tree errors
   | EC_404__tree_root_not_found
   | EC_404__tree_empty_root

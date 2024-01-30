@@ -67,13 +67,16 @@ server env = do
      :<|> hoistServerWithContext
             (Proxy :: Proxy GraphQL.API)
             (Proxy :: Proxy AuthContext)
-            (transformJSON errScheme)
+            (transformJSONGQL errScheme)
             GraphQL.api
      :<|> frontEndServer
   where
     transformJSON :: forall a. GargErrorScheme -> GargM Env BackendInternalError a -> Handler a
     transformJSON GES_old = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env) . logPanicErrors
     transformJSON GES_new = Handler . withExceptT (frontendErrorToServerError . backendErrorToFrontendError) . (`runReaderT` env) . handlePanicErrors
+    transformJSONGQL :: forall a. GargErrorScheme -> GargM Env BackendInternalError a -> Handler a
+    transformJSONGQL GES_old = Handler . withExceptT showAsServantJSONErr . (`runReaderT` env) . logPanicErrors
+    transformJSONGQL GES_new = Handler . withExceptT (frontendErrorToGQLServerError . backendErrorToFrontendError) . (`runReaderT` env) . handlePanicErrors
 
 handlePanicErrors :: GargM Env BackendInternalError a -> GargM Env BackendInternalError a
 handlePanicErrors h = h `catch` handleSomeException
@@ -104,3 +107,4 @@ logPanicErrors h = h `catch` handleSomeException
       = throwError ber -- re-throw the uncaught exception via the 'MonadError' instance
       | otherwise
       = throwM se -- re-throw the uncaught exception.
+

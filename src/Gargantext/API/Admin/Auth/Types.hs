@@ -60,6 +60,7 @@ instance ToSchema AuthenticatedUser where
 data AuthenticationError
   = LoginFailed NodeId UserId Jose.Error
   | InvalidUsernameOrPassword
+  | UserNotAuthorized UserId Text
   deriving (Show, Eq)
 
 -- TODO-SECURITY why is the CookieSettings necessary?
