@@ -5,6 +5,7 @@ module Gargantext.API.GraphQL.NLP
   ( Lang(..)
   , LanguagesArgs(..)
   , LanguagesMap
+  , LanguageTuple
   , resolveLanguages
   )
   where
@@ -24,6 +25,11 @@ newtype LanguagesArgs
     deriving anyclass (GQLType)
 
 type LanguagesMap = Map.Map Lang NLPServer
+data LanguageTuple =
+  LanguageTuple { lt_lang   :: Lang
+                , lt_server :: NLPServer }
+    deriving stock (Generic)
+    deriving anyclass (GQLType)
 
 data NLPServer = NLPServer
   {
@@ -33,11 +39,11 @@ data NLPServer = NLPServer
   deriving (Show, Eq, Generic, GQLType)
 
 resolveLanguages
-  :: HasNLPServer env => LanguagesArgs -> GqlM e env LanguagesMap
-resolveLanguages ( LanguagesArgs () ) = do
-  -- pure $ allLangs
+  :: HasNLPServer env => GqlM e env [LanguageTuple]
+resolveLanguages = do
   lift $ do
     ns <- view nlpServer
     printDebug "[resolveLanguages] nlpServer" ns
-    pure $ Map.map (\(NLPServerConfig { .. }) -> NLPServer { server
-                                                           , url = Protolude.show url }) ns
+    pure $ [LanguageTuple { lt_lang = lang
+                          , lt_server = NLPServer { server, url = Protolude.show url } }
+           | (lang, NLPServerConfig { .. }) <- Map.toList ns]
