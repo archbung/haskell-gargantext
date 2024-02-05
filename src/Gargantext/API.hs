@@ -38,12 +38,14 @@ import Control.Concurrent
 import Control.Lens hiding (Level)
 import Data.List (lookup)
 import Data.Text (pack)
+import Data.Text.Encoding qualified as TE
 import Data.Text.IO (putStrLn)
 import Data.Validity
 import Gargantext.API.Admin.Auth.Types (AuthContext)
 import Gargantext.API.Admin.EnvTypes (Env, Mode(..))
 import Gargantext.API.Admin.Settings (newEnv)
-import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings)
+import Gargantext.API.Admin.Settings.CORS
+import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings, corsSettings)
 import Gargantext.API.EKG
 import Gargantext.API.Middleware (logStdoutDevSanitised)
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
@@ -70,7 +72,7 @@ startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
   runDbCheck env
   portRouteInfo port
   app <- makeApp env
-  mid <- makeGargMiddleware mode
+  mid <- makeGargMiddleware (env ^. settings.corsSettings) mode
   periodicActions <- schedulePeriodicActions env
   run port (mid app) `finally` stopGargantext env periodicActions
 
@@ -137,27 +139,25 @@ fireWall req fw = do
        then pure True
        else pure False
 
-makeGargMiddleware :: Mode -> IO Middleware
-makeGargMiddleware mode = do
-    let corsMiddleware = cors $ \_ -> Just CorsResourcePolicy
---          { corsOrigins        = Just ([env^.settings.allowedOrigin], False)
-            { corsOrigins        = Nothing --  == /*
-            , corsMethods        = [ methodGet   , methodPost   , methodPut
-                                   , methodDelete, methodOptions, methodHead]
-            , corsRequestHeaders = ["authorization", "content-type"]
-            , corsExposedHeaders = Nothing
-            , corsMaxAge         = Just ( 60*60*24 ) -- one day
-            , corsVaryOrigin     = False
-            , corsRequireOrigin  = False
+makeGargMiddleware :: CORSSettings -> Mode -> IO Middleware
+makeGargMiddleware crsSettings mode = do
+    let corsMiddleware = cors $ \_incomingRq -> Just
+          simpleCorsResourcePolicy
+            { corsOrigins = Just (map mkCorsOrigin (crsSettings ^. corsAllowedOrigins), True)
+            , corsMethods = [ methodGet   , methodPost   , methodPut
+                            , methodDelete, methodOptions, methodHead]
             , corsIgnoreFailures = False
+            , corsRequestHeaders = ["authorization", "content-type", "x-garg-error-scheme"]
+            , corsMaxAge         = Just ( 60*60*24 ) -- one day
             }
-
     case mode of
       Prod -> pure $ logStdout . corsMiddleware
       _    -> do
         loggerMiddleware <- logStdoutDevSanitised
         pure $ loggerMiddleware . corsMiddleware
-
+  where
+    mkCorsOrigin :: CORSOrigin -> Origin
+    mkCorsOrigin = TE.encodeUtf8 . _CORSOrigin
 
 ---------------------------------------------------------------------
 -- | API Global

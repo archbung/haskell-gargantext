@@ -12,7 +12,9 @@ import Data.Aeson qualified as A
 import Data.Aeson.Lens qualified as L
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
+import Data.ByteString.Builder qualified as BS
 import Data.ByteString.Char8 qualified as C8
+import Data.ByteString.Lazy qualified as B
 import Data.CaseInsensitive qualified as CI
 import Data.List qualified as L
 import Data.String
@@ -43,7 +45,7 @@ atKey i = L._Object . at (fromString $ T.unpack i)
 {-# INLINE atKey #-}
 
 customOutput :: OutputFormatterWithDetailsAndHeaders
-customOutput _zonedDate rq status _mb_response_size request_dur (sanitiseBody . mconcat -> reqbody) _raw_response (map sanitiseHeader -> headers) =
+customOutput _zonedDate rq status _mb_response_size request_dur (sanitiseBody . mconcat -> reqbody) raw_response (map sanitiseHeader -> headers) =
   let params = map sanitiseQueryItem (queryString rq)
   in mkRequestLog params reqbody <> mkResponseLog
 
@@ -65,6 +67,8 @@ customOutput _zonedDate rq status _mb_response_size request_dur (sanitiseBody . 
     mkResponseLog =
       foldMap toLogStr (ansiColor' White "  Status: ")
           <> foldMap toLogStr (ansiStatusCode' status (C8.pack (show $ statusCode status) <> " " <> statusMessage status))
+          <> " "
+          <> (toLogStr . B.toStrict $ (BS.toLazyByteString raw_response))
           <> " "
           <> "Served in " <> toLogStr (C8.pack $ show $ request_dur)
           <> "\n"

@@ -1,0 +1,17 @@
+allowed-origins = [
+    "https://demo.gargantext.org"
+  , "https://formation.gargantext.org"
+  , "https://academia.sub.gargantext.org"
+  , "https://cnrs.gargantext.org"
+  , "https://imt.sub.gargantext.org"
+  , "https://helloword.gargantext.org"
+  , "https://complexsystems.gargantext.org"
+  , "https://europa.gargantext.org"
+  , "https://earth.sub.gargantext.org"
+  , "https://health.sub.gargantext.org"
+  , "https://msh.sub.gargantext.org"
+  , "https://dev.sub.gargantext.org"
+  , "http://localhost:8008"
+  ]
+
+use-origins-for-hosts = true

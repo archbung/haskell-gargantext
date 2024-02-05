@@ -36,6 +36,7 @@ data-files:
     test-data/phylo/open_science.json
     test-data/phylo/issue-290-small.golden.json
     test-data/test_config.ini
+    gargantext-cors-settings.toml
     .clippy.dhall
 
 -- When enabled, it swaps the hashing algorithm
@@ -56,6 +57,7 @@ library
       Gargantext.API.Admin.Auth.Types
       Gargantext.API.Admin.EnvTypes
       Gargantext.API.Admin.Settings
+      Gargantext.API.Admin.Settings.CORS
       Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Types
       Gargantext.API.Auth.PolicyCheck
@@ -574,6 +576,7 @@ library
     , timezone-series ^>= 0.1.13
     , transformers ^>= 0.5.6.2
     , transformers-base ^>= 0.4.6
+    , tomland >= 1.3.3.2
     , tuple ^>= 0.3.0.2
     , unordered-containers ^>= 0.2.16.0
     , uri-encode ^>= 1.5.0.7
