@@ -11,8 +11,8 @@ variables:
   CACHE_COMPRESSION_LEVEL: "fast"
 
 stages:
-  - stack
   - cabal
+  - stack
   - bench
   - test
 
@@ -37,7 +37,7 @@ cabal:
       - .cabal/
     policy: pull-push
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O2 -fclear-plugins'"
+    - nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-build --ghc-options='-O2 -fclear-plugins'"
   allow_failure: false
 
 bench:
@@ -49,7 +49,7 @@ bench:
       - .cabal/
     policy: pull-push
   script:
-    - nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --ghc-options='-O2 -fclear-plugins'"
+    - nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --ghc-options='-O2 -fclear-plugins'"
   allow_failure: false
 
 test:
@@ -75,7 +75,7 @@ test:
       echo $CABAL
       echo $TEST_NIX_PATH
       git config --global --add safe.directory '*'
-      nix-shell --run "./bin/update-cabal-project $CABAL_STORE_DIR"
+      nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR"
       mkdir -p /root/.cache/cabal/logs
       chown -R test:test /root/.cache/cabal/logs/
       chown -R test:test /root/.cache/cabal/packages/hackage.haskell.org/

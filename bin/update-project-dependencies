@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+DEFAULT_STORE=$HOME/.cabal
+STORE_DIR="${1:-$DEFAULT_STORE}"
+INDEX_STATE="2023-12-10T10:34:46Z"
+
+# README!
+# Every time you modify the `cabal.project`, you have to make sure to update
+# the `expected_cabal_project_hash` and `expected_cabal_project_freeze_hash`
+# with the `sha256sum` result calculated on the `cabal.project` and
+# `cabal.project.freeze`. This ensures the files stay deterministic so that CI
+# cache can kick in.
+expected_cabal_project_hash="1e4d40d48546606fba0ce0eaae9f2799c57d8ce97c4425940f3a535c4f628a8a"
+expected_cabal_project_freeze_hash="2c13034bdeaeaece6c81362ef047c3102782b4fbf4fd7670bb677bd1ac3b0151"
+
+cabal --store-dir=$STORE_DIR v2-update "hackage.haskell.org,${INDEX_STATE}"
+
+# Install cabal2stack if it can't be found.
+if ! cabal2stack --help &> /dev/null
+then
+    echo "cabal2stack could not be found"
+    CURDIR=$PWD
+    git clone https://github.com/iconnect/cabal2stack.git cabal2stack-installer
+    cd cabal2stack-installer
+    cabal --store-dir=$STORE_DIR v2-install --index-state="${INDEX_STATE}" --overwrite-policy=always
+    cd $CURDIR
+    rm -rf cabal2stack-installer
+fi
+
+cabal --store-dir=$STORE_DIR v2-build --dry-run
+cabal2stack --system-ghc --allow-newer --resolver lts-21.17 --resolver-file devops/stack/lts-21.17.yaml -o stack.yaml
+cabal --store-dir=$STORE_DIR v2-freeze
+
+# Run 'sed' to remove the constraint for 'gargantext', as it doesn't make sense and
+# for the test we need to run this with a different flag.
+echo -e "\e[33mPatching cabal.project.freeze to remove redundant constraint on gargantext\e[0m"
+sed -i '/^ *gargantext/d' cabal.project.freeze
+
+actual_cabal_project_hash=$(sha256sum cabal.project | awk '{printf "%s",$1}')
+actual_cabal_project_freeze_hash=$(sha256sum cabal.project.freeze | awk '{printf "%s",$1}')
+if [[ $actual_cabal_project_hash != $expected_cabal_project_hash ]]; then
+  echo -e "\e[31mERROR! hash mismatch between expected cabal.project and the one computed by cabal2stack.\e[0m"
+  echo -e "\e[33mPlease update the hashes inside the './bin/update-project-dependencies' file.\e[0m"
+  exit 1
+else
+  echo -e "\e[32mstack.yaml updated successfully.\e[0m"
+fi
+if [[ $actual_cabal_project_freeze_hash != $expected_cabal_project_freeze_hash ]]; then
+  echo -e "\e[31mERROR! hash mismatch between expected cabal.project.freeze and the one computed by cabal2stack.\e[0m"
+  echo -e "\e[33mPlease update the hashes inside the './bin/update-project-dependencies' file.\e[0m"
+  exit 1
+else
+  echo -e "\e[32mcabal.project.freeze updated successfully.\e[0m"
+fi

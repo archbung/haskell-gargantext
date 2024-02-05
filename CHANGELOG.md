@@ -1,3 +1,12 @@
+## Version 0.0.6.9.9.9.4.9.1
+
+* [FRONT][ERRORFORMAT][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
+
+## Version 0.0.6.9.9.9.4.9
+
+* [FRONT][ERRORFORMAT][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
+* [BACK][CABAL][Stack2cabal install (#301)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/301)
+
 ## Version 0.0.6.9.9.9.4.8
 
 * [BACK][GHC][Upgrade] Upgrade to 947

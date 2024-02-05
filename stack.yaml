@@ -1,163 +1,675 @@
-resolver: lts-21.17
+"allow-newer": true
+"extra-deps":
+- "HSvm-0.1.1.3.22"
+- "KMP-0.2.0.0"
+- "MissingH-1.4.3.0"
+- "Unique-0.4.7.8"
+- "dependent-sum-0.7.1.0"
+- "fast-tagsoup-1.0.14"
+- "fclabels-2.0.5.1"
+- "full-text-search-0.2.1.4"
+- "fullstop-0.1.4"
+- "ghc-parser-0.2.6.0"
+- "hgal-2.0.0.2"
+- "hsparql-0.3.8"
+- "hspec-2.11.1"
+- "hspec-core-2.11.1"
+- "hspec-discover-2.11.1"
+- "hspec-expectations-0.8.3"
+- "ihaskell-0.11.0.0"
+- "ipython-kernel-0.11.0.0"
+- "located-base-0.1.1.1"
+- "logging-effect-1.3.12"
+- "morpheus-graphql-0.24.3"
+- "morpheus-graphql-app-0.24.3"
+- "morpheus-graphql-client-0.24.3"
+- "morpheus-graphql-code-gen-0.24.3"
+- "morpheus-graphql-code-gen-utils-0.24.3"
+- "morpheus-graphql-core-0.24.3"
+- "morpheus-graphql-server-0.24.3"
+- "morpheus-graphql-subscriptions-0.24.3"
+- "morpheus-graphql-tests-0.24.3"
+- "rake-0.0.1"
+- "random-1.2.1"
+- "recover-rtti-0.4.3"
+- "servant-0.20.1"
+- "servant-auth-server-0.4.8.0"
+- "servant-auth-swagger-0.2.10.2"
+- "servant-client-core-0.20"
+- "servant-ekg-0.3.1"
+- "servant-flatten-0.2"
+- "servant-server-0.20"
+- "snap-server-1.1.2.1"
+- "stemmer-0.5.2"
+- "taggy-0.2.1"
+- "taggy-lens-0.1.2"
+- "vector-0.12.3.0"
+- "wai-3.2.4"
+- commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
+  git: "https://github.com/AccelerateHS/accelerate-llvm.git"
+  subdirs:
+  - "accelerate-llvm-native/"
+- commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
+  git: "https://github.com/AccelerateHS/accelerate-llvm.git"
+  subdirs:
+  - "accelerate-llvm/"
+- commit: 334d05519436bb7f20f9926ec76418f5b8afa359
+  git: "https://github.com/AccelerateHS/accelerate.git"
+  subdirs:
+  - .
+- commit: 232db57d6ce0940fcc902adf30a9ed3f3561f21d
+  git: "https://github.com/MercuryTechnologies/ekg-json.git"
+  subdirs:
+  - .
+- commit: 91928b5d7f9342e9865dde0d94862792d2b88779
+  git: "https://github.com/adinapoli/boolexpr.git"
+  subdirs:
+  - .
+- commit: 23603a832117e5352d5b0fb9bb1110228324b35a
+  git: "https://github.com/adinapoli/duckling.git"
+  subdirs:
+  - .
+- commit: e9a29582ac66198dd2c2fdc3f8c8a4b1e6fbe004
+  git: "https://github.com/adinapoli/haskell-opaleye.git"
+  subdirs:
+  - .
+- commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
+  git: "https://github.com/adinapoli/llvm-hs.git"
+  subdirs:
+  - "llvm-hs"
+- commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
+  git: "https://github.com/adinapoli/llvm-hs.git"
+  subdirs:
+  - "llvm-hs-pure"
+- commit: 85533b5d597e6fc5498411b4bcfc76380ec80d71
+  git: "https://github.com/adinapoli/text16-compat.git"
+  subdirs:
+  - .
+- commit: b3519a0351ae9515497680571f76200c24dedb53
+  git: "https://github.com/adinapoli/wikiparsec.git"
+  subdirs:
+  - .
+- commit: a110807651036ca2228a76507ee35bbf7aedf87a
+  git: "https://github.com/alpmestan/accelerate-arithmetic.git"
+  subdirs:
+  - .
+- commit: b9fca8beee0f23c17a6b2001ec834d071709e6e7
+  git: "https://github.com/alpmestan/hmatrix.git"
+  subdirs:
+  - packages/base
+- commit: b4182487cfe479777c11ca19f3c0d47840b376f6
+  git: "https://github.com/alpmestan/servant-job.git"
+  subdirs:
+  - .
+- commit: bc6ca8058077b0b5702ea4b88bd4189cfcad267a
+  git: "https://github.com/alpmestan/sparse-linear.git"
+  subdirs:
+  - "sparse-linear"
+- commit: 8fff32a43df743c8c83428a86dd566a0936a4fba
+  git: "https://github.com/chessai/eigen.git"
+  subdirs:
+  - .
+- commit: 10a416b9f6c443866b36479c3441ebb3bcdeb7ef
+  git: "https://github.com/delanoe/data-time-segment.git"
+  subdirs:
+  - .
+- commit: 76cae88f367976ff091e661ee69a5c3126b94694
+  git: "https://github.com/delanoe/patches-map"
+  subdirs:
+  - .
+- commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
+  git: "https://github.com/robstewart57/rdf4h.git"
+  subdirs:
+  - .
+- commit: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
+  git: "https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git"
+  subdirs:
+  - .
+- commit: eb130c71fa17adaceed6ff66beefbccb13df51ba
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git"
+  subdirs:
+  - .
+- commit: 9225d046083853200b9045c8d71161e6a234fc5c
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git"
+  subdirs:
+  - .
+- commit: bfa9069b4ff70f341ca3244e8aff9e83eb4b8b73
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/hal.git"
+  subdirs:
+  - .
+- commit: e9b594a4718acc06db037f6d3f429a90db76c267
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git"
+  subdirs:
+  - .
+- commit: c0a08d62c40a169b7934ceb7cb12c39952160e7a
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/istex.git"
+  subdirs:
+  - .
+- commit: 35a95e7e8da655f868d5420aa29e835a813fa3a2
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git"
+  subdirs:
+  - .
+- commit: 300764df4f78ea6175535f9b78b884cc2aa9da61
+  git: "https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git"
+  subdirs:
+  - .
+- commit: 588e104fe7593210956610cab0041fd16584a4ce
+  git: "https://gitlab.iscpif.fr/gargantext/gargantext-graph.git"
+  subdirs:
+  - .
+- commit: 618f711a530df56caefbb1577c4bf3d5ff45e214
+  git: "https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude"
+  subdirs:
+  - .
+- commit: 9f8a2f4a014539826a4eab3215cc70c0813f20cb
+  git: "https://gitlab.iscpif.fr/gargantext/haskell-igraph.git"
+  subdirs:
+  - .
+- commit: 1370fea1939e2378ce344e512d80671ac700e787
+  git: "https://gitlab.iscpif.fr/gargantext/haskell-infomap.git"
+  subdirs:
+  - .
+- commit: 6f0595d2421005837d59151a8b26eee83ebb67b5
+  git: "https://gitlab.iscpif.fr/gargantext/hlcm.git"
+  subdirs:
+  - .
+- commit: eab929d106833ded8011a0d6705135e3fc506a9c
+  git: "https://gitlab.iscpif.fr/gargantext/iso639.git"
+  subdirs:
+  - .
+- commit: 3668d28607867a88b2dfc62158139b3cfd629ddb
+  git: "https://gitlab.iscpif.fr/gargantext/patches-class.git"
+  subdirs:
+  - .
+- commit: 339fd608341bd2652cf5c0e9e76a3293acffbea6
+  git: "https://gitlab.iscpif.fr/gargantext/servant-xml-conduit.git"
+  subdirs:
+  - .
 flags:
-    accelerate:
-        debug: false
-    wikiparsec:
-        library-only: true
-extra-package-dbs: []
-skip-ghc-check: true
-system-ghc: true
+  HTTP:
+    conduit10: false
+    "network-uri": true
+    "warn-as-error": false
+    "warp-tests": false
+  JuicyPixels:
+    mmap: false
+  MissingH:
+    "network--ge-3_0_0": true
+  QuickCheck:
+    "old-random": false
+    templatehaskell: true
+  SHA:
+    exe: false
+  "abstract-deque":
+    usecas: false
+  accelerate:
+    "bounds-checks": true
+    debug: false
+    "internal-checks": false
+    nofib: false
+    "unsafe-checks": false
+  aeson:
+    cffi: false
+    "ordered-keymap": true
+  "aeson-pretty":
+    "lib-only": false
+  "ansi-terminal":
+    example: false
+    "win32-2-13-1": false
+  "ansi-wl-pprint":
+    example: false
+  assoc:
+    tagged: true
+  async:
+    bench: false
+  "atomic-primops":
+    debug: false
+  attoparsec:
+    developer: false
+  "base-unicode-symbols":
+    "base-4-8": true
+    "old-base": false
+  bifunctors:
+    semigroups: true
+    tagged: true
+  bitvec:
+    simd: true
+  boring:
+    tagged: true
+  "bytestring-builder":
+    bytestring_has_builder: true
+  c2hs:
+    base3: true
+    regression: false
+  cassava:
+    "bytestring--lt-0_10_4": false
+  "cassava-conduit":
+    small_base: true
+  cborg:
+    "optimize-gmp": true
+  cereal:
+    "bytestring-builder": false
+  "cipher-aes":
+    support_aesni: true
+  citeproc:
+    executable: false
+    icu: false
+  clock:
+    llvm: false
+  cmdargs:
+    quotation: true
+    testprog: false
+  comonad:
+    containers: true
+    distributive: true
+    "indexed-traversable": true
+  "constraints-extras":
+    "build-readme": true
+  contravariant:
+    semigroups: true
+    statevar: true
+    tagged: true
+  cpphs:
+    "old-locale": false
+  criterion:
+    "embed-data-files": false
+    fast: false
+  "criterion-measurement":
+    fast: false
+  cron:
+    "lib-werror": false
+  "crypto-api":
+    all_cpolys: false
+  crypton:
+    check_alignment: false
+    "integer-gmp": true
+    old_toolchain_inliner: false
+    support_aesni: true
+    support_deepseq: true
+    support_pclmuldq: true
+    support_rdrand: true
+    support_sse: false
+    use_target_attributes: true
+  cryptonite:
+    check_alignment: false
+    "integer-gmp": true
+    old_toolchain_inliner: false
+    support_aesni: true
+    support_deepseq: true
+    support_pclmuldq: false
+    support_rdrand: true
+    support_sse: false
+    use_target_attributes: true
+  digest:
+    "pkg-config": true
+  distributive:
+    semigroups: true
+    tagged: true
+  dlist:
+    werror: false
+  "double-conversion":
+    developer: false
+    embedded_double_conversion: true
+  entropy:
+    donotgetentropy: false
+  fgl:
+    containers042: true
+  "foldable1-classes-compat":
+    tagged: true
+  formatting:
+    "no-double-conversion": true
+  "full-text-search":
+    "build-search-demo": false
+  gargantext:
+    "disable-db-obfuscation-executable": false
+    "test-crypto": false
+  "generic-deriving":
+    "base-4-9": true
+  "ghc-lib-parser":
+    "threaded-rts": true
+  "ghc-lib-parser-ex":
+    auto: false
+    "no-ghc-lib": false
+  "ghc-syntax-highlighter":
+    dev: false
+  graphviz:
+    "test-parsing": false
+  hashable:
+    "integer-gmp": true
+    "random-initial-seed": false
+  hashtables:
+    "bounds-checking": false
+    debug: false
+    "detailed-profiling": false
+    portable: false
+    sse42: false
+    "unsafe-tricks": true
+  hexpat:
+    bundle: false
+  hlint:
+    "ghc-lib": true
+    gpl: true
+    hsyaml: false
+    threaded: true
+  hmatrix:
+    "disable-default-paths": false
+    "no-random_r": false
+    openblas: false
+  "hmatrix-gsl-stats":
+    onlygsl: false
+  hsc2hs:
+    "in-ghc-tree": false
+  hslogger:
+    "network--gt-3_0_0": true
+  "http-api-data":
+    "use-text-show": false
+  "http-client":
+    "network-uri": true
+  "http-conduit":
+    aeson: true
+  http2:
+    devel: false
+    h2spec: false
+  hxt:
+    "network-uri": true
+    profile: false
+  "hxt-charproperties":
+    profile: false
+  "hxt-regex-xmlschema":
+    profile: false
+  ihaskell:
+    "use-hlint": true
+  "integer-logarithms":
+    "check-bounds": false
+    "integer-gmp": true
+  "io-streams":
+    network: true
+    nointeractivetests: false
+    zlib: true
+  "ipython-kernel":
+    examples: false
+  jose:
+    demos: false
+  "json-stream":
+    conduit: false
+  "language-c":
+    allwarnings: false
+    iecfpextension: true
+    usebytestrings: true
+  lens:
+    "benchmark-uniplate": false
+    "dump-splices": false
+    inlining: true
+    j: false
+    "test-hunit": true
+    "test-properties": true
+    "test-templates": true
+    trustworthy: true
+  libffi:
+    "ghc-bundled-libffi": true
+  libyaml:
+    "no-unicode": false
+    "system-libyaml": false
+  "llvm-hs":
+    debug: false
+    "llvm-with-rtti": false
+    "shared-llvm": true
+  lzma:
+    pkgconfig: true
+  "math-functions":
+    "system-erf": true
+    "system-expm1": true
+  megaparsec:
+    dev: false
+  memory:
+    support_bytestring: true
+    support_deepseq: true
+  "modern-uri":
+    dev: false
+  "monad-logger":
+    template_haskell: true
+  "monad-loops":
+    base4: true
+  "mtl-compat":
+    "two-point-one": false
+    "two-point-two": false
+  network:
+    devel: false
+  "optics-core":
+    "explicit-generic-labels": false
+  "optparse-applicative":
+    process: true
+  "optparse-simple":
+    "build-example": false
+  pandoc:
+    embed_data_files: false
+  "parser-combinators":
+    dev: false
+  parsers:
+    attoparsec: true
+    binary: true
+    parsec: true
+  password:
+    argon2: true
+    bcrypt: true
+    pbkdf2: true
+    scrypt: true
+  path:
+    dev: false
+  "path-io":
+    dev: false
+  pointed:
+    comonad: true
+    containers: true
+    "kan-extensions": true
+    semigroupoids: true
+    semigroups: true
+    stm: true
+    tagged: true
+    transformers: true
+    "unordered-containers": true
+  "postgresql-libpq":
+    "use-pkg-config": false
+  "pretty-simple":
+    buildexample: false
+    buildexe: true
+  prettyprinter:
+    buildreadme: false
+    text: true
+  probability:
+    splitbase: true
+  pureMD5:
+    test: false
+  "quickcheck-instances":
+    "bytestring-builder": false
+  reflection:
+    slow: false
+    "template-haskell": true
+  "regex-pcre":
+    "pkg-config": true
+  "regex-posix":
+    "_regex-posix-clib": false
+  "regex-tdfa":
+    doctest: true
+    "force-o2": false
+  req:
+    dev: false
+  retry:
+    "lib-werror": false
+  scientific:
+    "bytestring-builder": false
+    "integer-simple": false
+  semialign:
+    semigroupoids: true
+  semigroupoids:
+    comonad: true
+    containers: true
+    contravariant: true
+    distributive: true
+    tagged: true
+    "unordered-containers": true
+  semigroups:
+    binary: true
+    bytestring: true
+    "bytestring-builder": false
+    containers: true
+    deepseq: true
+    hashable: true
+    tagged: true
+    "template-haskell": true
+    text: true
+    transformers: true
+    "unordered-containers": true
+  serialise:
+    newtime15: true
+  shelly:
+    "build-examples": false
+    lifted: false
+  "simple-sendfile":
+    "allow-bsd": true
+    fallback: false
+  skylighting:
+    executable: false
+  "skylighting-core":
+    executable: false
+  "snap-core":
+    debug: false
+    "network-uri": true
+    portable: false
+  "snap-server":
+    "build-pong": false
+    "build-testserver": false
+    debug: false
+    openssl: false
+    portable: false
+  some:
+    "newtype-unsafe": true
+  splitmix:
+    "optimised-mixer": false
+  "streaming-commons":
+    "use-bytestring-builder": false
+  stringsearch:
+    base3: false
+    base4: true
+  tagged:
+    deepseq: true
+    transformers: true
+  tasty:
+    unix: true
+  "tasty-bench":
+    debug: false
+    tasty: true
+  texmath:
+    executable: false
+    server: false
+  "text-format":
+    developer: false
+  "text-metrics":
+    dev: false
+  "text-short":
+    asserts: false
+  "text-show":
+    "base-4-9": true
+    "integer-gmp": true
+    "new-functor-classes": true
+    "template-haskell-2-11": true
+  "text16-compat":
+    "enable-golden-test-generation": false
+  "time-compat":
+    "old-locale": false
+  "time-locale-compat":
+    "old-locale": false
+  tls:
+    compat: true
+    hans: false
+    network: true
+  "transformers-base":
+    orphaninstances: true
+  "transformers-compat":
+    five: false
+    "five-three": true
+    four: false
+    "generic-deriving": true
+    mtl: true
+    three: false
+    two: false
+  "unicode-collation":
+    doctests: false
+    executable: false
+  "unicode-data":
+    ucd2haskell: false
+  "unicode-transforms":
+    "bench-show": false
+    dev: false
+    "has-icu": false
+    "has-llvm": false
+    "use-gauge": false
+  "unix-compat":
+    "old-time": false
+  "unordered-containers":
+    debug: false
+  "uri-bytestring":
+    "lib-werror": false
+  "uri-encode":
+    "network-uri": true
+    tools: false
+  vault:
+    useghc: true
+  vector:
+    boundschecks: true
+    internalchecks: false
+    unsafechecks: false
+    wall: false
+  "vector-algorithms":
+    bench: true
+    boundschecks: true
+    internalchecks: false
+    llvm: false
+    properties: true
+    unsafechecks: false
+  "vector-instances":
+    hashable: true
+  void:
+    safe: false
+  "wai-app-static":
+    crypton: true
+    print: false
+  "wai-extra":
+    "build-example": false
+  "wai-websockets":
+    example: true
+  warp:
+    "allow-sendfilefd": true
+    "network-bytestring": false
+    "warp-debug": false
+    x509: true
+  websockets:
+    example: false
+  wikiparsec:
+    "library-only": true
+  wreq:
+    aws: false
+    developer: false
+    doctest: true
+    httpbin: false
+  wuss:
+    pedantic: false
+  yaml:
+    "no-examples": true
+    "no-exe": true
+  zip:
+    dev: false
+    "disable-bzip2": false
+    "disable-zstd": false
+  "zip-archive":
+    executable: false
+  zlib:
+    "bundled-c-zlib": false
+    "non-blocking-ffi": false
+    "pkg-config": false
+  zstd:
+    standalone: true
 packages:
 - .
-
-allow-newer: true
-
-extra-deps:
-- git: https://gitlab.iscpif.fr/gargantext/haskell-gargantext-prelude
-  commit: 618f711a530df56caefbb1577c4bf3d5ff45e214
-- git: https://gitlab.iscpif.fr/gargantext/iso639.git
-  commit: eab929d106833ded8011a0d6705135e3fc506a9c
-- git: https://gitlab.iscpif.fr/gargantext/gargantext-graph.git
-  commit: 588e104fe7593210956610cab0041fd16584a4ce
-  # Data Mining Libs
-- git: https://github.com/delanoe/data-time-segment.git
-  commit: 10a416b9f6c443866b36479c3441ebb3bcdeb7ef
-- git: https://gitlab.iscpif.fr/gargantext/hlcm.git
-  commit: 6f0595d2421005837d59151a8b26eee83ebb67b5
-  # API libs
-- git: https://gitlab.iscpif.fr/gargantext/servant-xml-conduit.git
-  commit: 339fd608341bd2652cf5c0e9e76a3293acffbea6
-  # Databases libs
-- git: https://github.com/adinapoli/haskell-opaleye.git
-  commit: e9a29582ac66198dd2c2fdc3f8c8a4b1e6fbe004
-- git: https://github.com/robstewart57/rdf4h.git
-  commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
-  # External Data API connectors
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/pubmed.git
-  commit: 300764df4f78ea6175535f9b78b884cc2aa9da61
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/istex.git
-  commit: c0a08d62c40a169b7934ceb7cb12c39952160e7a
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/hal.git
-  commit: bfa9069b4ff70f341ca3244e8aff9e83eb4b8b73
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/isidore.git
-  commit: e9b594a4718acc06db037f6d3f429a90db76c267
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/arxiv-api.git
-  commit: eb130c71fa17adaceed6ff66beefbccb13df51ba
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-  commit: 35a95e7e8da655f868d5420aa29e835a813fa3a2
-- git: https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git
-  commit: 9225d046083853200b9045c8d71161e6a234fc5c
-  # NP libs
-- git: https://github.com/alpmestan/servant-job.git
-  commit: b4182487cfe479777c11ca19f3c0d47840b376f6
-- git: https://github.com/delanoe/patches-map
-  commit: 76cae88f367976ff091e661ee69a5c3126b94694
-- git: https://gitlab.iscpif.fr/gargantext/patches-class.git
-  commit: 3668d28607867a88b2dfc62158139b3cfd629ddb
-  # Graph libs
-- git: https://gitlab.iscpif.fr/gargantext/haskell-igraph.git
-  # 0.10.4-rc2
-  commit: 9f8a2f4a014539826a4eab3215cc70c0813f20cb
-- git: https://gitlab.iscpif.fr/gargantext/haskell-infomap.git
-  commit: 1370fea1939e2378ce344e512d80671ac700e787
-  # Accelerate Linear Algebra and specific instances
-- git: https://github.com/AccelerateHS/accelerate.git
-  commit: 334d05519436bb7f20f9926ec76418f5b8afa359
-- git: https://github.com/alpmestan/accelerate-arithmetic.git
-  commit: a110807651036ca2228a76507ee35bbf7aedf87a
-- git: https://gitlab.iscpif.fr/amestanogullari/accelerate-utility.git
-  commit: a3875fe652d3bb5acb522674c22c6c814c1b4ad0
-- git: https://github.com/AccelerateHS/accelerate-llvm.git
-  commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
-  subdirs:
-    - accelerate-llvm/
-    - accelerate-llvm-native/
-- git: https://github.com/adinapoli/wikiparsec.git
-  commit: b3519a0351ae9515497680571f76200c24dedb53
-  # Gargantext-graph
-- git: https://github.com/chessai/eigen.git
-  commit: 8fff32a43df743c8c83428a86dd566a0936a4fba
-- git: https://github.com/alpmestan/sparse-linear.git
-  commit: bc6ca8058077b0b5702ea4b88bd4189cfcad267a
-  subdirs:
-    - sparse-linear
-- git: https://github.com/alpmestan/hmatrix.git
-  commit: b9fca8beee0f23c17a6b2001ec834d071709e6e7
-  subdirs:
-    - packages/base
-- git: https://github.com/adinapoli/llvm-hs.git
-  commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
-  subdirs:
-    - llvm-hs
-    - llvm-hs-pure
-  # Mercury is a reputable Haskell company.
-- git: https://github.com/MercuryTechnologies/ekg-json.git
-  commit: 232db57d6ce0940fcc902adf30a9ed3f3561f21d
-  # Temporary fork of boolexpr
-- git: https://github.com/adinapoli/boolexpr.git
-  commit: 91928b5d7f9342e9865dde0d94862792d2b88779
-  # Temporary fork of duckling
-- git: https://github.com/adinapoli/duckling.git
-  commit: 23603a832117e5352d5b0fb9bb1110228324b35a
-- git: https://github.com/adinapoli/text16-compat.git
-  commit: 85533b5d597e6fc5498411b4bcfc76380ec80d71
-  # Others dependencies (using stack resolver)
-- context-0.2.0.0@sha256:6b643adb4a64fe521873d08df0497f71f88e18b9ecff4b68b4eef938e446cfc9,1886
-- dependent-sum-0.7.1.0@sha256:0e419237f5b86da3659772afff9cab355c0f8d5b3fdb15a5b30e673d8dc83941,2147
-- fast-tagsoup-1.0.14@sha256:5aacc569a6ab9633077bb181f6bd6a4dde3ebc7a8b844d2fe7b1920a0cf0ba9f,1343
-- fclabels-2.0.5.1@sha256:0ec200ff51561ed6ee60fa52d47427cd4bbbb3ace618884465ce2b27840cc1d7,4621
-- fullstop-0.1.4@sha256:80a3e382ef53551bb936e7da8b2825621df0ea169af1212debcb0a90010b30c8,2044
-- full-text-search-0.2.1.4@sha256:81f6df3327e5b604f99b15e78635e5d6ca996e504c21d268a6d751d7d131aa36,6032
-- ghc-parser-0.2.6.0@sha256:0b0cbceb3bd2762cef201dc54ae302d7918bed23b2f85ffd99c1c8b6a9df32b6,1579
-- hgal-2.0.0.2@sha256:13d58afd0668b9cb881c612eff8488a0e289edd4bbffa893df4beee60cfeb73b,653
-- hsparql-0.3.8
-- hspec-2.11.1
-- hspec-core-2.11.1
-- hspec-discover-2.11.1
-- hspec-expectations-0.8.3
-- hstatistics-0.3.1
-- HSvm-0.1.1.3.22
-- ihaskell-0.11.0.0
-- ipython-kernel-0.11.0.0
-- KMP-0.2.0.0@sha256:6dfbac03ef00ebd9347234732cb86a40f62ab5a80c0cc6bedb8eb51766f7df28,2562
-- located-base-0.1.1.1@sha256:7c6395f2b6fbf2d5f76c3514f774423838c0ea94e1c6a5530dd3c94b30c9d1c8,1904
-- logging-effect-1.3.12@sha256:72d168dd09887649ba9501627219b6027cbec2d5541931555b7885b133785ce3,1679
-- logict-0.8.0.0
-- MissingH-1.4.3.0@sha256:32f9892ec98cd21df4f4d3ed8d95a3831ae74287ea0641d6f09b2dc6ef061d39,4859
-- monad-logger-aeson-0.2.0.0
-- morpheus-graphql-0.24.3
-- morpheus-graphql-app-0.24.3
-- morpheus-graphql-client-0.24.3
-- morpheus-graphql-code-gen-0.24.3
-- morpheus-graphql-code-gen-utils-0.24.3
-- morpheus-graphql-core-0.24.3
-- morpheus-graphql-server-0.24.3
-- morpheus-graphql-subscriptions-0.24.3
-- morpheus-graphql-tests-0.24.3
-- rake-0.0.1@sha256:3380f6567fb17505d1095b7f32222c0b631fa04126ad39726c84262da99c08b3,2025
-- random-1.2.1
-- recover-rtti-0.4.3
-- servant-0.20.1
-- servant-auth-server-0.4.8.0@sha256:f21b8b6a0a31811f31d9b1c1e8a1ca68a0f470cab4ffe8b9c2a41b7649492bb2,5521
-- servant-auth-swagger-0.2.10.2@sha256:eda169d986faf562b6f43ac90d48c4fcf895dc235dd002d523ad582ec9be833f,2909
-- servant-client-core-0.20
-- servant-ekg-0.3.1@sha256:19bd9dc3943983da8e79d6f607614c68faea4054fb889d508c8a2b67b6bdd448,2203
-- servant-flatten-0.2@sha256:276896f7c5cdec5b8f8493f6205fded0cc602d050b58fdb09a6d7c85c3bb0837,1234
-- servant-mock-0.8.7@sha256:64cb3e52bbd51ab6cb25e3f412a99ea712c6c26f1efd117f01a8d1664df49c67,2306
-- servant-server-0.20
-- snap-server-1.1.2.1@sha256:8ea05b9b068c1e86be77073107eadc177d7eec93724963c063877478a062b229,15471
-- stemmer-0.5.2@sha256:823aec56249ec2619f60a2c0d1384b732894dbbbe642856d337ebfe9629a0efd,4082
-- taggy-0.2.1@sha256:7bc55ddba178971dc6052163597f0445a0a2b5b0ca0e84ce651d53d722e3c265,4662
-- taggy-lens-0.1.2@sha256:091ca81d02bd3d7fb493dce0148e1a38f25eb178a1ebd751043a23239e5e3265,3009
-- tasty-hspec-1.2.0.3
-- tmp-postgres-1.34.1.0
-- Unique-0.4.7.8@sha256:9661f45aa31dde119a2114566166ea38b011a45653337045ee4ced75636533c0,2067
-- vector-0.12.3.0@sha256:0ae2c1ba86f0077910be242ec6802cc3d7725fe7b2bea6987201aa3737b239b5,7953
-- wai-3.2.4
-
-# For the graph clustering
-ghc-options:
-  hmatrix: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
-  sparse-linear: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
-  gargantext-graph: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
-  "$locals": -fwrite-ide-info -hiedir=".stack-work/hiedb"
+resolver: "lts-21.17"
+"system-ghc": true
