@@ -65,9 +65,9 @@ data Query m
     , context_ngrams      :: GQLCTX.ContextNgramsArgs -> m [Text]
     , contexts            :: GQLCTX.NodeContextArgs -> m [GQLCTX.NodeContextGQL]
     , contexts_for_ngrams :: GQLCTX.ContextsForNgramsArgs -> m [GQLCTX.ContextGQL]
-    , imt_schools         :: GQLIMT.SchoolsArgs -> m [GQLIMT.School]
+    , imt_schools         :: m [GQLIMT.School]
     , job_logs            :: GQLAT.JobLogArgs -> m (Map Int JobLog)
-    , languages           :: GQLNLP.LanguagesArgs -> m GQLNLP.LanguagesMap
+    , languages           :: m [GQLNLP.LanguageTuple]
     , nodes               :: GQLNode.NodeArgs -> m [GQLNode.Node]
     , nodes_corpus        :: GQLNode.CorpusArgs -> m [GQLNode.Corpus]
     , node_parent         :: GQLNode.NodeParentArgs -> m [GQLNode.Node]

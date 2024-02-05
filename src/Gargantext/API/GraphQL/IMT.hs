@@ -19,5 +19,5 @@ newtype SchoolsArgs
     deriving anyclass (GQLType)
 
 resolveSchools
-  :: SchoolsArgs -> GqlM e env [School]
-resolveSchools (SchoolsArgs ()) = pure $ schools
+  :: GqlM e env [School]
+resolveSchools = pure $ schools
