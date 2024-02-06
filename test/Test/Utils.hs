@@ -37,9 +37,8 @@ shouldRespondWithFragment :: HasCallStack
                           => WaiSession st SResponse
                           -> JsonFragmentResponseMatcher
                           -> WaiExpectation st
-shouldRespondWithFragment action matcher = do
-  r <- action
-  forM_ (match r (getJsonMatcher matcher)) (liftIO . expectationFailure)
+shouldRespondWithFragment action matcher =
+  shouldRespondWithFragmentCustomStatus 200 action matcher
 
 -- | Same as above, but with custom status code
 shouldRespondWithFragmentCustomStatus :: HasCallStack
