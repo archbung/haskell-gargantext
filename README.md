@@ -60,7 +60,7 @@ nix-env --version
 nix-env (Nix) 2.19.2
 ```
 
-**Important:** Before building the project with either `stack` or `cabal` you need to be in the correct Nix shell, which will fetch all the required system dependencies. To do so, just type:
+**Important:** Before building the project with either `stack` or `cabal` you need to be in the correct Nix shell, which will fetch all the required system dependencies. To do so, just type **inside your haskell-gargantext folder**:
 
 ```shell
 nix-shell
