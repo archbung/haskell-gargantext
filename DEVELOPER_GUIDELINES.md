@@ -89,7 +89,9 @@ as empty as possible. This seems obvious but has several advantages:
 
 ### Keep CI green.
 
-**Guideline: Do not merge any MR which doesn't have green CI. 'docs' failures are allowed.**
+** Before asking for a Merge Request, make sure your branch has a green CI.**
+
+**Guideline: We will not merge any MR which doesn't have green CI. 'docs' failures are allowed.**
 
 Continuous Integration (e.g. CI) is a "public proof" that the project is building and
 behaving correctly. Therefore, it's extremely important that we don't merge anything that doesn't
@@ -119,6 +121,9 @@ When opening a new issue, make sure to do the following:
 
 When opening a MR, make sure to do the following:
 
+- Check your branch has a green CI first please. If you need help or
+  discussion, use the comments in the issue related to your current
+  working branch.
 - If this is closing an issue, consider using one of the [closing patterns](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#default-closing-pattern)
   to automatically close the associated issue when the MR is merged. For example, you can say "Fixes #XXX"
   (where `XXX` is an issue number) in the MR description;
