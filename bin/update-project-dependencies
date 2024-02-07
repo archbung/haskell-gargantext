@@ -12,7 +12,7 @@ INDEX_STATE="2023-12-10T10:34:46Z"
 # with the `sha256sum` result calculated on the `cabal.project` and
 # `cabal.project.freeze`. This ensures the files stay deterministic so that CI
 # cache can kick in.
-expected_cabal_project_hash="1e4d40d48546606fba0ce0eaae9f2799c57d8ce97c4425940f3a535c4f628a8a"
+expected_cabal_project_hash="3f5d6b7f26cac4aa5a7f87ba0227a7671041dfe46643ddef79512eb49bd876ec"
 expected_cabal_project_freeze_hash="745c65c246998cfda4d2a7a22df44a9f1f7fb0927e2afc2f16712861bf552c76"
 
 cabal --store-dir=$STORE_DIR v2-update "hackage.haskell.org,${INDEX_STATE}"
