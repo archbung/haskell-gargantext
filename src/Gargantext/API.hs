@@ -38,12 +38,14 @@ import Control.Concurrent
 import Control.Lens hiding (Level)
 import Data.List (lookup)
 import Data.Text (pack)
+import Data.Text.Encoding qualified as TE
 import Data.Text.IO (putStrLn)
 import Data.Validity
 import Gargantext.API.Admin.Auth.Types (AuthContext)
 import Gargantext.API.Admin.EnvTypes (Env, Mode(..))
 import Gargantext.API.Admin.Settings (newEnv)
-import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings)
+import Gargantext.API.Admin.Settings.CORS
+import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings, corsSettings)
 import Gargantext.API.EKG
 import Gargantext.API.Middleware (logStdoutDevSanitised)
 import Gargantext.API.Ngrams (saveNodeStoryImmediate)
@@ -70,7 +72,7 @@ startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
   runDbCheck env
   portRouteInfo port
   app <- makeApp env
-  mid <- makeDevMiddleware mode
+  mid <- makeGargMiddleware (env ^. settings.corsSettings) mode
   periodicActions <- schedulePeriodicActions env
   run port (mid app) `finally` stopGargantext env periodicActions
 
@@ -97,14 +99,6 @@ stopGargantext env scheduledPeriodicActions = do
   forM_ scheduledPeriodicActions killThread
   putStrLn "----- Stopping gargantext -----"
   runReaderT saveNodeStoryImmediate env
-
-{-
-startGargantextMock :: PortNumber -> IO ()
-startGargantextMock port = do
-  portRouteInfo port
-  application <- makeMockApp . MockEnv $ FireWall False
-  run port application
--}
 
 -- | Schedules all sorts of useful periodic actions to be run while
 -- the server is alive accepting requests.
@@ -145,95 +139,28 @@ fireWall req fw = do
        then pure True
        else pure False
 
-{-
--- makeMockApp :: Env -> IO (Warp.Settings, Application)
-makeMockApp :: MockEnv -> IO Application
-makeMockApp env = do
-    let serverApp = appMock
-
-    -- logWare <- mkRequestLogger def { destination = RequestLogger.Logger $ env^.logger }
-    --logWare <- mkRequestLogger def { destination = RequestLogger.Logger "/tmp/logs.txt" }
-    let checkOriginAndHost app req resp = do
-            blocking <- fireWall req (env ^. menv_firewall)
-            case blocking  of
-                True  -> app req resp
-                False -> resp ( responseLBS status401 []
-                              "Invalid Origin or Host header")
-
-    let corsMiddleware = cors $ \_ -> Just CorsResourcePolicy
---          { corsOrigins        = Just ([env^.settings.allowedOrigin], False)
-            { corsOrigins        = Nothing --  == /*
-            , corsMethods        = [ methodGet   , methodPost   , methodPut
-                                   , methodDelete, methodOptions, methodHead]
-            , corsRequestHeaders = ["authorization", "content-type"]
-            , corsExposedHeaders = Nothing
-            , corsMaxAge         = Just ( 60*60*24 ) -- one day
-            , corsVaryOrigin     = False
-            , corsRequireOrigin  = False
+makeGargMiddleware :: CORSSettings -> Mode -> IO Middleware
+makeGargMiddleware crsSettings mode = do
+    let corsMiddleware = cors $ \_incomingRq -> Just
+          simpleCorsResourcePolicy
+            { corsOrigins = Just (map mkCorsOrigin (crsSettings ^. corsAllowedOrigins), True)
+            , corsMethods = [ methodGet   , methodPost   , methodPut
+                            , methodDelete, methodOptions, methodHead]
             , corsIgnoreFailures = False
-            }
-
-    --let warpS = Warp.setPort (8008 :: Int)   -- (env^.settings.appPort)
-    --          $ Warp.defaultSettings
-
-    --pure (warpS, logWare $ checkOriginAndHost $ corsMiddleware $ serverApp)
-    pure $ logStdoutDev $ checkOriginAndHost $ corsMiddleware $ serverApp
--}
-
-
-makeDevMiddleware :: Mode -> IO Middleware
-makeDevMiddleware mode = do
--- logWare <- mkRequestLogger def { destination = RequestLogger.Logger $ env^.logger }
--- logWare <- mkRequestLogger def { destination = RequestLogger.Logger "/tmp/logs.txt" }
---    let checkOriginAndHost app req resp = do
---            blocking <- fireWall req (env ^. menv_firewall)
---            case blocking  of
---                True  -> app req resp
---                False -> resp ( responseLBS status401 []
---                              "Invalid Origin or Host header")
---
-    let corsMiddleware = cors $ \_ -> Just CorsResourcePolicy
---          { corsOrigins        = Just ([env^.settings.allowedOrigin], False)
-            { corsOrigins        = Nothing --  == /*
-            , corsMethods        = [ methodGet   , methodPost   , methodPut
-                                   , methodDelete, methodOptions, methodHead]
-            , corsRequestHeaders = ["authorization", "content-type"]
-            , corsExposedHeaders = Nothing
+            , corsRequestHeaders = ["authorization", "content-type", "x-garg-error-scheme"]
             , corsMaxAge         = Just ( 60*60*24 ) -- one day
-            , corsVaryOrigin     = False
-            , corsRequireOrigin  = False
-            , corsIgnoreFailures = False
             }
-
-    --let warpS = Warp.setPort (8008 :: Int)   -- (env^.settings.appPort)
-    --          $ Warp.defaultSettings
-
-    --pure (warpS, logWare . checkOriginAndHost . corsMiddleware)
     case mode of
       Prod -> pure $ logStdout . corsMiddleware
       _    -> do
         loggerMiddleware <- logStdoutDevSanitised
         pure $ loggerMiddleware . corsMiddleware
-
+  where
+    mkCorsOrigin :: CORSOrigin -> Origin
+    mkCorsOrigin = TE.encodeUtf8 . _CORSOrigin
 
 ---------------------------------------------------------------------
 -- | API Global
----------------------------------------------------------------------
-
----------------------------
-
-
--- TODO-SECURITY admin only: withAdmin
--- Question: How do we mark admins?
-{-
-serverGargAdminAPI :: GargServer GargAdminAPI
-serverGargAdminAPI =  roots
-                 :<|> nodesAPI
--}
-
----------------------------------------------------------------------
---gargMock :: Server GargAPI
---gargMock = mock apiGarg Proxy
 ---------------------------------------------------------------------
 
 makeApp :: Env -> IO Application
@@ -247,11 +174,8 @@ makeApp env = do
     cfg :: Servant.Context AuthContext
     cfg = env ^. settings . jwtSettings
        :. env ^. settings . cookieSettings
-    -- :. authCheck env
        :. EmptyContext
 
---appMock :: Application
---appMock = serve api (swaggerFront :<|> gargMock :<|> serverStatic)
 ---------------------------------------------------------------------
 api :: Proxy API
 api  = Proxy
@@ -262,19 +186,3 @@ apiWithEkg = Proxy
 apiGarg :: Proxy GargAPI
 apiGarg  = Proxy
 ---------------------------------------------------------------------
-
-{- UNUSED
---import GHC.Generics (D1, Meta (..), Rep, Generic)
---import GHC.TypeLits (AppendSymbol, Symbol)
----------------------------------------------------------------------
--- Type Family for the Documentation
-type family TypeName (x :: *) :: Symbol where
-    TypeName Int  = "Int"
-    TypeName Text = "Text"
-    TypeName x    = GenericTypeName x (Rep x ())
-
-type family GenericTypeName t (r :: *) :: Symbol where
-    GenericTypeName t (D1 ('MetaData name mod pkg nt) f x) = name
-
-type Desc t n = Description (AppendSymbol (TypeName t) (AppendSymbol " | " n))
--}

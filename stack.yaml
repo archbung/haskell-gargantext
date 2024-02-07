@@ -43,6 +43,8 @@
 - "stemmer-0.5.2"
 - "taggy-0.2.1"
 - "taggy-lens-0.1.2"
+- "tomland-1.3.3.2"
+- "validation-selective-0.2.0.0"
 - "vector-0.12.3.0"
 - "wai-3.2.4"
 - commit: 2b5d69448557e89002c0179ea1aaf59bb757a6e3
@@ -583,6 +585,9 @@ flags:
     compat: true
     hans: false
     network: true
+  tomland:
+    "build-play-tomland": false
+    "build-readme": false
   "transformers-base":
     orphaninstances: true
   "transformers-compat":

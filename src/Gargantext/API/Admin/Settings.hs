@@ -28,6 +28,7 @@ import Data.Pool (Pool)
 import qualified Data.Pool as Pool
 import Database.PostgreSQL.Simple (Connection, connect, close, ConnectInfo)
 import Gargantext.API.Admin.EnvTypes
+import Gargantext.API.Admin.Settings.CORS
 import Gargantext.API.Admin.Types
 import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude
@@ -57,9 +58,9 @@ devSettings jwkFile = do
   jwkExists <- doesFileExist jwkFile
   when (not jwkExists) $ writeKey jwkFile
   jwk       <- readKey jwkFile
+  gargCorsSettings <- loadGargCorsSettings
   pure $ Settings
-    { _allowedOrigin = "http://localhost:8008"
-    , _allowedHost = "localhost:3000"
+    { _corsSettings = gargCorsSettings
     , _appPort = 3000
     , _logLevelLimit = LevelDebug
 --    , _dbServer = "localhost"

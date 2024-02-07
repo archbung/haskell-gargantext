@@ -1,5 +1,3 @@
--- |
-
 {-# LANGUAGE TemplateHaskell     #-}
 
 module Gargantext.API.Admin.Types where
@@ -7,6 +5,7 @@ module Gargantext.API.Admin.Types where
 import Control.Lens
 import Control.Monad.Logger (LogLevel)
 import GHC.Enum
+import Gargantext.API.Admin.Settings.CORS
 import Gargantext.Prelude
 import Servant.Auth.Server (JWTSettings, CookieSettings(..))
 import Servant.Client (BaseUrl)
@@ -20,8 +19,7 @@ data SendEmailType = SendEmailViaAws
     deriving (Show, Read, Enum, Bounded, Generic)
 
 data Settings = Settings
-    { _allowedOrigin   :: !ByteString   -- allowed origin for CORS
-    , _allowedHost     :: !ByteString   -- allowed host for CORS
+    { _corsSettings    :: !CORSSettings   -- CORS settings
     , _appPort         :: !PortNumber
     , _logLevelLimit   :: !LogLevel -- log level from the monad-logger package
 --    , _dbServer        :: Text
