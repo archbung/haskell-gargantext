@@ -1,3 +1,10 @@
+## Version 0.0.6.9.9.9.4.9.2
+
+* [FRONT][FIX][getLangs (#628)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/628)
+* [FRONT][FIX][The first change in the map term is never taken into account (#622)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/622)
+* [BACK][FIX][Different Logins (#302)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/302)
+* [GUIDELINES][About MR] a way to better coordinate
+
 ## Version 0.0.6.9.9.9.4.9.1
 
 * [FRONT][ERRORFORMAT][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
