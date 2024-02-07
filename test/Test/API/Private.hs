@@ -18,7 +18,9 @@ module Test.API.Private (
 
 import Data.Aeson qualified as JSON
 import Data.ByteString.Lazy qualified as L
+import Data.ByteString.Lazy.Char8 qualified as C8L
 import Data.CaseInsensitive qualified as CI
+import Data.Map.Strict qualified as Map
 import Data.Text.Encoding qualified as TE
 import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Routes
@@ -38,9 +40,8 @@ import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAn
 import Test.Hspec
 import Test.Hspec.Wai hiding (pendingWith)
 import Test.Hspec.Wai.Internal (withApplication)
-import Test.Utils (jsonFragment, shouldRespondWithFragment)
-import qualified Data.Map.Strict as Map
-import qualified Data.ByteString.Lazy.Char8 as C8L
+import Test.Hspec.Wai.JSON (json)
+import Test.Utils (shouldRespondWithFragment)
 
 -- | Issue a request with a valid 'Authorization: Bearer' inside.
 protected :: HasCallStack
@@ -161,7 +162,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/node/8") ""
-              `shouldRespondWithFragment` [jsonFragment| {"id":8,"user_id":2,"name":"alice" } |]
+              `shouldRespondWithFragment` [json| {"id":8,"user_id":2,"name":"alice" } |]
 
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do
@@ -177,7 +178,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
         withApplication app $ do
           withValidLogin port "alice" (GargPassword "alice") $ \token -> do
             protected token "GET" (mkUrl port "/tree/8") ""
-              `shouldRespondWithFragment` [jsonFragment| { "node": {"id":8, "name":"alice", "type": "NodeUser" } } |]
+              `shouldRespondWithFragment` [json| { "node": {"id":8, "name":"alice", "type": "NodeUser" } } |]
 
       it "forbids 'alice' to see others node private info" $ \((_testEnv, port), app) -> do
         withApplication app $ do

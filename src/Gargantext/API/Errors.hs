@@ -79,7 +79,7 @@ frontendErrorToGQLServerError fe@(FrontendError diag ty _) =
   ServerError { errHTTPCode     = HTTP.statusCode $ backendErrorTypeToErrStatus ty
               , errReasonPhrase = T.unpack diag
               , errBody         = JSON.encode (GraphQLError fe)
-              , errHeaders      = mempty
+              , errHeaders      = [("Content-Type", "application/json")]
               }
 
 authErrorToFrontendError :: AuthenticationError -> FrontendError

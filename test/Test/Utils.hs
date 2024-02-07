@@ -7,18 +7,16 @@ module Test.Utils where
 import Control.Exception
 import Control.Monad
 import Data.Aeson
-import Data.Aeson.QQ.Simple (aesonQQ)
+import Data.Aeson qualified as JSON
+import Data.Aeson.KeyMap qualified as KM
+import Data.ByteString.Char8 qualified as B
 import Data.Char (isSpace)
-import Language.Haskell.TH.Quote
 import Network.HTTP.Types
 import Network.Wai.Test
 import Prelude
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.ByteString.Char8 as B
 import Test.Hspec.Expectations
 import Test.Hspec.Wai
-import Test.Hspec.Wai.JSON
+import Test.Hspec.Wai.JSON (FromValue(..))
 import Test.Hspec.Wai.Matcher
 import Test.Tasty.HUnit
 
@@ -29,15 +27,6 @@ pending reason act = act `catch` (\(e :: SomeException) -> do
   putStrLn $ "PENDING: " <> reason
   putStrLn (displayException e))
 
--- | Similar to 'json' from the 'Test.Hspec.Wai.JSON' package,
--- but allows matching on a /fragment/ of the body.
-jsonFragment :: QuasiQuoter
-jsonFragment = QuasiQuoter {
-  quoteExp = \input -> [|fromValue $(quoteExp aesonQQ input)|]
-, quotePat = const $ error "No quotePat defined for jsonFragment"
-, quoteType = const $ error "No quoteType defined for jsonFragment"
-, quoteDec = const $ error "No quoteDec defined for jsonFragment"
-}
 
 newtype JsonFragmentResponseMatcher = JsonFragmentResponseMatcher { getJsonMatcher :: ResponseMatcher }
 
@@ -48,9 +37,20 @@ shouldRespondWithFragment :: HasCallStack
                           => WaiSession st SResponse
                           -> JsonFragmentResponseMatcher
                           -> WaiExpectation st
-shouldRespondWithFragment action matcher = do
+shouldRespondWithFragment action matcher =
+  shouldRespondWithFragmentCustomStatus 200 action matcher
+
+-- | Same as above, but with custom status code
+shouldRespondWithFragmentCustomStatus :: HasCallStack
+                                      => Int
+                                      -> WaiSession st SResponse
+                                      -> JsonFragmentResponseMatcher
+                                      -> WaiExpectation st
+shouldRespondWithFragmentCustomStatus status action matcher = do
+  let m = (getJsonMatcher matcher) { matchStatus = status }
   r <- action
-  forM_ (match r (getJsonMatcher matcher)) (liftIO . expectationFailure)
+  forM_ (match r (getJsonMatcher $ JsonFragmentResponseMatcher m)) (liftIO . expectationFailure)
+
 
 instance FromValue JsonFragmentResponseMatcher where
   fromValue = JsonFragmentResponseMatcher . ResponseMatcher 200 [matchHeader] . containsJSON
