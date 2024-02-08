@@ -26,8 +26,8 @@ import Data.Text qualified as T
 import Gargantext.API.Prelude
 import Gargantext.Core.Types (TODO(..))
 import Gargantext.Core.Types.Phylo (GraphData(..))
-import Gargantext.Core.Viz.LegacyPhylo
-import Gargantext.Core.Viz.Phylo (defaultConfig)
+import Gargantext.Core.Viz.LegacyPhylo hiding (Phylo(..))
+import Gargantext.Core.Viz.Phylo (PhyloConfig(..), defaultConfig, _phylo_param, _phyloParam_config)
 import Gargantext.Core.Viz.Phylo.API.Tools
 import Gargantext.Core.Viz.Phylo.Example (phyloCleopatre)
 import Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
@@ -76,6 +76,7 @@ instance ToSchema Value where declareNamedSchema _ = declareNamedSchema (Proxy :
 data PhyloData = PhyloData { pd_corpusId :: NodeId
                            , pd_listId   :: NodeId
                            , pd_data     :: GraphData
+                           , pd_config   :: PhyloConfig
                            }
   deriving (Generic, Show, Eq)
 
@@ -85,6 +86,7 @@ instance ToJSON PhyloData where
       "pd_corpusId" .= toJSON pd_corpusId
     , "pd_listId"   .= toJSON pd_listId
     , "pd_data"     .= toJSON pd_data
+    , "pd_config"   .= toJSON pd_config
     ]
 
 instance FromJSON PhyloData where
@@ -92,10 +94,11 @@ instance FromJSON PhyloData where
     pd_corpusId <- o .: "pd_corpusId"
     pd_listId   <- o .: "pd_listId"
     pd_data     <- o .: "pd_data"
+    pd_config   <- o .: "pd_config"
     pure $ PhyloData{..}
 
 instance Arbitrary PhyloData where
-  arbitrary = PhyloData <$> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = PhyloData <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance ToSchema PhyloData
 
@@ -131,20 +134,21 @@ getPhylo phyloId lId _level _minSizeBranch = do
   listId   <- case lId of
                 Nothing -> defaultList corpusId
                 Just ld -> pure ld
-  theData <- getPhyloDataJson phyloId
+  (gd, phyloConfig) <- getPhyloDataJson phyloId
   -- printDebug "getPhylo" theData
-  pure $ PhyloData corpusId listId theData
+  pure $ PhyloData corpusId listId gd phyloConfig
 
 
 
-getPhyloDataJson :: PhyloId -> GargNoServer GraphData
+getPhyloDataJson :: PhyloId -> GargNoServer (GraphData, PhyloConfig)
 getPhyloDataJson phyloId = do
   maybePhyloData <- getPhyloData phyloId
   let phyloData = fromMaybe phyloCleopatre maybePhyloData
+  let phyloConfig = _phyloParam_config $ _phylo_param phyloData
   phyloJson <- liftBase $ phylo2dot2json phyloData
   case parseEither parseJSON phyloJson of
     Left err -> panicTrace $ T.pack $ "[Gargantext.Core.Viz.Phylo.API] getPhyloDataJson: " <> err
-    Right gd -> pure gd
+    Right gd -> pure (gd, phyloConfig)
 
 
 -- getPhyloDataSVG phId _lId l msb  = do
@@ -194,6 +198,7 @@ putPhylo = undefined
 -- instance Arbitrary Phylo             where arbitrary     = elements [phylo]
 instance Arbitrary PhyloGroup        where arbitrary     = elements []
 -- instance Arbitrary PhyloView         where arbitrary     = elements [phyloView]
+instance Arbitrary PhyloConfig       where arbitrary     = elements []
 instance FromHttpApiData DisplayMode where parseUrlPiece = readTextData
 instance FromHttpApiData ExportMode  where parseUrlPiece = readTextData
 instance FromHttpApiData Filiation   where parseUrlPiece = readTextData
