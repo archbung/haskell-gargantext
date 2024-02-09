@@ -37,6 +37,8 @@ import Data.Vector (Vector)
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Core.Utils.Prefix (unPrefixSwagger)
 import Gargantext.Prelude
+import Test.QuickCheck
+import Test.QuickCheck.Instances.Text()
 
 ---------------------
 -- | PhyloConfig | --
@@ -678,3 +680,79 @@ instance NFData Sort
 instance NFData Tagger
 instance NFData PhyloLabel
 
+-- Arbitrary instances
+
+instance Arbitrary PhyloConfig where
+  arbitrary = PhyloConfig <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary 
+                          <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary 
+                          <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary 
+                          <*> vectorOf 10 arbitrary <*> arbitrary <*> vectorOf 10 arbitrary
+
+instance Arbitrary CorpusParser where
+  arbitrary = oneof [ Wos <$> arbitrary
+                    , Csv <$> arbitrary
+                    , Csv' <$> arbitrary
+                    ]
+
+instance Arbitrary ListParser where
+  arbitrary = elements [V3, V4]
+
+instance Arbitrary PhyloSimilarity where
+  arbitrary = oneof [ WeightedLogJaccard <$> arbitrary <*> arbitrary
+                    , WeightedLogSim <$> arbitrary <*> arbitrary
+                    , Hamming <$> arbitrary <*> arbitrary
+                    ]
+
+instance Arbitrary SeaElevation where
+  arbitrary = oneof [ Constante <$> arbitrary <*> arbitrary
+                    , Adaptative <$> arbitrary
+                    , Evolving <$> arbitrary
+                    ]
+
+instance Arbitrary Synchrony where
+  arbitrary = oneof [ ByProximityThreshold <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+                    , ByProximityDistribution <$> arbitrary <*> arbitrary
+                    ]
+
+instance Arbitrary SynchronyScope where
+  arbitrary = elements [SingleBranch, SiblingBranches, AllBranches]
+
+instance Arbitrary SynchronyStrategy where
+  arbitrary = elements [MergeRegularGroups, MergeAllGroups]
+
+instance Arbitrary Quality where
+  arbitrary = Quality <$> arbitrary <*> arbitrary
+
+instance Arbitrary TimeUnit where
+  arbitrary = oneof [ Epoch <$> arbitrary <*> arbitrary <*> arbitrary
+                    , Year <$> arbitrary <*> arbitrary <*> arbitrary
+                    , Month <$> arbitrary <*> arbitrary <*> arbitrary
+                    , Week <$> arbitrary <*> arbitrary <*> arbitrary
+                    , Day <$> arbitrary <*> arbitrary <*> arbitrary
+                    ]
+
+instance Arbitrary Cluster where
+  arbitrary = oneof [ Fis <$> arbitrary <*> arbitrary
+                    , MaxClique <$> arbitrary <*> arbitrary <*> arbitrary
+                    ]
+
+instance Arbitrary MaxCliqueFilter where
+  arbitrary = elements [ByThreshold, ByNeighbours]
+
+instance Arbitrary PhyloLabel where
+  arbitrary = oneof [ BranchLabel <$> arbitrary <*> arbitrary
+                    , GroupLabel <$> arbitrary <*> arbitrary
+                    ]
+
+instance Arbitrary Tagger where
+  arbitrary = elements [MostInclusive, MostEmergentInclusive, MostEmergentTfIdf]
+
+instance Arbitrary Sort where
+  arbitrary = oneof [ ByBirthDate <$> arbitrary
+                    , ByHierarchy <$> arbitrary]
+
+instance Arbitrary Order where
+  arbitrary = elements [Asc, Desc]
+
+instance Arbitrary Filter where
+  arbitrary = ByBranchSize <$> arbitrary
