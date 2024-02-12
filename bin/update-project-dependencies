@@ -2,9 +2,15 @@
 
 set -euxo pipefail
 
-DEFAULT_STORE=$HOME/.cabal
-STORE_DIR="${1:-$DEFAULT_STORE}"
-INDEX_STATE="2023-12-10T10:34:46Z"
+current_dir=$(basename "$PWD")
+
+if [ "$current_dir" == "bin" ]; then
+    source ./setup-ci-environment
+    ./install-cabal2stack
+else
+    source ./bin/setup-ci-environment
+    ./bin/install-cabal2stack
+fi
 
 # README!
 # Every time you modify the `cabal.project`, you have to make sure to update
@@ -14,20 +20,6 @@ INDEX_STATE="2023-12-10T10:34:46Z"
 # cache can kick in.
 expected_cabal_project_hash="3f5d6b7f26cac4aa5a7f87ba0227a7671041dfe46643ddef79512eb49bd876ec"
 expected_cabal_project_freeze_hash="745c65c246998cfda4d2a7a22df44a9f1f7fb0927e2afc2f16712861bf552c76"
-
-cabal --store-dir=$STORE_DIR v2-update "hackage.haskell.org,${INDEX_STATE}"
-
-# Install cabal2stack if it can't be found.
-if ! cabal2stack --help &> /dev/null
-then
-    echo "cabal2stack could not be found"
-    CURDIR=$PWD
-    git clone https://github.com/iconnect/cabal2stack.git cabal2stack-installer
-    cd cabal2stack-installer
-    cabal --store-dir=$STORE_DIR v2-install --index-state="${INDEX_STATE}" --overwrite-policy=always
-    cd $CURDIR
-    rm -rf cabal2stack-installer
-fi
 
 cabal --store-dir=$STORE_DIR v2-build --dry-run
 cabal2stack --system-ghc --allow-newer --resolver lts-21.17 --resolver-file devops/stack/lts-21.17.yaml -o stack.yaml
