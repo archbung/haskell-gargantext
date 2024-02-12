@@ -195,7 +195,7 @@ toPhyloDate' y  m  d _          = pack $ showGregorian $ fromGregorian (toIntege
 
 -- Utils
 
-writePhylo :: [Char] -> Phylo -> IO ()
+writePhylo :: HasCallStack => [Char] -> Phylo -> IO ()
 writePhylo path phylo = Lazy.writeFile path $ encode phylo
 
 

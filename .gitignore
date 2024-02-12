@@ -38,3 +38,6 @@ tmp*repo*json
 data
 
 devops/docker/js-cache
+
+cabal.project.local
+gargantext_profile_out.dot

@@ -17,6 +17,9 @@ license:        AGPL-3
 license-file:   LICENSE
 build-type:     Simple
 data-files:
+    bench-data/phylo/bpa-config.json
+    bench-data/phylo/GarganText_DocsList-nodeId-185487.csv
+    bench-data/phylo/GarganText_NgramsList-185488.csv
     bench-data/phylo/issue-290.json
     bench-data/phylo/issue-290-small.json
     devops/postgres/extensions.sql
@@ -846,8 +849,9 @@ executable gargantext-phylo
   main-is: Main.hs
   other-modules:
       Paths_gargantext
+      Common
   hs-source-dirs:
-      bin/gargantext-phylo
+      bin/gargantext-phylo bin/gargantext-phylo/Phylo
   default-extensions:
       DataKinds
       DeriveGeneric
@@ -1199,3 +1203,27 @@ benchmark garg-bench
   ghc-options:   "-with-rtsopts=-T -A32m"
   if impl(ghc >= 8.6)
     ghc-options: "-with-rtsopts=--nonmoving-gc"
+
+executable gargantext-phylo-profile
+  main-is: Main.hs
+  other-modules:
+      Paths_gargantext
+      Common
+  hs-source-dirs:
+      bin/gargantext-phylo-profile bin/gargantext-phylo/Phylo
+  default-extensions: GHC2021
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
+  build-depends:
+      base
+    , bytestring
+    , gargantext
+    , gargantext-prelude
+    , shelly
+    , text
+    , async
+    , cryptohash
+    , aeson
+    , split
+    , vector
+    , directory
+  default-language: Haskell2010

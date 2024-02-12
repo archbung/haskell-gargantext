@@ -1,32 +1,16 @@
-{-|
-Module      : Main.hs
-Description : Gargantext starter binary with Adaptative Phylo
-Copyright   : (c) CNRS, 2017-Present
-License     : AGPL + CECILL v3
-Maintainer  : team@gargantext.org
-Stability   : experimental
-Portability : POSIX
-
-Adaptative Phylo binaries
- -}
-
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeOperators      #-}
-{-# LANGUAGE Strict             #-}
-
-module Main where
+{-# LANGUAGE OverloadedStrings #-}
+module Common where
 
 import Control.Concurrent.Async (mapConcurrently)
 import Crypto.Hash.SHA256 (hash)
 import Data.Aeson
 import Data.ByteString.Char8 qualified as C8
-import Data.List  (nub, isSuffixOf, tail)
+import Data.List  (nub, tail)
 import Data.List.Split
 import Data.Maybe (fromJust)
 import Data.Text  (unpack, replace, pack)
 import Data.Text qualified as T
 import Data.Vector qualified as Vector
-import GHC.IO.Encoding
 import Gargantext.API.Ngrams.Prelude (toTermList)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.Text.Context (TermList)
@@ -38,15 +22,14 @@ import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, extractTerm
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.API.Tools
-import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
-import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
-import Gargantext.Core.Viz.Phylo.PhyloTools  (printIOMsg, printIOComment, setConfig, toPeriods, getTimePeriod, getTimeStep)
+import Gargantext.Core.Viz.Phylo.PhyloTools  (toPeriods, getTimePeriod, getTimeStep)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (hash, replace)
 import Prelude qualified
-import System.Directory (listDirectory,doesFileExist)
-import Common
+import System.Directory (listDirectory)
+
+data Backup = BackupPhyloWithoutLink | BackupPhylo deriving (Show)
 
 ---------------
 -- | Tools | --
@@ -144,7 +127,6 @@ fileToDocsDefault parser path timeUnits lst =
 -- dans le phyloMaker si default est true alors dans le setDefault ou pense à utiliser la TimeUnit de la conf 
 
 
-
 readListV4 :: [Char] -> IO NgramsList
 readListV4 path = do
   listJson <- (eitherDecode <$> readJson path) :: IO (Either Prelude.String NgramsList)
@@ -164,75 +146,84 @@ fileToList parser path =
       <$> readListV4 path
 
 
---------------
--- | Main | --
---------------
+---------------
+-- | Label | --
+---------------
 
 
-main :: IO ()
-main = do
+-- Config time parameters to label
+timeToLabel :: PhyloConfig -> [Char]
+timeToLabel config = case (timeUnit config) of
+      Epoch p s f -> ("time_epochs" <> "_" <> (show p) <> "_" <> (show s) <> "_" <> (show f))
+      Year  p s f -> ("time_years"  <> "_" <> (show p) <> "_" <> (show s) <> "_" <> (show f))
+      Month p s f -> ("time_months" <> "_" <> (show p) <> "_" <> (show s) <> "_" <> (show f))
+      Week  p s f -> ("time_weeks"  <> "_" <> (show p) <> "_" <> (show s) <> "_" <> (show f))
+      Day   p s f -> ("time_days"   <> "_" <> (show p) <> "_" <> (show s) <> "_" <> (show f))
 
-    setLocaleEncoding utf8
-    currentLocale <- getLocaleEncoding
-    printIOMsg $ "Machine locale: " <> show currentLocale
-    printIOMsg "Starting the reconstruction"
 
-    printIOMsg "Read the configuration file"
-    [args]   <- getArgs
-    jsonArgs <- (eitherDecode <$> readJson args) :: IO (Either Prelude.String PhyloConfig)
+seaToLabel :: PhyloConfig -> [Char]
+seaToLabel config = case (seaElevation config) of
+      Constante start step   -> ("sea_cst_"  <> (show start) <> "_" <> (show step))
+      Adaptative granularity -> ("sea_adapt" <> (show granularity))
+      Evolving _ -> ("sea_evolv")
 
-    case jsonArgs of
-        Left err     -> putStrLn err
-        Right config -> do
 
-            printIOMsg "Parse the corpus"
-            mapList <-  fileToList (listParser config) (listPath config)
+sensToLabel :: PhyloConfig -> [Char]
+sensToLabel config = case (similarity config) of
+      Hamming _ _ -> Prelude.error "sensToLabel: unimplemented"
+      WeightedLogJaccard s _ -> ("WeightedLogJaccard_"  <> show s)
+      WeightedLogSim s _ -> ( "WeightedLogSim-sens_"  <> show s)
 
-            corpus  <- if (defaultMode config)
-                        then fileToDocsDefault (corpusParser config) (corpusPath config) [Year 3 1 5,Month 3 1 5,Week 4 2 5] mapList
-                        else fileToDocsAdvanced (corpusParser config) (corpusPath config) (timeUnit config)  mapList
-            
-            printIOComment (show (length corpus) <> " parsed docs from the corpus")
 
-            printIOComment (show (length $ nub $ concat $ map text corpus) <> " Size ngs_coterms")
+cliqueToLabel :: PhyloConfig -> [Char]
+cliqueToLabel config = case (clique config) of
+      Fis s s' -> "fis_" <> (show s) <> "_" <> (show s')
+      MaxClique s t f ->  "clique_" <> (show s)<> "_"  <> (show f)<> "_"  <> (show t)
 
-            printIOComment (show (length mapList) <> " Size ngs_terms List Map Ngrams")
 
-            printIOMsg "Reconstruct the phylo"
+syncToLabel :: PhyloConfig -> [Char]
+syncToLabel config = case (phyloSynchrony config) of
+      ByProximityThreshold scl sync_sens scope _ -> ("scale_" <> (show scope) <> "_" <> (show sync_sens)  <> "_"  <> (show scl))
+      ByProximityDistribution _ _ -> "syncToLabel: unimplemented"
 
-            -- check the existing backup files
+qualToConfig :: PhyloConfig -> [Char]
+qualToConfig config = case (phyloQuality config) of
+      Quality g m -> "quality_" <> (show g) <> "_" <> (show m)
 
-            let backupPhyloWithoutLink = (outputPath config) <> "backupPhyloWithoutLink_" <> (configToSha BackupPhyloWithoutLink config) <> ".json"
-            let backupPhylo = (outputPath config) <> "backupPhylo_"   <> (configToSha BackupPhylo config) <> ".json"
 
-            phyloWithoutLinkExists <- doesFileExist backupPhyloWithoutLink
-            phyloExists   <- doesFileExist backupPhylo
+-- To set up the export file's label from the configuration
+configToLabel :: PhyloConfig -> [Char]
+configToLabel config = outputPath config
+                    <> (unpack $ phyloName config)
+                    <> "-" <> (timeToLabel config)
+                    <> "-scale_" <> (show (phyloScale config))
+                    <> "-" <> (seaToLabel config)
+                    <> "-" <> (sensToLabel config)
+                    <> "-" <> (cliqueToLabel config)
+                    <> "-level_" <> (show (_qua_granularity $ phyloQuality config))
+                    <> "-" <> (syncToLabel config)
+                    <> ".dot"
 
-            -- reconstruct the phylo
 
-            phylo <- if phyloExists
-                        then do
-                          printIOMsg "Reconstruct the phylo from an existing file"
-                          readPhylo backupPhylo
-                        else do
-                          if phyloWithoutLinkExists
-                            then do
-                              printIOMsg "Reconstruct the phylo from an existing file without links"
-                              phyloWithoutLink <- readPhylo backupPhyloWithoutLink
-                              writePhylo backupPhyloWithoutLink phyloWithoutLink
-                              pure $ toPhylo (setConfig config phyloWithoutLink)
-                            else do
-                              printIOMsg "Reconstruct the phylo from scratch"
-                              phyloWithoutLink <- pure $ toPhyloWithoutLink corpus config
-                              writePhylo backupPhyloWithoutLink phyloWithoutLink
-                              pure $ toPhylo (setConfig config phyloWithoutLink)
+-- To write a sha256 from a set of config's parameters
+configToSha :: Backup -> PhyloConfig -> [Char]
+configToSha stage config = unpack
+                         $ replace "/" "-"
+                         $ T.pack (show (hash $ C8.pack label))
+  where
+    label :: [Char]
+    label = case stage of
+      BackupPhyloWithoutLink -> (corpusPath    config)
+                       <> (listPath      config)
+                       <> (timeToLabel   config)
+                       <> (cliqueToLabel config)
+      BackupPhylo   -> (corpusPath    config)
+                       <> (listPath      config)
+                       <> (timeToLabel   config)
+                       <> (cliqueToLabel config)
+                       <> (sensToLabel   config)
+                       <> (seaToLabel    config)
+                       <> (syncToLabel   config)
+                       <> (qualToConfig  config)
+                       <> (show (phyloScale config))
 
-            writePhylo backupPhylo phylo
-
-            printIOMsg "End of reconstruction, start the export"
-
-            let dot = toPhyloExport (setConfig config phylo)
-
-            let output = configToLabel config
-
-            dotToFile output dot

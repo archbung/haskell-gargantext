@@ -64,10 +64,11 @@ instance ToNamedRecord CsvList where
                 ]
 ------------------------------------------------------------------------
 instance FromField CsvListType where
-    parseField "map"  = pure CsvMap
-    parseField "main" = pure CsvCandidate
-    parseField "stop" = pure CsvStop
-    parseField _      = mzero
+    parseField "map"       = pure CsvMap
+    parseField "main"      = pure CsvCandidate
+    parseField "candidate" = pure CsvCandidate -- backward compat
+    parseField "stop"      = pure CsvStop
+    parseField _           = mzero
 
 instance ToField CsvListType where
     toField CsvMap       = "map"

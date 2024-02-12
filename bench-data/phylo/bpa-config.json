@@ -1,0 +1,68 @@
+{
+    "corpusPath"     : "Gargantext_DocsList-nodeId-185487.csv",
+    "listPath"       : "Gargantext_NgramsList-185488.csv",
+    "outputPath"     : "data",
+    "corpusParser"   : {
+        "tag" : "Csv",
+        "_csv_limit" : 1500000
+    },
+    "listParser" : "V3",
+    "phyloName"      : "bpa",
+    "phyloScale"     : 2,
+    "similarity" : {
+        "tag" : "WeightedLogJaccard",
+        "_wlj_sensibility" : 0.5,
+        "_wlj_minSharedNgrams" : 1
+    },
+    "seaElevation" : {
+        "tag" : "Evolving",
+        "_evol_neighborhood" : true
+    },
+    "defaultMode" : false,
+    "findAncestors" : true,
+    "phyloSynchrony" : {
+        "tag" : "ByProximityThreshold",
+        "_bpt_threshold" : 0.6,
+        "_bpt_sensibility" : 0,
+        "_bpt_scope" : "AllBranches",
+        "_bpt_strategy" : "MergeAllGroups"
+    },
+    "phyloQuality" : {
+        "tag" : "Quality",
+        "_qua_granularity" : 0.1,
+        "_qua_minBranch" : 2
+    },
+    "timeUnit" : {
+        "tag" : "Week",
+        "_week_period" : 4,
+        "_week_step" : 2,
+        "_week_matchingFrame" : 5
+    },
+    "clique" : {
+        "tag" : "Fis",
+        "_fis_support" : 3,
+        "_fis_size" : 1
+    },
+    "exportLabel" : [
+        {
+            "tag" : "BranchLabel",
+            "_branch_labelTagger" : "MostEmergentTfIdf",
+            "_branch_labelSize" : 2
+        },
+        {
+            "tag" : "GroupLabel",
+            "_group_labelTagger" : "MostEmergentInclusive",
+            "_group_labelSize" : 2
+        }
+    ],
+    "exportSort" : {
+        "tag" : "ByHierarchy",
+	    "_sort_order" : "Desc"
+    },
+    "exportFilter" : [
+        {
+            "tag" : "ByBranchSize",
+            "_branch_size" : 2
+        }
+    ]
+}
