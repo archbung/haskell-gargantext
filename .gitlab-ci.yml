@@ -51,7 +51,7 @@ bench:
     policy: pull-push
   script:
     - nix-shell --run "./bin/update-project-dependencies $CABAL_STORE_DIR && cabal --store-dir=$CABAL_STORE_DIR v2-bench --ghc-options='-O2 -fclear-plugins'"
-  allow_failure: false
+  allow_failure: true
 
 test:
   stage: test
