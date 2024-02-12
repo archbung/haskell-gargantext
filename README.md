@@ -189,6 +189,18 @@ From the Backend root folder (haskell-gargantext):
 
 For frontend development and compilation, see the [Frontend Readme.md](https://gitlab.iscpif.fr/gargantext/purescript-gargantext#dev)
 
+### Running tests
+
+From nix shell:
+
+```
+cabal v2-test --test-show-details=streaming
+```
+
+Or, from "outside":
+```
+nix-shell --run "cabal v2-test --test-show-details=streaming"
+```
 ### Working on libraries
 
 When a devlopment is needed on libraries (for instance, the HAL crawler in https://gitlab.iscpif.fr/gargantext/crawlers):

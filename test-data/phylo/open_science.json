@@ -1314,5 +1314,73 @@
         "phyloSeaRiseSteps": "0.1"
     },
     "pd_listId": 185785,
-    "pd_corpusId": 185783
+    "pd_corpusId": 185783,
+    "pd_config": {
+        "clique": {
+            "_mcl_filter": "ByThreshold",
+            "_mcl_size": 5,
+            "_mcl_threshold": 1.0e-4,
+            "tag": "MaxClique"
+        },
+        "corpusParser": {
+            "_csv_limit": 150000,
+            "tag": "Csv"
+        },
+        "corpusPath": "corpus.csv",
+        "defaultMode": false,
+        "exportFilter": [
+            {
+                "_branch_size": 3
+            }
+        ],
+        "exportLabel": [
+            {
+                "_branch_labelSize": 2,
+                "_branch_labelTagger": "MostEmergentTfIdf",
+                "tag": "BranchLabel"
+            },
+            {
+                "_group_labelSize": 2,
+                "_group_labelTagger": "MostEmergentInclusive",
+                "tag": "GroupLabel"
+            }
+        ],
+        "exportSort": {
+            "_sort_order": "Desc",
+            "tag": "ByHierarchy"
+        },
+        "findAncestors": true,
+        "listParser": "V4",
+        "listPath": "list.csv",
+        "outputPath": "data/",
+        "phyloName": "Phylo Name",
+        "phyloQuality": {
+            "_qua_granularity": 0.8,
+            "_qua_minBranch": 3
+        },
+        "phyloScale": 2,
+        "phyloSynchrony": {
+            "_bpt_scope": "AllBranches",
+            "_bpt_sensibility": 0,
+            "_bpt_strategy": "MergeAllGroups",
+            "_bpt_threshold": 0.5,
+            "tag": "ByProximityThreshold"
+        },
+        "seaElevation": {
+            "_cons_gap": 0.1,
+            "_cons_start": 0.1,
+            "tag": "Constante"
+        },
+        "similarity": {
+            "_wlj_minSharedNgrams": 2,
+            "_wlj_sensibility": 0.5,
+            "tag": "WeightedLogJaccard"
+        },
+        "timeUnit": {
+            "_year_matchingFrame": 5,
+            "_year_period": 3,
+            "_year_step": 1,
+            "tag": "Year"
+        }
+    }
 }
