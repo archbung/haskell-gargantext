@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+current_dir=$(basename "$PWD")
+
+if [ "$current_dir" == "bin" ]; then
+    source ./setup-ci-environment
+else
+    source ./bin/setup-ci-environment
+fi
+
+cabal --store-dir=$STORE_DIR v2-update "hackage.haskell.org,${INDEX_STATE}"
+
+# Install cabal2stack if it can't be found.
+if ! cabal2stack --help &> /dev/null
+then
+    echo "cabal2stack could not be found"
+    CURDIR=$PWD
+    git clone https://github.com/iconnect/cabal2stack.git cabal2stack-installer
+    cd cabal2stack-installer
+    cabal --store-dir=$STORE_DIR v2-install --index-state="${INDEX_STATE}" --overwrite-policy=always
+    cd $CURDIR
+    rm -rf cabal2stack-installer
+fi

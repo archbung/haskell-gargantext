@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euxo pipefail
+
+DEFAULT_STORE=$HOME/.cabal
+STORE_DIR="${1:-$DEFAULT_STORE}"
+INDEX_STATE="2023-12-10T10:34:46Z"
