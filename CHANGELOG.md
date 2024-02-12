@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.5
+
+* [BACK][CI][Improving CI](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/merge_requests/247)
+* [FRONT][ERGO][Display Phylomemy parameters (#580)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/580)
+
 ## Version 0.0.6.9.9.9.4.9.3
 
 * [FRONT][FIX][Try to invite someone without email (#600)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/600)
