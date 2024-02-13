@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.6
+
+* [FIX] Graph Order 2B to remove Order 2A.
+
 ## Version 0.0.6.9.9.9.5
 
 * [BACK][CI][Improving CI](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/merge_requests/247)
