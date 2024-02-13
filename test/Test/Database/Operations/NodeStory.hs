@@ -20,9 +20,9 @@ import Data.Map.Strict.Patch qualified as PM
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PSQL
 import Database.PostgreSQL.Simple.SqlQQ
-import Gargantext.API.Ngrams (commitStatePatch, mSetFromList, setListNgrams, saveNodeStoryImmediate)
+import Gargantext.API.Ngrams (commitStatePatch, mSetFromList, setListNgrams, saveNodeStory)
 import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_children, nre_list, nre_parent, nre_root)
-import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
+import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.Core.NodeStory hiding (runPGSQuery)
 import Gargantext.Core.Types.Individu
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, UserId)
@@ -35,13 +35,12 @@ import Gargantext.Database.Query.Tree.Root
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
-import GHC.Conc (TVar, readTVar)
 import Test.Database.Types
 import Test.Hspec.Expectations
 import Test.Tasty.HUnit
 
 
-commonInitialization :: TestMonad ( UserId, NodeId, ListId, TVar NodeListStory )
+commonInitialization :: TestMonad ( UserId, NodeId, ListId, ArchiveList )
 commonInitialization = do
   let user = UserName userMaster
   parentId <- getRootId user
@@ -52,9 +51,9 @@ commonInitialization = do
 
   listId <- getOrMkList corpusId userId
 
-  v <- getNodeStoryVar [listId]
+  a <- getNodeStory listId
 
-  pure $ (userId, corpusId, listId, v)
+  pure $ (userId, corpusId, listId, a)
 
 
 initArchiveList :: ArchiveList
@@ -90,7 +89,7 @@ simpleChildTerm = ( simpleChildTerm'
 createListTest :: TestEnv -> Assertion
 createListTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (userId, corpusId, listId, _v) <- commonInitialization
+    (userId, corpusId, listId, _a) <- commonInitialization
 
     listId' <- getOrMkList corpusId userId
     
@@ -100,28 +99,32 @@ createListTest env = do
 queryNodeStoryTest :: TestEnv -> Assertion
 queryNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, a) <- commonInitialization
 
-    saveNodeStoryImmediate
-    
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId initArchiveList)
+      a `shouldBe` initArchiveList
+
+    saveNodeStory listId a
+
+    a' <- getNodeStory listId
+
+    liftIO $ do
+      a' `shouldBe` a
   
 
 insertNewTermsToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, _a) <- commonInitialization
 
     let (terms, nre) = simpleTerm
     let nls = Map.singleton terms nre
     setListNgrams listId NgramsTerms nls
-    
+
+    a <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
+      a `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nls })
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [unNgramsTerm terms]
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
@@ -139,7 +142,7 @@ insertNewTermsToNodeStoryTest env = do
 insertNewTermsWithChildrenToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsWithChildrenToNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, _a) <- commonInitialization
 
     let (tParent, nreParent) = simpleParentTerm
     let (tChild, nreChild) = simpleChildTerm
@@ -148,10 +151,10 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
     setListNgrams listId NgramsTerms nls
 
+    a <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
+      a `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nls })
 
     -- `setListNgrams` calls saveNodeStory already so we should have
     -- the terms in the DB by now
@@ -178,7 +181,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest :: TestEnv -> Assertion
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, _a) <- commonInitialization
 
     let (tParent, nreParent) = simpleParentTerm
     let (tChild, nreChildGoodType) = simpleChildTerm
@@ -190,10 +193,10 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
     
     setListNgrams listId NgramsTerms nls
 
+    a <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId 
-                      (initArchiveList { _a_state = Map.singleton NgramsTerms nlsWithChildFixed }))
+      a `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nlsWithChildFixed })
 
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
@@ -216,16 +219,16 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
 setListNgramsUpdatesNodeStoryTest :: TestEnv -> Assertion
 setListNgramsUpdatesNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, _a) <- commonInitialization
 
     let (terms, nre) = simpleTerm
     let nls = Map.singleton terms nre
     setListNgrams listId NgramsTerms nls
-    
+
+    a <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
+      a `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nls })
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [unNgramsTerm terms]
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
@@ -238,27 +241,27 @@ setListNgramsUpdatesNodeStoryTest env = do
     let terms2 = "WORLD"
     let nls2 = Map.singleton (NgramsTerm terms2) nre2
     setListNgrams listId NgramsTerms nls2
-                                        
+
+    a' <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms $ nls <> nls2 }))
+      a' `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms $ nls <> nls2 })
 
 
 setListNgramsUpdatesNodeStoryWithChildrenTest :: TestEnv -> Assertion
 setListNgramsUpdatesNodeStoryWithChildrenTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, _a) <- commonInitialization
 
     let (tChild, nreChild) = simpleChildTerm
     let (tParent, nreParent) = simpleParentTerm
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
     setListNgrams listId NgramsTerms nls
-    
+
+    a <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls }))
+      a `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nls })
 
     -- OK, now we substitute parent with no children, the parent of
     -- 'nreChild' should become Nothing
@@ -270,22 +273,20 @@ setListNgramsUpdatesNodeStoryWithChildrenTest env = do
                                , _nre_root = Nothing }
     let nlsNew = Map.fromList [(tParent, nreParentNew), (tChild, nreChildNew)]
 
+    a' <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms nlsNew }))
+      a' `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nlsNew })
 
 
 commitPatchSimpleTest :: TestEnv -> Assertion
 commitPatchSimpleTest env = do
   flip runReaderT env $ runTestMonad $ do
-    (_userId, _corpusId, listId, v) <- commonInitialization
+    (_userId, _corpusId, listId, a) <- commonInitialization
 
     -- initially, the node story table is empty
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.empty }))
+      a `shouldBe` (initArchiveList { _a_state = Map.empty })
 
     let (term, nre) = simpleTerm
     let tPatch = NgramsReplace { _patch_old = Nothing
@@ -298,9 +299,9 @@ commitPatchSimpleTest env = do
     _patchApplied <- commitStatePatch listId patch
 
     let nls = Map.fromList [(term, nre)]
-    
+
+    a' <- getNodeStory listId
+
     liftIO $ do
-      ns <- atomically $ readTVar v
-      ns `shouldBe` (NodeStory $ Map.singleton listId
-                       (initArchiveList { _a_state = Map.singleton NgramsTerms nls
-                                        , _a_version = ver + 1 }))
+      a' `shouldBe` (initArchiveList { _a_state = Map.singleton NgramsTerms nls
+                                     , _a_version = ver + 1 })

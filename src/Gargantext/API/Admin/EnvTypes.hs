@@ -136,9 +136,6 @@ instance HasConnectionPool Env where
 instance HasNodeStoryEnv Env where
   hasNodeStory = env_nodeStory
 
-instance HasNodeStoryVar Env where
-  hasNodeStoryVar = hasNodeStory . nse_getter
-
 instance HasNodeStoryImmediateSaver Env where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
 
@@ -313,9 +310,6 @@ instance HasSettings DevEnv where
 
 instance HasNodeStoryEnv DevEnv where
   hasNodeStory = dev_env_nodeStory
-
-instance HasNodeStoryVar DevEnv where
-  hasNodeStoryVar = hasNodeStory . nse_getter
 
 instance HasNodeStoryImmediateSaver DevEnv where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate

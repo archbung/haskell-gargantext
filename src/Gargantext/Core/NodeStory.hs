@@ -40,42 +40,15 @@ TODO:
 - charger les listes
 -}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
 module Gargantext.Core.NodeStory
-  ( HasNodeStory
-  , HasNodeStoryEnv
-  , hasNodeStory
-  , HasNodeStoryVar
-  , hasNodeStoryVar
-  , HasNodeStoryImmediateSaver
-  , hasNodeStoryImmediateSaver
-  , HasNodeArchiveStoryImmediateSaver
-  , hasNodeArchiveStoryImmediateSaver
-  , NodeStory(..)
-  , NgramsStatePatch'
-  , NodeListStory
-  , ArchiveList
-  , initNodeListStoryMock
-  , NodeStoryEnv(..)
-  , initNodeStory
-  , nse_getter
-  , nse_saver_immediate
-  , nse_archive_saver_immediate
-  , nse_var
-  , unNodeStory
+  ( module Gargantext.Core.NodeStory.Types
   , getNodesArchiveHistory
   , Archive(..)
-  , initArchive
-  , archiveAdvance
-  , unionArchives
-  , a_history
-  , a_state
-  , a_version
   , nodeExists
   , runPGSQuery
   , runPGSAdvisoryLock
@@ -84,7 +57,7 @@ module Gargantext.Core.NodeStory
   , getNodesIdWithType
   , fromDBNodeStoryEnv
   , upsertNodeStories
-  , getNodeStory
+  -- , getNodeStory
   , nodeStoriesQuery
   , currentVersion
   , archiveStateFromList
@@ -92,208 +65,29 @@ module Gargantext.Core.NodeStory
   , fixNodeStoryVersions )
 where
 
-import Codec.Serialise.Class
-import Control.Lens (makeLenses, Getter, (^.), (.~), (%~), non, _Just, at, view)
+import Control.Lens ((^.), (.~), (%~), non, _Just, at, view)
 import Control.Monad.Except
-import Control.Monad.Reader
-import Data.Aeson hiding ((.=), decode)
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
 import Data.Monoid
 import Data.Pool (Pool, withResource)
-import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Semigroup
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PGS
-import Database.PostgreSQL.Simple.FromField (FromField(fromField), fromJSONField)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.ToField qualified as PGS
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import GHC.Conc (TVar, newTVar, readTVar, writeTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (toDBid)
+import Gargantext.Core.NodeStory.Types
 import Gargantext.Core.Types (ListId, NodeId(..), NodeType)
-import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config ()
-import Gargantext.Database.Prelude (DbCmd', HasConnectionPool(..))
+import Gargantext.Database.Prelude (HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
-import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Database
-import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
-
-------------------------------------------------------------------------
-data NodeStoryEnv = NodeStoryEnv
-  { _nse_var    :: !(TVar NodeListStory)
-  , _nse_saver_immediate :: !(IO ())
-  , _nse_archive_saver_immediate :: !(NodeListStory -> IO NodeListStory)
-  , _nse_getter :: !([NodeId] -> IO (TVar NodeListStory))
-  --, _nse_cleaner :: !(IO ()) -- every 12 hours: cleans the repos of unused NodeStories
-  -- , _nse_lock  :: !FileLock -- TODO (it depends on the option: if with database or file only)
-  }
-  deriving (Generic)
-
-type HasNodeStory env err m = ( DbCmd' env err m
-                              , MonadReader env m
-                              , MonadError  err m
-                              , HasNodeStoryEnv env
-                              , HasNodeError err
-                              )
-
-class (HasNodeStoryVar env, HasNodeStoryImmediateSaver env)
-  => HasNodeStoryEnv env where
-    hasNodeStory :: Getter env NodeStoryEnv
-
-class HasNodeStoryVar env where
-  hasNodeStoryVar :: Getter env ([NodeId] -> IO (TVar NodeListStory))
-
-class HasNodeStoryImmediateSaver env where
-  hasNodeStoryImmediateSaver :: Getter env (IO ())
-
-class HasNodeArchiveStoryImmediateSaver env where
-  hasNodeArchiveStoryImmediateSaver :: Getter env (NodeListStory -> IO NodeListStory)
-
-------------------------------------------------------------------------
-
-{- | Node Story for each NodeType where the Key of the Map is NodeId
-  TODO : generalize for any NodeType, let's start with NodeList which
-  is implemented already
--}
-newtype NodeStory s p = NodeStory { _unNodeStory :: Map NodeId (Archive s p) }
-  deriving (Generic, Show, Eq)
-
-instance (FromJSON s, FromJSON p) => FromJSON (NodeStory s p)
-instance (ToJSON s, ToJSON p) => ToJSON (NodeStory s p)
-instance (Serialise s, Serialise p) => Serialise (NodeStory s p)
-
-data Archive s p = Archive
-  { _a_version           :: !Version
-  , _a_state             :: !s
-  , _a_history           :: ![p]
-    -- first patch in the list is the most recent
-    -- We use `take` in `commitStatePatch`, that's why.
-
-    -- History is immutable, we just insert things on top of existing
-    -- list.
-
-    -- We don't need to store the whole history in memory, this
-    -- structure holds only recent history, the one that will be
-    -- inserted to the DB.
-  }
-  deriving (Generic, Show, Eq)
-
-instance (Serialise s, Serialise p) => Serialise (Archive s p)
-
-
-type NodeListStory     = NodeStory NgramsState' NgramsStatePatch'
-
--- NOTE: 'type NgramsTableMap = Map NgramsTerm NgramsRepoElement'
-type NgramsState'      = Map       TableNgrams.NgramsType NgramsTableMap
-type NgramsStatePatch' = PatchMap  TableNgrams.NgramsType NgramsTablePatch
-instance Serialise NgramsStatePatch'
-instance FromField (Archive NgramsState' NgramsStatePatch')
-  where
-    fromField = fromJSONField
-instance DefaultFromField SqlJsonb (Archive NgramsState' NgramsStatePatch')
-  where
-    defaultFromField = fromPGSFromField
-
--- | Combine `NgramsState'`. This is because the structure is (Map
--- NgramsType (Map ...)) and the default `(<>)` operator is
--- left-biased
--- (https://hackage.haskell.org/package/containers-0.6.6/docs/Data-Map-Internal.html#v:union)
-combineState :: NgramsState' -> NgramsState' -> NgramsState'
-combineState = Map.unionWith (<>)
-
--- This is not a typical Semigroup instance. The state is not
--- appended, instead it is replaced with the second entry. This is
--- because state changes with each version. We have to take into
--- account the removal of terms as well.
--- instance (Semigroup s, Semigroup p) => Semigroup (Archive s p) where
---   (<>) (Archive { _a_history = p }) (Archive { _a_version = v'
---                                              , _a_state = s'
---                                              , _a_history = p' }) =
---     Archive { _a_version = v'
---             , _a_state = s'
---             , _a_history = p' <> p }
--- instance (Monoid s, Semigroup p) => Monoid (Archive s p) where
---   mempty = Archive { _a_version = 0
---                    , _a_state = mempty
---                    , _a_history = [] }
-instance (FromJSON s, FromJSON p) => FromJSON (Archive s p) where
-  parseJSON = genericParseJSON $ unPrefix "_a_"
-instance (ToJSON s, ToJSON p) => ToJSON (Archive s p) where
-  toJSON     = genericToJSON     $ unPrefix "_a_"
-  toEncoding = genericToEncoding $ unPrefix "_a_"
-
--- | This is the normal way to update archive state, bumping the
--- version and history. Resulting state is taken directly from new
--- archive, omitting old archive completely.
-archiveAdvance :: (Semigroup s, Semigroup p) => Archive s p -> Archive s p -> Archive s p
-archiveAdvance aOld aNew = aNew { _a_history = _a_history aNew <> _a_history aOld }
-
--- | This is to merge archive states.
-unionArchives :: (Semigroup s, Semigroup p) => Archive s p -> Archive s p -> Archive s p
-unionArchives aOld aNew = aNew { _a_state = _a_state aOld <> _a_state aNew
-                               , _a_history = _a_history aNew <> _a_history aOld }
-
-
-------------------------------------------------------------------------
-initNodeStory :: (Monoid s, Semigroup p) => NodeId -> NodeStory s p
-initNodeStory ni = NodeStory $ Map.singleton ni initArchive
-
-initArchive :: (Monoid s, Semigroup p) => Archive s p
-initArchive = Archive { _a_version = 0
-                      , _a_state = mempty
-                      , _a_history = [] }
-
-initNodeListStoryMock :: NodeListStory
-initNodeListStoryMock = NodeStory $ Map.singleton nodeListId archive
-  where
-    nodeListId = 0
-    archive = Archive { _a_version = 0
-                      , _a_state = ngramsTableMap
-                      , _a_history = [] }
-    ngramsTableMap = Map.singleton TableNgrams.NgramsTerms
-                   $ Map.fromList
-                   [ (n ^. ne_ngrams, ngramsElementToRepo n)
-                   | n <- mockTable ^. _NgramsTable
-                   ]
-
-------------------------------------------------------------------------
-------------------------------------------------------------------------
--- | Lenses at the bottom of the file because Template Haskell would reorder order of execution in others cases
-makeLenses ''NodeStoryEnv
-makeLenses ''NodeStory
-makeLenses ''Archive
-
-----------------------------------------------------------------------
-data NodeStoryPoly nid v ngtid ngid nre =
-  NodeStoryDB { node_id             :: !nid
-              , version             :: !v
-              , ngrams_type_id      :: !ngtid
-              , ngrams_id           :: !ngid
-              , ngrams_repo_element :: !nre }
-  deriving (Eq)
-
-data NodeStoryArchivePoly nid a =
-  NodeStoryArchiveDB { a_node_id :: !nid
-                     , archive   :: !a }
-  deriving (Eq)
-
-$(makeAdaptorAndInstance "pNodeStory" ''NodeStoryPoly)
-$(makeAdaptorAndInstance "pNodeArchiveStory" ''NodeStoryArchivePoly)
-
--- type NodeStoryWrite = NodeStoryPoly (Column SqlInt4) (Column SqlInt4) (Column SqlInt4) (Column SqlInt4) (Column SqlJsonb)
--- type NodeStoryRead = NodeStoryPoly (Column SqlInt4) (Column SqlInt4) (Column SqlInt4) (Column SqlInt4) (Column SqlJsonb)
-
--- type NodeStoryArchiveWrite = NodeStoryArchivePoly (Column SqlInt4) (Column SqlJsonb)
--- type NodeStoryArchiveRead = NodeStoryArchivePoly (Column SqlInt4) (Column SqlJsonb)
-
-type ArchiveList = Archive NgramsState' NgramsStatePatch'
 
 -- DB stuff
 
@@ -366,8 +160,8 @@ insertNodeArchiveHistory c nodeId version (h:hs) = do
                 VALUES (?, ?, ?, ?, ?)
                 |]
 
-getNodeStory :: PGS.Connection -> NodeId -> IO NodeListStory
-getNodeStory c nId = do
+getNodeStory' :: PGS.Connection -> NodeId -> IO ArchiveList
+getNodeStory' c nId = do
   --res <- withResource pool $ \c -> runSelect c query :: IO [NodeStoryPoly NodeId Version Int Int NgramsRepoElement]
   res <- runPGSQuery c nodeStoriesQuery (PGS.Only $ PGS.toField nId) :: IO [(Version, TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
   -- We have multiple rows with same node_id and different (ngrams_type_id, ngrams_id).
@@ -390,11 +184,18 @@ getNodeStory c nId = do
     pure ()
 -}
 
-  pure $ NodeStory $ Map.singleton nId $ foldl combine initArchive dbData
+  pure $ foldl combine initArchive dbData
   where
     -- NOTE (<>) for Archive doesn't concatenate states, so we have to use `combine`
     combine a1 a2 = a1 & a_state %~ combineState (a2 ^. a_state)
                        & a_version .~ (a2 ^. a_version)  -- version should be updated from list, not taken from the empty Archive
+
+
+getNodeStory :: PGS.Connection -> NodeId -> IO NodeListStory
+getNodeStory c nId = do
+  a <- getNodeStory' c nId
+  pure $ NodeStory $ Map.singleton nId a
+
 
 nodeStoriesQuery :: PGS.Query
 nodeStoriesQuery = [sql| SELECT version, ngrams_type_id, terms, ngrams_repo_element
@@ -402,9 +203,6 @@ nodeStoriesQuery = [sql| SELECT version, ngrams_type_id, terms, ngrams_repo_elem
                            JOIN ngrams ON ngrams.id = ngrams_id
                            WHERE node_id = ?
                            |]
-
-type ArchiveStateList = [(TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
-type ArchiveStateSet = Set.Set (TableNgrams.NgramsType, NgramsTerm)
 
 -- |Functions to convert archive state (which is a `Map NgramsType
 --  (Map NgramsTerm NgramsRepoElement`)) to/from a flat list
@@ -523,13 +321,6 @@ updateNodeStory c nodeId currentArchive newArchive = do
   --                   , uWhere      = (\row -> node_id row .== sqlInt4 nId)
   --                   , uReturning  = rCount }
 
--- nodeStoryRemove :: Pool PGS.Connection -> NodeId -> IO Int64
--- nodeStoryRemove pool (NodeId nId) = withResource pool $ \c -> runDelete c delete
---   where
---     delete = Delete { dTable     = nodeStoryTable
---                     , dWhere     = (\row -> node_id row .== sqlInt4 nId)
---                     , dReturning = rCount }
-
 upsertNodeStories :: PGS.Connection -> NodeId -> ArchiveList -> IO ()
 upsertNodeStories c nodeId newArchive = do
   -- printDebug "[upsertNodeStories] START nId" nId
@@ -562,10 +353,6 @@ updateNodeStoryVersion c nodeId newArchive = do
                 WHERE node_id = ?
                 AND ngrams_type_id = ?|]
 
-writeNodeStories :: PGS.Connection -> NodeListStory -> IO ()
-writeNodeStories c (NodeStory nls) = do
-  mapM_ (\(nId, a) -> upsertNodeStories c nId a) $ Map.toList nls
-
 -- | Returns a `NodeListStory`, updating the given one for given `NodeId`
 nodeStoryInc :: PGS.Connection -> NodeListStory -> NodeId -> IO NodeListStory
 nodeStoryInc c ns@(NodeStory nls) nId = do
@@ -575,34 +362,10 @@ nodeStoryInc c ns@(NodeStory nls) nId = do
       pure $ NodeStory $ Map.unionWith archiveAdvance nls' nls
     Just _ -> pure ns
 
-nodeStoryIncrementalRead :: PGS.Connection -> Maybe NodeListStory -> [NodeId] -> IO NodeListStory
-nodeStoryIncrementalRead _ Nothing [] = pure $ NodeStory $ Map.empty
-nodeStoryIncrementalRead c Nothing (ni:ns) = do
-  m <- getNodeStory c ni
-  nodeStoryIncrementalRead c (Just m) ns
-nodeStoryIncrementalRead c (Just nls) ns = foldM (\m n -> nodeStoryInc c m n) nls ns
-
--- nodeStoryDec :: Pool PGS.Connection -> NodeListStory -> NodeId -> IO NodeListStory
--- nodeStoryDec pool ns@(NodeStory nls) ni = do
---   case Map.lookup ni nls of
---     Nothing -> do
---       _ <- nodeStoryRemove pool ni
---       pure ns
---     Just _ -> do
---       let ns' = Map.filterWithKey (\k _v -> k /= ni) nls
---       _ <- nodeStoryRemove pool ni
---       pure $ NodeStory ns'
-------------------------------------
-
 -- | NgramsRepoElement contains, in particular, `nre_list`,
 -- `nre_parent` and `nre_children`. We want to make sure that all
 -- children entries (i.e. ones that have `nre_parent`) have the same
 -- `list` as their parent entry.
-fixChildrenTermTypes :: NodeListStory -> NodeListStory
-fixChildrenTermTypes (NodeStory nls) =
-  NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenInNgramsStatePatch)
-                           | (nId, a) <- Map.toList nls ]
-
 fixChildrenInNgramsStatePatch :: NgramsState' -> NgramsState'
 fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
   where
@@ -623,11 +386,6 @@ fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildre
 -- | Sometimes, when we upload a new list, a child can be left without
 -- a parent. Find such ngrams and set their 'root' and 'parent' to
 -- 'Nothing'.
-fixChildrenWithNoParent :: NodeListStory -> NodeListStory
-fixChildrenWithNoParent (NodeStory nls) =
-  NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenWithNoParentStatePatch)
-                           | (nId, a) <- Map.toList nls ]
-
 fixChildrenWithNoParentStatePatch :: NgramsState' -> NgramsState'
 fixChildrenWithNoParentStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
   where
@@ -654,49 +412,36 @@ fixChildrenWithNoParentStatePatch ns = archiveStateFromList $ nsParents <> nsChi
 
 fromDBNodeStoryEnv :: Pool PGS.Connection -> IO NodeStoryEnv
 fromDBNodeStoryEnv pool = do
-  tvar <- nodeStoryVar pool Nothing []
-  let saver_immediate = do
-        ns <- atomically $
-              readTVar tvar
-              -- fix children so their 'list' is the same as their parents'
-              >>= pure . fixChildrenTermTypes
-              -- fix children that don't have a parent anymore
-              >>= pure . fixChildrenWithNoParent
-              >>= writeTVar tvar
-              >> readTVar tvar
+  -- tvar <- nodeStoryVar pool Nothing []
+  let saver_immediate nId a = do
+        -- ns <- atomically $
+        --       readTVar tvar
+        --       -- fix children so their 'list' is the same as their parents'
+        --       >>= pure . fixChildrenTermTypes
+        --       -- fix children that don't have a parent anymore
+        --       >>= pure . fixChildrenWithNoParent
+        --       >>= writeTVar tvar
+        --       >> readTVar tvar
         withResource pool $ \c -> do
           --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
-          writeNodeStories c ns
-  let archive_saver_immediate ns@(NodeStory nls) = withResource pool $ \c -> do
-        mapM_ (\(nId, a) -> do
-                  insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
-              ) $ Map.toList nls
-        pure $ clearHistory ns
+          -- writeNodeStories c $ fixChildrenWithNoParent $ fixChildrenTermTypes ns
+          upsertNodeStories c nId $
+            a & a_state %~ (fixChildrenInNgramsStatePatch . fixChildrenWithNoParentStatePatch)
+  let archive_saver_immediate nId a = withResource pool $ \c -> do
+        insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
+        pure $ a & a_history .~ []
+        -- mapM_ (\(nId, a) -> do
+        --           insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
+        --       ) $ Map.toList nls
+        -- pure $ clearHistory ns
         
-  pure $ NodeStoryEnv { _nse_var    = tvar
-                      , _nse_saver_immediate = saver_immediate
+  pure $ NodeStoryEnv { _nse_saver_immediate = saver_immediate
                       , _nse_archive_saver_immediate = archive_saver_immediate
-                      , _nse_getter = nodeStoryVar pool (Just tvar)
+                      , _nse_getter = \nId -> withResource pool $ \c ->
+                          getNodeStory' c nId
+                      , _nse_getter_multi = \nIds -> withResource pool $ \c ->
+                          foldM (\m nId -> nodeStoryInc c m nId) (NodeStory Map.empty) nIds
                       }
-
-nodeStoryVar :: Pool PGS.Connection
-             -> Maybe (TVar NodeListStory)
-             -> [NodeId]
-             -> IO (TVar NodeListStory)
-nodeStoryVar pool Nothing nIds = do
-  state' <- withResource pool $ \c -> nodeStoryIncrementalRead c Nothing nIds
-  atomically $ newTVar state'
-nodeStoryVar pool (Just tv) nIds = do
-  nls <- atomically $ readTVar tv
-  nls' <- withResource pool
-      $ \c -> nodeStoryIncrementalRead c (Just nls) nIds
-  _ <- atomically $ writeTVar tv nls'
-  pure tv
-
-clearHistory :: NodeListStory -> NodeListStory
-clearHistory (NodeStory ns) = NodeStory $ ns & (traverse . a_history) .~ emptyHistory
-  where
-    emptyHistory = [] :: [NgramsStatePatch']
 
 currentVersion :: (HasNodeStory env err m) => ListId -> m Version
 currentVersion listId = do
@@ -748,3 +493,72 @@ fixNodeStoryVersions = do
           _ <- runPGSExecute c updateVerQuery (maxVersion, nId, ngramsType)
           pure ()
         _ -> panicTrace "Should get only 1 result!"
+
+-----------------------------------------
+
+-- DEPRECATED
+
+
+-- nodeStoryVar :: Pool PGS.Connection
+--              -> Maybe (TVar NodeListStory)
+--              -> [NodeId]
+--              -> IO (TVar NodeListStory)
+-- nodeStoryVar pool Nothing nIds = do
+--   state' <- withResource pool $ \c -> nodeStoryIncrementalRead c Nothing nIds
+--   atomically $ newTVar state'
+-- nodeStoryVar pool (Just tv) nIds = do
+--   nls <- atomically $ readTVar tv
+--   nls' <- withResource pool
+--       $ \c -> nodeStoryIncrementalRead c (Just nls) nIds
+--   _ <- atomically $ writeTVar tv nls'
+--   pure tv
+
+-- clearHistory :: NodeListStory -> NodeListStory
+-- clearHistory (NodeStory ns) = NodeStory $ ns & (traverse . a_history) .~ emptyHistory
+--   where
+--     emptyHistory = [] :: [NgramsStatePatch']
+
+
+-- fixChildrenWithNoParent :: NodeListStory -> NodeListStory
+-- fixChildrenWithNoParent (NodeStory nls) =
+--   NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenWithNoParentStatePatch)
+--                            | (nId, a) <- Map.toList nls ]
+
+
+-- fixChildrenTermTypes :: NodeListStory -> NodeListStory
+-- fixChildrenTermTypes (NodeStory nls) =
+--   NodeStory $ Map.fromList [ (nId, a & a_state %~ fixChildrenInNgramsStatePatch)
+--                            | (nId, a) <- Map.toList nls ]
+
+
+-- nodeStoryIncrementalRead :: PGS.Connection -> Maybe NodeListStory -> [NodeId] -> IO NodeListStory
+-- nodeStoryIncrementalRead _ Nothing [] = pure $ NodeStory Map.empty
+-- nodeStoryIncrementalRead c Nothing (ni:ns) = do
+--   m <- getNodeStory c ni
+--   nodeStoryIncrementalRead c (Just m) ns
+-- nodeStoryIncrementalRead c (Just nls) ns = foldM (\m n -> nodeStoryInc c m n) nls ns
+
+-- nodeStoryDec :: Pool PGS.Connection -> NodeListStory -> NodeId -> IO NodeListStory
+-- nodeStoryDec pool ns@(NodeStory nls) ni = do
+--   case Map.lookup ni nls of
+--     Nothing -> do
+--       _ <- nodeStoryRemove pool ni
+--       pure ns
+--     Just _ -> do
+--       let ns' = Map.filterWithKey (\k _v -> k /= ni) nls
+--       _ <- nodeStoryRemove pool ni
+--       pure $ NodeStory ns'
+------------------------------------
+
+
+-- writeNodeStories :: PGS.Connection -> NodeListStory -> IO ()
+-- writeNodeStories c (NodeStory nls) = do
+--   mapM_ (\(nId, a) -> upsertNodeStories c nId a) $ Map.toList nls
+
+
+-- nodeStoryRemove :: Pool PGS.Connection -> NodeId -> IO Int64
+-- nodeStoryRemove pool (NodeId nId) = withResource pool $ \c -> runDelete c delete
+--   where
+--     delete = Delete { dTable     = nodeStoryTable
+--                     , dWhere     = (\row -> node_id row .== sqlInt4 nId)
+--                     , dReturning = rCount }

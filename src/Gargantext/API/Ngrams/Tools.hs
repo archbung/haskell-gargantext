@@ -23,7 +23,7 @@ import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.Validity
-import GHC.Conc (TVar, readTVar)
+-- import GHC.Conc (TVar, readTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
 import Gargantext.Core.Types (ListType(..), NodeId, ListId)
@@ -40,10 +40,11 @@ type RootTerm = NgramsTerm
 getRepo :: HasNodeStory env err m
          => [ListId] -> m NodeListStory
 getRepo listIds = do
-  f <- getNodeListStory
-  v  <- liftBase $ f listIds
-  v' <- liftBase $ atomically $ readTVar v
-  pure $ v'
+  f <- getNodeListStoryMulti
+  liftBase $ f listIds
+  -- v  <- liftBase $ f listIds
+  -- v' <- liftBase $ atomically $ readTVar v
+  -- pure $ v'
 
 
 repoSize :: Ord k1 => NodeStory (Map.Map k1 (Map.Map k2 a)) p
@@ -56,19 +57,27 @@ repoSize repo node_id = Map.map Map.size state'
                    . a_state
 
 
-getNodeStoryVar :: HasNodeStory env err m
-           => [ListId] -> m (TVar NodeListStory)
-getNodeStoryVar l = do
+getNodeStory :: HasNodeStory env err m
+           => ListId -> m ArchiveList
+getNodeStory l = do
   f <- getNodeListStory
-  v  <- liftBase $ f l
-  pure v
+  liftBase $ f l
+  -- v  <- liftBase $ f l
+  -- pure v
 
 
 getNodeListStory :: HasNodeStory env err m
-                 => m ([NodeId] -> IO (TVar NodeListStory))
+                 => m (NodeId -> IO ArchiveList)
 getNodeListStory = do
   env <- view hasNodeStory
   pure $ view nse_getter env
+
+
+getNodeListStoryMulti :: HasNodeStory env err m
+                      => m ([NodeId] -> IO NodeListStory)
+getNodeListStoryMulti = do
+  env <- view hasNodeStory
+  pure $ view nse_getter_multi env
 
 
 

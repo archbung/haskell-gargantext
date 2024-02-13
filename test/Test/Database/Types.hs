@@ -115,10 +115,6 @@ instance HasMail TestEnv where
 instance HasNodeStoryEnv TestEnv where
   hasNodeStory = to test_nodeStory
 
-
-instance HasNodeStoryVar TestEnv where
-  hasNodeStoryVar = hasNodeStory . nse_getter
-
 instance HasNodeStoryImmediateSaver TestEnv where
   hasNodeStoryImmediateSaver = hasNodeStory . nse_saver_immediate
 

@@ -16,7 +16,6 @@ import Control.Monad (fail)
 import Gargantext.API.Admin.EnvTypes
 import Gargantext.API.Admin.Settings
 import Gargantext.API.Errors.Types
-import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Prelude
 import Gargantext.Core.NLP (nlpServerMap)
 import Gargantext.Core.NodeStory
@@ -72,9 +71,7 @@ runCmdDev env f =
 
 runCmdGargDev :: DevEnv -> GargM DevEnv BackendInternalError a -> IO a
 runCmdGargDev env cmd =
-  (either (fail . show) pure =<< runExceptT (runReaderT cmd env))
-    `finally`
-  runReaderT saveNodeStoryImmediate env
+  either (fail . show) pure =<< runExceptT (runReaderT cmd env)
 
 runCmdDevNoErr :: DevEnv -> Cmd' DevEnv () a -> IO a
 runCmdDevNoErr = runCmdDev
