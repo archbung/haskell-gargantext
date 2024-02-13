@@ -203,8 +203,8 @@ logDistributional' o n m' = trace ("logDistributional'") result
     -- Matrix nxn. mi = [m_{i,j}]_{i,j} where 
     -- m_{i,j} = 0 if n_{i,j} = 0 or i = j, 
     -- m_{i,j} = log(to * n_{i,j} / s_{i,j}) otherwise.
-    mi = map (\x -> cond (x < 1) 0 (log x)) $ (.*) (matrixEye n) 
-        (map (lift1 (\x -> cond (x == 0) 0 (o + x * to))) ((./) m ss))
+    mi = (.*) (matrixEye n)
+              (map (lift1 (\x -> let x' = o + x * to in cond (x' < 1) 0 (log x'))) ((./) m ss))
     -- mi_nnz :: Int
     -- mi_nnz = flip indexArray Z . run $
     --   foldAll (+) 0 $ map (\a -> ifThenElse (abs a < 10^(-6 :: Exp Int)) 0 1) mi
