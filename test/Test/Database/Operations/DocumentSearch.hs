@@ -208,3 +208,16 @@ corpusScore01 env = do
 
     liftIO $ do
       map facetDoc_score results `shouldBe` [Just 0.0, Just 0.0]
+
+-- | Check that we support search with tsquery
+corpusSearchDB01 :: TestEnv -> Assertion
+corpusSearchDB01 env = do
+  flip runReaderT env $ runTestMonad $ do
+
+    parentId <- getRootId (UserName userMaster)
+    [corpus] <- getCorporaWithParentId parentId
+
+    results <- searchDocInDatabase (_node_id corpus) ("first second")
+
+    liftIO $ do
+      length results `shouldBe` 0 -- doesn't exist, we just check that proper to_tsquery is called

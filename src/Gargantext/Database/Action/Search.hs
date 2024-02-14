@@ -95,7 +95,7 @@ searchDocInDatabase p t = runOpaQuery (queryDocInDatabase p t)
     queryDocInDatabase :: ParentId -> Text -> O.Select (Column SqlInt4, Column SqlJsonb)
     queryDocInDatabase _p q = proc () -> do
         row <- queryNodeSearchTable -< ()
-        restrict -< (_ns_search row)    @@ (sqlToTSQuery (unpack q))
+        restrict -< (_ns_search row)    @@ (sqlPlainToTSQuery (unpack q))
         restrict -< (_ns_typename row) .== (sqlInt4 $ toDBid NodeDocument)
         returnA  -< (_ns_id row, _ns_hyperdata row)
 
