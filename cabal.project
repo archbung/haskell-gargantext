@@ -182,13 +182,40 @@ allow-older: *
 allow-newer: *
 
 package gargantext
-    ghc-options: -fwrite-ide-info -hiedir=".stack-work/hiedb"
+    ghc-options: -fwrite-ide-info -hiedir=".stack-work/hiedb" -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-admin
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-cli
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-db-obfuscation
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-import
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-init
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-invitations
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-phylo
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-server
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
+
+package gargantext-upgrade
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
 
 package gargantext-graph
-    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
 
 package hmatrix
-    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack
 
 package sparse-linear
-    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal  -fno-state-hack
+    ghc-options: -O2 -fsimpl-tick-factor=10000 -fdicts-cheap -fdicts-strict -flate-dmd-anal -fno-state-hack

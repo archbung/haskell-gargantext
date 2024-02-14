@@ -72,6 +72,52 @@ This will take a bit of time as it has to download/build the dependencies, but t
 
 #### With Cabal (recommanded)
 
+##### Turning off optimization flags
+
+Create a `cabal.project.local` file (don't commit it to git!):
+```
+package gargantext
+    ghc-options: -fwrite-ide-info -hiedir=".stack-work/hiedb" -O0
+
+package gargantext-admin
+    ghc-options: -O0
+
+package gargantext-cli
+    ghc-options: -O0
+
+package gargantext-db-obfuscation
+    ghc-options: -O0
+
+package gargantext-import
+    ghc-options: -O0
+
+package gargantext-init
+    ghc-options: -O0
+
+package gargantext-invitations
+    ghc-options: -O0
+
+package gargantext-phylo
+    ghc-options: -O0
+
+package gargantext-server
+    ghc-options: -O0
+
+package gargantext-upgrade
+    ghc-options: -O0
+
+package gargantext-graph
+    ghc-options: -O0
+
+package hmatrix
+    ghc-options: -O0
+
+package sparse-linear
+    ghc-options: -O0
+```
+
+##### Building
+
 First, into `nix-shell`:
 ```shell
 cabal update
