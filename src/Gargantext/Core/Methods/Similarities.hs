@@ -31,19 +31,17 @@ import Test.QuickCheck.Arbitrary
 import qualified Data.Text as Text 
 
 ------------------------------------------------------------------------
-data Similarity = Conditional | Distributional_A | Distributional_B
+data Similarity = Conditional | Distributional
   deriving (Show, Eq)
 
 measure :: Similarity -> Matrix Int -> Matrix Double
-measure Conditional      x = measureConditional x
-measure Distributional_A x = logDistributional2 1 x
-measure Distributional_B x = logDistributional2 0 x
+measure Conditional    x = measureConditional x
+measure Distributional x = logDistributional2 x
 
 ------------------------------------------------------------------------
 withMetric :: GraphMetric -> Similarity
-withMetric Order1   = Conditional
-withMetric Order2_A = Distributional_A
-withMetric _        = Distributional_B
+withMetric Order1 = Conditional
+withMetric _ = Distributional
 
 ------------------------------------------------------------------------
 -- Order2 type is for keeping Database json compatibility
