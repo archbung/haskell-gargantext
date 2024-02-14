@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 3.4
 
 -- This file has been generated from package.yaml by hpack version 0.35.1.
 --
@@ -685,6 +685,8 @@ executable gargantext-import
       defaults
     , optimized
   main-is: Main.hs
+  default-extensions:
+    TypeOperators
   other-modules:
       Paths_gargantext
   hs-source-dirs:
