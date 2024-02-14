@@ -1,6 +1,10 @@
+## Version 0.0.6.9.9.9.6.1
+
+* [BACK][FEAT][Removing Order2_A and Order2_B and use Order2 only instead (#308)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/308)
+
 ## Version 0.0.6.9.9.9.6
 
-* [FIX] Graph Order 2B to remove Order 2A.
+* [BACK][FEAT][Removing Order2_A and Order2_B and use Order2 only instead (#308)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/308)
 
 ## Version 0.0.6.9.9.9.5
 
