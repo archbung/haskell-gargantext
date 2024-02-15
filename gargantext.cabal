@@ -122,6 +122,7 @@ library
       Gargantext.Core.Methods.Similarities
       Gargantext.Core.NLP
       Gargantext.Core.NodeStory
+      Gargantext.Core.NodeStory.DB
       Gargantext.Core.NodeStory.Types
       Gargantext.Core.Text
       Gargantext.Core.Text.Context
@@ -341,6 +342,7 @@ library
       Gargantext.Database
       Gargantext.Database.Action.Delete
       Gargantext.Database.Action.Flow.Annuaire
+      Gargantext.Database.Action.Flow.Extract
       Gargantext.Database.Action.Flow.List
       Gargantext.Database.Action.Flow.Pairing
       Gargantext.Database.Action.Flow.Utils
