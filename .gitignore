@@ -4,6 +4,7 @@
 
 # Profiling
 *.prof
+*.prof.html
 *.hp
 *.eventlog
 *.eventlog.html
