@@ -15,7 +15,7 @@ module Gargantext.Core.Viz.Phylo.PhyloMaker where
 
 
 import Control.Lens hiding (Level)
-import Control.Parallel.Strategies (parList, rdeepseq, using)
+import Control.Parallel.Strategies (parMap, rpar)
 import Data.List (nub, partition, intersect, tail)
 import Data.List qualified as List
 import Data.Map (fromListWith, keys, unionWith, fromList, empty, toList, elems, (!), restrictKeys, insert)
@@ -131,7 +131,7 @@ evolvSeaLadder nbFdt lambda freq similarities graph = map snd
     --------
     -- 1.1) for each measure of similarity, prune the flat phylo, compute the branches and estimate the quality
     qua :: [Double]
-    qua = map (\thr ->
+    qua = parMap rpar (\thr ->
                 let edges    = filter (\edge -> snd edge >= thr) graph
                     nodes    = nub $ concat $ map (\((n,n'),_) -> [n,n']) edges
                     branches = toRelatedComponents nodes edges
@@ -172,7 +172,7 @@ findSeaLadder phylo = case getSeaElevation phylo of
                       docs    = filterDocs  (getDocsByDate phylo) ([period] ++ next)
                       diagos  = filterDiago (getCoocByDate phylo) ([period] ++ next)
           -- 1.2) compute the kinship similarities between pairs of source & target in parallel
-                      pairs   = map (\source ->
+                      pairs   = parMap rpar (\source ->
                                     let candidates = filter (\target -> (> 2) $ length
                                                    $ intersect (getGroupNgrams source) (getGroupNgrams target)) targets
                                      in map (\target ->
@@ -183,8 +183,7 @@ findSeaLadder phylo = case getSeaElevation phylo of
                                          in ((source,target),toSimilarity nbDocs diago (getSimilarity phylo) (getGroupNgrams source) (getGroupNgrams target) (getGroupNgrams target))
                                           ) candidates
                                 ) sources
-                      pairs'  = pairs `using` parList rdeepseq
-                   in acc ++ (concat pairs')
+                   in acc ++ (concat pairs)
                ) [] $ keys $ phylo ^. phylo_periods
 
 appendGroups :: (a -> Period -> (Text,Text) -> Scale -> Int -> [Cooc] ->  Map Int Double -> PhyloGroup) -> Scale -> Map (Date,Date) [a] -> Phylo -> Phylo
@@ -311,15 +310,14 @@ filterCliqueBySize thr l = filter (\clq -> (length $ clq ^. clustering_roots) >=
 --  To filter nested Fis
 filterCliqueByNested :: Map (Date, Date) [Clustering] -> Map (Date, Date) [Clustering]
 filterCliqueByNested m =
-  let clq  = map (\l ->
+  let clq  = parMap rpar (\l ->
                 foldl (\mem f -> if (any (\f' -> isNested (f' ^. clustering_roots) (f ^. clustering_roots)) mem)
                                  then mem
                                  else
                                     let fMax = filter (\f' -> not $ isNested (f ^. clustering_roots) (f' ^. clustering_roots)) mem
                                     in  fMax ++ [f] ) [] l)
            $ elems m
-      clq' = clq `using` parList rdeepseq
-  in  fromList $ zip (keys m) clq'
+  in  fromList $ zip (keys m) clq
 
 
 -- | To transform a time map of docs into a time map of Fis with some filters
@@ -340,7 +338,7 @@ toSeriesOfClustering phylo phyloDocs = case (clique $ getConfig phylo) of
         seriesOfClustering :: Map (Date,Date) [Clustering]
         seriesOfClustering = case (clique $ getConfig phylo) of
           Fis _ _     ->
-                      let fis  = map (\(prd,docs) ->
+                      let fis  = parMap rpar (\(prd,docs) ->
                                       case (corpusParser $ getConfig phylo) of
                                         Csv' _  -> let lst = toList
                                                                   $ fisWithSizePolyMap' (Segment 1 20) 1 (map (\d -> (ngramsToIdx (text d) (getRoots phylo), (weight d, (sourcesToIdx (sources d) (getSources phylo))))) docs)
@@ -350,18 +348,16 @@ toSeriesOfClustering phylo phyloDocs = case (clique $ getConfig phylo) of
                                               in (prd, map (\f -> Clustering (Set.toList $ fst f) (snd f) prd (Just $ fromIntegral $ snd f) []) lst)
                                       )
                                $ toList phyloDocs
-                          fis' = fis `using` parList rdeepseq
-                       in fromList fis'
+                       in fromList fis
           MaxClique _ thr filterType ->
-                      let mcl  = map (\(prd,docs) ->
+                      let mcl  = parMap rpar (\(prd,docs) ->
                                     let cooc = map round
                                              $ foldl sumCooc empty
                                              $ map listToMatrix
                                              $ map (\d -> ngramsToIdx (text d) (getRoots phylo)) docs
                                      in (prd, map (\cl -> Clustering cl 0 prd Nothing []) $ getMaxCliques filterType Conditional thr cooc))
                                $ toList phyloDocs
-                          mcl' = mcl `using` parList rdeepseq
-                       in fromList mcl'
+                       in fromList mcl
         --------------------------------------
 
         -- dev viz graph maxClique getMaxClique
@@ -406,13 +402,12 @@ groupDocsByPeriodRec f prds docs acc =
 groupDocsByPeriod' :: (NFData doc, Ord date, Enum date) => (doc -> date) -> [(date,date)] -> [doc] -> Map (date, date) [doc]
 groupDocsByPeriod' f pds docs =
   let docs'    = groupBy (\d d' -> f d == f d') $ sortOn f docs
-      periods  = map (inPeriode f docs') pds
-      periods' = periods `using` parList rdeepseq
+      periods  = parMap rpar (inPeriode f docs') pds
    in trace ("\n" <> "-- | Group "
              <> show(length docs)
              <> " docs by "
              <> show(length pds) <> " periods" <> "\n" :: Text)
-    $ fromList $ zip pds periods'
+    $ fromList $ zip pds periods
   where
     --------------------------------------
     inPeriode :: Ord b => (t -> b) -> [[t]] -> (b, b) -> [t]
@@ -425,13 +420,12 @@ groupDocsByPeriod' f pds docs =
 groupDocsByPeriod :: (NFData doc, Ord date, Enum date) => (doc -> date) -> [(date,date)] -> [doc] -> Map (date, date) [doc]
 groupDocsByPeriod _ _   [] = panic "[ERR][Viz.Phylo.PhyloMaker] Empty [Documents] can not have any periods"
 groupDocsByPeriod f pds es =
-  let periods  = map (inPeriode f es) pds
-      periods' = periods `using` parList rdeepseq
+  let periods  = parMap rpar (inPeriode f es) pds
 
   in  trace ("\n" <> "-- | Group "
              <> show(length es) <> " docs by "
              <> show(length pds) <> " periods" <> "\n" :: Text)
-    $ fromList $ zip pds periods'
+    $ fromList $ zip pds periods
   where
     --------------------------------------
     inPeriode :: Ord b => (t -> b) -> [t] -> (b, b) -> [t]
