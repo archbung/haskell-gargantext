@@ -48,127 +48,6 @@ import Prelude qualified
 import System.Directory (listDirectory,doesFileExist)
 import Common
 
----------------
--- | Tools | --
----------------
-
--- | To get all the files in a directory or just a file
-getFilesFromPath :: FilePath -> IO [FilePath]
-getFilesFromPath path = do
-  if (isSuffixOf "/" path)
-    then (listDirectory path)
-    else return [path]
-
-----------------
--- | Parser | --
-----------------
-
--- | To filter the Ngrams of a document based on the termList
-termsInText :: Patterns -> Text -> [Text]
-termsInText pats txt = nub $ concat $ map (map unwords) $ extractTermsWithList pats txt
-
-
--- | To transform a Wos file (or [file]) into a list of Docs
-wosToDocs :: Int -> Patterns -> TimeUnit -> FilePath -> IO [Document]
-wosToDocs limit patterns time path = do
-      files <- getFilesFromPath path
-      take limit
-        <$> map (\d -> let title = fromJust $ _hd_title d
-                           abstr = if (isJust $ _hd_abstract d)
-                                   then fromJust $ _hd_abstract d
-                                   else ""
-                        in Document (toPhyloDate
-                                      (fromIntegral $ fromJust $ _hd_publication_year d)
-                                      (fromJust $ _hd_publication_month d)
-                                      (fromJust $ _hd_publication_day d) time)
-                                    (toPhyloDate'
-                                      (fromIntegral $ fromJust $ _hd_publication_year d)
-                                      (fromJust $ _hd_publication_month d)
-                                      (fromJust $ _hd_publication_day d) time)
-                                    (termsInText patterns $ title <> " " <> abstr) Nothing [] time)
-        <$> concat
-        <$> mapConcurrently (\file ->
-              filter (\d -> (isJust $ _hd_publication_year d)
-                         && (isJust $ _hd_title d))
-                <$> fromRight [] <$> parseFile WOS Plain (path <> file) ) files
-
-
--- To transform a Csv file into a list of Document
-csvToDocs :: CorpusParser -> Patterns -> TimeUnit -> FilePath -> IO [Document]
-csvToDocs parser patterns time path =
-  case parser of
-    Wos  _     -> Prelude.error "csvToDocs: unimplemented"
-    Csv  limit -> Vector.toList
-      <$> Vector.take limit
-      <$> Vector.map (\row -> Document (toPhyloDate  (Csv.fromMIntOrDec Csv.defaultYear $ csv_publication_year row) (fromMaybe Csv.defaultMonth $ csv_publication_month row) (fromMaybe Csv.defaultDay $ csv_publication_day row) time)
-                                       (toPhyloDate' (Csv.fromMIntOrDec Csv.defaultYear $ csv_publication_year row) (fromMaybe Csv.defaultMonth $ csv_publication_month row) (fromMaybe Csv.defaultDay $ csv_publication_day row) time)
-                                       (termsInText patterns $ (csv_title row) <> " " <> (csv_abstract row))
-                                       Nothing
-                                       []
-                                       time
-                     ) <$> snd <$> either (\err -> panicTrace $ "CSV error" <> (show err)) identity <$> Csv.readCSVFile path
-    Csv' limit -> Vector.toList
-      <$> Vector.take limit
-      <$> Vector.map (\row -> Document (toPhyloDate  (csv'_publication_year row) (csv'_publication_month row) (csv'_publication_day row) time)
-                                       (toPhyloDate' (csv'_publication_year row) (csv'_publication_month row) (csv'_publication_day row) time)
-                                       (termsInText patterns $ (csv'_title row) <> " " <> (csv'_abstract row))
-                                       (Just $ csv'_weight row)
-                                       (map (T.strip . pack) $ splitOn ";" (unpack $ (csv'_source row)))
-                                       time
-                     ) <$> snd <$> Csv.readWeightedCsv path
-
-
--- To parse a file into a list of Document
-fileToDocsAdvanced :: CorpusParser -> FilePath -> TimeUnit -> TermList -> IO [Document]
-fileToDocsAdvanced parser path time lst = do
-  let patterns = buildPatterns lst
-  case parser of
-      Wos limit  -> wosToDocs limit  patterns time path
-      Csv  _     -> csvToDocs parser patterns time path
-      Csv' _     -> csvToDocs parser patterns time path
-
-fileToDocsDefault :: CorpusParser -> FilePath -> [TimeUnit] -> TermList -> IO [Document]
-fileToDocsDefault parser path timeUnits lst = 
-  if length timeUnits > 0
-    then
-      do 
-        let timeUnit = (head' "fileToDocsDefault" timeUnits)
-        docs <- fileToDocsAdvanced parser path timeUnit lst  
-        let periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeUnit) (getTimeStep timeUnit)
-        if (length periods < 3)
-         then fileToDocsDefault parser path (tail timeUnits) lst
-         else pure docs
-    else panicTrace "this corpus is incompatible with the phylomemy reconstruction"
-
--- on passe à passer la time unit dans la conf envoyé au phyloMaker
--- dans le phyloMaker si default est true alors dans le setDefault ou pense à utiliser la TimeUnit de la conf 
-
-
-
-readListV4 :: [Char] -> IO NgramsList
-readListV4 path = do
-  listJson <- (eitherDecode <$> readJson path) :: IO (Either Prelude.String NgramsList)
-  case listJson of
-    Left err -> do
-      putStrLn err
-      Prelude.error "readListV4 unimplemented"
-    Right listV4 -> pure listV4
-
-
-fileToList  :: ListParser -> FilePath -> IO TermList
-fileToList parser path =
-  case parser of
-    V3 -> csvMapTermList path
-    V4 -> fromJust
-      <$> toTermList MapTerm NgramsTerms
-      <$> readListV4 path
-
-
---------------
--- | Main | --
---------------
-
-
 main :: IO ()
 main = do
 
@@ -191,7 +70,7 @@ main = do
             corpus  <- if (defaultMode config)
                         then fileToDocsDefault (corpusParser config) (corpusPath config) [Year 3 1 5,Month 3 1 5,Week 4 2 5] mapList
                         else fileToDocsAdvanced (corpusParser config) (corpusPath config) (timeUnit config)  mapList
-            
+
             printIOComment (show (length corpus) <> " parsed docs from the corpus")
 
             printIOComment (show (length $ nub $ concat $ map text corpus) <> " Size ngs_coterms")
