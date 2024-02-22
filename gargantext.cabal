@@ -461,6 +461,7 @@ library
     , data-time-segment ^>= 0.1.0.0
     , deepseq ^>= 1.4.4.0
     , directory ^>= 1.3.6.0
+    , discrimination >= 0.5
     , duckling ^>= 0.2.0.0
     , ekg-core ^>= 0.1.1.7
     , ekg-json ^>= 0.1.0.7

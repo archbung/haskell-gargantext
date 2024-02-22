@@ -10,19 +10,23 @@ Portability : POSIX
 
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Gargantext.Core.Viz.Phylo.PhyloMaker where
 
 
 import Control.Lens hiding (Level)
 import Control.Parallel.Strategies (parMap, rpar)
-import Data.List (nub, partition, intersect, tail)
+import Data.Containers.ListUtils (nubOrd)
+import Data.Discrimination qualified as D
+import Data.List (partition, intersect, tail)
 import Data.List qualified as List
 import Data.Map (fromListWith, keys, unionWith, fromList, empty, toList, elems, (!), restrictKeys, insert)
 import Data.Map qualified as Map
 import Data.Set qualified as Set
-import Data.Vector (Vector)
+import Data.Text qualified as T
 import Data.Vector qualified as Vector
+import Data.Vector (Vector)
 import Gargantext.Core.Methods.Graph.MaxClique (getMaxCliques)
 import Gargantext.Core.Methods.Similarities (Similarity(Conditional))
 import Gargantext.Core.Text.Metrics.FrequentItemSet (fisWithSizePolyMap, fisWithSizePolyMap', Size(..))
@@ -133,7 +137,7 @@ evolvSeaLadder nbFdt lambda freq similarities graph = map snd
     qua :: [Double]
     qua = parMap rpar (\thr ->
                 let edges    = filter (\edge -> snd edge >= thr) graph
-                    nodes    = nub $ concat $ map (\((n,n'),_) -> [n,n']) edges
+                    nodes    = nubOrd $ concat $ map (\((n,n'),_) -> [n,n']) edges
                     branches = toRelatedComponents nodes edges
                  in toPhyloQuality nbFdt lambda freq branches
               ) $ (Set.toList similarities)
@@ -146,7 +150,7 @@ findSeaLadder :: Phylo -> Phylo
 findSeaLadder phylo = case getSeaElevation phylo of
     Constante  start gap -> phylo & phylo_seaLadder .~ (constSeaLadder start gap Set.empty)
     Adaptative steps     -> phylo & phylo_seaLadder .~ (squareLadder $ adaptSeaLadder steps similarities Set.empty)
-    Evolving   _         -> let ladder = evolvSeaLadder
+    Evolving   _         -> let !ladder = evolvSeaLadder
                                            (fromIntegral $ Vector.length $ getRoots phylo)
                                            (getLevel phylo)
                                            (getRootsFreq phylo)
@@ -373,7 +377,7 @@ docsToTimeScaleCooc :: [Document] -> Vector Ngrams -> Map Date Cooc
 docsToTimeScaleCooc docs fdt =
     let mCooc  = fromListWith sumCooc
                $ map (\(_d,l) -> (_d, listToMatrix l))
-               $ map (\doc -> (date doc, sort $ ngramsToIdx (text doc) fdt)) docs
+               $ map (\doc -> (date doc, D.sort $ ngramsToIdx (text doc) fdt)) docs
         mCooc' = fromList
                $ map (\t -> (t,empty))
                $ toTimeScale (map date docs) 1
@@ -440,7 +444,7 @@ docsToTermFreq docs fdt =
       freqs = map (/(nbDocs))
              $ fromList
              $ map (\lst -> (head' "docsToTermFreq" lst, fromIntegral $ length lst))
-             $ group $ sort $ concat $ map (\d -> nub $ ngramsToIdx (text d) fdt) docs
+             $ group $ D.sort $ concat $ map (\d -> D.nub $ ngramsToIdx (text d) fdt) docs
       sumFreqs = sum $ elems freqs
    in map (/sumFreqs) freqs
 
@@ -448,28 +452,28 @@ docsToTermFreq docs fdt =
 docsToTermCount :: [Document] -> Vector Ngrams -> Map Int Double
 docsToTermCount docs roots = fromList
              $ map (\lst -> (head' "docsToTermCount" lst, fromIntegral $ length lst))
-             $ group $ sort $ concat $ map (\d -> nub $ ngramsToIdx (text d) roots) docs
+             $ group $ D.sort $ concat $ map (\d -> D.nub $ ngramsToIdx (text d) roots) docs
 
 
 
 docsToTimeTermCount :: [Document] -> Vector Ngrams  -> (Map Date (Map Int Double))
 docsToTimeTermCount docs roots = 
     let docs' = Map.map (\l -> fromList $ map (\lst -> (head' "docsToTimeTermCount" lst, fromIntegral $ length lst))
-                             $ group $ sort l)
+                             $ group $ D.sort l)
               $ fromListWith (++)
-              $ map (\d -> (date d, nub $ ngramsToIdx (text d) roots)) docs
+              $ map (\d -> (date d, D.nub $ ngramsToIdx (text d) roots)) docs
         time  = fromList $ map (\t -> (t,Map.empty)) $ toTimeScale (keys docs') 1
      in unionWith (Map.union) time docs'
 
 
 docsToLastTermFreq :: Int -> [Document] -> Vector Ngrams -> Map Int Double
 docsToLastTermFreq n docs fdt =
-  let last   = take n $ reverse $ sort $ map date docs
+  let last   = take n $ reverse $ D.sort $ map date docs
       nbDocs = fromIntegral $ length $ filter (\d -> elem (date d) last) docs
       freqs  = map (/(nbDocs))
              $ fromList
              $ map (\lst -> (head' "docsToLastTermFreq" lst, fromIntegral $ length lst))
-             $ group $ sort $ concat $ map (\d -> nub $ ngramsToIdx (text d) fdt) $ filter (\d -> elem (date d) last) docs
+             $ group $ D.sort $ concat $ map (\d -> D.nub $ ngramsToIdx (text d) fdt) $ filter (\d -> elem (date d) last) docs
       sumFreqs = sum $ elems freqs
    in map (/sumFreqs) freqs
 
@@ -521,10 +525,10 @@ setDefault conf timeScale nbDocs = defaultConfig
 --
 initPhylo :: [Document] -> PhyloConfig -> Phylo
 initPhylo docs conf =
-    let roots = Vector.fromList $ nub $ concat $ map text docs
+    let roots = Vector.fromList $ D.nubWith T.unpack $ concat $ map text docs
         timeScale = head' "initPhylo" $ map docTime docs
         foundations = PhyloFoundations roots empty
-        docsSources = PhyloSources (Vector.fromList $ nub $ concat $ map sources docs)
+        docsSources = PhyloSources (Vector.fromList $ nubOrd $ concat $ map sources docs)
         docsCounts  = PhyloCounts (docsToTimeScaleCooc docs (foundations ^. foundations_roots))
                              (docsToTimeScaleNb docs)
                              (docsToTimeTermCount docs (foundations ^. foundations_roots))
@@ -534,7 +538,7 @@ initPhylo docs conf =
         params = if (defaultMode conf)
                  then defaultPhyloParam { _phyloParam_config = setDefault conf timeScale (length docs) }
                  else defaultPhyloParam { _phyloParam_config = conf }
-        periods = toPeriods (sort $ nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
+        periods = toPeriods (D.sort $ D.nub $ map date docs) (getTimePeriod timeScale) (getTimeStep timeScale)
     in trace ("\n" <> "-- | Init a phylo out of "
               <> show(length docs) <> " docs \n" :: Text)
        $ trace ("\n" <> "-- | lambda "
