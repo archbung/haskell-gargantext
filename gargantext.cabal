@@ -157,6 +157,7 @@ library
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
       Gargantext.Core.Text.Terms.Mono.Stem.En
+      Gargantext.Core.Text.Terms.Mono.Stem.Lancaster
       Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
