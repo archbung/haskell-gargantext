@@ -18,7 +18,7 @@ fi
 # with the `sha256sum` result calculated on the `cabal.project` and
 # `cabal.project.freeze`. This ensures the files stay deterministic so that CI
 # cache can kick in.
-expected_cabal_project_hash="3f5d6b7f26cac4aa5a7f87ba0227a7671041dfe46643ddef79512eb49bd876ec"
+expected_cabal_project_hash="c9fe39301e8b60bfd183e60e7e25a14cd1c9c66d8739bf9041ca3f4db89db7c6"
 expected_cabal_project_freeze_hash="745c65c246998cfda4d2a7a22df44a9f1f7fb0927e2afc2f16712861bf552c76"
 
 cabal --store-dir=$STORE_DIR v2-build --dry-run

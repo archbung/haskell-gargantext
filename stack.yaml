@@ -71,10 +71,6 @@
   git: "https://github.com/adinapoli/duckling.git"
   subdirs:
   - .
-- commit: e9a29582ac66198dd2c2fdc3f8c8a4b1e6fbe004
-  git: "https://github.com/adinapoli/haskell-opaleye.git"
-  subdirs:
-  - .
 - commit: 7533a9ccd3bfe77141745f6b61039a26aaf5c83b
   git: "https://github.com/adinapoli/llvm-hs.git"
   subdirs:
@@ -119,6 +115,10 @@
   git: "https://github.com/delanoe/patches-map"
   subdirs:
   - .
+- commit: 6cf1bcfe215143efac17919cfd0abdd60e0f717c
+  git: "https://github.com/garganscript/haskell-opaleye.git"
+  subdirs:
+  - .
 - commit: 4fd2edf30c141600ffad6d730cc4c1c08a6dbce4
   git: "https://github.com/robstewart57/rdf4h.git"
   subdirs:
@@ -147,7 +147,7 @@
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/istex.git"
   subdirs:
   - .
-- commit: 35a95e7e8da655f868d5420aa29e835a813fa3a2
+- commit: cd179f6dda15d77a085c0176284c921b7bc50c46
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git"
   subdirs:
   - .
