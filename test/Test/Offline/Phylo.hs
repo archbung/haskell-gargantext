@@ -6,7 +6,7 @@
 module Test.Offline.Phylo (tests) where
 
 import Gargantext.Core.Viz.Phylo
-import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo, writePhylo)
+import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo)
 import Gargantext.Core.Viz.Phylo.PhyloMaker (toPhylo)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Prelude
@@ -43,6 +43,9 @@ phyloConfig = PhyloConfig {
 tests :: TestTree
 tests = testGroup "Phylo" [
   testCase "returns expected data" testSmallPhyloExpectedOutput
+  , testGroup "relatedComponents" [
+    testCase "finds simple connection" testRelComp_Connected
+  ]
   ]
 
 testSmallPhyloExpectedOutput :: Assertion
@@ -51,3 +54,18 @@ testSmallPhyloExpectedOutput = do
   expected <- readPhylo =<< getDataFileName "test-data/phylo/issue-290-small.golden.json"
   let actual = toPhylo issue290PhyloSmall
   expected @?= actual
+
+testRelComp_Connected :: Assertion
+testRelComp_Connected = do
+  (relatedComponents @Int) []                                @?= []
+  (relatedComponents @Int) [[]]                              @?= [[]]
+  (relatedComponents @Int) [[],[1,2]]                        @?= [[],[1,2]]
+  (relatedComponents @Int) [[1,2],[]]                        @?= [[1,2],[]]
+  (relatedComponents @Int) [[1,2], [2]]                      @?= [[1,2]]
+  (relatedComponents @Int) [[1,2], [2],[2]]                  @?= [[1,2]]
+  (relatedComponents @Int) [[1,2], [2],[2,1]]                @?= [[1,2]]
+  (relatedComponents @Int) [[1,2], [2,4]]                    @?= [[1,2,4]]
+  (relatedComponents @Int) [[1,2], [3,5], [2,4]]             @?= [[3,5], [1,2,4]]
+  (relatedComponents @Int) [[1,2], [3,5], [2,4],[9,5],[5,4]] @?= [[1,2,4,3,5,9]]
+  (relatedComponents @Int) [[1,2,5], [4,5,9]]                @?= [[1,2,5,4,9]]
+
