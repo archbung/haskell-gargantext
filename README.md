@@ -140,7 +140,7 @@ The good news is that you don't have to do all of this manually; during developm
 
 ``` sh
 # If docker is not installed:
-# curl -sSL https://gitlab.iscpif.fr/gargantext/haskell-gargantext/raw/dev/devops/docker/docker-install | sh
+# curl -sSL https://gitlab.iscpif.fr/gargantext/haskell-gargantext/raw/dev/devops/docker/install_docker | sh
 cd devops/docker
 docker compose up
 ```
