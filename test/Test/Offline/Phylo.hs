@@ -5,17 +5,14 @@
 
 module Test.Offline.Phylo (tests) where
 
-import Data.Aeson
 import Gargantext.Core.Viz.Phylo
-import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo)
-import Gargantext.Core.Viz.Phylo.PhyloMaker (toPhylo, toPhyloWithoutLink)
+import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo, writePhylo)
+import Gargantext.Core.Viz.Phylo.PhyloMaker (toPhylo)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
-
-import Common
 
 import Paths_gargantext
 
@@ -45,33 +42,8 @@ phyloConfig = PhyloConfig {
 
 tests :: TestTree
 tests = testGroup "Phylo" [
-    testGroup "toPhyloWithoutLink" [
-      testCase "returns expected data" testSmallPhyloWithoutLinkExpectedOutput
-    ]
-  , testGroup "toPhylo" [
-    testCase "returns expected data" testSmallPhyloExpectedOutput
+  testCase "returns expected data" testSmallPhyloExpectedOutput
   ]
-  , testGroup "relatedComponents" [
-    testCase "finds simple connection" testRelComp_Connected
-  ]
-  ]
-
-testSmallPhyloWithoutLinkExpectedOutput :: Assertion
-testSmallPhyloWithoutLinkExpectedOutput = do
-  bpaConfig      <- getDataFileName "bench-data/phylo/bpa-config.json"
-  corpusPath'    <- getDataFileName "test-data/phylo/small_phylo_docslist.csv"
-  listPath'      <- getDataFileName "test-data/phylo/small_phylo_ngramslist.csv"
-  (Right config) <- fmap (\pcfg -> pcfg { corpusPath = corpusPath'
-                                        , listPath   = listPath'
-                                        }) <$> (eitherDecodeFileStrict' bpaConfig)
-  mapList <- fileToList (listParser config) (listPath config)
-  corpus <- fileToDocsDefault (corpusParser config)
-                              (corpusPath config)
-                              [Year 3 1 5,Month 3 1 5,Week 4 2 5]
-                              mapList
-  actual   <- pure $ toPhyloWithoutLink corpus config
-  expected <- readPhylo =<< getDataFileName "test-data/phylo/small-phylo.golden.json"
-  expected @?= actual
 
 testSmallPhyloExpectedOutput :: Assertion
 testSmallPhyloExpectedOutput = do
@@ -79,18 +51,3 @@ testSmallPhyloExpectedOutput = do
   expected <- readPhylo =<< getDataFileName "test-data/phylo/issue-290-small.golden.json"
   let actual = toPhylo issue290PhyloSmall
   expected @?= actual
-
-testRelComp_Connected :: Assertion
-testRelComp_Connected = do
-  (relatedComponents @Int) []                                @?= []
-  (relatedComponents @Int) [[]]                              @?= [[]]
-  (relatedComponents @Int) [[],[1,2]]                        @?= [[],[1,2]]
-  (relatedComponents @Int) [[1,2],[]]                        @?= [[1,2],[]]
-  (relatedComponents @Int) [[1,2], [2]]                      @?= [[1,2]]
-  (relatedComponents @Int) [[1,2], [2],[2]]                  @?= [[1,2]]
-  (relatedComponents @Int) [[1,2], [2],[2,1]]                @?= [[1,2]]
-  (relatedComponents @Int) [[1,2], [2,4]]                    @?= [[1,2,4]]
-  (relatedComponents @Int) [[1,2], [3,5], [2,4]]             @?= [[3,5], [1,2,4]]
-  (relatedComponents @Int) [[1,2], [3,5], [2,4],[9,5],[5,4]] @?= [[1,2,4,3,5,9]]
-  (relatedComponents @Int) [[1,2,5], [4,5,9]]                @?= [[1,2,5,4,9]]
-

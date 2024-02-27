@@ -16,19 +16,18 @@ Portability : POSIX
 module Gargantext.Core.Viz.Phylo.PhyloTools where
 
 import Control.Lens hiding (Level)
-import Data.Discrimination qualified as D
-import Data.List qualified as List
 import Data.List (union, nub, init, tail, partition, nubBy, (!!))
+import Data.List qualified as List
 import Data.Map (elems, empty, fromList, findWithDefault, unionWith, keys, member, (!), filterWithKey, fromListWith, restrictKeys)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
 import Data.Set (disjoint)
 import Data.Set qualified as Set
 import Data.String (String)
-import Data.Text qualified as Text
 import Data.Text (unpack)
-import Data.Vector qualified as Vector
+import Data.Text qualified as Text
 import Data.Vector (Vector, elemIndex)
+import Data.Vector qualified as Vector
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Prelude hiding (empty)
 import Prelude (read)
@@ -694,13 +693,13 @@ groupsToBranches' groups =
          in map (\g -> g & phylo_groupBranchId %~ (\(lvl,_) -> (lvl,bId))) groups') graph
 
 
-relatedComponents :: (D.Grouping a, Ord a) => [[a]] -> [[a]]
+relatedComponents :: Ord a => [[a]] -> [[a]]
 relatedComponents graph = foldl' (\branches groups ->
     if (null branches)
     then branches ++ [groups]
     else
         let branchPart = partition (\branch -> disjoint (Set.fromList branch) (Set.fromList groups)) branches
-         in (fst branchPart) ++ [D.nub $ concat $ (snd branchPart) ++ [groups]]) [] graph
+         in (fst branchPart) ++ [nub $ concat $ (snd branchPart) ++ [groups]]) [] graph
 
 
 toRelatedComponents :: [PhyloGroup] -> [((PhyloGroup,PhyloGroup),Double)] -> [[PhyloGroup]]
