@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.6.3 [Release Candidate for 007]
+
+* [BACK][OPTIM] Option to enable GHC buld with O2 option
+
 ## Version 0.0.6.9.9.9.6.2 [Release Candidate for 007]
 
 * [BACK][FIX][Node stories insertion error (SqlError violates foreign key constraint) (#303)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/303)
