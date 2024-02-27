@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.9.6.2 [Release Candidate for 007]
+
+* [BACK][FIX][Node stories insertion error (SqlError violates foreign key constraint) (#303)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/303)
+* [BACK][DOC][Welcome: Door To enter the project (#177)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/177)
+* [BACK][OPTIM][Improve Phylo robustness and performance (#292)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/292)
+
 ## Version 0.0.6.9.9.9.6.1
 
 * [BACK][FEAT][Removing Order2_A and Order2_B and use Order2 only instead (#308)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/308)
