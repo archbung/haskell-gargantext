@@ -2,7 +2,7 @@
 
 echo "GarganText, build, install, test and documentation"
 nix-shell --run "cabal update                                     \\
-                 && cabal v2-build                                \\
+                 && cabal v2-build --ghc-options=-O2              \\
                  && cabal --overwrite-policy=always install       \\
                  && cabal v2-test --test-show-details=streaming   \\
                  && cabal haddock"
