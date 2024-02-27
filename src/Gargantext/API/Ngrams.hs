@@ -60,7 +60,6 @@ module Gargantext.API.Ngrams
   , r_history
   , NgramsRepoElement(..)
   , saveNodeStory
-  , saveNodeStoryImmediate
   , initRepo
 
   , TabType(..)
@@ -87,7 +86,7 @@ module Gargantext.API.Ngrams
   )
   where
 
-import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, non, ifolded, to, withIndex, over)
+import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, ifolded, to, withIndex, over)
 import Control.Monad.Reader
 import Data.Aeson.Text qualified as DAT
 import Data.Foldable
@@ -105,10 +104,10 @@ import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
 import Gargantext.API.Errors.Types
 import Gargantext.API.Metrics qualified as Metrics
-import Gargantext.API.Ngrams.Tools
+import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude
-import Gargantext.Core.NodeStory
+import Gargantext.Core.NodeStory (ArchiveList, HasNodeStory, HasNodeArchiveStoryImmediateSaver(..), HasNodeStoryImmediateSaver(..), NgramsStatePatch', a_history, a_state, a_version, currentVersion)
 import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasValidationError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
@@ -123,7 +122,6 @@ import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
 import Gargantext.Prelude hiding (log, to, toLower, (%), isInfixOf)
 import Gargantext.Prelude.Clock (hasTime, getTime)
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import GHC.Conc (readTVar, writeTVar)
 import Servant hiding (Patch)
 
 {-
@@ -174,23 +172,10 @@ mkChildrenGroups addOrRem nt patches =
 ------------------------------------------------------------------------
 
 saveNodeStory :: ( MonadReader env m, MonadBase IO m, HasNodeStoryImmediateSaver env )
-              => m ()
-saveNodeStory = do
+              => NodeId -> ArchiveList -> m ()
+saveNodeStory nId a = do
   saver <- view hasNodeStoryImmediateSaver
-  liftBase $ do
-    --Gargantext.Prelude.putStrLn "---- Running node story saver ----"
-    saver
-    --Gargantext.Prelude.putStrLn "---- Node story saver finished ----"
-
-
-saveNodeStoryImmediate :: ( MonadReader env m, MonadBase IO m, HasNodeStoryImmediateSaver env )
-                       => m ()
-saveNodeStoryImmediate = do
-  saver <- view hasNodeStoryImmediateSaver
-  liftBase $ do
-    --Gargantext.Prelude.putStrLn "---- Running node story immediate saver ----"
-    saver
-    --Gargantext.Prelude.putStrLn "---- Node story immediate saver finished ----"
+  liftBase $ saver nId a
 
 listTypeConflictResolution :: ListType -> ListType -> ListType
 listTypeConflictResolution _ _ = undefined -- TODO Use Map User ListType
@@ -256,19 +241,23 @@ setListNgrams :: HasNodeStory env err m
               -> m ()
 setListNgrams listId ngramsType ns = do
   -- printDebug "[setListNgrams]" (listId, ngramsType)
-  var <- getNodeStoryVar [listId]
-  liftBase $ atomically $ do
-    nls <- readTVar var
-    writeTVar var $
-      ( unNodeStory
-        . at listId . _Just
-        . a_state
-        . at ngramsType
-        %~ (\mns' -> case mns' of
-               Nothing -> Just ns
-               Just ns' -> Just $ ns <> ns')
-      ) nls
-  saveNodeStory
+  a <- getNodeStory listId
+  let a' = a & a_state . at ngramsType %~ (\mns' -> case mns' of
+                                              Nothing -> Just ns
+                                              Just ns' -> Just $ ns <> ns')
+  saveNodeStory listId a'
+  -- liftBase $ atomically $ do
+  --   nls <- readTVar var
+  --   writeTVar var $
+  --     ( unNodeStory
+  --       . at listId . _Just
+  --       . a_state
+  --       . at ngramsType
+  --       %~ (\mns' -> case mns' of
+  --              Nothing -> Just ns
+  --              Just ns' -> Just $ ns <> ns')
+  --     ) nls
+  -- saveNodeStory
 
 
 newNgramsFromNgramsStatePatch :: NgramsStatePatch' -> [Ngrams]
@@ -292,11 +281,11 @@ commitStatePatch :: ( HasNodeStory env err m
                  -> m (Versioned NgramsStatePatch')
 commitStatePatch listId (Versioned _p_version p) = do
   -- printDebug "[commitStatePatch]" listId
-  var <- getNodeStoryVar [listId]
+  a <- getNodeStory listId
   archiveSaver <- view hasNodeArchiveStoryImmediateSaver
-  ns <- liftBase $ atomically $ readTVar var
+  -- ns <- liftBase $ atomically $ readTVar var
   let
-    a = ns ^. unNodeStory . at listId . non initArchive
+    -- a = ns ^. unNodeStory . at listId . non initArchive
     -- apply patches from version p_version to a ^. a_version
     -- TODO Check this
     --q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
@@ -327,10 +316,12 @@ commitStatePatch listId (Versioned _p_version p) = do
   -}
   -- printDebug "[commitStatePatch] a version" (a ^. a_version)
   -- printDebug "[commitStatePatch] a' version" (a' ^. a_version)
-  let newNs = ( ns & unNodeStory . at listId .~ (Just a')
-       , Versioned (a' ^. a_version) q'
-       )
+  -- let newNs = ( ns & unNodeStory . at listId .~ (Just a')
+  --      , Versioned (a' ^. a_version) q'
+  --      )
 
+  let newA = Versioned (a' ^. a_version) q'
+  
   -- NOTE Now is the only good time to save the archive history. We
   -- have the handle to the MVar and we need to save its exact
   -- snapshot. Node Story archive is a linear table, so it's only
@@ -353,16 +344,15 @@ commitStatePatch listId (Versioned _p_version p) = do
   -- archive was saved and applied)
   -- newNs' <- archiveSaver $ fst newNs
   liftBase $ do
-    newNs' <- archiveSaver $ fst newNs
-    atomically $ writeTVar var newNs'
+    -- newNs' <- archiveSaver $ fst newNs
+    -- atomically $ writeTVar var newNs'
+    void $ archiveSaver listId a'
 
   -- Save new ngrams
   _ <- insertNgrams (newNgramsFromNgramsStatePatch p)
-  -- NOTE State (i.e. `NodeStory` can be saved asynchronously, i.e. with debounce)
-  -- saveNodeStory
-  saveNodeStoryImmediate
+  saveNodeStory listId a'
 
-  pure $ snd newNs
+  pure newA
 
 
 
@@ -374,11 +364,11 @@ tableNgramsPull :: HasNodeStory env err m
                 -> m (Versioned NgramsTablePatch)
 tableNgramsPull listId ngramsType p_version = do
   -- printDebug "[tableNgramsPull]" (listId, ngramsType)
-  var <- getNodeStoryVar [listId]
-  r <- liftBase $ atomically $ readTVar var
+  a <- getNodeStory listId
+  -- r <- liftBase $ atomically $ readTVar var
 
   let
-    a = r ^. unNodeStory . at listId . non initArchive
+    -- a = r ^. unNodeStory . at listId . non initArchive
     q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
     q_table = q ^. _PatchMap . at ngramsType . _Just
 
@@ -502,10 +492,9 @@ getNgramsTableMap :: HasNodeStory env err m
                   -> TableNgrams.NgramsType
                   -> m (Versioned NgramsTableMap)
 getNgramsTableMap nodeId ngramsType = do
-  v    <- getNodeStoryVar [nodeId]
-  repo <- liftBase $ atomically $ readTVar v
-  pure $ Versioned (repo ^. unNodeStory . at nodeId . _Just . a_version)
-                   (repo ^. unNodeStory . at nodeId . _Just . a_state . at ngramsType . _Just)
+  a <- getNodeStory nodeId
+  pure $ Versioned (a ^. a_version)
+                   (a ^. a_state . at ngramsType . _Just)
 
 
 dumpJsonTableMap :: HasNodeStory env err m

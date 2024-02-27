@@ -68,6 +68,7 @@ tests = sequential $ aroundAll withTestDB $ describe "Database" $ do
       it "Can perform search by author in documents" corpusSearch02
       it "Can perform more complex searches using the boolean API" corpusSearch03
       it "Can correctly count doc score" corpusScore01
+      it "Can perform search with spaces for doc in db" corpusSearchDB01
         
 nodeStoryTests :: Spec
 nodeStoryTests = sequential $

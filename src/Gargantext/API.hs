@@ -48,10 +48,8 @@ import Gargantext.API.Admin.Settings.CORS
 import Gargantext.API.Admin.Types (FireWall(..), PortNumber, cookieSettings, jwtSettings, settings, corsSettings)
 import Gargantext.API.EKG
 import Gargantext.API.Middleware (logStdoutDevSanitised)
-import Gargantext.API.Ngrams (saveNodeStoryImmediate)
 import Gargantext.API.Routes
 import Gargantext.API.Server (server)
-import Gargantext.Core.NodeStory
 import Gargantext.Database.Prelude qualified as DB
 import Gargantext.Prelude hiding (putStrLn)
 import Gargantext.System.Logging
@@ -74,7 +72,7 @@ startGargantext mode port file = withLoggerHoisted mode $ \logger -> do
   app <- makeApp env
   mid <- makeGargMiddleware (env ^. settings.corsSettings) mode
   periodicActions <- schedulePeriodicActions env
-  run port (mid app) `finally` stopGargantext env periodicActions
+  run port (mid app) `finally` stopGargantext periodicActions
 
   where runDbCheck env = do
           r <- runExceptT (runReaderT DB.dbCheck env) `catch`
@@ -94,11 +92,10 @@ portRouteInfo port = do
 -- | Stops the gargantext server and cancels all the periodic actions
 -- scheduled to run up to that point.
 -- TODO clean this Monad condition (more generic) ?
-stopGargantext :: HasNodeStoryImmediateSaver env => env -> [ThreadId] -> IO ()
-stopGargantext env scheduledPeriodicActions = do
+stopGargantext :: [ThreadId] -> IO ()
+stopGargantext scheduledPeriodicActions = do
   forM_ scheduledPeriodicActions killThread
   putStrLn "----- Stopping gargantext -----"
-  runReaderT saveNodeStoryImmediate env
 
 -- | Schedules all sorts of useful periodic actions to be run while
 -- the server is alive accepting requests.

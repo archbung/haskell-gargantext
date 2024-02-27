@@ -30,7 +30,7 @@ import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.API.Ngrams.Tools (filterListWithRoot, groupNodesByNgrams, Diagonal(..), getCoocByNgrams, mapTermListRoot, RootTerm, getRepo)
 import Gargantext.API.Ngrams.Types (TabType(..), ngramsTypeFromTabType, NgramsTerm(..))
 import Gargantext.Core (HasDBid(toDBid))
-import Gargantext.Core.NodeStory hiding (runPGSQuery)
+import Gargantext.Core.NodeStory
 import Gargantext.Core.Text.Metrics (scored, Scored(..), {-localMetrics, toScored-})
 import Gargantext.Core.Types (ListType(..), NodeType(..), ContextId, contextId2NodeId)
 import Gargantext.Core.Types.Query (Limit(..))
@@ -74,7 +74,8 @@ getNgramsCooc cId lId tabType maybeLimit = do
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 updateNgramsOccurrences :: (HasNodeStory env err m)
-                        => CorpusId -> ListId
+                        => CorpusId
+                        -> ListId
                         -> m ()
 updateNgramsOccurrences cId lId = do
   _ <- mapM (updateNgramsOccurrences' cId lId Nothing) [Terms, Sources, Authors, Institutes]

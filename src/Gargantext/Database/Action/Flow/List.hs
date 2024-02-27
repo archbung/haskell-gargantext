@@ -17,16 +17,16 @@ Portability : POSIX
 module Gargantext.Database.Action.Flow.List
     where
 
-import Control.Lens ((^.), (+~), (%~), at, (.~), _Just)
+import Control.Lens ((^.), (+~), (%~), at, (.~))
 import Control.Monad.Reader
 import Data.List qualified as List
 import Data.Map.Strict (toList)
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
 import Gargantext.API.Ngrams (saveNodeStory)
-import Gargantext.API.Ngrams.Tools (getNodeStoryVar)
+import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.API.Ngrams.Types
-import Gargantext.Core.NodeStory
+import Gargantext.Core.NodeStory (HasNodeStory, a_history, a_state, a_version)
 import Gargantext.Core.Types (HasValidationError(..), assertValid)
 import Gargantext.Core.Types.Main (ListType(CandidateTerm))
 import Gargantext.Database.Admin.Types.Node
@@ -34,7 +34,6 @@ import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.NodeNgrams (NodeNgramsPoly(..), NodeNgramsW, listInsertDb,{- getCgramsId -})
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (toList)
-import GHC.Conc (readTVar, writeTVar)
 
 -- FLOW LIST
 -- 1. select specific terms of the corpus when compared with others langs
@@ -201,11 +200,14 @@ putListNgrams nodeId ngramsType nes = putListNgrams' nodeId ngramsType m
       -- The modifyMVar_ would test the patch with applicable first.
       -- If valid the rest would be atomic and no merge is required.
       -}
-      var <- getNodeStoryVar [listId]
-      liftBase $ atomically $ do
-        r <- readTVar var
-        writeTVar var $
-          r & unNodeStory . at listId . _Just . a_version +~ 1
-            & unNodeStory . at listId . _Just . a_history %~ (p :)
-            & unNodeStory . at listId . _Just . a_state . at ngramsType' .~ Just ns
-      saveNodeStory
+      a <- getNodeStory listId
+      let a' = a & a_version +~ 1
+                 & a_history %~ (p :)
+                 & a_state . at ngramsType' .~ Just ns
+      -- liftBase $ atomically $ do
+      --   r <- readTVar var
+      --   writeTVar var $
+      --     r & unNodeStory . at listId . _Just . a_version +~ 1
+      --       & unNodeStory . at listId . _Just . a_history %~ (p :)
+      --       & unNodeStory . at listId . _Just . a_state . at ngramsType' .~ Just ns
+      saveNodeStory listId a'

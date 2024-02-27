@@ -1,4 +1,4 @@
-cabal-version: 2.0
+cabal-version: 3.4
 
 -- This file has been generated from package.yaml by hpack version 0.35.1.
 --
@@ -13,7 +13,7 @@ homepage:       https://gargantext.org
 author:         Gargantext Team
 maintainer:     team@gargantext.org
 copyright:      Copyright: (c) 2017-Present: see git logs and README
-license:        AGPL-3
+license:        AGPL-3.0-or-later
 license-file:   LICENSE
 build-type:     Simple
 data-files:
@@ -42,6 +42,37 @@ data-files:
     gargantext-cors-settings.toml
     .clippy.dhall
 
+-- common options
+-- https://vrom911.github.io/blog/common-stanzas
+common defaults
+  default-extensions:
+    DataKinds
+    DeriveGeneric
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    ImportQualifiedPost
+    MultiParamTypeClasses
+    NamedFieldPuns
+    NoImplicitPrelude
+    OverloadedStrings
+    RankNTypes
+    RecordWildCards
+    StrictData
+  default-language: Haskell2010
+  build-depends:
+    base >=4.7 && <5
+
+-- optimizations
+common optimized
+  ghc-options:
+    -O2
+    -threaded
+    -rtsopts
+    -with-rtsopts=-N
+    -Wmissing-signatures
+  
 -- When enabled, it swaps the hashing algorithm
 -- with a quicker (and less secure) version, which
 -- runs faster in tests.
@@ -61,6 +92,8 @@ flag no-phylo-debug-logs
   manual: True
 
 library
+  import:
+    defaults
   exposed-modules:
       Gargantext
       Gargantext.API
@@ -99,6 +132,8 @@ library
       Gargantext.Core.Methods.Similarities
       Gargantext.Core.NLP
       Gargantext.Core.NodeStory
+      Gargantext.Core.NodeStory.DB
+      Gargantext.Core.NodeStory.Types
       Gargantext.Core.Text
       Gargantext.Core.Text.Context
       Gargantext.Core.Text.Corpus.API
@@ -317,6 +352,7 @@ library
       Gargantext.Database
       Gargantext.Database.Action.Delete
       Gargantext.Database.Action.Flow.Annuaire
+      Gargantext.Database.Action.Flow.Extract
       Gargantext.Database.Action.Flow.List
       Gargantext.Database.Action.Flow.Pairing
       Gargantext.Database.Action.Flow.Utils
@@ -394,24 +430,9 @@ library
       Gargantext.Utils.Servant
       Gargantext.Utils.UTCTime
       Paths_gargantext
+  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fprint-potential-instances
   hs-source-dirs:
       src
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-signatures -Wunused-binds -Wunused-imports -Werror -freduction-depth=300 -fprint-potential-instances
   if flag(test-crypto)
     cpp-options: -DTEST_CRYPTO
   if flag(no-phylo-debug-logs)
@@ -434,7 +455,6 @@ library
     , async ^>= 2.2.4
     , attoparsec ^>= 0.13.2.5
     , auto-update ^>= 0.1.6
-    , base >=4.7 && <5
     , base16-bytestring ^>= 1.0.2.0
     , base64-bytestring ^>= 1.1.0.0
     , bimap >= 0.5.0
@@ -611,98 +631,35 @@ library
     , yaml ^>= 0.11.8.0
     , zip ^>= 1.7.2
     , zlib ^>= 0.6.2.3
-  default-language: Haskell2010
 
 executable gargantext-admin
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-admin
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
-      base
-    , extra
+      extra
     , gargantext
     , gargantext-prelude
     , text
-  default-language: Haskell2010
-
-executable gargantext-cbor2json
-  main-is: Main.hs
-  other-modules:
-      Paths_gargantext
-  hs-source-dirs:
-      bin/gargantext-cbor2json
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
-  build-depends:
-      aeson ^>= 1.5.6.0
-    , base ^>= 4.14.3
-    , bytestring ^>= 0.10.12.0
-    , extra ^>= 1.7.9
-    , gargantext
-    , gargantext-prelude
-    , serialise ^>= 0.2.4.0
-    , text ^>= 1.2.4.1
-  default-language: Haskell2010
 
 executable gargantext-cli
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       CleanCsvCorpus
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-cli
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
       aeson ^>= 1.5.6.0
     , async ^>= 2.2.4
-    , base ^>= 4.14.3.0
     , bytestring ^>= 0.10.12.0
     , cassava ^>= 0.5.2.0
     , containers ^>= 0.6.5.1
@@ -717,136 +674,80 @@ executable gargantext-cli
     , text ^>= 1.2.4.1
     , unordered-containers ^>= 0.2.16.0
     , vector ^>= 0.12.3.0
-  default-language: Haskell2010
 
 executable gargantext-db-obfuscation
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-db-obfuscation
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   if flag(disable-db-obfuscation-executable)
     buildable: False
   else
     build-depends:
-        base
-      , extra
+        extra
       , gargantext
       , gargantext-prelude
       , optparse-simple
       , postgresql-simple ^>= 0.6.4
       , text
-    default-language: Haskell2010
 
 executable gargantext-import
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
+  default-extensions:
+    TypeOperators
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-import
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
-      base ^>= 4.14.3.0
-    , extra ^>= 1.7.9
+      extra ^>= 1.7.9
     , gargantext
     , gargantext-prelude
     , servant-server ^>= 0.18.3
     , text ^>= 1.2.4.1
-  default-language: Haskell2010
 
 executable gargantext-init
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-init
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
-      base ^>= 4.14.3.0
-    , cron ^>= 0.7.0
+      cron ^>= 0.7.0
     , extra ^>= 1.7.9
     , gargantext
     , gargantext-prelude
     , text ^>= 1.2.4.1
-  default-language: Haskell2010
 
 executable gargantext-invitations
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-invitations
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
-      base ^>= 4.14.3.0
-    , extra ^>= 1.7.9
+      extra ^>= 1.7.9
     , gargantext
     , gargantext-prelude
     , text ^>= 1.2.4.1
-  default-language: Haskell2010
 
 executable gargantext-phylo
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
@@ -872,7 +773,6 @@ executable gargantext-phylo
   build-depends:
       aeson ^>= 1.5.6.0
     , async ^>= 2.2.4
-    , base ^>= 4.14.3.0
     , bytestring ^>= 0.10.12.0
     , cassava ^>= 0.5.2.0
     , containers ^>= 0.6.5.1
@@ -889,33 +789,18 @@ executable gargantext-phylo
     , time ^>= 1.9.3
     , unordered-containers ^>= 0.2.16.0
     , vector ^>= 0.7.3
-  default-language: Haskell2010
 
 executable gargantext-server
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-server
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -O2 -Wcompat -Wmissing-signatures -rtsopts -threaded -with-rtsopts=-N -with-rtsopts=-T -fprof-auto
   build-depends:
-      base ^>= 4.14.3.0
-    , cassava ^>= 0.5.2.0
+      cassava ^>= 0.5.2.0
     , containers ^>= 0.6.5.1
     , extra ^>= 1.7.9
     , full-text-search ^>= 0.2.1.4
@@ -927,41 +812,27 @@ executable gargantext-server
     , text ^>= 1.2.4.1
     , unordered-containers ^>= 0.2.16.0
     , vector ^>= 0.7.3
-  default-language: Haskell2010
 
 executable gargantext-upgrade
+  import:
+      defaults
+    , optimized
   main-is: Main.hs
   other-modules:
       Paths_gargantext
   hs-source-dirs:
       bin/gargantext-upgrade
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
-      base ^>= 4.14.3.0
-    , cron ^>= 0.7.0
+      cron ^>= 0.7.0
     , extra ^>= 1.7.9
     , gargantext
     , gargantext-prelude
     , postgresql-simple ^>= 0.6.4
     , text ^>= 1.2.4.1
-  default-language: Haskell2010
 
 test-suite garg-test-tasty
+  import:
+    defaults
   type: exitcode-stdio-1.0
   main-is: drivers/tasty/Main.hs
   other-modules:
@@ -998,28 +869,12 @@ test-suite garg-test-tasty
       Paths_gargantext
   hs-source-dirs:
       test
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck ^>= 2.14.2
     , aeson ^>= 1.5.6.0
     , aeson-qq
     , async ^>= 2.2.4
-    , base ^>= 4.14.3.0
     , boolexpr ^>= 0.2
     , bytestring ^>= 0.10.12.0
     , case-insensitive
@@ -1077,9 +932,10 @@ test-suite garg-test-tasty
     , wai
     , wai-extra
     , warp
-  default-language: Haskell2010
 
 test-suite garg-test-hspec
+  import:
+    defaults
   type: exitcode-stdio-1.0
   main-is: drivers/hspec/Main.hs
   other-modules:
@@ -1099,38 +955,12 @@ test-suite garg-test-hspec
       Paths_gargantext
   hs-source-dirs:
       test
-  default-extensions:
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NamedFieldPuns
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
-      RecordWildCards
-      StrictData
-      DataKinds
-      DeriveGeneric
-      FlexibleContexts
-      FlexibleInstances
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      MultiParamTypeClasses
-      NoImplicitPrelude
-      OverloadedStrings
-      RankNTypes
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck ^>= 2.14.2
     , aeson ^>= 1.5.6.0
     , aeson-qq
     , async ^>= 2.2.4
-    , base ^>= 4.14.3.0
     , boolexpr ^>= 0.2
     , bytestring ^>= 0.10.12.0
     , case-insensitive
@@ -1187,7 +1017,6 @@ test-suite garg-test-hspec
     , wai
     , wai-extra
     , warp
-  default-language: Haskell2010
 
 benchmark garg-bench
   main-is:       Main.hs
