@@ -25,7 +25,7 @@ phyloConfig = PhyloConfig {
   , similarity = WeightedLogJaccard {_wlj_sensibility = 0.5, _wlj_minSharedNgrams = 2}
   , seaElevation = Constante {_cons_start = 0.1, _cons_gap = 0.1}
   , defaultMode = True
-  , findAncestors = True
+  , findAncestors = False
   , phyloSynchrony = ByProximityThreshold {_bpt_threshold = 0.5, _bpt_sensibility = 0.0, _bpt_scope = AllBranches, _bpt_strategy = MergeAllGroups}
   , phyloQuality = Quality {_qua_granularity = 0.8, _qua_minBranch = 3}
   , timeUnit = Year {_year_period = 3, _year_step = 1, _year_matchingFrame = 5}
