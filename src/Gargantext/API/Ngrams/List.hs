@@ -55,16 +55,18 @@ import Servant
 
 ------------------------------------------------------------------------
 type GETAPI = Summary "Get List"
-            :> "lists"
+              :> "lists"
               :> Capture "listId" ListId
-              :> "json"
-              :> Get '[JSON, HTML] (Headers '[Header "Content-Disposition" Text] NgramsList)
-            :<|> "lists"
-              :> Capture "listId" ListId
-              :> "csv"
-              :> Get '[GUS.CSV] (Headers '[Header "Content-Disposition" Text] NgramsTableMap)
+              :> ( "json"
+                   :> Get '[JSON, HTML] (Headers '[Header "Content-Disposition" Text] NgramsList)
+                 :<|>  "json.zip"
+                   :> Get '[GUS.ZIP] (Headers '[Header "Content-Disposition" Text] NgramsListZIP)
+                 :<|> "csv"
+                   :> Get '[GUS.CSV] (Headers '[Header "Content-Disposition" Text] NgramsTableMap) )
 getApi :: GargServer GETAPI
-getApi = getJson :<|> getCsv
+getApi listId = getJson listId
+           :<|> getJsonZip listId
+           :<|> getCsv listId
 
 --
 -- JSON API
@@ -93,6 +95,18 @@ getJson lId = do
                              , ".json"
                              ]
                      ) lst
+
+getJsonZip :: HasNodeStory env err m
+           => ListId
+           -> m (Headers '[Header "Content-Disposition" Text] NgramsListZIP)
+getJsonZip lId = do
+  lst <- getNgramsList lId
+  let nlz = NgramsListZIP { _nlz_nl = lst, _nlz_list_id = lId}
+  pure $ addHeader (concat [ "attachment; filename="
+                           , nlzFileName nlz
+                           , ".zip"
+                           ]
+                     ) nlz
 
 getCsv :: HasNodeStory env err m
        => ListId

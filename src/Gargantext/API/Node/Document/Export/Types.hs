@@ -13,19 +13,21 @@ Portability : POSIX
 
 module Gargantext.API.Node.Document.Export.Types where
 
+import Data.Aeson (encode)
 import Data.Aeson.TH (deriveJSON)
 import Data.Csv (DefaultOrdered(..), ToNamedRecord(..), (.=), header, namedRecord)
-import Data.Swagger
---import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import Gargantext.Core.Types
+import Data.Swagger ( genericDeclareNamedSchema, ToParamSchema(..), ToSchema(..) )
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
+import Gargantext.Core.Types ( Node, TODO )
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Node (DocId)
 import Gargantext.Database.Schema.Node (NodePoly(..))
---import Gargantext.Utils.Servant (CSV)
+import Gargantext.Utils.Servant (ZIP)
+import Gargantext.Utils.Zip (zipContentsPure)
 import Protolude
---import Protolude.Partial (read)
-import Servant
+import Servant ((:>), (:<|>), Get, Header, Headers(..), JSON, MimeRender(..), PlainText, Summary)
 
 
 -- | Document Export
@@ -34,6 +36,12 @@ data DocumentExport =
                  , _de_garg_version :: Text
                  } deriving (Generic)
 
+-- | This is to represent a zipped document export. We want to have doc_id in zipped file name.
+data DocumentExportZIP =
+  DocumentExportZIP { _dez_dexp   :: DocumentExport
+                    , _dez_doc_id :: DocId } deriving (Generic)
+    
+    
 data Document =
   Document { _d_document :: Node HyperdataDocument
            , _d_ngrams   :: Ngrams
@@ -71,6 +79,9 @@ type Hash = Text
 instance ToSchema DocumentExport where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_de_")
 
+instance ToSchema DocumentExportZIP where
+  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_dez_")
+  
 instance ToSchema Document where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_d_")
 
@@ -79,6 +90,9 @@ instance ToSchema Ngrams where
 
 -------
 instance ToParamSchema DocumentExport where
+  toParamSchema _ = toParamSchema (Proxy :: Proxy TODO)
+
+instance ToParamSchema DocumentExportZIP where
   toParamSchema _ = toParamSchema (Proxy :: Proxy TODO)
 
 instance ToParamSchema Document where
@@ -90,10 +104,25 @@ instance ToParamSchema Ngrams where
 type API = Summary "Document Export"
             :> "export"
             :> ( "json"
-               :> Get '[JSON] (Headers '[Servant.Header "Content-Disposition" Text] DocumentExport)
+                 :> Get '[JSON] (Headers '[Servant.Header "Content-Disposition" Text] DocumentExport)
+               :<|> "json.zip"
+                 :> Get '[ZIP] (Headers '[Servant.Header "Content-Disposition" Text] DocumentExportZIP)
                :<|> "csv"
-               :> Get '[PlainText] (Headers '[Servant.Header "Content-Disposition" Text] Text)) -- [Document])
+                 :> Get '[PlainText] (Headers '[Servant.Header "Content-Disposition" Text] Text) )
 
 $(deriveJSON (unPrefix "_ng_") ''Ngrams)
 $(deriveJSON (unPrefix "_d_") ''Document)
 $(deriveJSON (unPrefix "_de_") ''DocumentExport)
+
+
+
+------
+
+-- Needs to be here because of deriveJSON TH above
+
+dezFileName :: DocumentExportZIP -> Text
+dezFileName (DocumentExportZIP { .. }) = "GarganText_DocsList-" <> show _dez_doc_id <> ".json"
+    
+instance MimeRender ZIP DocumentExportZIP where
+  mimeRender _ dexpz@(DocumentExportZIP { .. }) =
+    zipContentsPure (T.unpack $ dezFileName dexpz) (encode _dez_dexp)
