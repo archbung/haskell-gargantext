@@ -1,8 +1,8 @@
 WITH total AS (SELECT * from auth_user as A)
-    , sum AS (SELECT count(*) from total)
+    , sum AS (SELECT count(*) AS "TOTAL" from total)
     , increase AS (SELECT count(*) from total as t WHERE t.date_joined >= date_trunc('month', current_date - interval '3' month))
 SELECT *,
-  (SELECT (100 * (SELECT * from increase) / (SELECT * from sum))) AS "LAST 3 MONTHS / TOTAL"
+  (SELECT TO_CHAR((ROUND(100 * NULLIF((SELECT * from increase),0) / NULLIF((SELECT * from sum), 0))), 'fm99%')  AS "CREATED LAST 3 MONTHS")
      FROM sum
 
 
