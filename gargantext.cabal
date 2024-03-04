@@ -38,6 +38,7 @@ data-files:
     test-data/phylo/bpa_phylo_test.json
     test-data/phylo/open_science.json
     test-data/phylo/issue-290-small.golden.json
+    test-data/stemming/lancaster.txt
     test-data/test_config.ini
     gargantext-cors-settings.toml
     .clippy.dhall
@@ -862,6 +863,7 @@ test-suite garg-test-tasty
       Test.Offline.Errors
       Test.Offline.JSON
       Test.Offline.Phylo
+      Test.Offline.Stemming.Lancaster
       Test.Parsers.Date
       Test.Parsers.Types
       Test.Parsers.WOS
@@ -907,6 +909,7 @@ test-suite garg-test-tasty
     , patches-map ^>= 0.1.0.1
     , postgres-options >= 0.2 && < 0.3
     , postgresql-simple >= 0.6.4 && < 0.7
+    , pretty
     , process ^>= 1.6.13.2
     , quickcheck-instances ^>= 0.3.25.2
     , raw-strings-qq
@@ -921,6 +924,7 @@ test-suite garg-test-tasty
     , shelly >= 1.9 && < 2
     , stm ^>= 2.5.0.1
     , tasty ^>= 1.4.2.1
+    , tasty-golden
     , tasty-hspec
     , tasty-hunit
     , tasty-quickcheck
@@ -929,6 +933,7 @@ test-suite garg-test-tasty
     , text ^>= 1.2.4.1
     , time ^>= 1.9.3
     , tmp-postgres >= 1.34.1 && < 1.35
+    , tree-diff
     , unordered-containers ^>= 0.2.16.0
     , validity ^>= 0.11.0.1
     , wai
@@ -1058,4 +1063,17 @@ executable gargantext-phylo-profile
     , split
     , vector
     , directory
+  default-language: Haskell2010
+
+executable garg-golden-file-diff
+  import:
+      defaults
+    , optimized
+  main-is: Main.hs
+  hs-source-dirs:
+      bin/gargantext-golden-file-diff
+  build-depends:
+      base
+    , text
+    , tree-diff
   default-language: Haskell2010

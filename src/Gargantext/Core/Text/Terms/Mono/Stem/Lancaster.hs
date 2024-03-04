@@ -38,7 +38,7 @@ rulesPaper =
     [ ('a', [ Rule "ia" "" intact, Rule "a" "" intact ])
     , ('b', [ Rule "bb" "b" stop ])
     , ('c', [ Rule "ytic" "ys" stop, Rule "ic" "" cont, Rule "nc" "nt" cont ])
-    , ('d', [ Rule "dd" "d" stop, Rule "ied" "y" cont, Rule "ceed" "cess" stop, Rule "eed" "ee" stop
+    , ('d', [ Rule "dd" "d" stop, Rule "ied" "i" stop, Rule "ceed" "cess" stop, Rule "eed" "ee" stop
              , Rule "ed" "" cont, Rule "hood" "" cont ])
     , ('e', [ Rule "e" "" cont ])
     , ('f', [ Rule "lief" "liev" stop, Rule "if" "" cont ])
@@ -121,7 +121,7 @@ applyRules value isIntact rules =
                                 then Just $ applyRules next False rules
                                 else Just next
 
--- | A stem is acceptable if
+-- | Returns 'True' if a stem is acceptable.
 acceptable :: Text -> Bool
 acceptable val
   | T.null val = False
