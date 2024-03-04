@@ -65,7 +65,7 @@ measureConditional m =  run $ x $ map fromIntegral $ use m
                             -> let ij = lift (Z :. i :. j)
                                    ji = lift (Z :. j :. i)
                                 in
-                                   ((ifThenElse (ij < ji) ij (0 :. Z))  :: Exp DIM2)
+                                   ((ifThenElse (ij < ji) ji 0 )  :: Exp DIM2)
                           )
                   ) m'
 
