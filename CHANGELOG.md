@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.9.6.4 [RELEASE CANDIDATE 007]
+
+* [BACK][FEAT][[Node Phylo] Change the default value of findAncestors to False (#314)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/314)
+* [BACK][OPTIM][Export Data as zip for all exports (#312)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/312)
+* [BACK][METRICS] SQL queries to follow the community (export to CSV)
+
 ## Version 0.0.6.9.9.9.6.3 [Release Candidate for 007]
 
 * [BACK][OPTIM] Option to enable GHC buld with O2 option
