@@ -58,14 +58,14 @@ module Gargantext.Database.Query.Table.Node.Document.Insert
   where
 
 import Control.Lens (set, view)
-import Control.Lens.Cons
-import Control.Lens.Prism
+import Control.Lens.Cons ( _head )
+import Control.Lens.Prism ( _Just )
 import Data.Aeson (toJSON, ToJSON)
 import Data.Text qualified as DT (pack, concat, take, filter, toLower)
 import Data.Time.Segment (jour)
 import Database.PostgreSQL.Simple (FromRow, Query, Only(..))
 import Database.PostgreSQL.Simple.FromRow (fromRow, field)
-import Database.PostgreSQL.Simple.SqlQQ
+import Database.PostgreSQL.Simple.SqlQQ ( sql )
 import Database.PostgreSQL.Simple.ToField (toField, Action{-, ToField-})
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.Core (HasDBid(toDBid))
@@ -93,7 +93,7 @@ import Database.PostgreSQL.Simple (formatQuery)
 insertDb :: (InsertDb a, HasDBid NodeType) => UserId -> Maybe ParentId -> [a] -> DBCmd err [ReturnId]
 insertDb u p = runPGSQuery queryInsert . Only . Values fields . map (insertDb' u p)
       where
-        fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes
+        fields    = map (QualifiedIdentifier Nothing) inputSqlTypes
 
 class InsertDb a
   where
@@ -207,12 +207,12 @@ instance AddUniqId HyperdataDocument
                           $ set hd_uniqId    (Just shaUni) doc
           where
             shaUni = hash $ DT.concat $ map ($ doc) shaParametersDoc
-            shaBdd = hash $ DT.concat $ map ($ doc) ([(\d -> maybeText (_hd_bdd d))] <> shaParametersDoc)
+            shaBdd = hash $ DT.concat $ map ($ doc) ([maybeText . _hd_bdd] <> shaParametersDoc)
 
-            shaParametersDoc :: [(HyperdataDocument -> Text)]
-            shaParametersDoc = [ \d -> filterText $ maybeText (_hd_title            d)
-                               , \d -> filterText $ maybeText (_hd_abstract         d)
-                               , \d -> filterText $ maybeText (_hd_source           d)
+            shaParametersDoc :: [HyperdataDocument -> Text]
+            shaParametersDoc = [ filterText . maybeText . _hd_title
+                               , filterText . maybeText . _hd_abstract
+                               , filterText . maybeText . _hd_source
                         --       , \d -> maybeText (_hd_publication_date d)
                                ]
 
@@ -230,14 +230,14 @@ instance UniqParameters (Node a)
 
 
 filterText :: Text -> Text
-filterText = DT.toLower . (DT.filter isAlphaNum)
+filterText = DT.toLower . DT.filter isAlphaNum
 
 
 instance (UniqParameters a, ToJSON a, HasDBid NodeType) => AddUniqId (Node a)
   where
     addUniqId (Node nid _ t u p n d h)  = Node nid (Just newHash) t u p n d h
       where
-        newHash = "\\x" <> (hash $ uniqParameters (fromMaybe 0 p) h)
+        newHash = "\\x" <> hash (uniqParameters (fromMaybe 0 p) h)
 
 
     ---------------------------------------------------------------------------
@@ -249,17 +249,17 @@ instance AddUniqId HyperdataContact
     addUniqId = addUniqIdsContact
 
 addUniqIdsContact :: HyperdataContact -> HyperdataContact
-addUniqIdsContact hc = set (hc_uniqIdBdd) (Just shaBdd)
-                     $ set (hc_uniqId   ) (Just shaUni) hc
+addUniqIdsContact hc = set hc_uniqIdBdd (Just shaBdd)
+                     $ set hc_uniqId    (Just shaUni) hc
   where
     shaUni = hash $ DT.concat $ map ($ hc) shaParametersContact
-    shaBdd = hash $ DT.concat $ map ($ hc) ([\d -> maybeText (view hc_bdd d)] <> shaParametersContact)
+    shaBdd = hash $ DT.concat $ map ($ hc) ([maybeText . view hc_bdd] <> shaParametersContact)
 
     -- | TODO add more shaparameters
-    shaParametersContact :: [(HyperdataContact -> Text)]
-    shaParametersContact = [ \d -> maybeText $ view (hc_who   . _Just . cw_firstName              ) d
-                           , \d -> maybeText $ view (hc_who   . _Just . cw_lastName               ) d
-                           , \d -> maybeText $ view (hc_where . _head . cw_touch . _Just . ct_mail) d
+    shaParametersContact :: [HyperdataContact -> Text]
+    shaParametersContact = [ maybeText . view (hc_who   . _Just . cw_firstName              )
+                           , maybeText . view (hc_who   . _Just . cw_lastName               )
+                           , maybeText . view (hc_where . _head . cw_touch . _Just . ct_mail)
                            ]
 
 
@@ -286,7 +286,7 @@ instance ToNode HyperdataDocument where
 
 -- TODO better Node
 instance ToNode HyperdataContact where
-  toNode u p h = Node 0 Nothing (toDBid NodeContact) u p "Contact" date h
+  toNode u p = Node 0 Nothing (toDBid NodeContact) u p "Contact" date
     where
       date  = jour 2020 01 01
 

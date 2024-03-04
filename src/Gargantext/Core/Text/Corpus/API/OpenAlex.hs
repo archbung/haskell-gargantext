@@ -37,8 +37,8 @@ toDoc (OA.Work { .. } ) =
   HyperdataDocument { _hd_bdd = Just "OpenAlex"
                     , _hd_doi = doi
                     , _hd_url = url
-                    , _hd_uniqId = Just id
-                    , _hd_uniqIdBdd = Just id
+                    , _hd_uniqId = Nothing
+                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = firstPage biblio
                     , _hd_title = title
                     , _hd_authors = authors authorships
@@ -55,25 +55,25 @@ toDoc (OA.Work { .. } ) =
                     , _hd_language_iso2 = language }
       where
         firstPage :: OA.Biblio -> Maybe Int
-        firstPage OA.Biblio { first_page } = maybe Nothing readMaybe $ T.unpack <$> first_page
+        firstPage OA.Biblio { first_page } = (readMaybe . T.unpack) =<< first_page
 
         authors :: [OA.Authorship] -> Maybe Text
         authors [] = Nothing
-        authors aus = Just $ T.intercalate ", " $ catMaybes (getDisplayName <$> aus)
+        authors aus = Just $ T.intercalate ", " $ mapMaybe getDisplayName aus
           where
             getDisplayName :: OA.Authorship -> Maybe Text
             getDisplayName OA.Authorship { author = OA.DehydratedAuthor { display_name = dn } } = dn
 
         institutes :: [OA.Authorship] -> Maybe Text
         institutes [] = Nothing
-        institutes aus = Just $ T.intercalate ", " ((T.replace ", " " - ") . getInstitutesNames <$> aus)
+        institutes aus = Just $ T.intercalate ", " (T.replace ", " " - " . getInstitutesNames <$> aus)
           where
             getInstitutesNames OA.Authorship { institutions } = T.intercalate ", " $ getDisplayName <$> institutions
             getDisplayName :: OA.DehydratedInstitution -> Text
             getDisplayName OA.DehydratedInstitution { display_name = dn } = dn
 
         source :: Maybe Text
-        source = maybe Nothing getSource primary_location
+        source = getSource =<< primary_location
           where
             getSource OA.Location { source = s } = getSourceDisplayName <$> s
             getSourceDisplayName OA.DehydratedSource { display_name = dn }  = dn

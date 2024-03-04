@@ -29,7 +29,10 @@ import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 data HyperdataDocument = HyperdataDocument { _hd_bdd                :: !(Maybe Text)
                                            , _hd_doi                :: !(Maybe Text)
                                            , _hd_url                :: !(Maybe Text)
+                                           -- | Unique MD5 hash of the document
                                            , _hd_uniqId             :: !(Maybe Text)
+                                           -- | Used as unique ID per source (can be same doc in Openalex, HAL, etc)
+                                           --   I think it's currently not used.
                                            , _hd_uniqIdBdd          :: !(Maybe Text)
                                            , _hd_page               :: !(Maybe Int)
                                            , _hd_title              :: !(Maybe Text)
