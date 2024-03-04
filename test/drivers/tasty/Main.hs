@@ -14,6 +14,7 @@ import Gargantext.Prelude
 
 import qualified Test.Core.Text.Corpus.Query  as CorpusQuery
 import qualified Test.Core.Utils              as Utils
+import qualified Test.Core.Similarity         as Similarity
 import qualified Test.Graph.Clustering        as Graph
 import qualified Test.Ngrams.NLP              as NLP
 import qualified Test.Ngrams.Query            as NgramsQuery
@@ -36,6 +37,7 @@ main = do
   cryptoSpec       <- testSpec "Crypto" Crypto.test
   nlpSpec          <- testSpec "NLP" NLP.test
   jobsSpec         <- testSpec "Jobs" Jobs.test
+  similaritySpec   <- testSpec "Similarity" Similarity.test
 
   defaultMain $ testGroup "Gargantext"
     [ utilSpec
@@ -50,4 +52,5 @@ main = do
     , JSON.tests
     , Errors.tests
     , Phylo.tests
+    , similaritySpec
     ]

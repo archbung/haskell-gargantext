@@ -55,12 +55,23 @@ conditional m' = Map.fromList $ ((catMaybes results') `using` parList rdeepseq)
     keys    = Set.toList $ Set.fromList (x <> y)
     (x,y)   = unzip $ Map.keys m
 
+{-
+Only for TESTs
+-}
 
-conditional_test :: HashMap (Text,Text) Double
-conditional_test = conditional $ Map.fromList example_matrix
+conditional_test :: Bool
+conditional_test = conditional_test1 == conditional_test2
 
-conditional_test' :: M.Map (Text,Text) Double
-conditional_test' = M.filter (>0) $ score Square measureConditional $ M.fromList example_matrix
+conditional_test1 :: HashMap (Text,Text) Double
+conditional_test1 = conditional $ Map.fromList example_matrix
+
+conditional_test2 :: HashMap (Text,Text) Double
+conditional_test2 = Map.fromList
+                  $ M.toList
+                  $ M.filter (>0)
+                  $ score Square measureConditional
+                  $ M.fromList example_matrix
+
 
 example_matrix :: [((Text,Text), Int)]
 example_matrix = concat [

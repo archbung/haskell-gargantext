@@ -125,7 +125,7 @@ matrixEye n' =
 
 
 diagNull :: Num a => Dim -> Acc (Matrix a) -> Acc (Matrix a)
-diagNull n m = trace ("diagNull") $ zipWith (*) m (matrixEye n)
+diagNull n m = zipWith (*) m (matrixEye n)
 
 
 -- Returns an N-dimensional array with the values of x for the indices where
