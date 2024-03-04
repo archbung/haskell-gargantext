@@ -33,8 +33,8 @@ book2csv :: Int -> FileDir -> FileOut -> IO ()
 book2csv n f_in f_out = do
   files <- filesOf f_in
   texts <- readPublis f_in files
-  let publis = List.concat $ map (file2publi n) texts
-  let docs = map (\(y,p) -> publiToHyperdata y p) $ List.zip [1..] publis
+  let publis = concatMap (file2publi n) texts
+  let docs = zipWith publiToHyperdata [1..] publis
   DBL.writeFile f_out (hyperdataDocument2csv docs)
 
 filesOf :: FileDir -> IO [FilePath]
@@ -43,7 +43,7 @@ filesOf fd = List.sort                                        -- sort by filenam
         <$>  getDirectoryContents fd
 
 readPublis :: FileDir -> [FilePath] -> IO [(FilePath, Text)]
-readPublis fd fps = mapM (\fp -> DBL.readFile (fd <> fp) >>= \txt -> pure (fp, cs txt)) fps
+readPublis fd = mapM (\fp -> DBL.readFile (fd <> fp) >>= \txt -> pure (fp, cs txt))
 
 ------------------------------------------------------------------------
 -- Main Types
@@ -63,7 +63,7 @@ type FileDir = FilePath
 ---------------------------------------------------------------------
 
 file2publi :: Int -> (FilePath, Text) -> [Publi]
-file2publi n (fp,theText) = map (\(t,txt) -> Publi authors source t txt) theTexts
+file2publi n (fp,theText) = map (uncurry (Publi authors source)) theTexts
   where
     theTexts = text2titleParagraphs n theText
     FileInfo authors source = fileNameInfo fp
@@ -81,8 +81,6 @@ publiToHyperdata y (Publi a s t txt) =
        HyperdataDocument { _hd_bdd = Just "Book File"
                         , _hd_doi = Nothing
                         , _hd_url = Nothing
-                        , _hd_uniqId = Nothing
-                        , _hd_uniqIdBdd = Nothing
                         , _hd_page = Nothing
                         , _hd_title = Just t
                         , _hd_authors = Just (DT.concat a)

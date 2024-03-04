@@ -20,14 +20,14 @@ TODO:
 
 module Gargantext.Core.Text.Corpus.Parsers.Isidore where
 
-import Control.Lens hiding (contains)
+import Control.Lens ( (^.), (.~) )
 import Data.ByteString.Lazy (ByteString)
-import Data.RDF hiding (triple, Query)
+import Data.RDF ( Node(LNode, UNode), LValue(PlainLL, TypedL, PlainL) )
 import Data.Text qualified as T
-import Database.HSparql.Connection
+import Database.HSparql.Connection ( BindingValue(..), EndPoint, structureContent )
 import Database.HSparql.QueryGenerator
 import Gargantext.Core (Lang)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Prelude hiding (ByteString)
 import Network.Wreq (getWith, Response, defaults, header, param, responseStatus, responseBody)
 import Prelude qualified
@@ -115,7 +115,7 @@ unbound _ Unbound         = Nothing
 unbound _ (Bound (UNode x)) = Just x
 unbound _ (Bound (LNode (TypedL x _))) = Just x
 unbound _ (Bound (LNode (PlainL x)))   = Just x
-unbound l (Bound (LNode (PlainLL x l')))   = if l' == (T.toLower $ show l) then Just x else Nothing
+unbound l (Bound (LNode (PlainLL x l')))   = if l' == T.toLower (show l) then Just x else Nothing
 unbound _ _ = Nothing
 
 bind2doc :: Lang -> [BindingValue] -> HyperdataDocument
@@ -123,8 +123,6 @@ bind2doc l [ link', date, langDoc, authors, _source, publisher, title, abstract 
   HyperdataDocument { _hd_bdd = Just "Isidore"
                     , _hd_doi = Nothing
                     , _hd_url = unbound l link'
-                    , _hd_uniqId = Nothing
-                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = Nothing
                     , _hd_title = unbound l title
                     , _hd_authors = unbound l authors

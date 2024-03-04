@@ -99,8 +99,6 @@ toDoc l (Arxiv.Result { abstract
           ) = HyperdataDocument { _hd_bdd = Just "Arxiv"
                                 , _hd_doi = Just $ Text.pack doi
                                 , _hd_url = Just $ Text.pack url
-                                , _hd_uniqId = Nothing
-                                , _hd_uniqIdBdd = Nothing
                                 , _hd_page = Nothing
                                 , _hd_title = Just $ Text.pack title
                                 , _hd_authors = authors aus

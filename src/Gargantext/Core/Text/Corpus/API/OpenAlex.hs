@@ -9,15 +9,15 @@ Portability : POSIX
 -}
 module Gargantext.Core.Text.Corpus.API.OpenAlex where
 
-import Conduit
+import Conduit ( ConduitT, (.|), mapC, takeC )
 import Data.LanguageCodes qualified as ISO639
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Gargantext.Core (iso639ToText)
 import Gargantext.Core.Text.Corpus.Query as Corpus
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Protolude
-import qualified OpenAlex as OA
-import qualified OpenAlex.Types as OA
+import OpenAlex qualified as OA
+import OpenAlex.Types qualified as OA
 import Servant.Client (ClientError)
 
 
@@ -37,8 +37,6 @@ toDoc (OA.Work { .. } ) =
   HyperdataDocument { _hd_bdd = Just "OpenAlex"
                     , _hd_doi = doi
                     , _hd_url = url
-                    , _hd_uniqId = Nothing
-                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = firstPage biblio
                     , _hd_title = title
                     , _hd_authors = authors authorships

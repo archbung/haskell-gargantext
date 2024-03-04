@@ -113,8 +113,6 @@ toDoc l (PubMedDoc.PubMed { pubmed_article = PubMedDoc.PubMedArticle t j as aus
           ) = HyperdataDocument { _hd_bdd = Just "PubMed"
                                 , _hd_doi = Nothing
                                 , _hd_url = Nothing
-                                , _hd_uniqId = Nothing
-                                , _hd_uniqIdBdd = Nothing
                                 , _hd_page = Nothing
                                 , _hd_title = t
                                 , _hd_authors = authors aus

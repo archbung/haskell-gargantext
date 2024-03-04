@@ -9,7 +9,7 @@ Portability : POSIX
 -}
 module Gargantext.Core.Text.Corpus.API.EPO where
 
-import Conduit
+import Conduit ( ConduitT, (.|), mapC )
 import Data.LanguageCodes (ISO639_1)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
@@ -17,7 +17,7 @@ import EPO.API.Client.Types qualified as EPO
 import EPO.API.Client.Implementation qualified as EPO
 import Gargantext.Core (iso639ToText)
 import Gargantext.Core.Text.Corpus.Query qualified as Corpus
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Network.URI (parseURI)
 import Protolude
 import Servant.Client.Core (ClientError(ConnectionError))
@@ -48,8 +48,6 @@ toDoc lang (EPO.HyperdataDocument { .. }) =
   HyperdataDocument { _hd_bdd = Just "EPO"
                     , _hd_doi = Nothing
                     , _hd_url = Nothing
-                    , _hd_uniqId = Nothing
-                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = Nothing
                     , _hd_title = Map.lookup lang titles
                     , _hd_authors = authors_
