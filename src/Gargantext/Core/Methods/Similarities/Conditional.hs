@@ -21,7 +21,9 @@ import Data.HashMap.Strict qualified as Map
 import Data.Set qualified as Set
 import Gargantext.Core.Viz.Graph.Utils (getMax)
 import Gargantext.Prelude
-
+import Data.Map.Strict qualified as M
+import Gargantext.Core.Methods.Similarities.Accelerate.Conditional (measureConditional)
+import Gargantext.Core.Viz.Graph.Index (score, MatrixShape(..))
 
 type HashMap = Map.HashMap
 ------------------------------------------------------------------------
@@ -35,7 +37,11 @@ conditional m' = Map.fromList $ ((catMaybes results') `using` parList rdeepseq)
   where
     results' = [ let
                   ij = (/) <$> Map.lookup (i,j) m <*> Map.lookup (j,j) m
-                  ji = (/) <$> Map.lookup (j,i) m <*> Map.lookup (i,i) m
+                    -- proba of i|j, high values means i is more generic than j
+
+                  ji = (/) <$> Map.lookup (i,j) m <*> Map.lookup (i,i) m
+                    -- proba of j|i, high values means j is more generic than i
+
                   in getMax (i,j) ij ji
 
                | i <- keys
@@ -49,4 +55,34 @@ conditional m' = Map.fromList $ ((catMaybes results') `using` parList rdeepseq)
     keys    = Set.toList $ Set.fromList (x <> y)
     (x,y)   = unzip $ Map.keys m
 
+
+conditional_test :: HashMap (Text,Text) Double
+conditional_test = conditional $ Map.fromList example_matrix
+
+conditional_test' :: M.Map (Text,Text) Double
+conditional_test' = M.filter (>0) $ score Square measureConditional $ M.fromList example_matrix
+
+example_matrix :: [((Text,Text), Int)]
+example_matrix = concat [
+          compte "polygon" "polygon"   19
+
+        , compte "polygon" "square"     6
+        , compte "polygon" "triangle"  10
+        , compte "polygon" "losange"    3
+
+        , compte "triangle" "triangle" 11
+        , compte "square"   "square"    7
+        , compte "losange" "losange"   15
+
+        , compte "shape" "shape"       10
+        , compte "circle" "circle"      6
+        , compte "shape" "circle"       3
+        , compte "shape" "square"       2
+        , compte "polygon" "shape"     10
+         
+        ]
+  where
+    compte a b c = if a /= b 
+                      then [((a,b),c), ((b,a), c)]
+                      else [((a,b),c)]
 

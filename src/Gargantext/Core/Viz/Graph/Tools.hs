@@ -79,8 +79,8 @@ cooc2graph' distance threshold myCooc
     $ mat2map
     $ measure distance
     $ case distance of
-        Conditional    -> map2mat Triangle 0 tiSize
-        _              -> map2mat Square   0 tiSize
+        Conditional    -> map2mat Square  1 tiSize
+        _              -> map2mat Square  0 tiSize
     $ Map.filter (> 1) myCooc'
 
      where
