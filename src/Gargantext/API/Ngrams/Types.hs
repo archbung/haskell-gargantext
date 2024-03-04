@@ -20,20 +20,19 @@ module Gargantext.API.Ngrams.Types where
 import Codec.Serialise (Serialise())
 import Control.Category ((>>>))
 import Control.Lens (makeLenses, makePrisms, Iso', iso, from, (.~), (.=), (?=), (#), to, folded, {-withIndex, ifolded,-} view, use, (^.), (^?), (%~), (.~), (%=), at, _Just, Each(..), itraverse_, both, forOf_, (?~), over)
-import Control.Monad.State
 import Data.Aeson hiding ((.=))
 import Data.Aeson.TH (deriveJSON)
-import Data.Foldable
+import Data.Csv (defaultEncodeOptions, encodeByNameWith, header, namedRecord, EncodeOptions(..), NamedRecord, Quoting(QuoteNone))
+import Data.Csv qualified as Csv
 import Data.HashMap.Strict.InsOrd qualified as InsOrdHashMap
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Monoid
 import Data.Patch.Class (Replace, replace, Action(act), Group, Applicable(..), Composable(..), Transformable(..), PairPatch(..), Patched, ConflictResolution, ConflictResolutionReplace, MaybePatch(Mod), unMod, old, new)
 import Data.Set qualified as Set
 import Data.String (IsString(..))
-import Data.Swagger hiding (version, patch)
-import Data.Text (pack, strip)
-import Data.Validity
+import Data.Swagger ( NamedSchema(NamedSchema), declareSchemaRef, genericDeclareNamedSchema, SwaggerType(SwaggerObject), ToParamSchema, ToSchema(..), HasProperties(properties), HasRequired(required), HasType(type_) )
+import Data.Text qualified as T
+import Data.Validity ( Validity(..) )
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toJSONField, toField)
 import Gargantext.Core.Text (size)
@@ -42,10 +41,12 @@ import Gargantext.Core.Types.Query (Limit, Offset, MaxSize, MinSize)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixUntagged, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node (ContextId)
 import Gargantext.Database.Prelude (fromField', HasConnectionPool, HasConfig, CmdM')
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
+import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
 import Gargantext.Prelude hiding (IsString, hash, from, replace, to)
 import Gargantext.Prelude.Crypto.Hash (IsHashable(..))
-import Servant hiding (Patch)
+import Gargantext.Utils.Servant (CSV, ZIP)
+import Gargantext.Utils.Zip (zipContentsPure)
+import Servant ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece), Required, Strict, QueryParam', MimeRender(.. ))
 import Servant.Job.Utils (jsonOptions)
 import Test.QuickCheck (elements, frequency)
 import Test.QuickCheck.Arbitrary (Arbitrary, arbitrary)
@@ -79,7 +80,7 @@ instance FromHttpApiData TabType where
 
     parseUrlPiece _            = Left "Unexpected value of TabType"
 instance ToHttpApiData TabType where
-    toUrlPiece = pack . show
+    toUrlPiece = T.pack . show
 instance ToParamSchema TabType
 instance ToJSON        TabType
 instance FromJSON      TabType
@@ -128,9 +129,9 @@ instance IsHashable NgramsTerm where
 instance Monoid NgramsTerm where
   mempty = NgramsTerm ""
 instance FromJSONKey NgramsTerm where
-  fromJSONKey = FromJSONKeyTextParser $ \t -> pure $ NgramsTerm $ strip t
+  fromJSONKey = FromJSONKeyTextParser $ \t -> pure $ NgramsTerm $ T.strip t
 instance IsString NgramsTerm where
-  fromString s = NgramsTerm $ pack s
+  fromString s = NgramsTerm $ T.pack s
 
 
 data RootParent = RootParent
@@ -266,7 +267,7 @@ instance FromHttpApiData OrderBy
     parseUrlPiece _           = Left "Unexpected value of OrderBy"
 
 instance ToHttpApiData OrderBy where
-  toUrlPiece = pack . show
+  toUrlPiece = T.pack . show
 
 instance ToParamSchema OrderBy
 instance FromJSON  OrderBy
@@ -286,6 +287,27 @@ data NgramsSearchQuery = NgramsSearchQuery
 
 ------------------------------------------------------------------------
 type NgramsTableMap = Map NgramsTerm NgramsRepoElement
+
+
+-- CSV:
+-- header: status\tlabel\tforms
+-- item: map\taccountability\taccounting|&|accoutns|&|account
+instance MimeRender CSV NgramsTableMap where
+  -- mimeRender _ _val = encode ([] :: [(Text, Text)])
+  mimeRender _ val = encodeByNameWith encOptions (header ["status", "label", "forms"]) $ fn <$> Map.toList val
+    where
+      encOptions = defaultEncodeOptions { encDelimiter = fromIntegral (ord '\t')
+                                        , encQuoting = QuoteNone }
+      fn :: (NgramsTerm, NgramsRepoElement) -> NamedRecord
+      fn (NgramsTerm term, NgramsRepoElement { _nre_list, _nre_children }) =
+        namedRecord [ "status" Csv..= toText _nre_list
+                    , "label" Csv..= term
+                    , "forms" Csv..= T.intercalate "|&|" (unNgramsTerm <$> mSetToList _nre_children)]
+      toText :: ListType -> Text
+      toText CandidateTerm = "candidate"
+      toText MapTerm = "map"
+      toText StopTerm = "stop"
+
 ------------------------------------------------------------------------
 -- On the Client side:
 --data Action = InGroup     NgramsId NgramsId
@@ -762,6 +784,22 @@ instance ToSchema UpdateTableNgramsCharts where
 
 ------------------------------------------------------------------------
 type NgramsList = (Map TableNgrams.NgramsType (Versioned NgramsTableMap))
+
+
+-- | Same as NgramsList, but wraps node_id so that the inner .json file can have proper name
+data NgramsListZIP =
+  NgramsListZIP { _nlz_nl      :: NgramsList
+                , _nlz_list_id :: ListId } deriving (Generic)
+instance ToSchema NgramsListZIP where
+  declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_nlz_")
+nlzFileName :: NgramsListZIP -> Text
+nlzFileName (NgramsListZIP { .. }) = "GarganText_NgramsList-" <> show _nlz_list_id <> ".json"
+    
+instance MimeRender ZIP NgramsListZIP where
+  mimeRender _ nlz@(NgramsListZIP { .. }) =
+    zipContentsPure (T.unpack $ nlzFileName nlz) (encode _nlz_nl)
+
+
 
 --
 -- Serialise instances

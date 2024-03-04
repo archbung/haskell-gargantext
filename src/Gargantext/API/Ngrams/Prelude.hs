@@ -20,13 +20,12 @@ import Data.List qualified as List
 import Data.Map.Strict (fromList)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
-import Data.Validity
 import Gargantext.API.Ngrams (getNgramsTableMap)
 import Gargantext.API.Ngrams.Types
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
 import Gargantext.Core.Text.Context (TermList)
-import Gargantext.Core.Text.List.Social.Prelude
-import Gargantext.Core.Types (ListType)
+import Gargantext.Core.Text.List.Social.Prelude ( unPatchMapToHashMap )
+import Gargantext.Core.Types.Main ( ListType )
 import Gargantext.Database.Admin.Types.Node (ListId)
 import Gargantext.Database.Schema.Ngrams (NgramsType, ngramsTypes)
 import Gargantext.Prelude

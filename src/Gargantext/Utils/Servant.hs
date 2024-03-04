@@ -10,18 +10,16 @@ Portability : POSIX
 
 module Gargantext.Utils.Servant where
 
-import qualified Data.ByteString.Lazy.Char8 as BSC
-import Data.Csv (defaultEncodeOptions, encodeByNameWith, encodeDefaultOrderedByName, header, namedRecord, (.=), DefaultOrdered, EncodeOptions(..), NamedRecord, Quoting(QuoteNone), ToNamedRecord)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import Gargantext.API.Ngrams.Types (mSetToList, NgramsRepoElement(..), NgramsTableMap, NgramsTerm(..), unNgramsTerm)
-import Gargantext.Core.Types.Main (ListType(..))
+import Data.ByteString.Lazy.Char8 qualified as BSC
+import Data.Csv (encodeDefaultOrderedByName, DefaultOrdered, ToNamedRecord)
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
 import Network.HTTP.Media ((//), (/:))
-import qualified Prelude
+import Prelude qualified
 import Protolude
 import Protolude.Partial (read)
-import Servant
+import Servant ( Accept(contentType), MimeRender(..), MimeUnrender(mimeUnrender) )
+
 
 data CSV = CSV
 
@@ -33,25 +31,6 @@ instance (DefaultOrdered a, ToNamedRecord a) => MimeRender CSV [a] where
 
 instance MimeRender CSV T.Text where
   mimeRender _ = BSC.fromStrict . TE.encodeUtf8
-
--- CSV:
--- header: status\tlabel\tforms
--- item: map\taccountability\taccounting|&|accoutns|&|account
-instance MimeRender CSV NgramsTableMap where
-  -- mimeRender _ _val = encode ([] :: [(Text, Text)])
-  mimeRender _ val = encodeByNameWith encOptions (header ["status", "label", "forms"]) $ fn <$> Map.toList val
-    where
-      encOptions = defaultEncodeOptions { encDelimiter = fromIntegral (ord '\t')
-                                        , encQuoting = QuoteNone }
-      fn :: (NgramsTerm, NgramsRepoElement) -> NamedRecord
-      fn (NgramsTerm term, NgramsRepoElement { _nre_list, _nre_children }) =
-        namedRecord [ "status" .= toText _nre_list
-                    , "label" .= term
-                    , "forms" .= (T.intercalate "|&|" $ unNgramsTerm <$> mSetToList _nre_children)]
-      toText :: ListType -> Text
-      toText CandidateTerm = "candidate"
-      toText MapTerm = "map"
-      toText StopTerm = "stop"
 
 instance Read a => MimeUnrender CSV a where
    mimeUnrender _ bs = case BSC.take len bs of
@@ -76,3 +55,18 @@ instance MimeRender Markdown T.Text where
 
 instance MimeUnrender Markdown T.Text where
   mimeUnrender _ = Right . TE.decodeUtf8 . BSC.toStrict
+
+
+---------------------------
+
+data ZIP = ZIP
+
+instance Accept ZIP where
+  contentType _ = "application" // "zip"
+
+instance MimeRender ZIP BSC.ByteString where
+  mimeRender _ = identity
+
+instance MimeUnrender ZIP BSC.ByteString where
+  mimeUnrender _ = Right . identity
+
