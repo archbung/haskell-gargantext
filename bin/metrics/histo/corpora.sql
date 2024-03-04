@@ -1,3 +1,3 @@
-select count(*), date_trunc('month', n.date) from nodes n where n.typename = 30 group by 2 ORDER BY 2;
+\COPY (SELECT count(*), date_trunc('month', n.date) FROM nodes n WHERE n.typename = 30 GROUP BY 2 ORDER BY 2) TO '/tmp/corpora.csv' (FORMAT csv);
 
 
