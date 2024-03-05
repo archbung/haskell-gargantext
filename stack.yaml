@@ -323,7 +323,7 @@ flags:
   "full-text-search":
     "build-search-demo": false
   gargantext:
-    "disable-db-obfuscation-executable": false
+    "disable-db-obfuscation-executable": true
     "no-phylo-debug-logs": false
     "test-crypto": false
   "generic-deriving":
@@ -562,6 +562,8 @@ flags:
   "tasty-bench":
     debug: false
     tasty: true
+  "tasty-golden":
+    "build-example": false
   texmath:
     executable: false
     server: false

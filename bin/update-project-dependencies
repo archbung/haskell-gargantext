@@ -19,7 +19,7 @@ fi
 # `cabal.project.freeze`. This ensures the files stay deterministic so that CI
 # cache can kick in.
 expected_cabal_project_hash="c9fe39301e8b60bfd183e60e7e25a14cd1c9c66d8739bf9041ca3f4db89db7c6"
-expected_cabal_project_freeze_hash="db24c7d3006167102532e3101e2b49bae13d478003459c7d3f1d66590e57740a"
+expected_cabal_project_freeze_hash="2c8960ffcf1b94aa11a3543e3b5facd2db5af19569fecaec4bc0ab4c1edd22a5"
 
 cabal --store-dir=$STORE_DIR v2-build --dry-run
 cabal2stack --system-ghc --allow-newer --resolver lts-21.17 --resolver-file devops/stack/lts-21.17.yaml -o stack.yaml

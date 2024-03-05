@@ -12,17 +12,18 @@ module Main where
 
 import Gargantext.Prelude
 
-import qualified Test.Core.Text.Corpus.Query  as CorpusQuery
-import qualified Test.Core.Utils              as Utils
-import qualified Test.Graph.Clustering        as Graph
-import qualified Test.Ngrams.NLP              as NLP
-import qualified Test.Ngrams.Query            as NgramsQuery
-import qualified Test.Offline.JSON            as JSON
-import qualified Test.Offline.Errors          as Errors
-import qualified Test.Offline.Phylo           as Phylo
-import qualified Test.Parsers.Date            as PD
-import qualified Test.Utils.Crypto            as Crypto
-import qualified Test.Utils.Jobs              as Jobs
+import qualified Test.Core.Text.Corpus.Query     as CorpusQuery
+import qualified Test.Core.Utils                 as Utils
+import qualified Test.Graph.Clustering           as Graph
+import qualified Test.Ngrams.NLP                 as NLP
+import qualified Test.Ngrams.Query               as NgramsQuery
+import qualified Test.Offline.JSON               as JSON
+import qualified Test.Offline.Errors             as Errors
+import qualified Test.Offline.Phylo              as Phylo
+import qualified Test.Offline.Stemming.Lancaster as Lancaster
+import qualified Test.Parsers.Date               as PD
+import qualified Test.Utils.Crypto               as Crypto
+import qualified Test.Utils.Jobs                 as Jobs
 
 import Test.Tasty
 import Test.Tasty.Hspec
@@ -50,4 +51,5 @@ main = do
     , JSON.tests
     , Errors.tests
     , Phylo.tests
+    , testGroup "Stemming" [ Lancaster.tests ]
     ]
