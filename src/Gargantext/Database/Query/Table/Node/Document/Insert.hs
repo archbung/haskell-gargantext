@@ -57,15 +57,12 @@ the concatenation of the parameters defined by @shaParameters@.
 module Gargantext.Database.Query.Table.Node.Document.Insert
   where
 
-import Control.Lens (set, view)
-import Control.Lens.Cons
-import Control.Lens.Prism
 import Data.Aeson (toJSON, ToJSON)
 import Data.Text qualified as DT (pack, concat, take, filter, toLower)
 import Data.Time.Segment (jour)
 import Database.PostgreSQL.Simple (FromRow, Query, Only(..))
 import Database.PostgreSQL.Simple.FromRow (fromRow, field)
-import Database.PostgreSQL.Simple.SqlQQ
+import Database.PostgreSQL.Simple.SqlQQ ( sql )
 import Database.PostgreSQL.Simple.ToField (toField, Action{-, ToField-})
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.Core (HasDBid(toDBid))
@@ -93,7 +90,7 @@ import Database.PostgreSQL.Simple (formatQuery)
 insertDb :: (InsertDb a, HasDBid NodeType) => UserId -> Maybe ParentId -> [a] -> DBCmd err [ReturnId]
 insertDb u p = runPGSQuery queryInsert . Only . Values fields . map (insertDb' u p)
       where
-        fields    = map (\t-> QualifiedIdentifier Nothing t) inputSqlTypes
+        fields    = map (QualifiedIdentifier Nothing) inputSqlTypes
 
 class InsertDb a
   where
@@ -108,18 +105,18 @@ instance InsertDb HyperdataDocument
                       , toField p
                       , toField $ maybe "No Title" (DT.take 255)  (_hd_title h)
                       , toField $ _hd_publication_date h -- TODO USE UTCTime
-                      , (toField . toJSON) (addUniqId h)
+                      -- , (toField . toJSON) (addUniqId h)
                       ]
 
 instance InsertDb HyperdataContact
   where
-    insertDb' u p h = [ toField ("" :: Text)
+    insertDb' u p _h = [ toField ("" :: Text)
                       , toField $ toDBid NodeContact
                       , toField u
                       , toField p
                       , toField $ maybe "Contact" (DT.take 255) (Just "Name") -- (_hc_name h)
                       , toField $ jour 0 1 1 -- TODO put default date
-                      , (toField . toJSON) (addUniqId h)
+                      -- , (toField . toJSON) (addUniqId h)
                       ]
 
 instance ToJSON a => InsertDb (Node a)
@@ -194,73 +191,73 @@ class AddUniqId a
   where
     addUniqId :: a -> a
 
+-- instance AddUniqId HyperdataDocument
+--   where
+--     addUniqId = addUniqIdsDoc
+--       where
+--         addUniqIdsDoc :: HyperdataDocument -> HyperdataDocument
+--         addUniqIdsDoc doc = set hd_uniqIdBdd (Just shaBdd)
+--                           $ set hd_uniqId    (Just shaUni) doc
+--           where
+--             shaUni = hash $ DT.concat $ map ($ doc) shaParametersDoc
+--             shaBdd = hash $ DT.concat $ map ($ doc) ([maybeText . _hd_bdd] <> shaParametersDoc)
+
+--             shaParametersDoc :: [HyperdataDocument -> Text]
+--             shaParametersDoc = [ filterText . maybeText . _hd_title
+--                                , filterText . maybeText . _hd_abstract
+--                                , filterText . maybeText . _hd_source
+--                         --       , \d -> maybeText (_hd_publication_date d)
+--                                ]
+
 class UniqParameters a
   where
-    uniqParameters :: ParentId -> a -> Text
-
-instance AddUniqId HyperdataDocument
-  where
-    addUniqId = addUniqIdsDoc
-      where
-        addUniqIdsDoc :: HyperdataDocument -> HyperdataDocument
-        addUniqIdsDoc doc = set hd_uniqIdBdd (Just shaBdd)
-                          $ set hd_uniqId    (Just shaUni) doc
-          where
-            shaUni = hash $ DT.concat $ map ($ doc) shaParametersDoc
-            shaBdd = hash $ DT.concat $ map ($ doc) ([(\d -> maybeText (_hd_bdd d))] <> shaParametersDoc)
-
-            shaParametersDoc :: [(HyperdataDocument -> Text)]
-            shaParametersDoc = [ \d -> filterText $ maybeText (_hd_title            d)
-                               , \d -> filterText $ maybeText (_hd_abstract         d)
-                               , \d -> filterText $ maybeText (_hd_source           d)
-                        --       , \d -> maybeText (_hd_publication_date d)
-                               ]
+    uniqParameters :: a -> Text
 
 instance UniqParameters HyperdataDocument
   where
-    uniqParameters _ h = filterText $  DT.concat $ map maybeText $ [_hd_title h, _hd_abstract h, _hd_source h]
+    uniqParameters h = filterText $  DT.concat $ map maybeText $ [_hd_title h, _hd_abstract h, _hd_source h]
 
 instance UniqParameters HyperdataContact
   where
-    uniqParameters _ _ = ""
+    uniqParameters _ = ""
 
 instance UniqParameters (Node a)
   where
-    uniqParameters _ _ = undefined
+    uniqParameters _ = undefined
 
 
 filterText :: Text -> Text
-filterText = DT.toLower . (DT.filter isAlphaNum)
+filterText = DT.toLower . DT.filter isAlphaNum
 
 
 instance (UniqParameters a, ToJSON a, HasDBid NodeType) => AddUniqId (Node a)
   where
     addUniqId (Node nid _ t u p n d h)  = Node nid (Just newHash) t u p n d h
       where
-        newHash = "\\x" <> (hash $ uniqParameters (fromMaybe 0 p) h)
+        newHash = "\\x" <> hash (uniqParameters h)
 
 
     ---------------------------------------------------------------------------
 -- * Uniqueness of document definition
 -- TODO factorize with above (use the function below for tests)
 
-instance AddUniqId HyperdataContact
-  where
-    addUniqId = addUniqIdsContact
+-- instance AddUniqId HyperdataContact
+--   where
+--     addUniqId = addUniqIdsContact
 
-addUniqIdsContact :: HyperdataContact -> HyperdataContact
-addUniqIdsContact hc = set (hc_uniqIdBdd) (Just shaBdd)
-                     $ set (hc_uniqId   ) (Just shaUni) hc
-  where
-    shaUni = hash $ DT.concat $ map ($ hc) shaParametersContact
-    shaBdd = hash $ DT.concat $ map ($ hc) ([\d -> maybeText (view hc_bdd d)] <> shaParametersContact)
+-- addUniqIdsContact :: HyperdataContact -> HyperdataContact
+-- addUniqIdsContact hc = set hc_uniqIdBdd (Just shaBdd)
+--                      $ set hc_uniqId    (Just shaUni) hc
+--   where
+--     shaUni = hash $ DT.concat $ map ($ hc) shaParametersContact
+--     shaBdd = hash $ DT.concat $ map ($ hc) ([maybeText . view hc_bdd] <> shaParametersContact)
 
-    -- | TODO add more shaparameters
-    shaParametersContact :: [(HyperdataContact -> Text)]
-    shaParametersContact = [ \d -> maybeText $ view (hc_who   . _Just . cw_firstName              ) d
-                           , \d -> maybeText $ view (hc_who   . _Just . cw_lastName               ) d
-                           , \d -> maybeText $ view (hc_where . _head . cw_touch . _Just . ct_mail) d
-                           ]
+--     -- | TODO add more shaparameters
+--     shaParametersContact :: [HyperdataContact -> Text]
+--     shaParametersContact = [ maybeText . view (hc_who   . _Just . cw_firstName              )
+--                            , maybeText . view (hc_who   . _Just . cw_lastName               )
+--                            , maybeText . view (hc_where . _head . cw_touch . _Just . ct_mail)
+--                            ]
 
 
 maybeText :: Maybe Text -> Text
@@ -286,7 +283,7 @@ instance ToNode HyperdataDocument where
 
 -- TODO better Node
 instance ToNode HyperdataContact where
-  toNode u p h = Node 0 Nothing (toDBid NodeContact) u p "Contact" date h
+  toNode u p = Node 0 Nothing (toDBid NodeContact) u p "Contact" date
     where
       date  = jour 2020 01 01
 

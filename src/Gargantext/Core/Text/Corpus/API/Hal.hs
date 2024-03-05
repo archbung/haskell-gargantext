@@ -12,14 +12,12 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.API.Hal
     where
 
-import Conduit
-import Data.Either
+import Conduit ( ConduitT, (.|), mapMC )
 import Data.LanguageCodes qualified as ISO639
 import Data.Map.Strict qualified as Map
-import Data.Maybe
-import Data.Text (pack, intercalate)
+import Data.Text (pack)
 import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Defaults qualified as Defaults
 import Gargantext.Prelude hiding (intercalate)
 import HAL qualified as HAL
@@ -30,7 +28,7 @@ import Servant.Client (ClientError)
 get :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO [HyperdataDocument]
 get la q ml = do
   eDocs <- HAL.getMetadataWith [q] (Just 0) (fromIntegral <$> ml) la
-  either (panicTrace . pack . show) (\d -> mapM (toDoc' la) $ HAL._docs d) eDocs
+  either (panicTrace . pack . show) (mapM (toDoc' la) . HAL._docs) eDocs
 
 getC :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 getC la q ml = do
@@ -45,17 +43,15 @@ toDoc' la (HAL.Corpus { .. }) = do
   -- printDebug "[toDoc corpus] h" h
   let mDateS = maybe (Just $ pack $ show Defaults.year) Just _corpus_date
   let (utctime, (pub_year, pub_month, pub_day)) = Date.mDateSplit mDateS
-  let abstractDefault = intercalate " " _corpus_abstract
+  let abstractDefault = unwords _corpus_abstract
   let abstract = case la of
         Nothing -> abstractDefault
-        Just l  -> fromMaybe abstractDefault (intercalate " " <$> Map.lookup l _corpus_abstract_lang_map)
+        Just l  -> maybe abstractDefault unwords (Map.lookup l _corpus_abstract_lang_map)
   pure HyperdataDocument { _hd_bdd = Just "Hal"
                          , _hd_doi = Just $ pack $ show _corpus_docid
                          , _hd_url = Nothing
-                         , _hd_uniqId = Nothing
-                         , _hd_uniqIdBdd = Nothing
                          , _hd_page = Nothing
-                         , _hd_title = Just $ intercalate " " _corpus_title
+                         , _hd_title = Just $ unwords _corpus_title
                          , _hd_authors = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" _corpus_authors_names
                          , _hd_institutes = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
                          , _hd_source = Just $ maybe "Nothing" identity _corpus_source

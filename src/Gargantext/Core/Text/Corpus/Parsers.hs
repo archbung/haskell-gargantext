@@ -46,7 +46,7 @@ import Gargantext.Core.Text.Corpus.Parsers.JSON (parseJSONC, parseIstex)
 import Gargantext.Core.Text.Corpus.Parsers.RIS qualified as RIS
 import Gargantext.Core.Text.Corpus.Parsers.RIS.Presse (presseEnrich)
 import Gargantext.Core.Text.Corpus.Parsers.WOS qualified as WOS
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Database.Query.Table.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (show, undefined)
 import Gargantext.Utils.Zip qualified as UZip
@@ -88,10 +88,10 @@ parseFormatC :: MonadBaseControl IO m
              -> m (Either Text (Integer, ConduitT () HyperdataDocument IO ()))
 parseFormatC CsvGargV3 Plain bs = do
   let eParsedC = parseCsvC $ DBL.fromStrict bs
-  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
+  pure (second (transPipe (pure . runIdentity)) <$> eParsedC)
 parseFormatC CsvHal    Plain bs = do
   let eParsedC = parseCsvC $ DBL.fromStrict bs
-  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
+  pure (second (transPipe (pure . runIdentity)) <$> eParsedC)
 parseFormatC Istex Plain bs = do
   ep <- liftBase $ parseIstex EN $ DBL.fromStrict bs
   pure $ (\p -> (1, yieldMany [p])) <$> ep
@@ -120,15 +120,15 @@ parseFormatC Iramuteq Plain bs = do
             , yieldMany docs
               .| mapC (map $ first Iramuteq.keys)
               .| mapC (map $ both decodeUtf8)
-              .| mapMC ((toDoc Iramuteq) . (map (second (DT.replace "_" " "))))
+              .| mapMC (toDoc Iramuteq . map (second (DT.replace "_" " ")))
             )
          )
               <$> eDocs
 parseFormatC JSON    Plain bs = do
   let eParsedC = parseJSONC $ DBL.fromStrict bs
-  pure ((\(len, parsedC) -> (len, transPipe (pure . runIdentity) parsedC)) <$> eParsedC)
+  pure (second (transPipe (pure . runIdentity)) <$> eParsedC)
 parseFormatC ft ZIP bs = liftBase $ UZip.withZipFileBS bs $ do
-  fileNames <- filter (filterZIPFileNameP ft) <$> DM.keys <$> getEntries
+  fileNames <- filter (filterZIPFileNameP ft) . DM.keys <$> getEntries
   printDebug "[parseFormatC] fileNames" fileNames
   fileContents <- mapM getEntry fileNames
   --printDebug "[parseFormatC] fileContents" fileContents
@@ -145,19 +145,19 @@ parseFormatC ft ZIP bs = liftBase $ UZip.withZipFileBS bs $ do
           let contents' = snd <$> contents
           let totalLength = sum lenghts
           pure $ Right ( totalLength
-                       , sequenceConduits contents' >> pure () ) -- .| mapM_C (printDebug "[parseFormatC] doc")
+                       , void (sequenceConduits contents') ) -- .| mapM_C (printDebug "[parseFormatC] doc")
     _ -> pure $ Left $ DT.intercalate "\n" errs
 parseFormatC _ _ _ = pure $ Left "Not implemented"
 
 
 filterZIPFileNameP :: FileType -> EntrySelector -> Bool
 filterZIPFileNameP Istex f = (takeExtension (unEntrySelector f) == ".json") &&
-                             ((unEntrySelector f) /= "manifest.json")
+                             (unEntrySelector f /= "manifest.json")
 filterZIPFileNameP _     _ = True
 
 
 etale :: [HyperdataDocument] -> [HyperdataDocument]
-etale = concat . (map etale')
+etale = concatMap etale'
   where
     etale' :: HyperdataDocument -> [HyperdataDocument]
     etale' h = map (\t -> h { _hd_abstract = Just t })
@@ -232,8 +232,6 @@ toDoc ff d = do
       let hd = HyperdataDocument { _hd_bdd = Just $ DT.pack $ show ff
                                  , _hd_doi = lookup "doi" d
                                  , _hd_url = lookup "URL" d
-                                 , _hd_uniqId = Nothing
-                                 , _hd_uniqIdBdd = Nothing
                                  , _hd_page = Nothing
                                  , _hd_title = lookup "title" d
                                  , _hd_authors = lookup "authors" d
@@ -293,7 +291,7 @@ runParser format text = pure $ runParser' format text
 
 runParser' :: FileType
           -> DB.ByteString
-          -> (Either Text [[(DB.ByteString, DB.ByteString)]])
+          -> Either Text [[(DB.ByteString, DB.ByteString)]]
 runParser' format text = first DT.pack $ parseOnly (withParser format) text
 
 openZip :: FilePath -> IO [DB.ByteString]
@@ -317,5 +315,5 @@ clean txt = DBC.map clean' txt
 --
 
 splitOn :: NgramsType -> Maybe Text -> Text -> [Text]
-splitOn Authors (Just "WOS") = (DT.splitOn "; ")
-splitOn _ _                  = (DT.splitOn ", ")
+splitOn Authors (Just "WOS") = DT.splitOn "; "
+splitOn _ _                  = DT.splitOn ", "

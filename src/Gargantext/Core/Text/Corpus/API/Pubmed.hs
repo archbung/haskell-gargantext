@@ -20,13 +20,13 @@ module Gargantext.Core.Text.Corpus.API.Pubmed
     )
     where
 
-import Conduit
+import Conduit ( ConduitT, (.|), mapC, takeC )
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TE
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
 import Gargantext.Core.Types (Term(..))
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Prelude hiding (get)
 import Network.HTTP.Types.URI (EscapeItem(..), renderQueryPartialEscape)
 import PUBMED qualified as PubMed
@@ -64,7 +64,7 @@ convertQuery q = ESearch (interpretQuery q transformAST)
     transformAST ast = case ast of
       BAnd sub (BConst (Negative term))
         -- The second term become positive, so that it can be translated.
-        -> (transformAST sub) <> [QN "+AND+NOT+"] <> transformAST (BConst (Positive term))
+        -> transformAST sub <> [QN "+AND+NOT+"] <> transformAST (BConst (Positive term))
       BAnd term1 (BNot term2)
         -> transformAST term1 <> [QN "+AND+NOT+"] <> transformAST term2
       BAnd sub1 sub2
@@ -108,14 +108,11 @@ get apiKey q l = do
   --      <$> PubMed.getMetadataWithC q l
 
 toDoc :: Lang -> PubMedDoc.PubMed -> HyperdataDocument
-toDoc l (PubMedDoc.PubMed { pubmed_id
-                          , pubmed_article = PubMedDoc.PubMedArticle t j as aus
+toDoc l (PubMedDoc.PubMed { pubmed_article = PubMedDoc.PubMedArticle t j as aus
                           , pubmed_date = PubMedDoc.PubMedDate a y m d }
           ) = HyperdataDocument { _hd_bdd = Just "PubMed"
                                 , _hd_doi = Nothing
                                 , _hd_url = Nothing
-                                , _hd_uniqId = Just $ Text.pack $ show pubmed_id
-                                , _hd_uniqIdBdd = Nothing
                                 , _hd_page = Nothing
                                 , _hd_title = t
                                 , _hd_authors = authors aus
@@ -133,16 +130,14 @@ toDoc l (PubMedDoc.PubMed { pubmed_id
       where
         authors :: [PubMedDoc.Author] -> Maybe Text
         authors [] = Nothing
-        authors au = Just $ (Text.intercalate ", ")
-                          $ catMaybes
-                          $ map (\n -> PubMedDoc.foreName n <> Just " " <> PubMedDoc.lastName n) au
+        authors au = Just $ Text.intercalate ", "
+                          $ mapMaybe (\n -> PubMedDoc.foreName n <> Just " " <> PubMedDoc.lastName n) au
 
         institutes :: [PubMedDoc.Author] -> Maybe Text
         institutes [] = Nothing
-        institutes au = Just $ (Text.intercalate ", ")
-                             $ (map (Text.replace ", " " - "))
-                             $ catMaybes
-                             $ map PubMedDoc.affiliation au
+        institutes au = Just $ Text.intercalate ", "
+                             $ map (Text.replace ", " " - ")
+                             $ mapMaybe PubMedDoc.affiliation au
 
 
         abstract :: [Text] -> Maybe Text
