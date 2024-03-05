@@ -48,14 +48,37 @@ import qualified Gargantext.Prelude as P
 
 -- Filtered with MiniMax.
 
+
 measureConditional :: Matrix Int -> Matrix Double
 measureConditional m =  run $ x $ map fromIntegral $ use m
+  where
+    x :: Acc (Matrix Double) -> Acc (Matrix Double)
+    x mat = maxOnly $ diagNull r $ divByDiag r mat
+
+    r :: Dim
+    r = dim m
+
+    -- Maybe we should use backpermute to accelerate it (no need to access to cells then
+    maxOnly :: Acc (SymetricMatrix Double) -> Acc (Matrix Double)
+    maxOnly m' = generate (shape m')
+                          ((\coord 
+                             -> let (Z :. (i :: Exp Int) :. (j :: Exp Int)) = unlift coord
+                                    ij = m' ! (lift $ (Z :. i :. j))
+                                    ji = m' ! (lift $ (Z :. j :. i))
+                                    in 
+                                      ifThenElse (ij > ji) ij (constant 0)
+                            )
+                            )
+
+measureConditional' :: Matrix Int -> Matrix Double
+measureConditional' m =  run $ x $ map fromIntegral $ use m
   where
     x :: Acc (Matrix Double) -> Acc (Matrix Double)
     x mat = matMiniMax $ matProba r mat
 
     r :: Dim
     r = dim m
+
 
 
 -- | To filter the nodes

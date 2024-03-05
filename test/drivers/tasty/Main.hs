@@ -24,6 +24,7 @@ import qualified Test.Offline.Stemming.Lancaster as Lancaster
 import qualified Test.Parsers.Date               as PD
 import qualified Test.Utils.Crypto               as Crypto
 import qualified Test.Utils.Jobs                 as Jobs
+import qualified Test.Core.Similarity         as Similarity
 
 import Test.Tasty
 import Test.Tasty.Hspec
@@ -37,6 +38,7 @@ main = do
   cryptoSpec       <- testSpec "Crypto" Crypto.test
   nlpSpec          <- testSpec "NLP" NLP.test
   jobsSpec         <- testSpec "Jobs" Jobs.test
+  similaritySpec   <- testSpec "Similarity" Similarity.test
 
   defaultMain $ testGroup "Gargantext"
     [ utilSpec
@@ -50,6 +52,7 @@ main = do
     , CorpusQuery.tests
     , JSON.tests
     , Errors.tests
+    , similaritySpec
     , Phylo.tests
     , testGroup "Stemming" [ Lancaster.tests ]
     ]

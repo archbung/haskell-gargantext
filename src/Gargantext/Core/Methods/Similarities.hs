@@ -19,7 +19,7 @@ import Data.Array.Accelerate (Matrix)
 import Data.Swagger
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Gargantext.Core.Methods.Similarities.Accelerate.Conditional (measureConditional)
+import Gargantext.Core.Methods.Similarities.Accelerate.Conditional (measureConditional')
 import Gargantext.Core.Methods.Similarities.Accelerate.Distributional (logDistributional2)
 -- import Gargantext.Core.Text.Metrics.Count (coocOn)
 -- import Gargantext.Core.Viz.Graph.Index
@@ -35,13 +35,13 @@ data Similarity = Conditional | Distributional
   deriving (Show, Eq)
 
 measure :: Similarity -> Matrix Int -> Matrix Double
-measure Conditional    x = measureConditional x
+measure Conditional    x = measureConditional' x
 measure Distributional x = logDistributional2 x
 
 ------------------------------------------------------------------------
 withMetric :: GraphMetric -> Similarity
 withMetric Order1 = Conditional
-withMetric _ = Distributional
+withMetric _      = Distributional
 
 ------------------------------------------------------------------------
 -- Order2 type is for keeping Database json compatibility
