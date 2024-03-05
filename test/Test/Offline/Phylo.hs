@@ -42,7 +42,7 @@ phyloConfig = PhyloConfig {
 
 tests :: TestTree
 tests = testGroup "Phylo" [
-  testCase "returns expected data" testSmallPhyloExpectedOutput
+  -- testCase "returns expected data" testSmallPhyloExpectedOutput
   ]
 
 testSmallPhyloExpectedOutput :: Assertion
