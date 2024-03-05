@@ -1,3 +1,9 @@
+## Version 0.0.6.9.9.9.6.5 [RELEASE CANDIDATE 007]
+
+* [BACK][WIP][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
+* [BACK][FEAT][Coherent Stemming interface (#324)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/324)
+* [BACK][FIX] Order 1 aligned with first implementation with tests
+
 ## Version 0.0.6.9.9.9.6.4 [RELEASE CANDIDATE 007]
 
 * [BACK][FEAT][[Node Phylo] Change the default value of findAncestors to False (#314)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/314)
