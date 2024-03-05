@@ -51,6 +51,6 @@ main = do
     , CorpusQuery.tests
     , JSON.tests
     , Errors.tests
-    , Phylo.tests
     , similaritySpec
+    , Phylo.tests
     ]
