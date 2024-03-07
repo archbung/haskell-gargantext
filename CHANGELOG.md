@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.6.5.1 [RELEASE CANDIDATE 007]
+
+* [FRONT][FIX][Machting Documents are not displayed anymore in graph (#636)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/636)
+
 ## Version 0.0.6.9.9.9.6.5 [RELEASE CANDIDATE 007]
 
 * [BACK][WIP][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
