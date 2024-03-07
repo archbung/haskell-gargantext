@@ -25,10 +25,10 @@ import Data.Morpheus.Types
 import Data.Text (pack)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Errors.Types ( BackendInternalError )
+import Gargantext.API.Errors.Types
 import Gargantext.API.Prelude (GargM)
 import Gargantext.Core.Types.Search (HyperdataRow(..), toHyperdataRow)
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
 import Gargantext.Database.Admin.Types.Node (ContextTitle, NodeId(..), NodeTypeId, UserId, unNodeId, ContextId (..))
 import Gargantext.Database.Prelude (CmdCommon)
 import Gargantext.Database.Query.Table.NodeContext (getNodeContext, getContextsForNgramsTerms, ContextForNgramsTerms(..), {- getContextNgrams, -} getContextNgramsMatchingFTS)
@@ -71,6 +71,8 @@ data HyperdataRowDocumentGQL =
                           , hrd_source             :: Text
                           , hrd_title              :: Text
                           , hrd_url                :: Text
+                          , hrd_uniqId             :: Text
+                          , hrd_uniqIdBdd          :: Text
                           } deriving (Generic, GQLType, Show)
 
 data NodeContextGQL = NodeContextGQL
@@ -214,6 +216,8 @@ toHyperdataRowDocumentGQL hyperdata =
                                      , hrd_source             = _hr_source
                                      , hrd_title              = _hr_title
                                      , hrd_url                = _hr_url
+                                     , hrd_uniqId             = _hr_uniqId
+                                     , hrd_uniqIdBdd          = _hr_uniqIdBdd
                                      }
     HyperdataRowContact { } -> Nothing
 

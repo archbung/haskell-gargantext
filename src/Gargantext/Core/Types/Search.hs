@@ -9,21 +9,22 @@ Portability : POSIX
 -}
 
 
+{-# LANGUAGE DeriveAnyClass           #-}
+
 module Gargantext.Core.Types.Search where
 
 import Data.Aeson hiding (defaultTaggedObject)
-import Data.Swagger ( ToSchema(..), genericDeclareNamedSchema )
+import Data.Swagger hiding (fieldLabelModifier, Contact)
 import Data.Text qualified as Text
 import Data.Time (UTCTime)
 import Gargantext.Core.Utils.Prefix (dropPrefix, unCapitalize, unPrefixSwagger)
-import Gargantext.Database.Admin.Types.Hyperdata.Contact ( ContactWhere(..), HyperdataContact(..), ContactWho(..) )
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
-import Gargantext.Database.Admin.Types.Node ( NodeId )
+import Gargantext.Database.Admin.Types.Hyperdata (ContactWhere(..), HyperdataContact(..), HyperdataDocument(..), ContactWho(..))
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Facet.Types (Facet(..), FacetDoc, FacetPaired(..))
 import Gargantext.Defaults qualified as Defaults
 import Gargantext.Prelude
 import Gargantext.Utils.Aeson (defaultTaggedObject)
-import Test.QuickCheck.Arbitrary ( Arbitrary(arbitrary) )
+import Test.QuickCheck.Arbitrary
 
 
 data Row =
@@ -92,6 +93,8 @@ data HyperdataRow =
                        , _hr_source             :: !Text
                        , _hr_title              :: !Text
                        , _hr_url                :: !Text
+                       , _hr_uniqId             :: !Text
+                       , _hr_uniqIdBdd          :: !Text
                        }
   | HyperdataRowContact { _hr_firstname :: !Text
                         , _hr_lastname  :: !Text
@@ -145,7 +148,9 @@ instance ToHyperdataRow HyperdataDocument where
       , _hr_publication_second = fromMaybe 0 _hd_publication_second
       , _hr_source = fromMaybe "" _hd_source
       , _hr_title = fromMaybe "Title" _hd_title
-      , _hr_url = fromMaybe "" _hd_url }
+      , _hr_url = fromMaybe "" _hd_url
+      , _hr_uniqId = fromMaybe "" _hd_uniqId
+      , _hr_uniqIdBdd = fromMaybe "" _hd_uniqIdBdd }
 
 instance ToHyperdataRow HyperdataContact where
   toHyperdataRow (HyperdataContact { _hc_who = Just (ContactWho _ fn ln _ _ _), _hc_where = ou} ) =

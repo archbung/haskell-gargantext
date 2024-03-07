@@ -21,11 +21,11 @@ module Gargantext.Core.Text.Corpus.Parsers.Wikidata where
 import Control.Lens (makeLenses, (^.) )
 import Data.List qualified as List
 import Data.Text (concat)
-import Database.HSparql.Connection ( BindingValue, EndPoint, selectQueryRaw )
+import Database.HSparql.Connection
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.Date (mDateSplit)
 import Gargantext.Core.Text.Corpus.Parsers.Isidore (unbound)
-import Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler ( crawlPage )
+import Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Prelude hiding (concat)
 import Prelude qualified
@@ -57,9 +57,11 @@ wikiPageToDocument m wr = do
 
   let bdd    = Just "wikidata"
       doi    = Nothing
-      url    = wr ^. wr_url
+      url    = (wr ^. wr_url)
+      uniqId    = Nothing
+      uniqIdBdd = Nothing
       page      = Nothing
-      title     = wr ^. wr_title
+      title     = (wr ^. wr_title)
       authors    = Nothing
       institutes = Nothing
       source     = Nothing
@@ -81,6 +83,8 @@ wikiPageToDocument m wr = do
   pure $ HyperdataDocument { _hd_bdd = bdd
                            , _hd_doi = doi
                            , _hd_url = url
+                           , _hd_uniqId = uniqId
+                           , _hd_uniqIdBdd = uniqIdBdd
                            , _hd_page = page
                            , _hd_title = title
                            , _hd_authors = authors

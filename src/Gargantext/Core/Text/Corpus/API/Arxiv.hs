@@ -19,13 +19,13 @@ module Gargantext.Core.Text.Corpus.API.Arxiv
     ) where
 
 import Arxiv qualified as Arxiv
-import Conduit ( ConduitT, (.|), mapC, takeC )
+import Conduit
 import Data.Text (unpack)
 import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
 import Gargantext.Core.Types (Term(..))
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude hiding (get)
 import Network.Api.Arxiv qualified as Ax
 
@@ -46,7 +46,7 @@ convertQuery q = mkQuery (interpretQuery q transformAST)
     transformAST ast = case ast of
       BAnd sub (BConst (Negative term))
         -- The second term become positive, so that it can be translated.
-        -> Ax.AndNot <$> transformAST sub <*> transformAST (BConst (Positive term))
+        -> Ax.AndNot <$> (transformAST sub) <*> transformAST (BConst (Positive term))
       BAnd term1 (BNot term2)
         -> Ax.AndNot <$> transformAST term1 <*> transformAST term2
       BAnd sub1 sub2
@@ -88,7 +88,7 @@ toDoc l (Arxiv.Result { abstract
                       , authors = aus
                       --, categories
                       , doi
-                      -- , id
+                      , id
                       , journal
                       --, primaryCategory
                       , publication_date
@@ -99,6 +99,8 @@ toDoc l (Arxiv.Result { abstract
           ) = HyperdataDocument { _hd_bdd = Just "Arxiv"
                                 , _hd_doi = Just $ Text.pack doi
                                 , _hd_url = Just $ Text.pack url
+                                , _hd_uniqId = Just $ Text.pack id
+                                , _hd_uniqIdBdd = Nothing
                                 , _hd_page = Nothing
                                 , _hd_title = Just $ Text.pack title
                                 , _hd_authors = authors aus
@@ -116,10 +118,13 @@ toDoc l (Arxiv.Result { abstract
       where
         authors :: [Ax.Author] -> Maybe Text
         authors [] = Nothing
-        authors aus' = Just $ Text.intercalate ", "
-                            $ map (Text.pack . Ax.auName) aus'
+        authors aus' = Just $ (Text.intercalate ", ")
+                            $ map Text.pack
+                            $ map Ax.auName aus'
 
         institutes :: [Ax.Author] -> Maybe Text
         institutes [] = Nothing
-        institutes aus' = Just $ Text.intercalate ", "
-                               $ map ((Text.replace ", " " - " . Text.pack) . Ax.auFil) aus'
+        institutes aus' = Just $ (Text.intercalate ", ")
+                               $ (map (Text.replace ", " " - "))
+                               $ map Text.pack
+                               $ map Ax.auFil aus'

@@ -13,12 +13,12 @@ module Gargantext.Core.Text.Corpus.Parsers.Gitlab (
   Issue(..), gitlabIssue2hyperdataDocument, readFile_Issues, readFile_IssuesAsDocs
 ) where
 
-import Data.Aeson ( FromJSON(parseJSON), decode, (.:), (.:?), withObject )
+import Data.Aeson
 import Data.ByteString.Lazy qualified as DBL
 import Data.Text qualified as DT
 import Data.Time
 import Gargantext.Core (Lang(..))
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude
 
 data Issue = Issue { _issue_id      :: !Int
@@ -42,6 +42,8 @@ gitlabIssue2hyperdataDocument issue = HyperdataDocument
     { _hd_bdd = Nothing
     , _hd_doi = Nothing
     , _hd_url = Nothing
+    , _hd_uniqId = Nothing
+    , _hd_uniqIdBdd = Nothing
     , _hd_page = Nothing
     , _hd_title = Just (_issue_title issue)
     , _hd_authors = Nothing

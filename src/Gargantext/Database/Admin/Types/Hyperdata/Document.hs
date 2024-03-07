@@ -29,6 +29,8 @@ import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 data HyperdataDocument = HyperdataDocument { _hd_bdd                :: !(Maybe Text)
                                            , _hd_doi                :: !(Maybe Text)
                                            , _hd_url                :: !(Maybe Text)
+                                           , _hd_uniqId             :: !(Maybe Text)
+                                           , _hd_uniqIdBdd          :: !(Maybe Text)
                                            , _hd_page               :: !(Maybe Int)
                                            , _hd_title              :: !(Maybe Text)
                                            , _hd_authors            :: !(Maybe Text)
@@ -56,7 +58,7 @@ instance HasText HyperdataDocument
 defaultHyperdataDocument :: HyperdataDocument
 defaultHyperdataDocument = case decode docExample of
   Just hp -> hp
-  Nothing -> HyperdataDocument Nothing Nothing
+  Nothing -> HyperdataDocument Nothing Nothing Nothing Nothing
                                Nothing Nothing Nothing Nothing
                                Nothing Nothing Nothing Nothing
                                Nothing Nothing Nothing Nothing
@@ -105,8 +107,7 @@ instance ToHyperdataDocument HyperdataDocument
 
 ------------------------------------------------------------------------
 instance Eq HyperdataDocument where
-  (==) h1 h2 = _hd_title h1 == _hd_title h2
-            && _hd_abstract h1 == _hd_abstract h2
+  (==) h1 h2 = (==) (_hd_uniqId h1) (_hd_uniqId h2)
 
 ------------------------------------------------------------------------
 instance Ord HyperdataDocument where
@@ -125,7 +126,7 @@ arbitraryHyperdataDocuments =
                             ] :: [(Text, Text)])
   where
     toHyperdataDocument' (t1,t2) =
-      HyperdataDocument Nothing Nothing Nothing Nothing (Just t1)
+      HyperdataDocument Nothing Nothing Nothing Nothing Nothing Nothing (Just t1)
                       Nothing Nothing (Just t2) Nothing Nothing Nothing Nothing Nothing
                       Nothing Nothing Nothing   Nothing
 

@@ -9,7 +9,7 @@ Portability : POSIX
 -}
 module Gargantext.Core.Text.Corpus.API.EPO where
 
-import Conduit ( ConduitT, (.|), mapC )
+import Conduit
 import Data.LanguageCodes (ISO639_1)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
@@ -17,7 +17,7 @@ import EPO.API.Client.Types qualified as EPO
 import EPO.API.Client.Implementation qualified as EPO
 import Gargantext.Core (iso639ToText)
 import Gargantext.Core.Text.Corpus.Query qualified as Corpus
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Network.URI (parseURI)
 import Protolude
 import Servant.Client.Core (ClientError(ConnectionError))
@@ -39,7 +39,7 @@ get (Just authKey) epoAPIUrl q lang mLimit = do
     Just apiUrl -> do
       eRes <- EPO.searchEPOAPIC apiUrl authKey Nothing limit (Corpus.getRawQuery q)
       pure $ (\(total, itemsC) -> (Just total, itemsC .| mapC (toDoc lang))) <$> eRes
-
+        
       -- EPO.Paginated { .. } <- EPO.searchEPOAPI apiUrl authKey 1 20 (Corpus.getRawQuery q)
       -- pure $ Right ( Just $ fromIntegral total, yieldMany items .| mapC (toDoc lang) )
 
@@ -48,6 +48,8 @@ toDoc lang (EPO.HyperdataDocument { .. }) =
   HyperdataDocument { _hd_bdd = Just "EPO"
                     , _hd_doi = Nothing
                     , _hd_url = Nothing
+                    , _hd_uniqId = id
+                    , _hd_uniqIdBdd = id
                     , _hd_page = Nothing
                     , _hd_title = Map.lookup lang titles
                     , _hd_authors = authors_
@@ -64,10 +66,10 @@ toDoc lang (EPO.HyperdataDocument { .. }) =
                     , _hd_language_iso2 = Just $ iso639ToText lang }
 
   where
-    authors_ = if null authors
+    authors_ = if authors == []
       then Nothing
       else Just (T.intercalate ", " authors)
-
+  
 --   EPO.withAuthKey authKey $ \token -> do
 --     let range = EPO.Range { rBegin = 1, rEnd = limit }
 --     (len, docsC) <- EPO.searchPublishedDataWithFetchC token (Just $ Corpus.getRawQuery q) (Just range)

@@ -24,7 +24,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Tuple.Select (sel1, sel2, sel3)
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
-import Gargantext.Core.NodeStory.Types ( HasNodeStory )
+import Gargantext.Core.NodeStory (HasNodeStory)
 import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
@@ -40,7 +40,8 @@ import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ListId, NodeType(NodeTexts))
 import Gargantext.Database.Prelude (hasConfig)
-import Gargantext.Database.Query.Table.Node (getOrMkList, insertDefaultNodeIfNotExists)
+import Gargantext.Database.Query.Table.Node (getOrMkList)
+import Gargantext.Database.Query.Table.Node (insertDefaultNodeIfNotExists)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
 import Gargantext.Database.Query.Tree.Root (getOrMk_RootWithCorpus)
@@ -53,7 +54,7 @@ import Prelude qualified
 
 langToSearx :: Lang -> Text
 langToSearx All = "en-US"
-langToSearx x   = Text.toLower acronym <> "-" <> acronym
+langToSearx x   = (Text.toLower acronym) <> "-" <> acronym
   where
     acronym = show x
 
@@ -136,7 +137,7 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
   -- docs :: [Either Text HyperdataDocument]
   let docs = hyperdataDocumentFromSearxResult l <$> _srs_results
   --printDebug "[triggerSearxSearch] docs" docs
-  let docs' = mapMaybe rightToMaybe docs
+  let docs' = catMaybes $ rightToMaybe <$> docs
     {-
   Prelude.mapM_ (\(HyperdataDocument { _hd_title, _hd_publication_year, _hd_publication_date }) -> do
       printDebug "[triggerSearxSearch] doc time" $
@@ -214,14 +215,16 @@ hyperdataDocumentFromSearxResult l (SearxResult { _sr_content, _sr_engine, _sr_p
   Right HyperdataDocument { _hd_bdd = Just "Searx"
                           , _hd_doi = Nothing
                           , _hd_url = Nothing
+                          , _hd_uniqId = Nothing
+                          , _hd_uniqIdBdd = Nothing
                           , _hd_page = Nothing
                           , _hd_title = Just _sr_title
                           , _hd_authors = Nothing
                           , _hd_institutes = Nothing
                           , _hd_source = Just _sr_engine
                           , _hd_abstract = _sr_content
-                          , _hd_publication_date = T.pack Prelude.. formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" Prelude.<$> mDate
-                          , _hd_publication_year = fromIntegral Prelude.. sel1 Prelude.<$> mGregorian
+                          , _hd_publication_date = T.pack <$> formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" <$> mDate
+                          , _hd_publication_year = fromIntegral <$> sel1 <$> mGregorian
                           , _hd_publication_month = sel2 <$> mGregorian
                           , _hd_publication_day = sel3 <$> mGregorian
                           , _hd_publication_hour = Nothing

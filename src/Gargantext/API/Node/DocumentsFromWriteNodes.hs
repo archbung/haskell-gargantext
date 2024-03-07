@@ -10,22 +10,23 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE MonoLocalBinds     #-}
+{-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeOperators      #-}
 
 module Gargantext.API.Node.DocumentsFromWriteNodes
       where
 
-import Conduit ( yieldMany )
+import Conduit
 import Control.Lens ((^.))
-import Data.Aeson ( genericParseJSON, defaultOptions, genericToJSON, FromJSON(parseJSON), ToJSON(toJSON) )
+import Data.Aeson
 import Data.List qualified as List
-import Data.Swagger ( ToSchema )
+import Data.Swagger
 import Data.Text qualified as T
-import Gargantext.API.Admin.Auth.Types ( AuthenticatedUser, auth_node_id, auth_user_id )
+import Gargantext.API.Admin.Auth.Types
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Errors.Types ( BackendInternalError )
+import Gargantext.API.Errors.Types
 import Gargantext.API.Ngrams (commitStatePatch, Versioned(..))
 import Gargantext.API.Prelude (GargM)
 import Gargantext.Core (Lang(..))
@@ -38,13 +39,13 @@ import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Database.Action.Flow (flowDataText, DataText(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import Gargantext.Database.Admin.Types.Hyperdata.Frame ( HyperdataFrame(..), getHyperdataFrameContents )
-import Gargantext.Database.Admin.Types.Node ( NodeId, Node, NodeType(..) )
+import Gargantext.Database.Admin.Types.Hyperdata.Frame
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Query.Table.Node (getChildrenByType, getClosestParentIdByType', getNodeWith, getOrMkList)
 import Gargantext.Database.Schema.Node (node_hyperdata, node_name, node_date)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Servant ( JSON, Summary, type (:>), HasServer(ServerT) )
+import Servant
 
 ------------------------------------------------------------------------
 type API = Summary " Documents from Write nodes."
@@ -105,7 +106,7 @@ documentsFromWriteNodes authenticatedUser nId Params { selection, lang, paragrap
              pure (node, contents)
          ) frameWrites
 
-  let paragraphs' = fromMaybe (7 :: Int) $ readMaybe (T.unpack paragraphs)
+  let paragraphs' = fromMaybe (7 :: Int) $ (readMaybe $ T.unpack paragraphs)
   let parsedE = (\(node, contents)
                   -> hyperdataDocumentFromFrameWrite lang paragraphs' (node, contents)) <$> frameWritesWithContents
   let parsed = List.concat $ rights parsedE
@@ -158,6 +159,8 @@ hyperdataDocumentFromFrameWrite lang paragraphSize (node, contents) =
       Right (List.map (\(t, ctxt) ->  HyperdataDocument { _hd_bdd = Just $ show Notes
                               , _hd_doi = Nothing
                               , _hd_url = Nothing
+                              , _hd_uniqId = Nothing
+                              , _hd_uniqIdBdd = Nothing
                               , _hd_page = Nothing
                               , _hd_title = Just t
                               , _hd_authors = Just authors'
