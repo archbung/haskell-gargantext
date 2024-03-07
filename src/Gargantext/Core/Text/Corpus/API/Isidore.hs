@@ -11,7 +11,12 @@ Portability : POSIX
 
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Gargantext.Core.Text.Corpus.API.Isidore where
+module Gargantext.Core.Text.Corpus.API.Isidore (
+  get
+
+  -- * Internals (possibly unused?)
+  , isidore2csvFile
+  ) where
 
 import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
@@ -26,10 +31,12 @@ import Isidore.Client
 import Servant.Client
 
 -- | TODO work with the ServantErr
-get :: Lang -> Maybe Isidore.Limit
-    -> Maybe Isidore.TextQuery -> Maybe Isidore.AuthorQuery
+get :: Lang
+    -> Maybe Isidore.Limit
+    -> Maybe Isidore.TextQuery
+    -> Maybe Isidore.AuthorQuery
     -> IO [HyperdataDocument]
-get la l q a = do
+get lang l q a = do
   let
     printErr (DecodeFailure e _) = panicTrace e
     printErr e                   = panicTrace (show e)
@@ -40,18 +47,18 @@ get la l q a = do
 
   iDocs <- either printErr _content <$> Isidore.get l q a
 
-  hDocs <- mapM (\d -> isidoreToDoc la d) (toIsidoreDocs iDocs)
+  hDocs <- mapM (isidoreToDoc lang) (toIsidoreDocs iDocs)
   pure hDocs
 
 isidore2csvFile :: FilePath -> Lang -> Maybe Isidore.Limit
     -> Maybe Isidore.TextQuery -> Maybe Isidore.AuthorQuery
     -> IO ()
-isidore2csvFile fp la li tq aq = do
-  hdocs <- get la li tq aq
+isidore2csvFile fp lang li tq aq = do
+  hdocs <- get lang li tq aq
   writeDocs2Csv fp hdocs
 
 isidoreToDoc :: Lang -> IsidoreDoc -> IO HyperdataDocument
-isidoreToDoc l (IsidoreDoc t a d u s as) = do
+isidoreToDoc lang (IsidoreDoc t a d u s as) = do
   let
     author :: Author -> Text
     author (Author fn ln) = (_name fn) <> ", " <> (_name ln)
@@ -88,5 +95,5 @@ isidoreToDoc l (IsidoreDoc t a d u s as) = do
          , _hd_publication_hour = Nothing
          , _hd_publication_minute = Nothing
          , _hd_publication_second = Nothing
-         , _hd_language_iso2 = Just $ (Text.pack . show) l
+         , _hd_language_iso2 = Just . Text.pack . show $ lang
          }
