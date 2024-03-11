@@ -32,7 +32,7 @@ import Gargantext.Core (Lang(..), Form, Lem, NLPServerConfig)
 import Gargantext.Core.Text.List.Group.Prelude
 import Gargantext.Core.Text.List.Social.Patch
 import Gargantext.Core.Text.List.Social.Prelude
-import Gargantext.Core.Text.Terms.Mono.Stem (stem)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Prelude
 
 ------------------------------------------------------------------------
@@ -73,7 +73,7 @@ groupWith GroupIdentity  t = identity t
 groupWith (GroupParams { unGroupParams_lang = l }) t =
                     NgramsTerm
                   $ Text.intercalate " "
-                  $ map (stem l)
+                  $ map (stem l PorterAlgorithm)
                   -- . take n
                   $ List.sort
                   -- \$ Set.toList

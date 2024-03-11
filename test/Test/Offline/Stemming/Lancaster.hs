@@ -5,7 +5,7 @@ import Prelude
 
 import Data.ByteString.Char8 qualified as C8
 import Data.Text qualified as T
-import Gargantext.Core.Text.Terms.Mono.Stem.Lancaster (stemIt)
+import Gargantext.Core.Text.Terms.Mono.Stem.Internal.Lancaster (stem)
 import Gargantext.Prelude (toS)
 import Test.Tasty
 import Test.Tasty.Golden (goldenVsStringDiff)
@@ -128,4 +128,4 @@ testWords = [
   ]
 
 mkTestVector :: IO BL.ByteString
-mkTestVector = pure $ toS $ C8.unlines (map (\(indx, w) -> (C8.pack $ show indx) <> "," <> TE.encodeUtf8 (stemIt w)) testWords)
+mkTestVector = pure $ toS $ C8.unlines (map (\(indx, w) -> (C8.pack $ show indx) <> "," <> TE.encodeUtf8 (stem w)) testWords)

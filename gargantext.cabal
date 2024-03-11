@@ -158,8 +158,10 @@ library
       Gargantext.Core.Text.Terms
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
-      Gargantext.Core.Text.Terms.Mono.Stem.En
-      Gargantext.Core.Text.Terms.Mono.Stem.Lancaster
+      Gargantext.Core.Text.Terms.Mono.Stem
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.GargPorter
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.Lancaster
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.Porter
       Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
@@ -327,7 +329,6 @@ library
       Gargantext.Core.Text.Samples.FR
       Gargantext.Core.Text.Samples.PL
       Gargantext.Core.Text.Samples.ZH
-      Gargantext.Core.Text.Terms.Mono.Stem
       Gargantext.Core.Text.Terms.Mono.Token
       Gargantext.Core.Text.Terms.Mono.Token.En
       Gargantext.Core.Text.Terms.Multi.Group

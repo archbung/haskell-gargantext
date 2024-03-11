@@ -33,7 +33,7 @@ import Data.Text qualified as T
 import Data.Time (UTCTime)
 import Gargantext.Core
 import Gargantext.Core.Text.Corpus.Query qualified as API
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
@@ -181,7 +181,7 @@ searchInCorpus :: HasDBid NodeType
 searchInCorpus cId t q o l order = runOpaQuery
                                  $ filterWith o l order
                                  $ queryInCorpus cId t
-                                 $ API.mapQuery (Term . stemIt . getTerm) q
+                                 $ API.mapQuery (Term . stem EN GargPorterAlgorithm . getTerm) q
 
 searchCountInCorpus :: HasDBid NodeType
                     => CorpusId
@@ -190,7 +190,7 @@ searchCountInCorpus :: HasDBid NodeType
                     -> DBCmd err Int
 searchCountInCorpus cId t q = runCountOpaQuery
                             $ queryInCorpus cId t
-                            $ API.mapQuery (Term . stemIt . getTerm) q
+                            $ API.mapQuery (Term . stem EN GargPorterAlgorithm . getTerm) q
 
 queryInCorpus :: HasDBid NodeType
               => CorpusId
@@ -233,7 +233,7 @@ searchInCorpusWithContacts cId aId q o l _order =
               $ offset'  o
               $ orderBy (desc _fp_score)
               $ selectGroup cId aId
-              $ API.mapQuery (Term . stemIt . getTerm) q
+              $ API.mapQuery (Term . stem EN GargPorterAlgorithm . getTerm) q
 
 selectGroup :: HasDBid NodeType
             => CorpusId

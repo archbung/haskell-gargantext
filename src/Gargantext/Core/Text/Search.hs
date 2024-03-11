@@ -57,7 +57,7 @@ docSearchConfig =
 
     normaliseQueryToken :: Text -> DocField -> Text
     normaliseQueryToken tok =
-      let tokStem = ST.stem ST.EN
+      let tokStem = ST.stem ST.EN ST.PorterAlgorithm
        in \field -> case field of
                       TitleField    -> tokStem tok
                       AbstractField -> tokStem tok
