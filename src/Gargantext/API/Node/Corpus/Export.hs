@@ -22,21 +22,21 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.Text (pack)
 import Gargantext.API.Ngrams.Tools (filterListWithRoot, mapTermListRoot, getRepo)
-import Gargantext.API.Ngrams.Types ( NgramsTerm(unNgramsTerm) )
-import Gargantext.API.Node.Corpus.Export.Types ( Corpus(..) )
+import Gargantext.API.Ngrams.Types
+import Gargantext.API.Node.Corpus.Export.Types
 import Gargantext.API.Node.Document.Export.Types qualified as DocumentExport
 import Gargantext.API.Prelude (GargNoServer)
-import Gargantext.Core.NodeStory.Types ( NodeListStory )
+import Gargantext.Core.NodeStory
 import Gargantext.Core.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext (getNgramsByContextOnlyUser)
 import Gargantext.Database.Admin.Config (userMaster)
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Database.Prelude (Cmd)
-import Gargantext.Database.Query.Table.Node ( defaultList )
+import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
-import Gargantext.Database.Schema.Context (_context_id)
+import Gargantext.Database.Schema.Context (_context_id, _context_hyperdata)
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Crypto.Hash (hash)
@@ -51,7 +51,9 @@ getCorpus :: CorpusId
 getCorpus cId lId nt' = do
 
   let
-    nt = fromMaybe NgramsTerms nt'
+    nt = case nt' of
+      Nothing -> NgramsTerms
+      Just  t -> t
 
   listId <- case lId of
     Nothing -> defaultList cId
@@ -73,10 +75,10 @@ getCorpus cId lId nt' = do
         ) ns (Map.map (Set.map unNgramsTerm) ngs)
           where
             d_hash :: Context HyperdataDocument -> Set Text -> Text
-            d_hash  _a b = hash [ -- fromMaybe "" (_hd_uniqId $ _context_hyperdata a),
-                                hash b
+            d_hash  a b = hash [ fromMaybe "" (_hd_uniqId $ _context_hyperdata a)
+                               , hash b
                                ]
-  pure $ addHeader ("attachment; filename=GarganText_corpus-" <> pack (show cId) <> ".json")
+  pure $ addHeader ("attachment; filename=GarganText_corpus-" <> (pack $ show cId) <> ".json")
     $ Corpus { _c_corpus = Map.elems r
              , _c_hash = hash $ List.map DocumentExport._d_hash $ Map.elems r }
 

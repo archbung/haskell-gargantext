@@ -9,15 +9,15 @@ Portability : POSIX
 -}
 module Gargantext.Core.Text.Corpus.API.OpenAlex where
 
-import Conduit ( ConduitT, (.|), mapC, takeC )
+import Conduit
 import Data.LanguageCodes qualified as ISO639
-import Data.Text qualified as T
+import qualified Data.Text as T
 import Gargantext.Core (iso639ToText)
 import Gargantext.Core.Text.Corpus.Query as Corpus
-import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Protolude
-import OpenAlex qualified as OA
-import OpenAlex.Types qualified as OA
+import qualified OpenAlex as OA
+import qualified OpenAlex.Types as OA
 import Servant.Client (ClientError)
 
 
@@ -37,6 +37,8 @@ toDoc (OA.Work { .. } ) =
   HyperdataDocument { _hd_bdd = Just "OpenAlex"
                     , _hd_doi = doi
                     , _hd_url = url
+                    , _hd_uniqId = Just id
+                    , _hd_uniqIdBdd = Just id
                     , _hd_page = firstPage biblio
                     , _hd_title = title
                     , _hd_authors = authors authorships
@@ -53,25 +55,25 @@ toDoc (OA.Work { .. } ) =
                     , _hd_language_iso2 = language }
       where
         firstPage :: OA.Biblio -> Maybe Int
-        firstPage OA.Biblio { first_page } = (readMaybe . T.unpack) =<< first_page
+        firstPage OA.Biblio { first_page } = maybe Nothing readMaybe $ T.unpack <$> first_page
 
         authors :: [OA.Authorship] -> Maybe Text
         authors [] = Nothing
-        authors aus = Just $ T.intercalate ", " $ mapMaybe getDisplayName aus
+        authors aus = Just $ T.intercalate ", " $ catMaybes (getDisplayName <$> aus)
           where
             getDisplayName :: OA.Authorship -> Maybe Text
             getDisplayName OA.Authorship { author = OA.DehydratedAuthor { display_name = dn } } = dn
 
         institutes :: [OA.Authorship] -> Maybe Text
         institutes [] = Nothing
-        institutes aus = Just $ T.intercalate ", " (T.replace ", " " - " . getInstitutesNames <$> aus)
+        institutes aus = Just $ T.intercalate ", " ((T.replace ", " " - ") . getInstitutesNames <$> aus)
           where
             getInstitutesNames OA.Authorship { institutions } = T.intercalate ", " $ getDisplayName <$> institutions
             getDisplayName :: OA.DehydratedInstitution -> Text
             getDisplayName OA.DehydratedInstitution { display_name = dn } = dn
 
         source :: Maybe Text
-        source = getSource =<< primary_location
+        source = maybe Nothing getSource primary_location
           where
             getSource OA.Location { source = s } = getSourceDisplayName <$> s
             getSourceDisplayName OA.DehydratedSource { display_name = dn }  = dn

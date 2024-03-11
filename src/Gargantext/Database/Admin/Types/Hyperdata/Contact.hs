@@ -16,6 +16,7 @@ Portability : POSIX
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -31,7 +32,7 @@ import Gargantext.API.GraphQL.Utils qualified as GAGU
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
 import Gargantext.Prelude
-import Gargantext.Utils.UTCTime ( NUTCTime(..) )
+import Gargantext.Utils.UTCTime
 
 --------------------------------------------------------------------------------
 data HyperdataContact =
@@ -41,6 +42,8 @@ data HyperdataContact =
                    , _hc_title  :: Maybe Text -- TODO remove (only demo)
                    , _hc_source :: Maybe Text -- TODO remove (only demo)
                    , _hc_lastValidation  :: Maybe Text -- TODO UTCTime
+                   , _hc_uniqIdBdd       :: Maybe Text
+                   , _hc_uniqId          :: Maybe Text
   } deriving (Eq, Show, Generic)
 
 instance GQLType HyperdataContact where
@@ -58,7 +61,9 @@ defaultHyperdataContact =
     , _hc_where = [defaultContactWhere]
     , _hc_title =Just "Title"
     , _hc_source = Just "Source"
-    , _hc_lastValidation = Just "TODO lastValidation date" }
+    , _hc_lastValidation = Just "TODO lastValidation date"
+    , _hc_uniqIdBdd = Just "DO NOT expose this"
+    , _hc_uniqId = Just "DO NOT expose this" }
 
 hyperdataContact :: FirstName -> LastName -> HyperdataContact
 hyperdataContact fn ln =
@@ -68,7 +73,9 @@ hyperdataContact fn ln =
     , _hc_where = []
     , _hc_title = Nothing
     , _hc_source = Nothing
-    , _hc_lastValidation = Nothing }
+    , _hc_lastValidation = Nothing
+    , _hc_uniqIdBdd = Nothing
+    , _hc_uniqId = Nothing }
 
 -- TOD0 contact metadata (Type is too flat)
 data ContactMetaData =
@@ -87,7 +94,9 @@ arbitraryHyperdataContact =
     , _hc_where = []
     , _hc_title = Nothing
     , _hc_source = Nothing
-    , _hc_lastValidation = Nothing }
+    , _hc_lastValidation = Nothing
+    , _hc_uniqIdBdd = Nothing
+    , _hc_uniqId = Nothing }
 
 
 data ContactWho = 
@@ -179,7 +188,7 @@ instance ToSchema ContactMetaData where
 
 -- | Arbitrary instances
 instance Arbitrary HyperdataContact where
-  arbitrary = elements [ HyperdataContact Nothing Nothing [] Nothing Nothing Nothing ]
+  arbitrary = elements [HyperdataContact Nothing Nothing [] Nothing Nothing Nothing Nothing Nothing]
 
 -- | Specific Gargantext instance
 instance Hyperdata HyperdataContact

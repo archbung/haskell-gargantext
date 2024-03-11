@@ -65,6 +65,7 @@ exampleDocument_01 = either error id $ parseEither parseJSON $ [aesonQQ|
 exampleDocument_02 :: HyperdataDocument
 exampleDocument_02 = either error id $ parseEither parseJSON $ [aesonQQ|
   { "doi":""
+  , "uniqId": "1405.3072v3"
   , "bdd": "Arxiv"
   , "publication_day":6
   , "language_iso2":"EN"
@@ -89,6 +90,7 @@ exampleDocument_03 = either error id $ parseEither parseJSON $ [aesonQQ|
   , "url": "http://arxiv.org/pdf/1405.3072v2"
   , "title": "Haskell for OCaml programmers"
   , "source": ""
+  , "uniqId": "1405.3072v2"
   , "authors": "Raphael Poss, Herbert Ballerina"
   , "abstract": "  This introduction to Haskell is written to optimize learning by programmers who already know OCaml. "
   , "institutes": ""
@@ -106,6 +108,7 @@ exampleDocument_04 = either error id $ parseEither parseJSON $ [aesonQQ|
   , "url": "http://arxiv.org/pdf/1407.5670v1"
   , "title": "Rust for functional programmers"
   , "source": ""
+  , "uniqId": "1407.5670v1"
   , "authors": "Raphael Poss"
   , "abstract": "  This article provides an introduction to Rust , a systems language by Mozilla , to programmers already familiar with Haskell , OCaml or other functional languages. " , "institutes": ""
   , "language_iso2": "EN"
