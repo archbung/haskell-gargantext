@@ -81,7 +81,7 @@ tests = withResource pubmedSettings (const (pure ())) $ \getPubmedKey ->
 
 -- | Checks that the 'RawQuery' can be translated into the expected 'BoolExpr' form,
 -- by also checking that both renders back to the initial 'RawQuery'.
-translatesInto :: RawQuery -> BoolExpr Term -> Property
+translatesInto :: RawQuery -> BoolExpr [QueryTerm] -> Property
 (translatesInto) raw boolExpr =
   let parsed   = parseQuery raw
       expected = Right (unsafeMkQuery boolExpr)
@@ -89,70 +89,69 @@ translatesInto :: RawQuery -> BoolExpr Term -> Property
        (renderQuery <$> parsed) === (renderQuery <$> expected)
 
 testParse01 :: Property
-testParse01 = "A OR B" `translatesInto` (BConst (Positive "A") `BOr` BConst (Positive "B"))
+testParse01 = "A OR B" `translatesInto` (BConst (Positive ["A"]) `BOr` BConst (Positive ["B"]))
 
 testParse02 :: Property
-testParse02 = "A AND B" `translatesInto` (BConst (Positive "A") `BAnd` BConst (Positive "B"))
+testParse02 = "A AND B" `translatesInto` (BConst (Positive ["A"]) `BAnd` BConst (Positive ["B"]))
 
 testParse03 :: Property
-testParse03 = "-A" `translatesInto` (BConst (Negative "A"))
+testParse03 = "-A" `translatesInto` (BConst (Negative ["A"]))
 
 testParse03_01 :: Property
-testParse03_01 = "NOT A" `translatesInto` (BConst (Negative "A"))
+testParse03_01 = "NOT A" `translatesInto` (BConst (Negative ["A"]))
 
 testParse04 :: Property
-testParse04 = "A -B" `translatesInto` (BConst (Positive "A") `BAnd` BConst (Negative "B"))
+testParse04 = "A -B" `translatesInto` (BConst (Positive ["A"]) `BAnd` BConst (Negative ["B"]))
 
 -- Both 'A -B' and 'A AND -B' desugars into the same form.
 testParse04_01 :: Property
-testParse04_01 = "A AND -B" `translatesInto` (BConst (Positive "A") `BAnd` BConst (Negative "B"))
+testParse04_01 = "A AND -B" `translatesInto` (BConst (Positive ["A"]) `BAnd` BConst (Negative ["B"]))
 
 testParse05 :: Property
-testParse05 = "A AND B -C" `translatesInto` ((BConst (Positive "A") `BAnd` BConst (Positive "B")) `BAnd` BConst (Negative "C"))
+testParse05 = "A AND B -C" `translatesInto` ((BConst (Positive ["A"]) `BAnd` BConst (Positive ["B"])) `BAnd` BConst (Negative ["C"]))
 
 testParse05_01 :: Property
 testParse05_01 =
-  "A AND (B -C)" `translatesInto` (BConst (Positive "A") `BAnd` (BConst (Positive "B") `BAnd` BConst (Negative "C")))
+  "A AND (B -C)" `translatesInto` (BConst (Positive ["A"]) `BAnd` (BConst (Positive ["B"]) `BAnd` BConst (Negative ["C"])))
 
 testParse06 :: Property
 testParse06 =
   translatesInto "(A OR B OR NOT C) AND (D OR E OR F) -(G OR H OR I)"
     (
       (
-        ((BConst (Positive  "A") `BOr` (BConst (Positive  "B"))) `BOr` (BConst  (Negative "C")))
+        ((BConst (Positive ["A"]) `BOr` (BConst (Positive ["B"]))) `BOr` (BConst  (Negative ["C"])))
         `BAnd`
-        ((BConst (Positive "D") `BOr` (BConst (Positive "E"))) `BOr` (BConst (Positive "F")))
+        ((BConst (Positive ["D"]) `BOr` (BConst (Positive ["E"]))) `BOr` (BConst (Positive ["F"])))
       )
       `BAnd` BNot (
-        ((BConst (Positive "G") `BOr` (BConst (Positive "H"))) `BOr` (BConst (Positive "I")))
+        ((BConst (Positive ["G"]) `BOr` (BConst (Positive ["H"]))) `BOr` (BConst (Positive ["I"])))
       )
     )
 
 testParse07 :: Property
 testParse07 =
   translatesInto "\"Haskell\" AND \"Agda\""
-    ((BConst (Positive  "Haskell") `BAnd` (BConst (Positive  "Agda"))))
+    ((BConst (Positive ["Haskell"]) `BAnd` (BConst (Positive ["Agda"]))))
 
 testParse07_01 :: Property
 testParse07_01 =
   translatesInto "Haskell AND Agda"
-    ((BConst (Positive  "Haskell") `BAnd` (BConst (Positive  "Agda"))))
+    ((BConst (Positive ["Haskell"]) `BAnd` (BConst (Positive ["Agda"]))))
 
 testParse07_02 :: Property
 testParse07_02 =
   translatesInto "Raphael"
-    ((BConst (Positive  "Raphael")))
+    ((BConst (Positive ["Raphael"])))
 
 testParse07_03 :: Property
 testParse07_03 =
-  translatesInto "Niki" ((BConst (Positive "Niki"))) .&&.
-  translatesInto "Ajeje" ((BConst (Positive "Ajeje"))) .&&.
-  translatesInto "Orf" ((BConst (Positive "Orf")))
+  translatesInto "Niki" ((BConst (Positive ["Niki"]))) .&&.
+  translatesInto "Ajeje" ((BConst (Positive ["Ajeje"]))) .&&.
+  translatesInto "Orf" ((BConst (Positive ["Orf"])))
 
 testWordsIntoConst :: Assertion
 testWordsIntoConst =
-  let (expected :: BoolExpr Term) =
-        fromCNF (boolTreeToCNF @Term $ (BConst (Positive "The Art of Computer Programming") `BAnd` (BConst (Positive "Conceptual Mathematics"))))
+  let (expected :: BoolExpr [QueryTerm]) = fromCNF (boolTreeToCNF @[QueryTerm] $ (BAnd (BOr (BConst (Positive [QT_exact_match "The",QT_exact_match "Art",QT_exact_match "of",QT_exact_match "Computer",QT_exact_match "Programming"])) BFalse) (BAnd (BOr (BConst (Positive [QT_exact_match "Conceptual",QT_exact_match "Mathematics"])) BFalse) BTrue)))
   in case parseQuery "\"The Art of Computer Programming\" AND \"Conceptual Mathematics\"" of
     Left err
       -> assertBool err False
@@ -168,43 +167,43 @@ withValidQuery rawQuery onValidParse = do
 
 testArxiv01_01 :: Assertion
 testArxiv01_01 = withValidQuery "A AND B" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 testArxiv01_02 :: Assertion
 testArxiv01_02 = withValidQuery "\"Haskell\" AND \"Agda\"" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["Haskell"]) ((Arxiv.Exp $ Arxiv.Abs ["Agda"]))))
 
 testArxiv02 :: Assertion
 testArxiv02 = withValidQuery "A OR B" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.Or (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 testArxiv03_01 :: Assertion
 testArxiv03_01 = withValidQuery "A AND NOT B" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 testArxiv03_02 :: Assertion
 testArxiv03_02 = withValidQuery "A AND -B" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 -- Double negation get turned into positive.
 testArxiv04_01 :: Assertion
 testArxiv04_01 = withValidQuery "A AND NOT (NOT B)" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.And (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 testArxiv04_02 :: Assertion
 testArxiv04_02 = withValidQuery "A AND NOT (NOT (NOT B))" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) ((Arxiv.Exp $ Arxiv.Abs ["B"]))))
 
 testArxiv05 :: Assertion
 testArxiv05 = withValidQuery "A OR NOT B" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (
                 Arxiv.Or (Arxiv.Exp $ Arxiv.Abs ["A"])
                          (Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["B"]) (Arxiv.Exp $ Arxiv.Abs ["B"]))
@@ -213,7 +212,7 @@ testArxiv05 = withValidQuery "A OR NOT B" $ \q ->
 
 testArxiv06 :: Assertion
 testArxiv06 = withValidQuery "-A" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Arxiv.qExp (Arxiv.convertQuery q) == Just (
                 Arxiv.AndNot (Arxiv.Exp $ Arxiv.Abs ["A"]) (Arxiv.Exp $ Arxiv.Abs ["A"])
                 )
@@ -225,7 +224,7 @@ testArxiv06 = withValidQuery "-A" $ \q ->
 
 testPubMed01 :: Assertion
 testPubMed01 = withValidQuery "A" $ \q ->
-  assertBool ("Query not converted into expression: " <> show @(BoolExpr Term) (fromCNF $ getQuery q))
+  assertBool ("Query not converted into expression: " <> show @(BoolExpr [QueryTerm]) (fromCNF $ getQuery q))
              (Pubmed.getESearch (Pubmed.convertQuery q) == "A")
 
 testPubMed02_01 :: Assertion

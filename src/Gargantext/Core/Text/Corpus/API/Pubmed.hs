@@ -10,6 +10,7 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase         #-}
 
 module Gargantext.Core.Text.Corpus.API.Pubmed
     ( get
@@ -25,7 +26,6 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TE
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
-import Gargantext.Core.Types (Term(..))
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude hiding (get)
 import Network.HTTP.Types.URI (EscapeItem(..), renderQueryPartialEscape)
@@ -60,7 +60,11 @@ getESearch (ESearch items) =
 convertQuery :: Corpus.Query -> ESearch
 convertQuery q = ESearch (interpretQuery q transformAST)
   where
-    transformAST :: BoolExpr Term -> [EscapeItem]
+
+    mergeTerms :: [QueryTerm] -> [EscapeItem]
+    mergeTerms trms = [QE $ TE.encodeUtf8 (Text.unwords $ map renderQueryTerm trms)]
+
+    transformAST :: BoolExpr [QueryTerm] -> [EscapeItem]
     transformAST ast = case ast of
       BAnd sub (BConst (Negative term))
         -- The second term become positive, so that it can be translated.
@@ -81,11 +85,12 @@ convertQuery q = ESearch (interpretQuery q transformAST)
       -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
       BFalse
         -> mempty
-      BConst (Positive (Term term))
-        -> [QE (TE.encodeUtf8 term)]
+      BConst (Positive terms)
+        -> mergeTerms terms
+      -- TODO(adinapoli) Support partial match queries
       -- We can handle negatives via `ANDNOT` with itself.
-      BConst (Negative (Term term))
-        -> [QN "NOT+", QE (TE.encodeUtf8 term)]
+      BConst (Negative terms)
+        -> [QN "NOT+"] <> mergeTerms terms
 
 get :: Text
     -> Corpus.RawQuery
