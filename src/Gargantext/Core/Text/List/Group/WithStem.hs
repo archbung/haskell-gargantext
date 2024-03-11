@@ -24,8 +24,6 @@ import Data.HashSet (HashSet)
 import Data.HashSet qualified as Set
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
-import Data.Map.Strict.Patch qualified as PatchMap
-import Data.Patch.Class qualified as Patch (Replace(..))
 import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (Lang(..), Form, Lem, NLPServerConfig)
@@ -119,15 +117,6 @@ patch s = case Set.size s > 1 of
     parent   <- headMay ngrams
     let children = List.tail ngrams
     pure (parent, toNgramsPatch children)
-
-toNgramsPatch :: [NgramsTerm] -> NgramsPatch
-toNgramsPatch children = NgramsPatch children' Patch.Keep
-  where
-    children' :: PatchMSet NgramsTerm
-    children' = PatchMSet
-              $ fst
-              $ PatchMap.fromList
-              $ List.zip children (List.cycle [addPatch])
 
 -- | Instances
 makeLenses ''GroupParams

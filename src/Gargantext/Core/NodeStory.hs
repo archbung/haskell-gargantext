@@ -43,7 +43,6 @@ TODO:
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell   #-}
 
 module Gargantext.Core.NodeStory
   ( module Gargantext.Core.NodeStory.Types
@@ -54,17 +53,18 @@ module Gargantext.Core.NodeStory
   , fromDBNodeStoryEnv
   , upsertNodeStories
   -- , getNodeStory
+  , getNodeStory'
   , nodeStoriesQuery
   , currentVersion
   , archiveStateFromList
   , archiveStateToList
-  , fixNodeStoryVersions )
+  , fixNodeStoryVersions
+  , fixChildrenDuplicatedAsParents
+  , getParentsChildren )
 where
 
-import Control.Lens ((^.), (.~), (%~), non, _Just, at, view)
-import Control.Monad.Except
+import Control.Lens ((^.), (.~), (%~), non, _Just, at, over, view)
 import Data.Map.Strict qualified as Map
-import Data.Monoid
 import Data.Pool (Pool, withResource)
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple qualified as PGS
@@ -73,12 +73,12 @@ import Database.PostgreSQL.Simple.ToField qualified as PGS
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory.DB
 import Gargantext.Core.NodeStory.Types
-import Gargantext.Core.Types (ListId, NodeId(..))
+import Gargantext.Database.Admin.Types.Node ( ListId, NodeId(..) )
 import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (HasConnectionPool(..))
 import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Prelude hiding (to)
-import Gargantext.Prelude.Database
+import Gargantext.Prelude.Database ( runPGSAdvisoryXactLock, runPGSExecute, runPGSQuery )
 
 
 getNodeStory' :: PGS.Connection -> NodeId -> IO ArchiveList
@@ -105,7 +105,7 @@ getNodeStory' c nId = do
     pure ()
 -}
 
-  pure $ foldl combine initArchive dbData
+  pure $ foldl' combine initArchive dbData
   where
     -- NOTE (<>) for Archive doesn't concatenate states, so we have to use `combine`
     combine a1 a2 = a1 & a_state %~ combineState (a2 ^. a_state)
@@ -221,15 +221,12 @@ nodeStoryInc c ns@(NodeStory nls) nId = do
 -- `nre_parent` and `nre_children`. We want to make sure that all
 -- children entries (i.e. ones that have `nre_parent`) have the same
 -- `list` as their parent entry.
-fixChildrenInNgramsStatePatch :: NgramsState' -> NgramsState'
-fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
+fixChildrenInNgrams :: NgramsState' -> NgramsState'
+fixChildrenInNgrams ns = archiveStateFromList $ nsParents <> nsChildrenFixed
   where
-    nls = archiveStateToList ns
-    
-    nsParents = filter (\(_nt, _t, nre) -> isNothing $ nre ^. nre_parent) nls
+    (nsParents, nsChildren) = getParentsChildren ns
     parentNtMap = Map.fromList $ (\(_nt, t, nre) -> (t, nre ^. nre_list)) <$> nsParents
-    
-    nsChildren = filter (\(_nt, _t, nre) -> isJust $ nre ^. nre_parent) nls
+
     nsChildrenFixed = (\(nt, t, nre) ->
                          ( nt
                          , t
@@ -241,15 +238,12 @@ fixChildrenInNgramsStatePatch ns = archiveStateFromList $ nsParents <> nsChildre
 -- | Sometimes, when we upload a new list, a child can be left without
 -- a parent. Find such ngrams and set their 'root' and 'parent' to
 -- 'Nothing'.
-fixChildrenWithNoParentStatePatch :: NgramsState' -> NgramsState'
-fixChildrenWithNoParentStatePatch ns = archiveStateFromList $ nsParents <> nsChildrenFixed
+fixChildrenWithNoParent :: NgramsState' -> NgramsState'
+fixChildrenWithNoParent ns = archiveStateFromList $ nsParents <> nsChildrenFixed
   where
-    nls = archiveStateToList ns
-    
-    nsParents = filter (\(_nt, _t, nre) -> isNothing $ nre ^. nre_parent) nls
+    (nsParents, nsChildren) = getParentsChildren ns
     parentNtMap = Map.fromList $ (\(_nt, t, nre) -> (t, nre ^. nre_children & mSetToSet)) <$> nsParents
-    
-    nsChildren = filter (\(_nt, _t, nre) -> isJust $ nre ^. nre_parent) nls
+
     nsChildrenFixFunc (nt, t, nre) =
       ( nt
       , t
@@ -262,6 +256,30 @@ fixChildrenWithNoParentStatePatch ns = archiveStateFromList $ nsParents <> nsChi
           Nothing -> (Nothing, Nothing)
 
     nsChildrenFixed = nsChildrenFixFunc <$> nsChildren
+
+-- | Sometimes children can also become parents (e.g. #313). Find such
+-- | children and remove them from the list.
+fixChildrenDuplicatedAsParents :: NgramsState' -> NgramsState'
+fixChildrenDuplicatedAsParents ns = archiveStateFromList $ nsChildren <> nsParentsFixed
+  where
+    (nsParents, nsChildren) = getParentsChildren ns
+    parentNtMap = Map.fromList $ (\(_nt, t, nre) -> (t, nre ^. nre_children & mSetToSet)) <$> nsParents
+    parentsSet = Set.fromList $ Map.keys parentNtMap
+
+    nsParentsFixed = (\(nt, t, nre) ->
+                       ( nt
+                       , t
+                       , over nre_children
+                             (\c -> mSetFromSet $ Set.difference (mSetToSet c) parentsSet)
+                             nre ) ) <$> nsParents
+
+getParentsChildren :: NgramsState' -> (ArchiveStateList, ArchiveStateList)
+getParentsChildren ns = (nsParents, nsChildren)
+  where
+    nls = archiveStateToList ns
+
+    nsParents = filter (\(_nt, _t, nre) -> isNothing $ nre ^. nre_parent) nls
+    nsChildren = filter (\(_nt, _t, nre) -> isJust $ nre ^. nre_parent) nls
 
 ------------------------------------
 
@@ -280,8 +298,15 @@ fromDBNodeStoryEnv pool = do
         withResource pool $ \c -> do
           --printDebug "[mkNodeStorySaver] will call writeNodeStories, ns" ns
           -- writeNodeStories c $ fixChildrenWithNoParent $ fixChildrenTermTypes ns
+
+          -- |NOTE Fixing a_state is kinda a hack. We shouldn't land
+          -- |with bad state in the first place.
           upsertNodeStories c nId $
-            a & a_state %~ (fixChildrenInNgramsStatePatch . fixChildrenWithNoParentStatePatch)
+            a & a_state %~ (
+                       fixChildrenDuplicatedAsParents
+                    .  fixChildrenInNgrams
+                    . fixChildrenWithNoParent
+                    )
   let archive_saver_immediate nId a = withResource pool $ \c -> do
         insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
         pure $ a & a_history .~ []
@@ -289,13 +314,13 @@ fromDBNodeStoryEnv pool = do
         --           insertNodeArchiveHistory c nId (a ^. a_version) $ reverse $ a ^. a_history
         --       ) $ Map.toList nls
         -- pure $ clearHistory ns
-        
+
   pure $ NodeStoryEnv { _nse_saver_immediate = saver_immediate
                       , _nse_archive_saver_immediate = archive_saver_immediate
                       , _nse_getter = \nId -> withResource pool $ \c ->
                           getNodeStory' c nId
                       , _nse_getter_multi = \nIds -> withResource pool $ \c ->
-                          foldM (\m nId -> nodeStoryInc c m nId) (NodeStory Map.empty) nIds
+                          foldM (nodeStoryInc c) (NodeStory Map.empty) nIds
                       }
 
 currentVersion :: (HasNodeStory env err m) => ListId -> m Version

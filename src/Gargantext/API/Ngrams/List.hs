@@ -152,7 +152,7 @@ postAsyncJSON l ngramsList jobHandle = do
     setList :: HasNodeStory env err m => m ()
     setList = do
       -- TODO check with Version for optim
-      mapM_ (\(nt, Versioned _v ns) -> (setListNgrams l nt ns)) $ toList ngramsList
+      mapM_ (\(nt, Versioned _v ns) -> setListNgrams l nt ns) $ toList ngramsList
       -- TODO reindex
 
 
