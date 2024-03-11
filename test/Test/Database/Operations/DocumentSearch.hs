@@ -137,8 +137,15 @@ corpusAddDocuments env = do
 
 stemmingTest :: TestEnv -> Assertion
 stemmingTest _env = do
-  stem EN GargPorterAlgorithm "Ajeje"    `shouldBe` "Ajeje"
-  stem EN GargPorterAlgorithm "PyPlasm:" `shouldBe` "PyPlasm:"
+  stem EN GargPorterAlgorithm "Ajeje"        `shouldBe` "Ajeje"
+  stem EN GargPorterAlgorithm "PyPlasm:"     `shouldBe` "PyPlasm:"
+  -- This test outlines the main differences between Porter and Lancaster.
+  stem EN GargPorterAlgorithm "dancer"       `shouldBe` "dancer"
+  stem EN LancasterAlgorithm  "dancer"       `shouldBe` "dant"
+  stem EN GargPorterAlgorithm "postpartum"   `shouldBe` "postpartum"
+  stem EN LancasterAlgorithm  "postpartum"   `shouldBe` "postpart"
+  stem IT PorterAlgorithm     "catechizzare" `shouldBe` "catechizz"
+  stem IT LancasterAlgorithm  "catechizzare" `shouldBe` "catechizzare" -- lancaster doesn't support Italian
 
 mkQ :: T.Text -> API.Query
 mkQ txt = either (\e -> error $ "(query) = " <> T.unpack txt <> ": " <> e) id . API.parseQuery . API.RawQuery $ txt
