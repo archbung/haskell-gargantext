@@ -14,8 +14,7 @@ CSV parser for Gargantext corpus files.
 
 module Gargantext.Core.Text.Corpus.Parsers.CSV where
 
-import Conduit
-import Control.Applicative
+import Conduit ( ConduitT, (.|), yieldMany, mapC )
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BL
 import Data.Csv
@@ -24,9 +23,9 @@ import Data.Text qualified as T
 import Data.Time.Segment (jour)
 import Data.Vector (Vector)
 import Data.Vector qualified as V
-import Gargantext.Core.Text
-import Gargantext.Core.Text.Context
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Core.Text ( sentences, unsentences )
+import Gargantext.Core.Text.Context ( splitBy, SplitContext(..) )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Prelude hiding (length, show)
 import Protolude
 
@@ -60,8 +59,6 @@ toDoc (CsvGargV3 did dt _ dpy dpm dpd dab dau) =
   HyperdataDocument { _hd_bdd = Just "CSV"
                     , _hd_doi = Just . pack . show $ did
                     , _hd_url = Nothing
-                    , _hd_uniqId = Nothing
-                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = Nothing
                     , _hd_title = Just dt
                     , _hd_authors = Nothing
@@ -93,11 +90,11 @@ toDocs v = V.toList
                        (V.enumFromN 1 (V.length v'')) v''
           where
             v'' = V.foldl (\v' sep -> V.concatMap (splitDoc (docsSize v') sep) v') v seps
-            seps= (V.fromList [Paragraphs 1, Sentences 3, Chars 3])
+            seps= V.fromList [Paragraphs 1, Sentences 3, Chars 3]
 
 ---------------------------------------------------------------
 fromDocs :: Vector CsvGargV3 -> Vector CsvDoc
-fromDocs docs = V.map fromDocs' docs
+fromDocs = V.map fromDocs'
   where
     fromDocs' (CsvGargV3 { .. }) = CsvDoc { csv_title = d_title
                                           , csv_source = d_source
@@ -111,16 +108,11 @@ fromDocs docs = V.map fromDocs' docs
 -- | Split a document in its context
 -- TODO adapt the size of the paragraph according to the corpus average
 splitDoc :: Mean -> SplitContext -> CsvDoc -> Vector CsvDoc
-splitDoc m splt doc = let docSize = (T.length $ csv_abstract doc) in
-                          if docSize > 1000
-                            then
-                              if (mod (round m) docSize) >= 10
-                                then
-                                  splitDoc' splt doc
-                                else
-                                  V.fromList [doc]
-                            else
-                              V.fromList [doc]
+splitDoc m splt doc =
+ let docSize = (T.length $ csv_abstract doc) in
+ if (docSize > 1000) && (mod (round m) docSize >= 10)
+   then splitDoc' splt doc
+   else V.fromList [doc]
   where
     splitDoc' :: SplitContext -> CsvDoc -> Vector CsvDoc
     splitDoc' contextSize (CsvDoc { .. }) = V.fromList $ [firstDoc] <> nextDocs
@@ -152,7 +144,7 @@ unIntOrDec :: IntOrDec -> Int
 unIntOrDec (IntOrDec i) = i
 instance FromField IntOrDec where
   parseField s = case runParser (parseField s :: Parser Int) of
-    Left _err -> IntOrDec <$> floor <$> (parseField s :: Parser Double)
+    Left _err -> IntOrDec . floor <$> (parseField s :: Parser Double)
     Right n   -> pure $ IntOrDec n
 instance ToField IntOrDec where
   toField (IntOrDec i) = toField i
@@ -253,15 +245,15 @@ readByteStringStrict :: (FromNamedRecord a)
                      -> Delimiter
                      -> BS.ByteString
                      -> Either Text (Header, Vector a)
-readByteStringStrict d ff = (readByteStringLazy d ff) . BL.fromStrict
+readByteStringStrict d ff = readByteStringLazy d ff . BL.fromStrict
 
 ------------------------------------------------------------------------
 -- | TODO use readFileLazy
 readCSVFile :: FilePath -> IO (Either Text (Header, Vector CsvDoc))
 readCSVFile fp = do
-  result <- fmap (readCsvLazyBS Comma) $ BL.readFile fp
+  result <- readCsvLazyBS Comma <$> BL.readFile fp
   case result of
-    Left _err -> fmap (readCsvLazyBS Tab) $ BL.readFile fp
+    Left _err -> readCsvLazyBS Tab <$> BL.readFile fp
     Right res -> pure $ Right res
 
 
@@ -382,8 +374,6 @@ csvHal2doc (CsvHal { .. }) =
   HyperdataDocument { _hd_bdd = Just "CsvHal"
                     , _hd_doi = Just csvHal_doiId_s
                     , _hd_url = Just csvHal_url
-                    , _hd_uniqId = Nothing
-                    , _hd_uniqIdBdd = Nothing
                     , _hd_page = Nothing
                     , _hd_title = Just csvHal_title
                     , _hd_authors = Just csvHal_authors
@@ -407,8 +397,6 @@ csv2doc (CsvDoc { .. })
   = HyperdataDocument { _hd_bdd = Just "CsvHal"
                       , _hd_doi = Nothing
                       , _hd_url = Nothing
-                      , _hd_uniqId = Nothing
-                      , _hd_uniqIdBdd = Nothing
                       , _hd_page = Nothing
                       , _hd_title = Just csv_title
                       , _hd_authors = Just csv_authors
@@ -434,10 +422,10 @@ csv2doc (CsvDoc { .. })
 parseHal :: FilePath -> IO (Either Text [HyperdataDocument])
 parseHal fp = do
   r <- readCsvHal fp
-  pure $ (V.toList . V.map csvHal2doc . snd) <$> r
+  pure $ V.toList . V.map csvHal2doc . snd <$> r
 
 parseHal' :: BL.ByteString -> Either Text [HyperdataDocument]
-parseHal' bs = (V.toList . V.map csvHal2doc . snd) <$> readCsvHalLazyBS bs
+parseHal' bs = V.toList . V.map csvHal2doc . snd <$> readCsvHalLazyBS bs
 
 ------------------------------------------------------------------------
 
@@ -455,7 +443,7 @@ parseCsv' bs = do
     result = case readCsvLazyBS Comma bs of
       Left  _err -> readCsvLazyBS Tab bs
       Right res -> Right res
-  (V.toList . V.map csv2doc . snd) <$> result
+  V.toList . V.map csv2doc . snd <$> result
 
 parseCsvC :: BL.ByteString
           -> Either Text (Integer, ConduitT () HyperdataDocument Identity ())

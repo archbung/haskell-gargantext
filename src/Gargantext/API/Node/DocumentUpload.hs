@@ -22,22 +22,22 @@ import Data.Swagger (ToSchema)
 import Data.Text qualified as T
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
-import Gargantext.API.Errors.Types
-import Gargantext.API.Prelude
+import Gargantext.API.Errors.Types ( BackendInternalError )
+import Gargantext.API.Prelude ( GargM )
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.NLP (nlpServerGet)
 import Gargantext.Core.Text.Corpus.Parsers.Date (mDateSplit)
 import Gargantext.Core.Text.Terms (TermType(..))
 import Gargantext.Core.Utils.Prefix (unCapitalize, dropPrefix)
 import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus)
-import Gargantext.Database.Action.Flow.Types
-import Gargantext.Database.Admin.Types.Hyperdata.Corpus
+import Gargantext.Database.Action.Flow.Types ( FlowCmdM )
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataCorpus )
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Node ( DocId, NodeId, NodeType(NodeCorpus) )
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType')
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
-import Servant
+import Servant ( JSON, Summary, type (:>), HasServer(ServerT) )
 
 
 data DocumentUpload = DocumentUpload
@@ -108,8 +108,6 @@ documentUpload nId doc = do
   let hd = HyperdataDocument { _hd_bdd = Nothing
                              , _hd_doi = Nothing
                              , _hd_url = Nothing
-                             , _hd_uniqId = Nothing
-                             , _hd_uniqIdBdd = Nothing
                              , _hd_page = Nothing
                              , _hd_title = Just $ if view du_title doc == "" then T.take 50 (view du_abstract doc) else view du_title doc
                              , _hd_authors = Just $ view du_authors doc

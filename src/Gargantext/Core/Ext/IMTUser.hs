@@ -16,13 +16,13 @@ Here is writtent a common interface.
 module Gargantext.Core.Ext.IMTUser -- (deserialiseImtUsersFromFile)
   where
 
-import Codec.Serialise
+import Codec.Serialise ( Serialise, deserialise )
 import Data.ByteString.Lazy qualified as BL
-import Data.Csv
+import Data.Csv ( (.:), header, decodeByNameWith, FromNamedRecord(..), Header )
 import Data.Text qualified as T
 import Data.Vector (Vector)
 import Data.Vector qualified as Vector
-import Gargantext.Core.Text.Corpus.Parsers.CSV
+import Gargantext.Core.Text.Corpus.Parsers.CSV ( csvDecodeOptions, Delimiter(Tab) )
 import Gargantext.Database.Admin.Types.Hyperdata.Contact
 import Gargantext.Prelude
 import System.FilePath.Posix (takeExtension)
@@ -156,11 +156,9 @@ imtUser2gargContact (IMTUser { id
                                          , _hc_where = [ou]
                                          , _hc_title = title
                                          , _hc_source = entite
-                                         , _hc_lastValidation = date_modification
-                                         , _hc_uniqIdBdd = Nothing
-                                         , _hc_uniqId = Nothing }
+                                         , _hc_lastValidation = date_modification }
   where
-    title = (<>) <$> (fmap (\p -> p <> " ") prenom) <*> nom
+    title = (<>) <$> fmap (\p -> p <> " ") prenom <*> nom
     qui = ContactWho { _cw_id = id
                      , _cw_firstName = prenom
                      , _cw_lastName = nom
@@ -182,7 +180,7 @@ imtUser2gargContact (IMTUser { id
     -- meta    = ContactMetaData (Just "IMT annuaire") date_modification'
     toList' Nothing  = []
     toList' (Just x) = [x]
-  
+
 
 
 
