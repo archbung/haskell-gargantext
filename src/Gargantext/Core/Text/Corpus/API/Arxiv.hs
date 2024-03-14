@@ -19,13 +19,11 @@ module Gargantext.Core.Text.Corpus.API.Arxiv
     ) where
 
 import Arxiv qualified as Arxiv
-import Conduit ( ConduitT, (.|), mapC, takeC )
-import Data.Text (unpack)
+import Conduit
 import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Query as Corpus
-import Gargantext.Core.Types (Term(..))
-import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
+import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
 import Gargantext.Prelude hiding (get)
 import Network.Api.Arxiv qualified as Ax
 
@@ -40,9 +38,12 @@ convertQuery q = mkQuery (interpretQuery q transformAST)
                               , Ax.qStart = 0
                               , Ax.qItems = Arxiv.batchSize }
 
+    mergeTerms :: [QueryTerm] -> Maybe Ax.Expression
+    mergeTerms trms = Just $ Ax.Exp $ Ax.Abs [Text.unpack $ Text.unwords $ map renderQueryTerm trms]
+
     -- Converts a 'BoolExpr' with 'Term's on the leaves into an Arxiv's expression.
     -- It yields 'Nothing' if the AST cannot be converted into a meaningful expression.
-    transformAST :: BoolExpr Term -> Maybe Ax.Expression
+    transformAST :: BoolExpr [QueryTerm] -> Maybe Ax.Expression
     transformAST ast = case ast of
       BAnd sub (BConst (Negative term))
         -- The second term become positive, so that it can be translated.
@@ -64,11 +65,17 @@ convertQuery q = mkQuery (interpretQuery q transformAST)
       -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
       BFalse
         -> Nothing
-      BConst (Positive (Term term))
-        -> Just $ Ax.Exp $ Ax.Abs [unpack term]
+      -- TODO(adinapoli) Apparently there is some fuzzy search going on under the hood
+      -- by Arxiv (see for example https://stackoverflow.com/questions/69003677/arxiv-api-problem-with-searching-for-two-keywords)
+      -- so it should be sufficient to search for the stemmed term. However, for simplicity and
+      -- backward compat, at the moment we don't stem.
+      BConst (Positive terms)
+        -> mergeTerms terms
       -- We can handle negatives via `ANDNOT` with itself.
-      BConst (Negative (Term term))
-        -> Just $ Ax.AndNot (Ax.Exp $ Ax.Abs [unpack term]) (Ax.Exp $ Ax.Abs [unpack term])
+      -- TODO(adinapoli) Ditto as per the 'Positive' case (re partial matches)
+      BConst (Negative terms)
+        -> let term = Text.unpack $ Text.unwords (map renderQueryTerm terms)
+           in Just $ Ax.AndNot (Ax.Exp $ Ax.Abs [term]) (Ax.Exp $ Ax.Abs [term])
 
 -- | TODO put default pubmed query in gargantext.ini
 -- by default: 10K docs

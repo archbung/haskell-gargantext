@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Gargantext.Core.Text.Terms.Mono.Stem.Lancaster
-  ( stemIt
+module Gargantext.Core.Text.Terms.Mono.Stem.Internal.Lancaster
+  ( stem
   ) where
 
 import Prelude
@@ -84,8 +84,8 @@ vowelsSet :: String
 vowelsSet = "aeiouy"
 {-# INLINE vowelsSet #-}
 
-stemIt :: Text -> Text
-stemIt inputText = lancasterStemmer inputText rulesPaper
+stem :: Text -> Text
+stem inputText = lancasterStemmer inputText rulesPaper
 
 -- Lancaster Stemmer
 lancasterStemmer :: Text -> RuleCollection -> Text
@@ -113,8 +113,8 @@ applyRules value isIntact rules =
             then Nothing
             else case T.stripSuffix m val of
                     Nothing -> Nothing
-                    Just stem ->
-                        let next = stem `T.append` r
+                    Just stm ->
+                        let next = stm `T.append` r
                         in if not (acceptable next)
                             then Nothing
                             else if t == cont || t == contint

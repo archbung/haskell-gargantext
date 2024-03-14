@@ -47,23 +47,19 @@ module Gargantext.Core.NodeStory.Types
   , ArchiveStateList )
 where
 
-import Codec.Serialise.Class
+import Codec.Serialise.Class ( Serialise )
 import Control.Lens (makeLenses, Getter, (^.))
-import Control.Monad.Except
-import Control.Monad.Reader
 import Data.Aeson hiding ((.=), decode)
 import Data.Map.Strict qualified as Map
-import Data.Monoid
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Semigroup
 import Data.Set qualified as Set
 import Database.PostgreSQL.Simple.FromField (FromField(fromField), fromJSONField)
 import Gargantext.API.Ngrams.Types
-import Gargantext.Core.Types (NodeId(..))
+import Gargantext.Database.Admin.Types.Node ( NodeId(..) )
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (DbCmd')
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
+import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Prelude hiding (to)
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)

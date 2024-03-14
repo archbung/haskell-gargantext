@@ -19,7 +19,7 @@ import Data.String (IsString(..))
 import Database.PostgreSQL.Simple (Query)
 import Database.PostgreSQL.Simple.ToField
 import Gargantext.Core
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
@@ -30,7 +30,7 @@ newtype TSQuery = UnsafeTSQuery [Text]
 
 -- | TODO [""] -> panic "error"
 toTSQuery :: [Text] -> TSQuery
-toTSQuery txt = UnsafeTSQuery $ map stemIt txt
+toTSQuery txt = UnsafeTSQuery $ map (stem EN GargPorterAlgorithm) txt
 
 
 instance IsString TSQuery

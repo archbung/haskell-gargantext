@@ -16,7 +16,7 @@ Adapted from:
 -}
 
 
-module Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
+module Gargantext.Core.Text.Terms.Mono.Stem.Internal.GargPorter (stem)
   where
 
 import Control.Monad
@@ -194,8 +194,8 @@ step5 = step5b . step5a
 allSteps :: [Char] -> [Char]
 allSteps = step5 . step4 . step3 . step2 . step1
 
-stemIt :: Text -> Text
-stemIt s = pack (stem' $ unpack s)
+stem :: Text -> Text
+stem s = pack (stem' $ unpack s)
 
 stem' :: [Char] -> [Char]
 stem' s | length s < 3 = s

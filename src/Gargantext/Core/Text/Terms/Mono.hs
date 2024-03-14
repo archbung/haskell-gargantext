@@ -19,7 +19,7 @@ import Data.List qualified as L
 import Data.Set qualified as S
 import Data.Text qualified as T
 import Gargantext.Core
-import Gargantext.Core.Text.Terms.Mono.Stem (stem)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types
 import Gargantext.Prelude hiding (words)
 import Prelude (String)
@@ -43,7 +43,7 @@ monoTexts = L.concat . monoTextsBySentence
 
 -- | TODO use text2term only
 monoText2term :: Lang -> Text -> Terms
-monoText2term lang txt = Terms [txt] (S.singleton $ stem lang txt)
+monoText2term lang txt = Terms [txt] (S.singleton $ stem lang PorterAlgorithm txt)
 
 monoTextsBySentence :: Text -> [[Text]]
 monoTextsBySentence = map T.words

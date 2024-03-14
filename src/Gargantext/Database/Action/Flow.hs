@@ -76,7 +76,7 @@ import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Text.Terms
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types (HasValidationError, TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main
@@ -138,12 +138,12 @@ getDataText (ExternalOrigin api) la q mPubmedAPIKey mAuthKey li = do
   cfg <- view hasConfig
   eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey (_gc_epo_api_url cfg) li
   pure $ DataNew <$> eRes
-getDataText (InternalOrigin _) _la q _ _ _li = do
+getDataText (InternalOrigin _) la q _ _ _li = do
   (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
                                            (UserName userMaster)
                                            (Left "")
                                            (Nothing :: Maybe HyperdataCorpus)
-  ids <-  map fst <$> searchDocInDatabase cId (stemIt $ API.getRawQuery q)
+  ids <-  map fst <$> searchDocInDatabase cId (stem (_tt_lang la) GargPorterAlgorithm $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
 getDataText_Debug :: (HasNodeError err)

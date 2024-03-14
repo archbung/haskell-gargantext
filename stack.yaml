@@ -147,7 +147,7 @@
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/istex.git"
   subdirs:
   - .
-- commit: cd179f6dda15d77a085c0176284c921b7bc50c46
+- commit: ceb8f2cebd4890b6d9d151ab01ee14e925bc0499
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git"
   subdirs:
   - .
@@ -323,7 +323,7 @@ flags:
   "full-text-search":
     "build-search-demo": false
   gargantext:
-    "disable-db-obfuscation-executable": true
+    "disable-db-obfuscation-executable": false
     "no-phylo-debug-logs": false
     "test-crypto": false
   "generic-deriving":

@@ -134,7 +134,7 @@ type NodeAPI a = PolicyChecked (NodeNodeAPI a)
 
              :<|> "category"   :> CatApi
              :<|> "score"      :> ScoreApi
-             :<|> "search"     :> (Search.API Search.SearchResult)
+             :<|> "search"     :> Search.API Search.SearchResult
              :<|> "share"      :> Share.API
 
              -- Pairing utilities

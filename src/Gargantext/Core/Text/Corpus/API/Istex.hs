@@ -1,3 +1,5 @@
+{-# LANGUAGE  LambdaCase #-}
+
 {-|
 Module      : Gargantext.Core.Text.Corpus.API.Istex
 Description : Pubmed API connection
@@ -11,6 +13,7 @@ Portability : POSIX
 
 
 module Gargantext.Core.Text.Corpus.API.Istex
+    ( get )
     where
 
 import Data.List qualified as List
@@ -18,7 +21,7 @@ import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.JSON.Istex (toDoc)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import Gargantext.Prelude
+import Gargantext.Prelude hiding (get)
 import ISTEX qualified as ISTEX
 import ISTEX.Client qualified as ISTEX
 
@@ -42,10 +45,7 @@ get la query' maxResults = do
         -- In that case we need to enrich his query with 2 parameters
         -- First expected language: user has to define it in GTXT
         -- Second : query in abstract
-        True  -> ("language:"<> lang la) <> " AND abstract:"<>query'
-            where
-              lang FR = "fre"
-              lang _  = "eng"
+        True  -> ("language:"<> toISTEXLanguageCode la) <> " AND abstract:"<>query'
 
         False -> query'
         -- Complex queries of IsTex needs parameters using ":" so we leave the query as it is
@@ -70,4 +70,18 @@ toDoc' :: Lang -> ISTEX.Documents -> IO [HyperdataDocument]
 toDoc' la docs' =  mapM (toDoc la) (ISTEX._documents_hits docs')
   --printDebug "ISTEX" (ISTEX._documents_total docs')
 
-
+-- | Returns the properly-rendered language code according to
+-- https://doc.istex.fr/tdm/annexes/codes-langues.html
+toISTEXLanguageCode :: Lang -> Text.Text
+toISTEXLanguageCode = \case
+  DE -> "ger"
+  EL -> "gre"
+  EN -> "eng"
+  ES -> "spa"
+  FR -> "fre"
+  IT -> "ita"
+  PL -> "pol"
+  PT -> "por"
+  RU -> "Rus"
+  UK -> "ukr"
+  ZH -> "chi"

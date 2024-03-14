@@ -46,8 +46,7 @@ import Prelude (userError)
 -- NOTE: Use international country codes
 -- https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
 -- TODO This should be deprecated in favor of iso-639 library
-data Lang = All
-          | DE
+data Lang = DE
           | EL
           | EN
           | ES
@@ -58,7 +57,7 @@ data Lang = All
           | RU
           | UK
           | ZH
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic, GQLType)
+  deriving (Read, Show, Eq, Ord, Enum, Bounded, Generic, GQLType)
 
 -- | Defaults to 'EN' in all those places where a language is mandatory,
 -- but an optional one has been passed.
@@ -75,41 +74,30 @@ instance ToSchema Lang where
   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 instance FromHttpApiData Lang
   where
-    -- parseUrlPiece "All" = pure All
-    parseUrlPiece "DE"  = pure DE
-    parseUrlPiece "EL"  = pure EL
-    parseUrlPiece "EN"  = pure EN
-    parseUrlPiece "ES"  = pure ES
-    parseUrlPiece "FR"  = pure FR
-    parseUrlPiece "IT"  = pure IT
-    parseUrlPiece "PL"  = pure PL
-    parseUrlPiece "PT"  = pure PT
-    parseUrlPiece "RU"  = pure RU
-    parseUrlPiece "UK"  = pure UK
-    parseUrlPiece "ZH"  = pure ZH
-    parseUrlPiece _     = Left "Unexpected value of Lang"
+    -- parseUrlPiece is exactly the 'read' instance,
+    -- if we are disciplined. Either way, this needs to
+    -- be tested.
+    parseUrlPiece fragment = case readMaybe fragment of
+      Nothing   -> Left $ "Unexpected value of Lang: " <> fragment
+      Just lang -> Right lang
 instance ToHttpApiData Lang where
   toUrlPiece = pack . show
 instance Hashable Lang
 instance Arbitrary Lang where
   arbitrary = arbitraryBoundedEnum
 
-toISO639 :: Lang -> Maybe ISO639.ISO639_1
-toISO639 DE = Just ISO639.DE
-toISO639 EL = Just ISO639.EL
-toISO639 EN = Just ISO639.EN
-toISO639 ES = Just ISO639.ES
-toISO639 FR = Just ISO639.FR
-toISO639 IT = Just ISO639.IT
-toISO639 PL = Just ISO639.PL
-toISO639 PT = Just ISO639.PT
-toISO639 RU = Just ISO639.RU
-toISO639 UK = Just ISO639.UK
-toISO639 ZH = Just ISO639.ZH
-toISO639 All = Nothing
-
-toISO639EN :: Lang -> ISO639.ISO639_1
-toISO639EN l = fromMaybe ISO639.EN $ toISO639 l
+toISO639 :: Lang -> ISO639.ISO639_1
+toISO639 DE = ISO639.DE
+toISO639 EL = ISO639.EL
+toISO639 EN = ISO639.EN
+toISO639 ES = ISO639.ES
+toISO639 FR = ISO639.FR
+toISO639 IT = ISO639.IT
+toISO639 PL = ISO639.PL
+toISO639 PT = ISO639.PT
+toISO639 RU = ISO639.RU
+toISO639 UK = ISO639.UK
+toISO639 ZH = ISO639.ZH
 
 iso639ToText :: ISO639.ISO639_1 -> Text
 iso639ToText la = pack [a, b]
@@ -117,19 +105,18 @@ iso639ToText la = pack [a, b]
     (a, b) = ISO639.toChars la
 
 -- | https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-toISO639Lang :: Lang -> Maybe Text
-toISO639Lang All = Nothing
-toISO639Lang DE = Just "de"
-toISO639Lang EL = Just "el"
-toISO639Lang EN = Just "en"
-toISO639Lang ES = Just "es"
-toISO639Lang FR = Just "fr"
-toISO639Lang IT = Just "it"
-toISO639Lang PL = Just "pl"
-toISO639Lang PT = Just "pt"
-toISO639Lang RU = Just "ru"
-toISO639Lang UK = Just "uk"
-toISO639Lang ZH = Just "zh"
+toISO639Lang :: Lang -> Text
+toISO639Lang DE = "de"
+toISO639Lang EL = "el"
+toISO639Lang EN = "en"
+toISO639Lang ES = "es"
+toISO639Lang FR = "fr"
+toISO639Lang IT = "it"
+toISO639Lang PL = "pl"
+toISO639Lang PT = "pt"
+toISO639Lang RU = "ru"
+toISO639Lang UK = "uk"
+toISO639Lang ZH = "zh"
 
 allLangs :: [Lang]
 allLangs = [minBound .. maxBound]
@@ -145,7 +132,6 @@ class HasDBid a where
 -- once we add a new 'Lang'.
 langIds :: Bimap Lang Int
 langIds = Bimap.fromList $ allLangs <&> \lid -> case lid of
-  All -> (lid, 0)
   DE  -> (lid, 276)
   EL  -> (lid, 300)
   EN  -> (lid, 2)

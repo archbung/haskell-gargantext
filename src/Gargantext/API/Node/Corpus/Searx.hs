@@ -52,7 +52,6 @@ import Network.HTTP.Client.TLS
 import Prelude qualified
 
 langToSearx :: Lang -> Text
-langToSearx All = "en-US"
 langToSearx x   = Text.toLower acronym <> "-" <> acronym
   where
     acronym = show x

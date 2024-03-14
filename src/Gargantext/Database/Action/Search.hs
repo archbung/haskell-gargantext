@@ -33,7 +33,7 @@ import Data.Text qualified as T
 import Data.Time (UTCTime)
 import Gargantext.Core
 import Gargantext.Core.Text.Corpus.Query qualified as API
-import Gargantext.Core.Text.Terms.Mono.Stem.En (stemIt)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
@@ -61,7 +61,41 @@ import Opaleye qualified as O hiding (Order)
 queryToTsSearch :: API.Query -> Field SqlTSQuery
 queryToTsSearch q = sqlToTSQuery $ T.unpack $ (API.interpretQuery q transformAST)
   where
-    transformAST :: BoolExpr Term -> T.Text
+
+    -- It's important to understand how things work under the hood: When we perform
+    -- a search, we do it on a /ts vector/ in Postgres, which is already stemmed in
+    -- lexemes. For example, this:
+    --
+    -- SELECT to_tsvector('Effects on postpartum on vitamins and minerals in women');
+    --
+    -- yields:
+    --
+    -- 'effect':1 'miner':7 'postpartum':3 'vitamin':5 'women':9
+    --
+    -- As you can see, minimum processing has happened: plurals have been stripped and
+    -- what it looks like the Porter stemming has been applied (we get 'miner' instead
+    -- of the original /mineral/, for example.
+    --
+    -- Therefore, in case of exact match searches, we need to perform stemming /regardless/,
+    -- and this stemming should ideally match the one performed by Postgres.
+    --
+    -- Now, if the user is doing a partial match search (like \"~postpartum\" for example)
+    -- then we need to stem /AND/ use the \":*\" operator to perform a
+    -- sort of fuzzy search. Compare the followings:
+    --
+    -- SELECT to_tsvector('Effects on postpartum on vitamins and minerals in women') @@ to_tsquery('postpartum');
+    -- SELECT to_tsvector('Effects on postpartum on vitamins and minerals in women') @@ to_tsquery('postpart');
+    -- SELECT to_tsvector('Effects on postpartum on vitamins and minerals in women') @@ to_tsquery('postpart:*');
+    --
+    -- The first will match, the second won't, the third will.
+    renderQueryTerms :: [API.QueryTerm] -> T.Text
+    renderQueryTerms trms = T.intercalate " & " $ trms <&> \case
+      API.QT_exact_match (Term term)
+        -> stem EN GargPorterAlgorithm term
+      API.QT_partial_match (Term term)
+        -> stem EN GargPorterAlgorithm term <> ":*"
+
+    transformAST :: BoolExpr [API.QueryTerm] -> T.Text
     transformAST ast = case ast of
       BAnd sub1 sub2
         -> " (" <> transformAST sub1 <> " & " <> transformAST sub2 <> ") "
@@ -77,11 +111,11 @@ queryToTsSearch q = sqlToTSQuery $ T.unpack $ (API.interpretQuery q transformAST
       -- BTrue cannot happen is the query parser doesn't support parsing 'FALSE' alone.
       BFalse
         -> T.empty
-      BConst (Positive (Term term))
-        -> T.intercalate " & " $ T.words term
+      BConst (Positive queryTerms)
+        -> renderQueryTerms queryTerms
       -- We can handle negatives via `ANDNOT` with itself.
-      BConst (Negative (Term term))
-        -> "!" <> term
+      BConst (Negative queryTerms)
+        -> "!" <> renderQueryTerms queryTerms
 
 
 ------------------------------------------------------------------------
@@ -181,7 +215,7 @@ searchInCorpus :: HasDBid NodeType
 searchInCorpus cId t q o l order = runOpaQuery
                                  $ filterWith o l order
                                  $ queryInCorpus cId t
-                                 $ API.mapQuery (Term . stemIt . getTerm) q
+                                 $ q
 
 searchCountInCorpus :: HasDBid NodeType
                     => CorpusId
@@ -190,7 +224,7 @@ searchCountInCorpus :: HasDBid NodeType
                     -> DBCmd err Int
 searchCountInCorpus cId t q = runCountOpaQuery
                             $ queryInCorpus cId t
-                            $ API.mapQuery (Term . stemIt . getTerm) q
+                            $ q
 
 queryInCorpus :: HasDBid NodeType
               => CorpusId
@@ -233,7 +267,7 @@ searchInCorpusWithContacts cId aId q o l _order =
               $ offset'  o
               $ orderBy (desc _fp_score)
               $ selectGroup cId aId
-              $ API.mapQuery (Term . stemIt . getTerm) q
+              $ q
 
 selectGroup :: HasDBid NodeType
             => CorpusId

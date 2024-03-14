@@ -49,7 +49,7 @@ import Gargantext.Core
 import Gargantext.Core.Text (sentences, HasText(..))
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)
-import Gargantext.Core.Text.Terms.Mono.Stem (stem)
+import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Text.Terms.Mono.Token.En (tokenize)
 import Gargantext.Core.Text.Terms.Multi (multiterms)
 import Gargantext.Core.Types
@@ -211,7 +211,7 @@ uniText = map (List.filter (not . isPunctuation))
 
 text2term :: Lang -> [Text] -> Terms
 text2term _ [] = Terms [] Set.empty
-text2term lang txt = Terms txt (Set.fromList $ map (stem lang) txt)
+text2term lang txt = Terms txt (Set.fromList $ map (stem lang PorterAlgorithm) txt)
 
 isPunctuation :: Text -> Bool
 isPunctuation x = List.elem x $  (Text.pack . pure)

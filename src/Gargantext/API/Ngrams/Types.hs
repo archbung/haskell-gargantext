@@ -25,9 +25,10 @@ import Data.Aeson.TH (deriveJSON)
 import Data.Csv (defaultEncodeOptions, encodeByNameWith, header, namedRecord, EncodeOptions(..), NamedRecord, Quoting(QuoteNone))
 import Data.Csv qualified as Csv
 import Data.HashMap.Strict.InsOrd qualified as InsOrdHashMap
+import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Patch.Class (Replace, replace, Action(act), Group, Applicable(..), Composable(..), Transformable(..), PairPatch(..), Patched, ConflictResolution, ConflictResolutionReplace, MaybePatch(Mod), unMod, old, new)
+import Data.Patch.Class (Replace(Keep), replace, Action(act), Group, Applicable(..), Composable(..), Transformable(..), PairPatch(..), Patched, ConflictResolution, ConflictResolutionReplace, MaybePatch(Mod), unMod, old, new)
 import Data.Set qualified as Set
 import Data.String (IsString(..))
 import Data.Swagger ( NamedSchema(NamedSchema), declareSchemaRef, genericDeclareNamedSchema, SwaggerType(SwaggerObject), ToParamSchema, ToSchema(..), HasProperties(properties), HasRequired(required), HasType(type_) )
@@ -848,3 +849,13 @@ instance Arbitrary NgramsRepoElement where
   arbitrary = elements $ map ngramsElementToRepo ns
     where
       NgramsTable ns = mockTable
+
+
+toNgramsPatch :: [NgramsTerm] -> NgramsPatch
+toNgramsPatch children = NgramsPatch children' Keep
+  where
+    children' :: PatchMSet NgramsTerm
+    children' = PatchMSet
+              $ fst
+              $ PM.fromList
+              $ List.zip children (List.cycle [addPatch])

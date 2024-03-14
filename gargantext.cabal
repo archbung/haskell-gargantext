@@ -5,7 +5,7 @@ cabal-version: 3.4
 -- see: https://github.com/sol/hpack
 
 name:           gargantext
-version: 0.0.6.9.9.9.6.5.1
+version: 0.0.6.9.9.9.6.6
 synopsis:       Search, map, share
 description:    Please see README.md
 category:       Data
@@ -158,8 +158,10 @@ library
       Gargantext.Core.Text.Terms
       Gargantext.Core.Text.Terms.Eleve
       Gargantext.Core.Text.Terms.Mono
-      Gargantext.Core.Text.Terms.Mono.Stem.En
-      Gargantext.Core.Text.Terms.Mono.Stem.Lancaster
+      Gargantext.Core.Text.Terms.Mono.Stem
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.GargPorter
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.Lancaster
+      Gargantext.Core.Text.Terms.Mono.Stem.Internal.Porter
       Gargantext.Core.Text.Terms.Multi
       Gargantext.Core.Text.Terms.Multi.Lang.En
       Gargantext.Core.Text.Terms.Multi.Lang.Fr
@@ -327,7 +329,6 @@ library
       Gargantext.Core.Text.Samples.FR
       Gargantext.Core.Text.Samples.PL
       Gargantext.Core.Text.Samples.ZH
-      Gargantext.Core.Text.Terms.Mono.Stem
       Gargantext.Core.Text.Terms.Mono.Token
       Gargantext.Core.Text.Terms.Mono.Token.En
       Gargantext.Core.Text.Terms.Multi.Group
@@ -840,7 +841,9 @@ test-suite garg-test-tasty
   type: exitcode-stdio-1.0
   main-is: drivers/tasty/Main.hs
   other-modules:
+      Test.API.Routes
       Test.API.Setup
+      Test.Core.Similarity
       Test.Core.Text
       Test.Core.Text.Corpus.Query
       Test.Core.Text.Examples
@@ -868,6 +871,7 @@ test-suite garg-test-tasty
       Test.Parsers.Date
       Test.Parsers.Types
       Test.Parsers.WOS
+      Test.Types
       Test.Utils
       Test.Utils.Crypto
       Test.Utils.Jobs
@@ -920,6 +924,7 @@ test-suite garg-test-tasty
     , servant-auth
     , servant-auth-client
     , servant-client
+    , servant-client-core
     , servant-job
     , servant-server
     , shelly >= 1.9 && < 2
@@ -952,6 +957,7 @@ test-suite garg-test-hspec
       Test.API.Errors
       Test.API.GraphQL
       Test.API.Private
+      Test.API.Routes
       Test.API.Setup
       Test.API.UpdateList
       Test.Database.Operations
@@ -960,6 +966,7 @@ test-suite garg-test-hspec
       Test.Database.Setup
       Test.Database.Types
       Test.Utils
+      Test.Types
       Paths_gargantext
   hs-source-dirs:
       test
@@ -1007,6 +1014,7 @@ test-suite garg-test-hspec
     , servant-auth
     , servant-auth-client
     , servant-client
+    , servant-client-core
     , servant-job
     , servant-server
     , shelly >= 1.9 && < 2

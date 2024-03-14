@@ -10,12 +10,11 @@ module Test.API.GraphQL (
 import Gargantext.Core.Types.Individu
 import Prelude
 import Servant.Auth.Client ()
-import Test.API.Private (withValidLogin, protected, protectedNewError)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment, createAliceAndBob)
 import Test.Hspec
 import Test.Hspec.Wai.Internal (withApplication)
 import Test.Hspec.Wai.JSON (json)
-import Test.Utils
+import Test.Utils (protected, protectedNewError, shouldRespondWithFragment, shouldRespondWithFragmentCustomStatus, withValidLogin)
 import Text.RawString.QQ (r)
 
 tests :: Spec

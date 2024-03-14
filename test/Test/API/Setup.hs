@@ -5,8 +5,6 @@ module Test.API.Setup where
 
 import Control.Lens
 import Control.Monad.Reader
-import Data.ByteString (ByteString)
-import Fmt (Builder, (+|), (|+))
 import Gargantext.API (makeApp)
 import Gargantext.API.Admin.EnvTypes (Mode(Mock), Env (..))
 import Gargantext.API.Admin.Settings
@@ -40,7 +38,6 @@ import qualified Gargantext.Utils.Jobs.Monad as Jobs
 import qualified Gargantext.Utils.Jobs.Queue as Jobs
 import qualified Gargantext.Utils.Jobs.Settings as Jobs
 import qualified Network.Wai.Handler.Warp         as Warp
-import qualified Network.Wai.Handler.Warp as Wai
 import qualified Servant.Job.Async as ServantAsync
 
 
@@ -117,10 +114,3 @@ createAliceAndBob testEnv = do
 
     void $ new_user nur1
     void $ new_user nur2
-
-curApi :: Builder
-curApi = "v1.0"
-
-mkUrl :: Wai.Port -> Builder -> ByteString
-mkUrl _port urlPiece =
-  "/api/" +| curApi |+ urlPiece

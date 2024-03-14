@@ -12,20 +12,23 @@ Portability : POSIX
 -- Use only for dev/repl
 module Gargantext.API.Dev where
 
+import Control.Lens (view)
 import Control.Monad (fail)
-import Gargantext.API.Admin.EnvTypes
-import Gargantext.API.Admin.Settings
-import Gargantext.API.Errors.Types
-import Gargantext.API.Prelude
+import Data.Pool (withResource)
+import Database.PostgreSQL.Simple qualified as PGS
+import Gargantext.API.Admin.EnvTypes ( DevEnv(..), Mode(Dev) )
+import Gargantext.API.Admin.Settings ( devJwkFile, devSettings, newPool )
+import Gargantext.API.Errors.Types ( BackendInternalError )
+import Gargantext.API.Prelude ( GargM )
 import Gargantext.Core.NLP (nlpServerMap)
-import Gargantext.Core.NodeStory
-import Gargantext.Database.Prelude (Cmd', Cmd'', databaseParameters, runCmd)
+import Gargantext.Core.NodeStory (fromDBNodeStoryEnv)
+import Gargantext.Database.Prelude (Cmd', Cmd'', connPool, databaseParameters, runCmd)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (readConfig)
 import Gargantext.Prelude.Mail qualified as Mail
 import Gargantext.Prelude.NLP qualified as NLP
-import Gargantext.System.Logging
-import Servant
+import Gargantext.System.Logging ( withLoggerHoisted )
+import Servant ( ServerError )
 
 type IniPath  = FilePath
 -------------------------------------------------------------------
@@ -67,7 +70,7 @@ runCmdReplServantErr = runCmdRepl
 -- using HasConnectionPool and HasRepoVar.
 runCmdDev :: Show err => DevEnv -> Cmd'' DevEnv err a -> IO a
 runCmdDev env f =
-  (either (fail . show) pure =<< runCmd env f)
+  either (fail . show) pure =<< runCmd env f
 
 runCmdGargDev :: DevEnv -> GargM DevEnv BackendInternalError a -> IO a
 runCmdGargDev env cmd =
@@ -81,3 +84,9 @@ runCmdDevServantErr = runCmdDev
 
 runCmdReplEasy :: Cmd'' DevEnv BackendInternalError a -> IO a
 runCmdReplEasy f = withDevEnv "gargantext.ini" $ \env -> runCmdDev env f
+
+-- | Execute a function that takes PSQL.Connection from the DB pool as
+--   first parameter.
+--   e.g.: runCmdReplEasyDB $ \c -> getNodeStory' c
+runCmdReplEasyDB :: (PGS.Connection -> IO a) -> IO a
+runCmdReplEasyDB f = runCmdReplEasy $ view connPool >>= (\p -> liftBase $ withResource p f)

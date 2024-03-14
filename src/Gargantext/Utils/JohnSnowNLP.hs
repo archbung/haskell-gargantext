@@ -33,7 +33,6 @@ data JSSpell = JSPOS Lang | JSLemma Lang
   deriving (Show)
 
 instance ToJSON JSSpell where
-  toJSON (JSPOS All)   = "pos"
   toJSON (JSPOS DE)    = "de.pos"
   toJSON (JSPOS EL)    = "el.pos"
   toJSON (JSPOS EN)    = "en.pos"
@@ -46,7 +45,6 @@ instance ToJSON JSSpell where
   toJSON (JSPOS UK)    = "uk.pos"
   toJSON (JSPOS ZH)    = "zh.pos"
 
-  toJSON (JSLemma All) = "lemma"
   toJSON (JSLemma DE)  = "de.lemma"
   toJSON (JSLemma EL)  = "el.lemma"
   toJSON (JSLemma EN)  = "en.lemma"
@@ -71,7 +69,6 @@ instance FromJSON JSSpell where
   parseJSON (String "ru.pos")   = pure $ JSPOS RU
   parseJSON (String "uk.pos")   = pure $ JSPOS UK
   parseJSON (String "zh.pos")   = pure $ JSPOS ZH
-  parseJSON (String "pos")      = pure $ JSPOS All
 
   parseJSON (String "de.lemma") = pure $ JSLemma DE
   parseJSON (String "en.lemma") = pure $ JSLemma EN
@@ -84,7 +81,6 @@ instance FromJSON JSSpell where
   parseJSON (String "ru.lemma") = pure $ JSLemma RU
   parseJSON (String "uk.lemma") = pure $ JSLemma UK
   parseJSON (String "zh.lemma") = pure $ JSLemma ZH
-  parseJSON (String "lemma")    = pure $ JSLemma All
   parseJSON s =
     prependFailure "parsing spell failed, "
     (typeMismatch "Spell" s)

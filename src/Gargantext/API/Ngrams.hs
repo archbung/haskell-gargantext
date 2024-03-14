@@ -25,13 +25,14 @@ add get
 
 {-# LANGUAGE IncoherentInstances #-}
 
+
 module Gargantext.API.Ngrams
   ( TableNgramsApi
   , TableNgramsApiGet
   , TableNgramsApiPut
 
   , commitStatePatch
-  
+
   , searchTableNgrams
   , getTableNgrams
   , getTableNgramsCorpus
@@ -86,38 +87,35 @@ module Gargantext.API.Ngrams
   )
   where
 
-import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, _Just, Each(..), (%%~), mapped, ifolded, to, withIndex, over)
-import Control.Monad.Reader
+import Control.Lens ((.~), view, (^.), (^..), (+~), (%~), (.~), msumOf, at, ix, _Just, Each(..), (%%~), ifolded, to, withIndex, over)
 import Data.Aeson.Text qualified as DAT
-import Data.Foldable
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Monoid
 import Data.Patch.Class (Action(act), Transformable(..), ours)
 import Data.Set qualified as Set
 import Data.Text (isInfixOf, toLower, unpack)
-import Data.Text.Lazy.IO as DTL
+import Data.Text.Lazy.IO as DTL ( writeFile )
 import Formatting (hprint, int, (%))
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Errors.Types
+import Gargantext.API.Errors.Types ( BackendInternalError )
 import Gargantext.API.Metrics qualified as Metrics
 import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.API.Ngrams.Types
-import Gargantext.API.Prelude
+import Gargantext.API.Prelude ( GargM )
 import Gargantext.Core.NodeStory (ArchiveList, HasNodeStory, HasNodeArchiveStoryImmediateSaver(..), HasNodeStoryImmediateSaver(..), NgramsStatePatch', a_history, a_state, a_version, currentVersion)
 import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasValidationError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Node (NodeType(..))
-import Gargantext.Database.Query.Table.Ngrams hiding (NgramsType(..), ngramsType, ngrams_terms)
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
+import Gargantext.Database.Query.Table.Ngrams ( text2ngrams, Ngrams, insertNgrams, selectNgramsByDoc )
+import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
-import Gargantext.Database.Query.Table.Node.Select
+import Gargantext.Database.Query.Table.Node.Select ( selectNodesWithUsername )
 import Gargantext.Database.Schema.Node (node_id, node_parent_id, node_user_id)
 import Gargantext.Prelude hiding (log, to, toLower, (%), isInfixOf)
 import Gargantext.Prelude.Clock (hasTime, getTime)
@@ -321,7 +319,7 @@ commitStatePatch listId (Versioned _p_version p) = do
   --      )
 
   let newA = Versioned (a' ^. a_version) q'
-  
+
   -- NOTE Now is the only good time to save the archive history. We
   -- have the handle to the MVar and we need to save its exact
   -- snapshot. Node Story archive is a linear table, so it's only
@@ -370,7 +368,7 @@ tableNgramsPull listId ngramsType p_version = do
   let
     -- a = r ^. unNodeStory . at listId . non initArchive
     q = mconcat $ take (a ^. a_version - p_version) (a ^. a_history)
-    q_table = q ^. _PatchMap . at ngramsType . _Just
+    q_table = q ^. _PatchMap . ix ngramsType
 
   pure (Versioned (a ^. a_version) q_table)
 
@@ -404,7 +402,7 @@ tableNgramsPut tabType listId (Versioned p_version p_table)
       assertValid p_validity
 
       ret <- commitStatePatch listId (Versioned p_version p)
-        <&> v_data %~ (view (_PatchMap . at ngramsType . _Just))
+        <&> v_data %~ view (_PatchMap . ix ngramsType)
 
       pure ret
 
@@ -474,7 +472,7 @@ tableNgramsPostChartsAsync utn jobHandle = do
               _ <- Metrics.updateTree cId (Just listId) tabType MapTerm
 -}
               markComplete jobHandle
-            _ -> do
+            _otherTabType -> do
               -- printDebug "[tableNgramsPostChartsAsync] no update for tabType = " tabType
               markStarted 1 jobHandle
               markFailed Nothing jobHandle
@@ -494,7 +492,7 @@ getNgramsTableMap :: HasNodeStory env err m
 getNgramsTableMap nodeId ngramsType = do
   a <- getNodeStory nodeId
   pure $ Versioned (a ^. a_version)
-                   (a ^. a_state . at ngramsType . _Just)
+                   (a ^. a_state . ix ngramsType)
 
 
 dumpJsonTableMap :: HasNodeStory env err m
@@ -551,8 +549,8 @@ searchTableNgrams versionedTableMap NgramsSearchQuery{..} =
     matchingNode inputNode =
       let nodeSize        = inputNode ^. ne_size
           matchesListType = maybe (const True) (==) _nsq_listType
-          respectsMinSize = maybe (const True) (<=) (getMinSize <$> _nsq_minSize)
-          respectsMaxSize = maybe (const True) (>=) (getMaxSize <$> _nsq_maxSize)
+          respectsMinSize = maybe (const True) ((<=) . getMinSize) _nsq_minSize
+          respectsMaxSize = maybe (const True) ((>=) . getMaxSize) _nsq_maxSize
 
       in    respectsMinSize nodeSize
          && respectsMaxSize nodeSize
@@ -623,7 +621,7 @@ getNgramsTable' :: forall env err m.
                 -> m (Versioned (Map.Map NgramsTerm NgramsElement))
 getNgramsTable' nId listId ngramsType = do
   tableMap <- getNgramsTableMap listId ngramsType
-  tableMap & v_data %%~ (setNgramsTableScores nId listId ngramsType)
+  tableMap & v_data %%~ setNgramsTableScores nId listId ngramsType
                         . Map.mapWithKey ngramsElementFromRepo
 
 -- | Helper function to set scores on an `NgramsTable`.
@@ -648,7 +646,7 @@ setNgramsTableScores nId listId ngramsType table = do
       ("getTableNgrams/setScores #ngrams=" % int % " time=" % hasTime % "\n")
       (length ngrams_terms) t1 t2
   let
-    setOcc ne = ne & ne_occurrences .~ Set.fromList (msumOf (at (ne ^. ne_ngrams) . _Just) occurrences)
+    setOcc ne = ne & ne_occurrences .~ Set.fromList (msumOf (ix (ne ^. ne_ngrams)) occurrences)
 
   --printDebug "[setNgramsTableScores] with occurences" $ table & each %~ setOcc
 
@@ -734,7 +732,7 @@ getTableNgramsCorpus :: ( HasNodeStory env err m
 getTableNgramsCorpus nId tabType listId limit_ offset listType minSize maxSize orderBy mt =
   getTableNgrams nId listId tabType searchQuery
     where
-      searchQueryFn (NgramsTerm nt) = maybe (const True) isInfixOf (toLower <$> mt) (toLower nt)
+      searchQueryFn (NgramsTerm nt) = maybe (const True) (isInfixOf . toLower) mt (toLower nt)
       searchQuery = NgramsSearchQuery {
                     _nsq_limit       = limit_
                   , _nsq_offset      = offset
@@ -778,7 +776,7 @@ getTableNgramsDoc dId tabType listId limit_ offset listType minSize maxSize orde
   ns <- selectNodesWithUsername NodeList userMaster
   let ngramsType = ngramsTypeFromTabType tabType
   ngs <- selectNgramsByDoc (ns <> [listId]) dId ngramsType
-  let searchQueryFn (NgramsTerm nt) = flip Set.member (Set.fromList ngs) nt
+  let searchQueryFn (NgramsTerm nt) = Set.member nt (Set.fromList ngs)
       searchQuery = NgramsSearchQuery {
                     _nsq_limit       = limit_
                   , _nsq_offset      = offset
@@ -828,4 +826,4 @@ listNgramsChangedSince listId ngramsType version
   | version < 0 =
       Versioned <$> currentVersion listId <*> pure True
   | otherwise   =
-      tableNgramsPull listId ngramsType version & mapped . v_data %~ (== mempty)
+      tableNgramsPull listId ngramsType version <&> v_data %~ (== mempty)

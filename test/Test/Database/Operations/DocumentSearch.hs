@@ -34,7 +34,7 @@ import Gargantext.Database.Schema.Node (NodePoly(..))
 import Test.Database.Types
 import Test.Hspec.Expectations
 import Test.Tasty.HUnit
-import Gargantext.Core.Text.Terms.Mono.Stem.En
+import Gargantext.Core.Text.Terms.Mono.Stem
 import Gargantext.Database.Admin.Config (userMaster)
 import qualified Data.Text as T
 import qualified Gargantext.Core.Text.Corpus.Query as API
@@ -134,8 +134,15 @@ corpusAddDocuments env = do
 
 stemmingTest :: TestEnv -> Assertion
 stemmingTest _env = do
-  stemIt "Ajeje"    `shouldBe` "Ajeje"
-  stemIt "PyPlasm:" `shouldBe` "PyPlasm:"
+  stem EN GargPorterAlgorithm "Ajeje"        `shouldBe` "Ajeje"
+  stem EN GargPorterAlgorithm "PyPlasm:"     `shouldBe` "PyPlasm:"
+  -- This test outlines the main differences between Porter and Lancaster.
+  stem EN GargPorterAlgorithm "dancer"       `shouldBe` "dancer"
+  stem EN LancasterAlgorithm  "dancer"       `shouldBe` "dant"
+  stem EN GargPorterAlgorithm "postpartum"   `shouldBe` "postpartum"
+  stem EN LancasterAlgorithm  "postpartum"   `shouldBe` "postpart"
+  stem IT PorterAlgorithm     "catechizzare" `shouldBe` "catechizz"
+  stem IT LancasterAlgorithm  "catechizzare" `shouldBe` "catechizzare" -- lancaster doesn't support Italian
 
 mkQ :: T.Text -> API.Query
 mkQ txt = either (\e -> error $ "(query) = " <> T.unpack txt <> ": " <> e) id . API.parseQuery . API.RawQuery $ txt
