@@ -11,22 +11,23 @@ Portability : POSIX
 
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use infix" #-}
 
 module Gargantext.API.Ngrams.Tools
   where
 
 -- import Gargantext.Core.NodeStoryFile qualified as NSF
-import Control.Lens (_Just, (^.), at, view, At, Index, IxValue)
-import Control.Monad.Reader
+import Control.Lens (_Just, (^.), at, ix, view, At, Index, IxValue)
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import Data.Validity
 -- import GHC.Conc (TVar, readTVar)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory
-import Gargantext.Core.Types (ListType(..), NodeId, ListId)
+import Gargantext.Core.Types.Main ( ListType(..) )
+import Gargantext.Database.Admin.Types.Node ( NodeId, ListId )
 import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 
@@ -93,7 +94,7 @@ listNgramsFromRepo nodeIds ngramsType repo =
                ^. unNodeStory
                 . at nodeId . _Just
                 . a_state
-                . at ngramsType . _Just
+                . ix ngramsType
                 | nodeId <- nodeIds
                 ]
 
@@ -153,7 +154,7 @@ filterListWithRoot :: [ListType]
 filterListWithRoot lt m = snd <$> HM.filter isMapTerm m
   where
     isMapTerm (l, maybeRoot) = case maybeRoot of
-      Nothing -> elem l lt
+      Nothing -> l `elem` lt
       Just  r -> case HM.lookup r m of
         Nothing -> panicTrace $ "[Garg.API.Ngrams.Tools] filterListWithRoot, unknown key: " <> unNgramsTerm r
         Just  (l',_) -> elem l' lt
@@ -175,7 +176,7 @@ groupNodesByNgrams syn occs = HM.fromListWith (<>) occs'
         Nothing  -> (t, ns)
         Just  r' -> (r',ns)
 
-data Diagonal = Diagonal Bool
+newtype Diagonal = Diagonal Bool
 
 getCoocByNgrams :: Diagonal
                 -> HashMap NgramsTerm (Set NodeId)

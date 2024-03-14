@@ -1,7 +1,7 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE BangPatterns #-}
 
 module Test.API.Authentication (
     tests
@@ -21,12 +21,10 @@ import Network.HTTP.Client hiding (Proxy)
 import Prelude qualified
 import Servant.Auth.Client ()
 import Servant.Client
+import Test.API.Routes (auth_api)
 import Test.API.Setup (withTestDBAndPort, setupEnvironment)
 import Test.Database.Types
 import Test.Hspec
-
-auth_api :: AuthRequest -> ClientM AuthResponse
-auth_api = client (Proxy :: Proxy (MkGargAPI (GargAPIVersion AuthAPI)))
 
 cannedToken :: T.Text
 cannedToken = "eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiaWQiOjF9fQ.t49zZSqkPAulEkYEh4pW17H2uwrkyPTdZKwHyG3KUJ0hzU2UUoPBNj8vdv087RCVBJ4tXgxNbP4j0RBv3gxdqg"
@@ -66,7 +64,7 @@ tests = sequential $ aroundAll withTestDBAndPort $ do
               , _authRes_user_id = fromMaybe (UnsafeMkUserId 1) $ listToMaybe $ result0 ^.. _Right . authRes_user_id
               }
 
-        result `shouldBe` (Right expected)
+        result `shouldBe` Right expected
 
       it "denies login for user 'alice' if password is invalid" $ \((_testEnv, port), _) -> do
         let authPayload = AuthRequest "alice" (GargPassword "wrong")

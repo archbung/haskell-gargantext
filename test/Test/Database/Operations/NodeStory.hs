@@ -13,7 +13,7 @@ Portability : POSIX
 
 module Test.Database.Operations.NodeStory where
 
-import Control.Lens ((^.), (.~), _2)
+import Control.Lens ((^.), (.~), (?~), _2)
 import Control.Monad.Reader
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
@@ -23,7 +23,7 @@ import Database.PostgreSQL.Simple.SqlQQ
 import Gargantext.API.Ngrams (commitStatePatch, mSetFromList, setListNgrams, saveNodeStory)
 import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_children, nre_list, nre_parent, nre_root)
 import Gargantext.API.Ngrams.Tools (getNodeStory)
-import Gargantext.Core.NodeStory hiding (runPGSQuery)
+import Gargantext.Core.NodeStory
 import Gargantext.Core.Types.Individu
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, UserId)
 import Gargantext.Database.Action.User (getUserId)
@@ -73,15 +73,15 @@ simpleParentTerm' = fst simpleTerm
 simpleParentTerm :: (NgramsTerm, NgramsRepoElement)
 simpleParentTerm = ( simpleParentTerm'
                    , simpleTerm ^. _2
-                     & nre_children .~ (mSetFromList [simpleChildTerm']) )
+                     & nre_children .~ mSetFromList [simpleChildTerm'] )
 
 simpleChildTerm' :: NgramsTerm
 simpleChildTerm' = NgramsTerm "world"
 simpleChildTerm :: (NgramsTerm, NgramsRepoElement)
 simpleChildTerm = ( simpleChildTerm'
-                  , simpleTerm ^. _2 
-                    & nre_parent .~ Just simpleParentTerm'
-                    & nre_root .~ Just simpleParentTerm' )
+                  , simpleTerm ^. _2
+                    & nre_parent ?~ simpleParentTerm'
+                    & nre_root ?~ simpleParentTerm' )
 
 
 -- tests start here
@@ -92,7 +92,7 @@ createListTest env = do
     (userId, corpusId, listId, _a) <- commonInitialization
 
     listId' <- getOrMkList corpusId userId
-    
+
     liftIO $ listId `shouldBe` listId'
 
 
@@ -110,7 +110,7 @@ queryNodeStoryTest env = do
 
     liftIO $ do
       a' `shouldBe` a
-  
+
 
 insertNewTermsToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsToNodeStoryTest env = do
@@ -128,7 +128,7 @@ insertNewTermsToNodeStoryTest env = do
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [unNgramsTerm terms]
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
-    
+
     -- Finally, check that node stories are inserted correctly
     dbTerms <- runPGSQuery [sql|
                                SELECT terms
@@ -137,7 +137,7 @@ insertNewTermsToNodeStoryTest env = do
                                WHERE node_id = ?
                                |] (PSQL.Only listId)
     liftIO $ dbTerms `shouldBe` [PSQL.Only $ unNgramsTerm terms]
-                           
+
 
 insertNewTermsWithChildrenToNodeStoryTest :: TestEnv -> Assertion
 insertNewTermsWithChildrenToNodeStoryTest env = do
@@ -147,7 +147,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
     let (tParent, nreParent) = simpleParentTerm
     let (tChild, nreChild) = simpleChildTerm
     let terms = unNgramsTerm <$> [tParent, tChild]
-    
+
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChild)]
     setListNgrams listId NgramsTerms nls
 
@@ -160,7 +160,7 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
     -- the terms in the DB by now
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
-    
+
     dbTerms <- runPGSQuery [sql|
                                SELECT terms
                                FROM ngrams
@@ -171,13 +171,13 @@ insertNewTermsWithChildrenToNodeStoryTest env = do
 
     -- let (Just (tParentId, _)) = head $ filter ((==) (unNgramsTerm tParent) . snd) $ Map.toList ngramsMap2
     -- let (Just (tChildId, _)) = head $ filter ((==) (unNgramsTerm tChild) . snd) $ Map.toList ngramsMap2
-                           
+
     -- [PSQL.Only tParentId'] <-
     --   runPGSQuery [sql|SELECT parent_id FROM ngrams WHERE terms = ?|] (PSQL.Only tChild)
 
     -- liftIO $ tParentId `shouldBe` tParentId'
 
-      
+
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest :: TestEnv -> Assertion
 insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
   flip runReaderT env $ runTestMonad $ do
@@ -187,10 +187,10 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
     let (tChild, nreChildGoodType) = simpleChildTerm
     let nreChildBrokenType = nreChildGoodType & nre_list .~ MapTerm
     let terms = unNgramsTerm <$> [tParent, tChild]
-    
+
     let nls = Map.fromList [(tParent, nreParent), (tChild, nreChildBrokenType)]
     let nlsWithChildFixed = Map.fromList [(tParent, nreParent), (tChild, nreChildGoodType)]
-    
+
     setListNgrams listId NgramsTerms nls
 
     a <- getNodeStory listId
@@ -200,7 +200,7 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
 
     ngramsMap <- selectNgramsId terms
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` terms
-    
+
     dbTerms <- runPGSQuery [sql|
                                SELECT terms
                                FROM ngrams
@@ -210,12 +210,12 @@ insertNodeStoryChildrenWithDifferentNgramsTypeThanParentTest env = do
     liftIO $ (Set.fromList $ (\(PSQL.Only t) -> t) <$> dbTerms) `shouldBe` (Set.fromList terms)
 
     let (Just (tChildId, _)) = head $ filter ((==) (unNgramsTerm tChild) . snd) $ Map.toList ngramsMap
-                           
+
     [PSQL.Only childType] <- runPGSQuery [sql|SELECT ngrams_repo_element->>'list'
                                              FROM node_stories
                                              WHERE ngrams_id = ?|] (PSQL.Only tChildId)
     liftIO $ childType `shouldBe` ("MapTerm" :: Text)
- 
+
 setListNgramsUpdatesNodeStoryTest :: TestEnv -> Assertion
 setListNgramsUpdatesNodeStoryTest env = do
   flip runReaderT env $ runTestMonad $ do
@@ -232,7 +232,7 @@ setListNgramsUpdatesNodeStoryTest env = do
     -- check that the ngrams are in the DB as well
     ngramsMap <- selectNgramsId [unNgramsTerm terms]
     liftIO $ (snd <$> Map.toList ngramsMap) `shouldBe` [unNgramsTerm terms]
-    
+
     let nre2 = NgramsRepoElement { _nre_size = 1
                                  , _nre_list = MapTerm
                                  , _nre_root = Nothing

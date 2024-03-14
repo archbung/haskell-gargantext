@@ -20,19 +20,19 @@ module Gargantext.Utils.Jobs (
   , MonadJobStatus(..)
   ) where
 
-import Control.Monad.Except
-import Control.Monad.Reader
+import Control.Monad.Except ( runExceptT )
+import Control.Monad.Reader ( MonadReader(ask), ReaderT(runReaderT) )
 import Data.Aeson (ToJSON)
 import Prelude
 import System.Directory (doesFileExist)
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 
-import Gargantext.API.Admin.EnvTypes
-import Gargantext.API.Errors.Types
-import Gargantext.API.Prelude
+import Gargantext.API.Admin.EnvTypes ( mkJobHandle, Env, GargJob(..) )
+import Gargantext.API.Errors.Types ( BackendInternalError(InternalJobError) )
+import Gargantext.API.Prelude ( GargM )
 import qualified Gargantext.Utils.Jobs.Internal as Internal
-import Gargantext.Utils.Jobs.Monad
+import Gargantext.Utils.Jobs.Monad ( JobError, MonadJobStatus(..) )
 import Gargantext.System.Logging
 
 import qualified Servant.Job.Async as SJ
@@ -49,7 +49,7 @@ serveJobsAPI
    , ToJSON (JobEventType m)
    , ToJSON (JobOutputType m)
    , MonadJobStatus m
-   , m ~ (GargM Env BackendInternalError)
+   , m ~ GargM Env BackendInternalError
    , JobEventType m ~ JobOutputType m
    , MonadLogger m
    )

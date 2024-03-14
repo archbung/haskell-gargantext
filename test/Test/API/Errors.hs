@@ -9,13 +9,14 @@ import Network.HTTP.Types
 import Network.Wai.Test
 import Servant
 import Servant.Auth.Client ()
+import Servant.Auth.Client qualified as SA
 import Servant.Client
-import Test.API.Private (protected, withValidLogin, protectedNewError)
-import Test.API.Setup (withTestDBAndPort, setupEnvironment, mkUrl, createAliceAndBob)
+import Test.API.Routes (mkUrl)
+import Test.API.Setup (withTestDBAndPort, setupEnvironment, createAliceAndBob)
 import Test.Hspec
 import Test.Hspec.Wai.Internal (withApplication)
+import Test.Utils (protected, withValidLogin, protectedNewError)
 import Text.RawString.QQ (r)
-import qualified Servant.Auth.Client as SA
 
 tests :: Spec
 tests = sequential $ aroundAll withTestDBAndPort $ do

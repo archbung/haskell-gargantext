@@ -841,7 +841,9 @@ test-suite garg-test-tasty
   type: exitcode-stdio-1.0
   main-is: drivers/tasty/Main.hs
   other-modules:
+      Test.API.Routes
       Test.API.Setup
+      Test.Core.Similarity
       Test.Core.Text
       Test.Core.Text.Corpus.Query
       Test.Core.Text.Examples
@@ -869,6 +871,7 @@ test-suite garg-test-tasty
       Test.Parsers.Date
       Test.Parsers.Types
       Test.Parsers.WOS
+      Test.Types
       Test.Utils
       Test.Utils.Crypto
       Test.Utils.Jobs
@@ -921,6 +924,7 @@ test-suite garg-test-tasty
     , servant-auth
     , servant-auth-client
     , servant-client
+    , servant-client-core
     , servant-job
     , servant-server
     , shelly >= 1.9 && < 2
@@ -953,6 +957,7 @@ test-suite garg-test-hspec
       Test.API.Errors
       Test.API.GraphQL
       Test.API.Private
+      Test.API.Routes
       Test.API.Setup
       Test.API.UpdateList
       Test.Database.Operations
@@ -961,6 +966,7 @@ test-suite garg-test-hspec
       Test.Database.Setup
       Test.Database.Types
       Test.Utils
+      Test.Types
       Paths_gargantext
   hs-source-dirs:
       test
@@ -1008,6 +1014,7 @@ test-suite garg-test-hspec
     , servant-auth
     , servant-auth-client
     , servant-client
+    , servant-client-core
     , servant-job
     , servant-server
     , shelly >= 1.9 && < 2

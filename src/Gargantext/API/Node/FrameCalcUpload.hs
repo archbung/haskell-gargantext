@@ -16,36 +16,36 @@ Portability : POSIX
 module Gargantext.API.Node.FrameCalcUpload where
 
 import Control.Lens ((^.))
-import Data.Aeson
+import Data.Aeson ( FromJSON, ToJSON )
 import Data.ByteString.Lazy qualified as BSL
 import Data.ByteString.UTF8 qualified as BSU8
-import Data.Swagger
+import Data.Swagger ( ToSchema )
 import Data.Text qualified as T
-import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
-import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Servant
-import Web.FormUrlEncoded (FromForm)
-
-import Gargantext.API.Admin.Auth.Types
+import Gargantext.API.Admin.Auth.Types ( auth_node_id, AuthenticatedUser )
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
-import Gargantext.API.Errors.Types
+import Gargantext.API.Errors.Types ( BackendInternalError )
 import Gargantext.API.Node.Corpus.New (addToCorpusWithForm)
 import Gargantext.API.Node.Corpus.New.Types (FileFormat(..), FileType(..))
 import Gargantext.API.Node.Types (NewWithForm(..))
-import Gargantext.API.Prelude
+import Gargantext.API.Prelude ( GargM )
 import Gargantext.Core (Lang)
-import Gargantext.Core.NodeStory (HasNodeArchiveStoryImmediateSaver)
+import Gargantext.Core.NodeStory.Types ( HasNodeArchiveStoryImmediateSaver )
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Types.Individu (User(..))
-import Gargantext.Database.Action.Flow.Types
-import Gargantext.Database.Admin.Types.Hyperdata.Frame
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Action.Flow.Types ( FlowCmdM )
+import Gargantext.Database.Admin.Types.Hyperdata.Frame ( HyperdataFrame(..) )
+import Gargantext.Database.Admin.Types.Node ( NodeId, NodeType(NodeCorpus) )
 import Gargantext.Database.Prelude (HasConfig)
 import Gargantext.Database.Query.Table.Node (getClosestParentIdByType, getNodeWith)
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Network.HTTP.Client (newManager, httpLbs, parseRequest, responseBody)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Servant ( type (:>), JSON, Summary, HasServer(ServerT) )
+import Web.FormUrlEncoded (FromForm)
+
 
 data FrameCalcUpload = FrameCalcUpload {
   _wf_lang      :: !(Maybe Lang)

@@ -121,7 +121,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.iscpif.fr/gargantext/crawlers/openalex.git
-    tag: cd179f6dda15d77a085c0176284c921b7bc50c46
+    tag: ceb8f2cebd4890b6d9d151ab01ee14e925bc0499
 
 source-repository-package
     type: git
