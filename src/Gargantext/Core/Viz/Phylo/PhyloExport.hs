@@ -125,7 +125,7 @@ groupToDotNode fdt g bId =
                          , toAttr "sourceFull" (show (g ^. phylo_groupSources))
                          , toAttr "density" (show (g ^. phylo_groupDensity))
                          , toAttr "cooc" (show (g ^. phylo_groupCooc))
-                         , toAttr "lbl" (show (ngramsToLabel fdt (g ^. phylo_groupNgrams)))
+                         , toAttr "lbl" (Lazy.fromStrict $ ngramsToLabel fdt (g ^. phylo_groupNgrams))
                          , toAttr "foundation" (show (idxToLabel (g ^. phylo_groupNgrams)))
                          , toAttr "role" (show (idxToLabel' ((g ^. phylo_groupMeta) ! "dynamics")))
                          , toAttr "frequence" (show (idxToLabel' ((g ^. phylo_groupMeta) ! "frequence")))

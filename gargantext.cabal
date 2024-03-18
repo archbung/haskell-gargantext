@@ -896,6 +896,7 @@ test-suite garg-test-tasty
     , fmt
     , gargantext
     , gargantext-prelude
+    , graphviz ^>= 2999.20.1.0
     , hspec ^>= 2.7.10
     , hspec-core
     , hspec-expectations >= 0.8 && < 0.9
@@ -942,6 +943,7 @@ test-suite garg-test-tasty
     , tree-diff
     , unordered-containers ^>= 0.2.16.0
     , validity ^>= 0.11.0.1
+    , vector ^>= 0.12.3.0
     , wai
     , wai-extra
     , warp
