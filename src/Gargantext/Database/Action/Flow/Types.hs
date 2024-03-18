@@ -11,7 +11,6 @@ Portability : POSIX
 
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE TemplateHaskell         #-}
 
@@ -52,9 +51,7 @@ type FlowCmdM env err m =
   , MonadLogger m
   )
 
-type FlowCorpus a = ( AddUniqId      a
-                    , UniqId         a
-                    , UniqParameters a
+type FlowCorpus a = ( UniqParameters a
                     , InsertDb       a
                     , ExtractNgramsT a
                     , HasText        a

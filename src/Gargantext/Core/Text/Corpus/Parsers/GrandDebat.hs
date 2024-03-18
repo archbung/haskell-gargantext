@@ -31,8 +31,8 @@ import Data.ByteString.Lazy qualified as DBL
 import Data.JsonStream.Parser qualified as P
 import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), ToHyperdataDocument, toHyperdataDocument)
-import Gargantext.Database.GargDB
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..), ToHyperdataDocument, toHyperdataDocument)
+import Gargantext.Database.GargDB ( ReadFile(..) )
 import Gargantext.Prelude
 
 data GrandDebatReference = GrandDebatReference
@@ -43,14 +43,14 @@ data GrandDebatReference = GrandDebatReference
   , createdAt :: !(Maybe Text)
   , publishedAt   :: !(Maybe Text)
   , updatedAt     :: !(Maybe Text)
-  
+
   , trashed       :: !(Maybe Bool)
   , trashedStatus :: !(Maybe Text)
-  
+
   , authorId      :: !(Maybe Text)
   , authorType    :: !(Maybe Text)
   , authorZipCode :: !(Maybe Text)
-  
+
   , responses     :: !(Maybe [GrandDebatResponse])
   }
   deriving (Show, Generic)
@@ -77,8 +77,6 @@ instance ToHyperdataDocument GrandDebatReference
       HyperdataDocument { _hd_bdd = Just "GrandDebat"
                         , _hd_doi = id
                         , _hd_url = Nothing
-                        , _hd_uniqId = Nothing
-                        , _hd_uniqIdBdd = Nothing
                         , _hd_page = Nothing
                         , _hd_title = title
                         , _hd_authors = authorType
@@ -94,12 +92,10 @@ instance ToHyperdataDocument GrandDebatReference
                         , _hd_publication_second = Nothing
                         , _hd_language_iso2 = Just $ Text.pack $ show FR }
         where
-          toAbstract = (Text.intercalate " . ") . ((filter (/= "")) . (map toSentence))
+          toAbstract = Text.intercalate " . " . (filter (/= "") . map toSentence)
           toSentence (GrandDebatResponse _id _qtitle _qvalue r) = case r of
             Nothing -> ""
-            Just r' -> case Text.length r' > 10 of
-                True  -> r'
-                False -> ""
+            Just r' -> if Text.length r' > 10 then r' else ""
 
 instance ReadFile [GrandDebatReference]
   where

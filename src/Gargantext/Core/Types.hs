@@ -167,7 +167,7 @@ instance Semigroup TokenTag where
 
 instance Monoid TokenTag where
   mempty = TokenTag [] empty Nothing Nothing
-  mconcat = foldl mappend mempty
+  mconcat = foldl' mappend mempty
   -- mappend t1 t2 = (<>) t1 t2
 
 

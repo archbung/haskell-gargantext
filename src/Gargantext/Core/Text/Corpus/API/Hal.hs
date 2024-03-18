@@ -12,12 +12,12 @@ Portability : POSIX
 module Gargantext.Core.Text.Corpus.API.Hal
     where
 
-import Conduit ( (.|), ConduitT, mapMC )
+import Conduit ( ConduitT, (.|), mapMC )
 import Data.LanguageCodes qualified as ISO639
 import Data.Map.Strict qualified as Map
 import Data.Text (pack)
 import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
-import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Defaults qualified as Defaults
 import Gargantext.Prelude hiding (intercalate)
 import HAL qualified
@@ -50,8 +50,6 @@ toDoc' la (HAL.Corpus { .. }) = do
   pure HyperdataDocument { _hd_bdd = Just "Hal"
                          , _hd_doi = Just $ pack $ show _corpus_docid
                          , _hd_url = Nothing
-                         , _hd_uniqId = Nothing
-                         , _hd_uniqIdBdd = Nothing
                          , _hd_page = Nothing
                          , _hd_title = Just $ unwords _corpus_title
                          , _hd_authors = Just $ foldl' (\x y -> if x == "" then y else x <> ", " <> y) "" _corpus_authors_names

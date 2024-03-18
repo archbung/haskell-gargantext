@@ -1,3 +1,13 @@
+## Version 0.0.6.9.9.9.6.7.1 [RELEASE CANDIDATE 007]
+
+* [BACK][FIX] Adding .mailmap file
+* [FRONT][FIX][[Tree search] Enrich search results with the path of the node (#638)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/638)
+
+## Version 0.0.6.9.9.9.6.7 [RELEASE CANDIDATE 007]
+
+* [BACK][RELATED][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
+* [FRONT][RELATED][Machting Documents are not displayed anymore in graph (#636)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/636)
+
 ## Version 0.0.6.9.9.9.6.6 [RELEASE CANDIDATE 007]
 
 * [BACK][FIX][[Terms] Importing JSON or CSV seems to add new terms to the old ones, rather than overwriting and replacing them all (#313)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/313)
