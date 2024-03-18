@@ -18,8 +18,7 @@ module Gargantext.Core.Text.Corpus.API
   , externalAPIs
   ) where
 
-import Conduit
-import Control.Monad.Except
+import Conduit ( ConduitT, yieldMany )
 import Data.Text qualified as T
 import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Admin.Orchestrator.Types (ExternalAPIs(..), externalAPIs)
@@ -32,7 +31,7 @@ import Gargantext.Core.Text.Corpus.API.Istex qualified as ISTEX
 import Gargantext.Core.Text.Corpus.API.OpenAlex qualified as OpenAlex
 import Gargantext.Core.Text.Corpus.API.Pubmed qualified as PUBMED
 import Gargantext.Core.Text.Corpus.Query qualified as Corpus
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Prelude hiding (get)
 import PUBMED.Types qualified as PUBMED
 import Servant.Client (ClientError)
@@ -80,3 +79,5 @@ get externalAPI lang q mPubmedAPIKey epoAuthKey epoAPIUrl limit = do
         first ExternalAPIError <$> EPO.get epoAuthKey epoAPIUrl q (toISO639 lang) limit
   where
     parse_query = first (InvalidInputQuery q . T.pack) $ Corpus.parseQuery q
+
+

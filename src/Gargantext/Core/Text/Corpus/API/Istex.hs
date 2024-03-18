@@ -20,9 +20,9 @@ import Data.List qualified as List
 import Data.Text qualified as Text
 import Gargantext.Core (Lang(..))
 import Gargantext.Core.Text.Corpus.Parsers.JSON.Istex (toDoc)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Prelude hiding (get)
-import ISTEX qualified as ISTEX
+import ISTEX qualified
 import ISTEX.Client qualified as ISTEX
 
 type Query = Text
@@ -40,14 +40,14 @@ get la query' maxResults = do
   -- eDocs <- ISTEX.getMetadataScroll (q <> " abstract:*")  "1m" Nothing 0  --(fromIntegral <$> ml)
   -- eDocs <- ISTEX.getMetadataScroll q "1m" Nothing 0  --(fromIntegral <$> ml)
 
-  let query = case (List.length $ Text.splitOn ":" query') == 1 of
+  let query = if List.length (Text.splitOn ":" query') == 1 then
         -- True case means users is entering default search of IsTex
         -- In that case we need to enrich his query with 2 parameters
         -- First expected language: user has to define it in GTXT
         -- Second : query in abstract
-        True  -> ("language:"<> toISTEXLanguageCode la) <> " AND abstract:"<>query'
+        ("language:"<> toISTEXLanguageCode la) <> " AND abstract:"<>query'
 
-        False -> query'
+      else query'
         -- Complex queries of IsTex needs parameters using ":" so we leave the query as it is
         -- in that case we suppose user is knowing what s.he is doing
 

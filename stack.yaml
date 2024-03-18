@@ -135,7 +135,7 @@
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/epo-proxy-api.git"
   subdirs:
   - .
-- commit: bfa9069b4ff70f341ca3244e8aff9e83eb4b8b73
+- commit: b99b9e568c8bdc73af2b8016ed03ba5ee83c2030
   git: "https://gitlab.iscpif.fr/gargantext/crawlers/hal.git"
   subdirs:
   - .
