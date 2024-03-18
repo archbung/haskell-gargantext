@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.6.7.1 [RELEASE CANDIDATE 007]
+
+* [BACK][FIX] Adding .mailmap file
+* [FRONT][FIX][[Tree search] Enrich search results with the path of the node (#638)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/638)
+
 ## Version 0.0.6.9.9.9.6.7 [RELEASE CANDIDATE 007]
 
 * [BACK][RELATED][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
