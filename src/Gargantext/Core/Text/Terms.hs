@@ -103,8 +103,7 @@ withLang (Unsupervised {..}) ns = Unsupervised { _tt_model = m', .. }
                     $ fmap toToken
                     $ uniText
                     $ Text.intercalate " . "
-                    $ List.concat
-                    $ map hasText ns
+                    $ concatMap hasText ns
       just_m -> just_m
 withLang l _ = l
 

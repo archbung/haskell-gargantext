@@ -20,15 +20,16 @@ module Gargantext.Database.Action.Flow.Extract
 import Control.Lens ((^.), _Just, view)
 import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict qualified as DM
-import Gargantext.Core (Lang, NLPServerConfig, PosTagAlgo(CoreNLP)) 
+import Gargantext.Core (Lang, NLPServerConfig, PosTagAlgo(CoreNLP))
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Core.Text.Corpus.Parsers (splitOn)
 import Gargantext.Core.Text.Terms (ExtractNgramsT, ExtractedNgrams(..), TermType, cleanExtractedNgrams, enrichedTerms, extractNgramsT, extractTerms, tt_lang)
 import Gargantext.Core.Types (POS(NP), TermsCount)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataContact, HyperdataDocument, cw_lastName, hc_who, hd_authors, hd_bdd, hd_institutes, hd_source)
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact, cw_lastName, hc_who )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, hd_authors, hd_bdd, hd_institutes, hd_source )
+import Gargantext.Database.Admin.Types.Node ( Node )
 import Gargantext.Database.Prelude (DBCmd)
-import Gargantext.Database.Schema.Ngrams
+import Gargantext.Database.Schema.Ngrams ( NgramsType(..), text2ngrams )
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 
@@ -49,6 +50,9 @@ instance ExtractNgramsT HyperdataContact
           pure $ HashMap.fromList $ [(SimpleNgrams a', (DM.singleton Authors 1, 1)) | a' <- authors ]
 
 
+-- | Main ngrams extraction functionality.
+--   For NgramsTerms, this calls NLP server under the hood.
+--   For Sources, Institutes, Authors, this uses simple split on " ".
 instance ExtractNgramsT HyperdataDocument
   where
     extractNgramsT :: NLPServerConfig
@@ -72,9 +76,8 @@ instance ExtractNgramsT HyperdataDocument
                          $ maybe ["Nothing"] (splitOn Authors (doc^. hd_bdd))
                          $ doc ^. hd_authors
 
-          termsWithCounts' <- map (\(t, cnt) -> (enrichedTerms (lang ^. tt_lang) CoreNLP NP t, cnt))
-                              <$> concat
-                              <$> liftBase (extractTerms ncs lang $ hasText doc)
+          termsWithCounts' <- map (first (enrichedTerms (lang ^. tt_lang) CoreNLP NP)) . concat <$>
+                                  liftBase (extractTerms ncs lang $ hasText doc)
 
           pure $ HashMap.fromList
                $  [(SimpleNgrams source, (DM.singleton Sources     1, 1))                    ]

@@ -9,11 +9,8 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE InstanceSigs           #-}
 
 module Gargantext.Core.Text.List.Group
   where
@@ -23,8 +20,8 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core.Text.List.Group.Prelude
-import Gargantext.Core.Text.List.Group.WithScores
-import Gargantext.Core.Text.List.Social.Prelude
+import Gargantext.Core.Text.List.Group.WithScores ( groupWithScores' )
+import Gargantext.Core.Text.List.Social.Prelude ( FlowListScores, FlowCont )
 import Gargantext.Prelude
 ------------------------------------------------------------------------
 toGroupedTree :: (Ord a, Monoid a, HasSize a)
@@ -43,9 +40,7 @@ setScoresWithMap :: (Ord a, Ord b, Monoid b) => HashMap NgramsTerm b
                  -> HashMap NgramsTerm (GroupedTreeScores b)
 setScoresWithMap m = setScoresWith (score m)
   where
-    score m' t = case HashMap.lookup t m' of
-      Nothing -> mempty
-      Just  r -> r
+    score m' t = fromMaybe mempty (HashMap.lookup t m')
 
 setScoresWith :: (Ord a, Ord b)
               => (NgramsTerm -> b)
@@ -58,8 +53,7 @@ setScoresWith f = Map.mapWithKey (\k v -> over gts'_children (setScoresWith f)
                                  )
 -}
 setScoresWith f = HashMap.mapWithKey (\k v -> v { _gts'_score    = f k
-                                            , _gts'_children = setScoresWith f
-                                                             $ view gts'_children v
-                                            }
-                                 )
+                                                , _gts'_children = setScoresWith f $ view gts'_children v
+                                                }
+                                     )
 ------------------------------------------------------------------------

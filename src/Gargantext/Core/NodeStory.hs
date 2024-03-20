@@ -235,9 +235,9 @@ fixChildrenInNgrams ns = archiveStateFromList $ nsParents <> nsChildrenFixed
                          )
                       ) <$> nsChildren
 
--- | Sometimes, when we upload a new list, a child can be left without
--- a parent. Find such ngrams and set their 'root' and 'parent' to
--- 'Nothing'.
+-- | (#281) Sometimes, when we upload a new list, a child can be left
+-- without a parent. Find such ngrams and set their 'root' and
+-- 'parent' to 'Nothing'.
 fixChildrenWithNoParent :: NgramsState' -> NgramsState'
 fixChildrenWithNoParent ns = archiveStateFromList $ nsParents <> nsChildrenFixed
   where

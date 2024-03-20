@@ -23,7 +23,7 @@ module Gargantext.Database.Action.Search (
 
 import Control.Arrow (returnA)
 import Control.Lens ((^.), view)
-import Data.BoolExpr
+import Data.BoolExpr ( BoolExpr(..), Signed(Negative, Positive) )
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Profunctor.Product (p4)
@@ -31,25 +31,26 @@ import Data.Set qualified as Set
 import Data.Text (unpack)
 import Data.Text qualified as T
 import Data.Time (UTCTime)
-import Gargantext.Core
+import Gargantext.Core ( Lang(EN), HasDBid(toDBid) )
 import Gargantext.Core.Text.Corpus.Query qualified as API
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (IsTrash, Limit, Offset)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..), HyperdataContact(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact(..) )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Database.Prelude (runOpaQuery, runCountOpaQuery, DBCmd)
 import Gargantext.Database.Query.Facet
-import Gargantext.Database.Query.Filter
-import Gargantext.Database.Query.Table.Context
+import Gargantext.Database.Query.Filter ( limit', offset' )
+import Gargantext.Database.Query.Table.Context ( queryContextSearchTable )
 import Gargantext.Database.Query.Table.ContextNodeNgrams (queryContextNodeNgramsTable)
-import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node ( queryNodeSearchTable, defaultList )
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Table.NodeContext
-import Gargantext.Database.Query.Table.NodeContext_NodeContext
+import Gargantext.Database.Schema.NodeContext_NodeContext ( NodeContext_NodeContextRead, queryNodeContext_NodeContextTable, ncnc_nodecontext2, ncnc_nodecontext1 )
 import Gargantext.Database.Schema.Context
 import Gargantext.Database.Schema.ContextNodeNgrams (ContextNodeNgramsPoly(..))
 import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Node ( NodePolySearch(_ns_hyperdata, _ns_search, _ns_typename, _ns_id) )
 import Gargantext.Prelude hiding (groupBy)
 import Opaleye hiding (Order)
 import Opaleye qualified as O hiding (Order)
@@ -59,7 +60,7 @@ import Opaleye qualified as O hiding (Order)
 --
 
 queryToTsSearch :: API.Query -> Field SqlTSQuery
-queryToTsSearch q = sqlToTSQuery $ T.unpack $ (API.interpretQuery q transformAST)
+queryToTsSearch q = sqlToTSQuery $ T.unpack $ API.interpretQuery q transformAST
   where
 
     -- It's important to understand how things work under the hood: When we perform

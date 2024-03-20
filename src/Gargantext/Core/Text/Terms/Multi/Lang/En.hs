@@ -17,8 +17,8 @@ module Gargantext.Core.Text.Terms.Multi.Lang.En (groupTokens)
   where
 
 import Gargantext.Prelude
-import Gargantext.Core.Types
-import Gargantext.Core.Text.Terms.Multi.Group
+import Gargantext.Core.Types ( POS(CC, IN, DT, NP, JJ), TokenTag )
+import Gargantext.Core.Text.Terms.Multi.Group ( group2 )
 
 ------------------------------------------------------------------------
 -- | Rule grammar to group tokens
@@ -31,8 +31,7 @@ groupTokens ntags = group2 NP NP
         --          $ group2 VB NP
                   $ group2 JJ NP
                   $ group2 JJ JJ
-                  $ group2 JJ CC
-                  $ ntags
+                  $ group2 JJ CC ntags
 
 ------------------------------------------------------------------------
 --groupNgrams ((x,_,"PERSON"):(y,yy,"PERSON"):xs)             = groupNgrams ((x <> " " <> y,yy,"PERSON"):xs)
