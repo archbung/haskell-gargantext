@@ -9,8 +9,6 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell      #-}
-
 module Gargantext.Core.Viz.Graph
   where
 
@@ -19,9 +17,9 @@ import Data.ByteString.Lazy as DBL (readFile, writeFile)
 import Data.HashMap.Strict (HashMap, lookup)
 import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Types (NgramsTerm(..), NgramsRepoElement(..), mSetToList)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Admin.Types.Hyperdata.Prelude
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
 import Text.Read qualified as Text
 

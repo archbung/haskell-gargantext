@@ -9,32 +9,31 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell   #-}
-
 module Gargantext.Core.Viz.Chart
   where
 
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Map.Strict (toList)
+import Data.Set qualified as Set
 import Data.Vector qualified as V
-import Gargantext.API.Ngrams.NgramsTree
-import Gargantext.API.Ngrams.Tools
-import Gargantext.API.Ngrams.Types
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.API.Ngrams.NgramsTree ( toTree, NgramsTree )
+import Gargantext.API.Ngrams.Tools ( filterListWithRoot, getListNgrams, getRepo, mapTermListRoot )
+import Gargantext.API.Ngrams.Types ( NgramsTerm(NgramsTerm) )
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
 import Gargantext.Core.Text.Metrics.Count (occurrencesWith)
-import Gargantext.Core.Types
-import Gargantext.Core.Viz.Types
-import Gargantext.Database.Action.Metrics.NgramsByContext
-import Gargantext.Database.Admin.Config
+import Gargantext.Core.Text.Ngrams (NgramsType)
+import Gargantext.Core.Types.Main ( ListType )
+import Gargantext.Database.Admin.Types.Node ( NodeType(NodeList), CorpusId, contextId2NodeId )
+import Gargantext.Core.Viz.Types ( Histo(Histo) )
+import Gargantext.Database.Action.Metrics.NgramsByContext ( countContextsByNgramsWith, getContextsByNgramsOnlyUser )
+import Gargantext.Database.Admin.Config ( userMaster )
 import Gargantext.Database.Prelude (DBCmd)
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Query.Table.Node.Select
+import Gargantext.Database.Query.Table.Node ( getListsWithParentId )
+import Gargantext.Database.Query.Table.Node.Select ( selectNodesWithUsername )
 import Gargantext.Database.Query.Table.NodeContext (selectDocsDates)
-import Gargantext.Database.Schema.Ngrams
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Node ( NodePoly(_node_id) )
 import Gargantext.Prelude hiding (toList)
-import qualified Data.Set            as Set
 
 
 histoData :: CorpusId -> DBCmd err Histo

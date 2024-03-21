@@ -23,23 +23,23 @@ import Data.Aeson (ToJSON)
 import Data.Aeson.TH (deriveJSON)
 import Data.HashMap.Strict (HashMap)
 import Data.Swagger (ToSchema(..), genericDeclareNamedSchema)
-import Gargantext.Core.Flow.Types
-import Gargantext.Core.NodeStory
-import Gargantext.Core.Text
-import Gargantext.Core.Text.Corpus.API qualified as API
-import Gargantext.Core.Text.Terms
+import Gargantext.Core.Flow.Types ( UniqId )
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
+import Gargantext.Core.Text ( HasText )
+import Gargantext.API.Admin.Orchestrator.Types qualified as API
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Core.Text.Terms ( ExtractNgramsT )
 import Gargantext.Core.Types (HasValidationError, TermsCount)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument)
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument )
 import Gargantext.Database.Admin.Types.Node (NodeId)
 import Gargantext.Database.Prelude (CmdM)
-import Gargantext.Database.Query.Table.Node.Document.Insert
+import Gargantext.Database.Query.Table.Node.Document.Insert ( UniqParameters, InsertDb, ToNode, AddUniqId )
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Types (Indexed)
 import Gargantext.Prelude
-import Gargantext.System.Logging
+import Gargantext.System.Logging ( MonadLogger )
 
 
 type FlowCmdM env err m =

@@ -20,9 +20,9 @@ ngrams in NgramsTerm Lists.
 module Gargantext.Database.Schema.NgramsPostag
   where
 
-import Control.Lens
+import Control.Lens ( makeLenses )
 import Database.PostgreSQL.Simple qualified as PGS
-import Gargantext.Database.Schema.Prelude
+import Gargantext.Database.Schema.Prelude ( Column, SqlInt4, SqlText, ToField(toField), toRow )
 import Gargantext.Prelude
 
 

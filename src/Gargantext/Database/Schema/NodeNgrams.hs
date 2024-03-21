@@ -20,8 +20,9 @@ NodeNgrams register Context of Ngrams (named Cgrams then)
 
 module Gargantext.Database.Schema.NodeNgrams where
 
-import Gargantext.Core.Types
-import Gargantext.Database.Schema.Ngrams (NgramsType)
+import Gargantext.Core.Text.Ngrams (NgramsType)
+import Gargantext.Core.Types.Main ( ListType )
+import Gargantext.Database.Admin.Types.Node ( NodeId )
 import Gargantext.Database.Schema.Prelude
 import Gargantext.Prelude
 

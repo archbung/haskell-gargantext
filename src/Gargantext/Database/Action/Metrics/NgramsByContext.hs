@@ -27,11 +27,12 @@ import Database.PostgreSQL.Simple.ToField qualified as DPS
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Database.PostgreSQL.Simple.Types qualified as DPST
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.Core
-import Gargantext.Data.HashMap.Strict.Utils as HM
+import Gargantext.Core ( HasDBid(toDBid) )
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Data.HashMap.Strict.Utils as HM ( unionsWith )
 import Gargantext.Database.Admin.Types.Node (ListId, CorpusId, NodeId(..), ContextId (..), MasterCorpusId, NodeType(NodeDocument), UserCorpusId, DocId)
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
+import Gargantext.Database.Schema.Ngrams ()  -- toDBid instance
 import Gargantext.Prelude
 
 -- | fst is size of Supra Corpus

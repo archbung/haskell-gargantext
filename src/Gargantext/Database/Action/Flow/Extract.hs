@@ -23,13 +23,14 @@ import Data.Map.Strict qualified as DM
 import Gargantext.Core (Lang, NLPServerConfig, PosTagAlgo(CoreNLP))
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Core.Text.Corpus.Parsers (splitOn)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Text.Terms (ExtractNgramsT, ExtractedNgrams(..), TermType, cleanExtractedNgrams, enrichedTerms, extractNgramsT, extractTerms, tt_lang)
 import Gargantext.Core.Types (POS(NP), TermsCount)
 import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact, cw_lastName, hc_who )
 import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, hd_authors, hd_bdd, hd_institutes, hd_source )
 import Gargantext.Database.Admin.Types.Node ( Node )
 import Gargantext.Database.Prelude (DBCmd)
-import Gargantext.Database.Schema.Ngrams ( NgramsType(..), text2ngrams )
+import Gargantext.Database.Schema.Ngrams ( text2ngrams )
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 

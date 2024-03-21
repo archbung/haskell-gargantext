@@ -12,7 +12,6 @@ Portability : POSIX
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE ConstraintKinds   #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell   #-}
 
 module Gargantext.Core.NodeStory.DB
   ( nodeExists
@@ -27,22 +26,20 @@ module Gargantext.Core.NodeStory.DB
 where
 
 import Control.Lens ((^.))
-import Control.Monad.Except
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict qualified as Map
 import Data.Map.Strict.Patch qualified as PM
-import Data.Monoid
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core (toDBid)
-import Gargantext.Core.NodeStory.Types
-import Gargantext.Core.Types (NodeId(..), NodeType)
+import Gargantext.Core.NodeStory.Types ( a_state, a_version, ArchiveList, ArchiveStateList, NgramsStatePatch' )
+import Gargantext.Core.Text.Ngrams (NgramsType)
+import Gargantext.Database.Admin.Types.Node ( NodeId(..), NodeType )
 import Gargantext.Database.Admin.Config ()
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
-import Gargantext.Database.Schema.Ngrams (NgramsType)
+import Gargantext.Database.Schema.Ngrams ()
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Database
 
@@ -70,7 +67,7 @@ getNodesArchiveHistory :: PGS.Connection
                        -> IO [(NodeId, (Map NgramsType [HashMap NgramsTerm NgramsPatch]))]
 getNodesArchiveHistory c nodesId = do
   as <- runPGSQuery c query (PGS.Only $ Values fields nodesId)
-                            :: IO [(Int, TableNgrams.NgramsType, NgramsTerm, NgramsPatch)]
+                            :: IO [(Int, NgramsType, NgramsTerm, NgramsPatch)]
 
   pure $ map (\(nId, ngramsType, terms, patch)
                -> ( UnsafeMkNodeId nId
@@ -96,11 +93,11 @@ insertNodeArchiveHistory _ _ _ [] = pure ()
 insertNodeArchiveHistory c nodeId version (h:hs) = do
   let tuples = mconcat $ (\(nType, NgramsTablePatch patch) ->
                            (\(term, p) ->
-                              (nodeId, nType, term, p)) <$> PM.toList patch) <$> PM.toList h :: [(NodeId, TableNgrams.NgramsType, NgramsTerm, NgramsPatch)]
+                              (nodeId, nType, term, p)) <$> PM.toList patch) <$> PM.toList h :: [(NodeId, NgramsType, NgramsTerm, NgramsPatch)]
   tuplesM <- mapM (\(nId, nType, term, patch) -> do
                       [PGS.Only ngramsId] <- runPGSReturning c qInsert [PGS.Only term] :: IO [PGS.Only Int]
                       pure (nId, nType, ngramsId, term, patch)
-                  ) tuples :: IO [(NodeId, TableNgrams.NgramsType, Int, NgramsTerm, NgramsPatch)]
+                  ) tuples :: IO [(NodeId, NgramsType, Int, NgramsTerm, NgramsPatch)]
   _ <- runPGSExecuteMany c query $ ((\(nId, nType, termId, _term, patch) -> (nId, nType, termId, patch, version)) <$> tuplesM)
   _ <- insertNodeArchiveHistory c nodeId version hs
   pure ()

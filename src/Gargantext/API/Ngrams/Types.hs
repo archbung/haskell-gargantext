@@ -37,12 +37,12 @@ import Data.Validity ( Validity(..) )
 import Database.PostgreSQL.Simple.FromField (FromField, fromField, fromJSONField)
 import Database.PostgreSQL.Simple.ToField (ToField, toJSONField, toField)
 import Gargantext.Core.Text (size)
+import Gargantext.Core.Text.Ngrams qualified as Ngrams
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, TODO)
 import Gargantext.Core.Types.Query (Limit, Offset, MaxSize, MinSize)
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixUntagged, unPrefixSwagger, wellNamedSchema)
 import Gargantext.Database.Admin.Types.Node (ContextId)
 import Gargantext.Database.Prelude (fromField', HasConnectionPool, HasConfig, CmdM')
-import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
 import Gargantext.Prelude hiding (IsString, hash, from, replace, to)
 import Gargantext.Prelude.Crypto.Hash (IsHashable(..))
 import Gargantext.Utils.Servant (CSV, ZIP)
@@ -551,7 +551,7 @@ instance ToField NgramsTablePatch
   where
     toField = toJSONField
 
-instance FromField (PatchMap TableNgrams.NgramsType (PatchMap NodeId NgramsTablePatch))
+instance FromField (PatchMap Ngrams.NgramsType (PatchMap NodeId NgramsTablePatch))
   where
     fromField = fromField'
 
@@ -747,21 +747,21 @@ type RepoCmdM   env err m =
 
 
 -- Instances
-instance FromHttpApiData (Map TableNgrams.NgramsType (Versioned NgramsTableMap))
+instance FromHttpApiData (Map Ngrams.NgramsType (Versioned NgramsTableMap))
   where
     parseUrlPiece x = maybeToEither x (decode $ cs x)
 
-instance ToHttpApiData (Map TableNgrams.NgramsType (Versioned NgramsTableMap)) where
+instance ToHttpApiData (Map Ngrams.NgramsType (Versioned NgramsTableMap)) where
   toUrlPiece m = cs (encode m)
 
-ngramsTypeFromTabType :: TabType -> TableNgrams.NgramsType
+ngramsTypeFromTabType :: TabType -> Ngrams.NgramsType
 ngramsTypeFromTabType tabType =
   let here = "Garg.API.Ngrams: " :: Text in
     case tabType of
-      Sources    -> TableNgrams.Sources
-      Authors    -> TableNgrams.Authors
-      Institutes -> TableNgrams.Institutes
-      Terms      -> TableNgrams.NgramsTerms
+      Sources    -> Ngrams.Sources
+      Authors    -> Ngrams.Authors
+      Institutes -> Ngrams.Institutes
+      Terms      -> Ngrams.NgramsTerms
       _          -> panicTrace $ here <> "No Ngrams for this tab"
       -- TODO: This `panic` would disapear with custom NgramsType.
 
@@ -784,7 +784,7 @@ instance ToSchema UpdateTableNgramsCharts where
   declareNamedSchema = genericDeclareNamedSchema (unPrefixSwagger "_utn_")
 
 ------------------------------------------------------------------------
-type NgramsList = (Map TableNgrams.NgramsType (Versioned NgramsTableMap))
+type NgramsList = (Map Ngrams.NgramsType (Versioned NgramsTableMap))
 
 
 -- | Same as NgramsList, but wraps node_id so that the inner .json file can have proper name

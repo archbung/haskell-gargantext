@@ -56,10 +56,10 @@ import Data.Set qualified as Set
 import Database.PostgreSQL.Simple.FromField (FromField(fromField), fromJSONField)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Database.Admin.Types.Node ( NodeId(..) )
+import Gargantext.Core.Text.Ngrams qualified as Ngrams
 import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (DbCmd')
-import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Prelude hiding (to)
 import Opaleye (DefaultFromField(..), SqlJsonb, fromPGSFromField)
@@ -100,8 +100,8 @@ instance (Serialise s, Serialise p) => Serialise (Archive s p)
 type NodeListStory     = NodeStory NgramsState' NgramsStatePatch'
 
 -- NOTE: 'type NgramsTableMap = Map NgramsTerm NgramsRepoElement'
-type NgramsState'      = Map       TableNgrams.NgramsType NgramsTableMap
-type NgramsStatePatch' = PatchMap  TableNgrams.NgramsType NgramsTablePatch
+type NgramsState'      = Map       Ngrams.NgramsType NgramsTableMap
+type NgramsStatePatch' = PatchMap  Ngrams.NgramsType NgramsTablePatch
 -- instance Serialise NgramsStatePatch'
 instance FromField (Archive NgramsState' NgramsStatePatch')
   where
@@ -167,7 +167,7 @@ initNodeListStoryMock = NodeStory $ Map.singleton nodeListId archive
     archive = Archive { _a_version = 0
                       , _a_state = ngramsTableMap
                       , _a_history = [] }
-    ngramsTableMap = Map.singleton TableNgrams.NgramsTerms
+    ngramsTableMap = Map.singleton Ngrams.NgramsTerms
                    $ Map.fromList
                    [ (n ^. ne_ngrams, ngramsElementToRepo n)
                    | n <- mockTable ^. _NgramsTable
@@ -231,8 +231,8 @@ class HasNodeArchiveStoryImmediateSaver env where
 
 
 
-type ArchiveStateList = [(TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
-type ArchiveStateSet = Set.Set (TableNgrams.NgramsType, NgramsTerm)
+type ArchiveStateList = [(Ngrams.NgramsType, NgramsTerm, NgramsRepoElement)]
+type ArchiveStateSet = Set.Set (Ngrams.NgramsType, NgramsTerm)
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------

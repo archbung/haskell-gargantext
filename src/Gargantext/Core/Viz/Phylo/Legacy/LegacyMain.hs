@@ -13,30 +13,30 @@ Portability : POSIX
 
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TypeApplications  #-}
-{-# LANGUAGE ViewPatterns      #-}
 
 module Gargantext.Core.Viz.Phylo.Legacy.LegacyMain
   where
 
-import Control.Lens hiding (Level)
+import Control.Lens (to, view)
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
-import Data.Proxy
 import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Gargantext.API.Ngrams.Tools (getTermsWith)
-import Gargantext.API.Ngrams.Types
+import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core (HasDBid, withDefaultLanguage)
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.NodeStory.Types (HasNodeStory)
 import Gargantext.Core.Text.Context (TermList)
-import Gargantext.Core.Text.Terms.WithList
-import Gargantext.Core.Types
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Core.Text.Terms.WithList ( buildPatterns, termsInText, Patterns )
+import Gargantext.Core.Types.Main ( ListType(MapTerm) )
+import Gargantext.Database.Admin.Types.Node ( NodeType, CorpusId )
 import Gargantext.Core.Viz.LegacyPhylo hiding (Svg, Dot)
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataCorpus(_hc_lang) )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(_hd_abstract, _hd_publication_year) )
 import Gargantext.Database.Query.Table.Node(defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.NodeContext (selectDocs)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Node ( node_hyperdata )
 import Gargantext.Prelude hiding (to)
 
 type MinSizeBranch = Int

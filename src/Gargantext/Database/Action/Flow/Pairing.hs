@@ -11,7 +11,6 @@ Portability : POSIX
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Arrows      #-}
 
 module Gargantext.Database.Action.Flow.Pairing
@@ -25,28 +24,27 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Gargantext.API.Ngrams.Tools
+import Gargantext.API.Ngrams.Tools ( filterListWithRoot, getRepo, groupNodesByNgrams, mapTermListRoot )
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
-import Gargantext.Core
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core ( HasDBid(toDBid) )
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
 import Gargantext.Core.Text.Metrics.CharByChar (levenshtein)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Types (TableResult(..))
-import Gargantext.Core.Types.Main
-import Gargantext.Database
+import Gargantext.Core.Types.Main ( ListType(CandidateTerm, MapTerm) )
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser)
-import Gargantext.Database.Admin.Config
-import Gargantext.Database.Admin.Types.Hyperdata -- (HyperdataContact(..))
+import Gargantext.Database.Admin.Config ( userMaster )
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact, cw_firstName, cw_lastName, hc_who ) -- (HyperdataContact(..))
 import Gargantext.Database.Admin.Types.Node -- (AnnuaireId, CorpusId, ListId, DocId, ContactId, NodeId)
-import Gargantext.Database.Query.Prelude (returnA, queryNodeNodeTable)
+import Gargantext.Database.Prelude (Cmd, DBCmd, runOpaQuery)
+import Gargantext.Database.Query.Prelude (returnA)
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Children (getAllContacts)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext_NodeContext (insertNodeContext_NodeContext)
-import Gargantext.Database.Query.Table.NodeNode (insertNodeNode)
-import Gargantext.Database.Prelude (Cmd, runOpaQuery)
-import Gargantext.Database.Schema.Ngrams -- (NgramsType(..))
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Query.Table.NodeNode 
+import Gargantext.Database.Schema.Node ( node_hyperdata, node_id, node_typename, queryNodeTable )
 import Gargantext.Prelude hiding (sum)
 import Opaleye
 

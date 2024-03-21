@@ -12,7 +12,6 @@ Portability : POSIX
 {-# LANGUAGE TypeFamilies  #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use infix" #-}
 
 module Gargantext.API.Ngrams.Tools
   where
@@ -24,11 +23,11 @@ import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 -- import GHC.Conc (TVar, readTVar)
-import Gargantext.API.Ngrams.Types
-import Gargantext.Core.NodeStory
+import Gargantext.API.Ngrams.Types ( NgramsTerm(unNgramsTerm), NgramsRepoElement(_nre_root, _nre_list) )
+import Gargantext.Core.NodeStory.Types
+import Gargantext.Core.Text.Ngrams (NgramsType)
 import Gargantext.Core.Types.Main ( ListType(..) )
 import Gargantext.Database.Admin.Types.Node ( NodeId, ListId )
-import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
 
 

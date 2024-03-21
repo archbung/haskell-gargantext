@@ -11,9 +11,6 @@ Portability : POSIX
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE InstanceSigs            #-}
-
-
 module Gargantext.Database.Action.Flow.Utils
   ( docNgrams
   , documentIdWithNgrams
@@ -31,12 +28,13 @@ import Data.Text qualified as T
 import Gargantext.API.Ngrams.Types qualified as NT
 import Gargantext.Core (Lang, toDBid)
 import Gargantext.Core.Flow.Types (UniqId, uniqId)
+import Gargantext.Core.Text.Ngrams ( Ngrams, NgramsType )
 import Gargantext.Core.Text.Terms.WithList (MatchedText, buildPatternsWith, termsInText)
 import Gargantext.Core.Types (TermsCount)
 import Gargantext.Core.Utils (addTuples)
 import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Database.Action.Flow.Types (DocumentIdWithNgrams(..), FlowInsertDB)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument, hd_abstract, hd_title)
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, hd_abstract, hd_title )
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (DBCmd, DbCmd')
 import Gargantext.Database.Query.Table.ContextNodeNgrams
@@ -44,8 +42,8 @@ import Gargantext.Database.Query.Table.Node.Document.Add qualified as Doc (add)
 import Gargantext.Database.Query.Table.Node.Document.Insert (ReturnId, addUniqId, insertDb, reId, reInserted, reUniqId)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Schema.Context (context_hyperdata, context_id)
-import Gargantext.Database.Schema.Ngrams
-import Gargantext.Database.Types
+import Gargantext.Database.Schema.Ngrams (NgramsId, NgramsTypeId(..))
+import Gargantext.Database.Types ( Indexed(..), index )
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)
 

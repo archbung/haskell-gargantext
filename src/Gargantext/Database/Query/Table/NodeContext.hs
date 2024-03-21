@@ -50,13 +50,15 @@ import Data.Time (UTCTime)
 import Database.PostgreSQL.Simple qualified as PGS (In(..), Query, Only(..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import Gargantext.Core
-import Gargantext.Core.Types
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Core ( HasDBid(toDBid) )
+import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, hd_publication_date )
+import Gargantext.Database.Admin.Types.Hyperdata.Prelude ( Hyperdata )
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError, NodeError(..), nodeError)
 import Gargantext.Database.Prelude
 import Gargantext.Database.Schema.Context
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Ngrams ()  -- instances
+import Gargantext.Database.Schema.Node ( node_id, node_typename, queryNodeTable, NodeRead )
 import Gargantext.Database.Schema.NodeContext
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)

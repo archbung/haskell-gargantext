@@ -34,6 +34,7 @@ import Gargantext.Core.Text.List.Group.WithStem
 import Gargantext.Core.Text.List.Social ( FlowSocialListWith, flowSocialList )
 import Gargantext.Core.Text.List.Social.Prelude ( FlowListScores, FlowCont(FlowCont), flc_scores )
 import Gargantext.Core.Text.Metrics (scored', Scored(..), scored_speExc, scored_genInc, normalizeGlobal, normalizeLocal, scored_terms)
+import Gargantext.Core.Text.Ngrams (NgramsType(..), Ngrams(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Main ( ListType(..) )
 import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
@@ -45,7 +46,7 @@ import Gargantext.Database.Query.Table.NgramsPostag (selectLems)
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..), Ngrams(..), text2ngrams)
+import Gargantext.Database.Schema.Ngrams (text2ngrams)
 import Gargantext.Prelude
 
 {-
@@ -118,8 +119,7 @@ buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize,
                             $ List.take maxListSize
                             $ List.sortOn (Down . viewScore . snd)
                             $ HashMap.toList tailTerms'
-
-
+    
   pure $ Map.fromList [( nt, List.take maxListSize $ toNgramsElement stopTerms
                           <> toNgramsElement mapTerms
                           <> toNgramsElement (setListType (Just MapTerm      ) mapTerms')
@@ -127,6 +127,14 @@ buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize,
                           )]
 
 
+-- | https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169#note_10049
+-- Stemming can be useful if you do not have any context: ok for full text search then.
+-- 
+-- In document, we have context so we can add grammar and linguistics
+-- rules to be more precise than the stemmatization, that is why the
+-- lemmatization is used here to group. Basically it will avoid
+-- grouping homonyms in list. In search usually you add more context
+-- to "control" the stemmatization approximation.
 getGroupParams :: ( HasNodeError err
                   , HasTreeError err
                   )
@@ -190,6 +198,8 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
                                  $ view flc_scores groupedWithList
 
     !(groupedMono, groupedMult)  = HashMap.partitionWithKey (\(NgramsTerm t) _v -> size t < 2) candidateTerms
+
+  -- void $ panicTrace $ "groupedWithList: " <> show groupedWithList
 
   -- printDebug "[buildNgramsTermsList] socialLists" socialLists
   -- printDebug "[buildNgramsTermsList] socialLists with scores" socialLists_Stemmed

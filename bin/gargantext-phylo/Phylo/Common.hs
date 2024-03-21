@@ -18,13 +18,13 @@ import Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..), parseF
 import Gargantext.Core.Text.Corpus.Parsers.CSV (csv_title, csv_abstract, csv_publication_year, csv_publication_month, csv_publication_day, csv'_source, csv'_title, csv'_abstract, csv'_publication_year, csv'_publication_month, csv'_publication_day, csv'_weight)
 import Gargantext.Core.Text.Corpus.Parsers.CSV qualified as Csv
 import Gargantext.Core.Text.List.Formats.CSV (csvMapTermList)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, extractTermsWithList)
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.API.Tools
 import Gargantext.Core.Viz.Phylo.PhyloTools  (toPeriods, getTimePeriod, getTimeStep)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument(..))
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (hash, replace)
 import Prelude qualified
 import System.Directory (listDirectory)

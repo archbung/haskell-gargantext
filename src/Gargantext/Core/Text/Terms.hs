@@ -37,27 +37,27 @@ compute graph
 module Gargantext.Core.Text.Terms
   where
 
-import Control.Lens
+import Control.Lens ( (^.), view, over, makeLenses )
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Data.Traversable
 import GHC.Base (String)
-import Gargantext.Core
+import Gargantext.Core ( Lang, NLPServerConfig, PosTagAlgo )
 import Gargantext.Core.Text (sentences, HasText(..))
+import Gargantext.Core.Text.Ngrams (Ngrams(..), NgramsType(..), ngramsTerms)
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Text.Terms.Mono.Token.En (tokenize)
 import Gargantext.Core.Text.Terms.Multi (multiterms)
-import Gargantext.Core.Types
+import Gargantext.Core.Types ( TermsCount, POS, Terms(Terms), TermsWithCount )
 import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (insertNgrams)
 import Gargantext.Database.Query.Table.NgramsPostag (NgramsPostag(..), insertNgramsPostag, np_form, np_lem)
-import Gargantext.Database.Schema.Ngrams (Ngrams(..), NgramsType(..), ngramsTerms, text2ngrams, NgramsId)
+import Gargantext.Database.Schema.Ngrams (text2ngrams, NgramsId)
 import Gargantext.Prelude
 
 data TermType lang

@@ -25,9 +25,9 @@ import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory.Types ( HasNodeStory )
 import Gargantext.Core.Text.Context (TermList)
 import Gargantext.Core.Text.List.Social.Prelude ( unPatchMapToHashMap )
+import Gargantext.Core.Text.Ngrams (NgramsType, ngramsTypes)
 import Gargantext.Core.Types.Main ( ListType )
 import Gargantext.Database.Admin.Types.Node (ListId)
-import Gargantext.Database.Schema.Ngrams (NgramsType, ngramsTypes)
 import Gargantext.Prelude
 
 
@@ -61,7 +61,7 @@ toTermList lt nt nl = toTermList' lt <$> Map.lookup nt nl
       where
         toTerm = Text.splitOn " " . unNgramsTerm
 
-        (roots, children) = List.partition (\(_t, nre) -> view nre_root nre == Nothing)
+        (roots, children) = List.partition (\(_t, nre) -> isNothing (view nre_root nre))
                           $ List.filter (\(_t,nre) -> view nre_list nre == lt'') ns
 
         roots'    = map (\(t,nre) -> (t, map toTerm $ unMSet $ view nre_children nre )) roots

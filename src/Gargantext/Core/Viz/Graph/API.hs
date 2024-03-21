@@ -19,31 +19,31 @@ module Gargantext.Core.Viz.Graph.API
   where
 
 import Control.Lens (set, (^.), _Just, (^?), at)
-import Data.Aeson
+import Data.Aeson ( ToJSON, FromJSON )
 import Data.HashMap.Strict qualified as HashMap
-import Data.Swagger
+import Data.Swagger ( ToSchema )
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
-import Gargantext.API.Admin.Orchestrator.Types
-import Gargantext.API.Errors.Types
+import Gargantext.API.Admin.Orchestrator.Types ( JobLog )
+import Gargantext.API.Errors.Types ( BackendInternalError )
 import Gargantext.API.Ngrams.Tools
-import Gargantext.API.Prelude
+import Gargantext.API.Prelude (GargM, GargServer)
 import Gargantext.Core.Methods.Similarities (Similarity(..), GraphMetric(..), withMetric)
-import Gargantext.Core.NodeStory
-import Gargantext.Core.Types.Main
+import Gargantext.Core.NodeStory.Types ( HasNodeStory, a_version, unNodeStory, NodeListStory )
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Core.Types.Main ( ListType(MapTerm) )
 import Gargantext.Core.Viz.Graph.GEXF ()
 import Gargantext.Core.Viz.Graph.Tools -- (cooc2graph)
 import Gargantext.Core.Viz.Graph.Types
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsOnlyUser)
 import Gargantext.Database.Action.Node (mkNodeWithParent)
-import Gargantext.Database.Admin.Config
+import Gargantext.Database.Admin.Config ( userMaster )
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (DBCmd)
-import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.Node ( getOrMkList, getNodeWith, defaultList, getClosestParentIdByType )
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
-import Gargantext.Database.Query.Table.Node.Select
+import Gargantext.Database.Query.Table.Node.Select ( selectNodesWithUsername )
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Database.Schema.Ngrams
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Node (node_hyperdata, node_name)
 import Gargantext.Prelude
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant

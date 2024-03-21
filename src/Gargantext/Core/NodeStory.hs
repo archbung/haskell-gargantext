@@ -73,10 +73,10 @@ import Database.PostgreSQL.Simple.ToField qualified as PGS
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory.DB
 import Gargantext.Core.NodeStory.Types
+import Gargantext.Core.Text.Ngrams qualified as Ngrams
 import Gargantext.Database.Admin.Types.Node ( ListId, NodeId(..) )
 import Gargantext.Database.Admin.Config ()
 import Gargantext.Database.Prelude (HasConnectionPool(..))
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Database ( runPGSAdvisoryXactLock, runPGSExecute, runPGSQuery )
 
@@ -84,7 +84,7 @@ import Gargantext.Prelude.Database ( runPGSAdvisoryXactLock, runPGSExecute, runP
 getNodeStory' :: PGS.Connection -> NodeId -> IO ArchiveList
 getNodeStory' c nId = do
   --res <- withResource pool $ \c -> runSelect c query :: IO [NodeStoryPoly NodeId Version Int Int NgramsRepoElement]
-  res <- runPGSQuery c nodeStoriesQuery (PGS.Only $ PGS.toField nId) :: IO [(Version, TableNgrams.NgramsType, NgramsTerm, NgramsRepoElement)]
+  res <- runPGSQuery c nodeStoriesQuery (PGS.Only $ PGS.toField nId) :: IO [(Version, Ngrams.NgramsType, NgramsTerm, NgramsRepoElement)]
   -- We have multiple rows with same node_id and different (ngrams_type_id, ngrams_id).
   -- Need to create a map: {<node_id>: {<ngrams_type_id>: {<ngrams_id>: <data>}}}
   let dbData = map (\(version, ngramsType, ngrams, ngrams_repo_element) ->
@@ -341,13 +341,13 @@ fixNodeStoryVersions = do
     -- printDebug "[fixNodeStoryVersions] nIds" nIds
     mapM_ (\(PGS.Only nId) -> do
         -- printDebug "[fixNodeStoryVersions] nId" nId
-        updateVer c TableNgrams.Authors nId
+        updateVer c Ngrams.Authors nId
 
-        updateVer c TableNgrams.Institutes nId
+        updateVer c Ngrams.Institutes nId
 
-        updateVer c TableNgrams.Sources nId
+        updateVer c Ngrams.Sources nId
 
-        updateVer c TableNgrams.NgramsTerms nId
+        updateVer c Ngrams.NgramsTerms nId
 
         pure ()
       ) nIds
@@ -363,7 +363,7 @@ fixNodeStoryVersions = do
                          SET version = ?
                          WHERE node_id = ?
                            AND ngrams_type_id = ? |]
-    updateVer :: PGS.Connection -> TableNgrams.NgramsType -> Int64 -> IO ()
+    updateVer :: PGS.Connection -> Ngrams.NgramsType -> Int64 -> IO ()
     updateVer c ngramsType nId = do
       maxVer <- runPGSQuery c maxVerQuery (nId, ngramsType) :: IO [PGS.Only (Maybe Int64)]
       case maxVer of

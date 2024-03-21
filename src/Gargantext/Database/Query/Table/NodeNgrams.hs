@@ -16,7 +16,6 @@ NodeNgrams register Context of Ngrams (named Cgrams then)
 {-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
 
 module Gargantext.Database.Query.Table.NodeNgrams
   ( getCgramsId
@@ -32,9 +31,10 @@ import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Database.PostgreSQL.Simple qualified as PGS (Query, Only(..))
 import Gargantext.Core
+import Gargantext.Core.Text.Ngrams (NgramsType)
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
-import Gargantext.Database.Schema.Ngrams (NgramsType, fromNgramsTypeId)
+import Gargantext.Database.Schema.Ngrams (fromNgramsTypeId)
 import Gargantext.Database.Schema.NodeNgrams
 import Gargantext.Database.Schema.Prelude (Select, FromRow, sql, fromRow, toField, field, Values(..), QualifiedIdentifier(..), selectTable)
 import Gargantext.Prelude

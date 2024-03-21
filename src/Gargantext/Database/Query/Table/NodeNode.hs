@@ -39,10 +39,12 @@ import Data.Text (splitOn)
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import Gargantext.Core
-import Gargantext.Core.Types
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Core ( HasDBid(toDBid) )
+import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, hd_publication_date )
+import Gargantext.Database.Admin.Types.Hyperdata.Prelude ( Hyperdata )
 import Gargantext.Database.Prelude (DBCmd, mkCmd, runPGSQuery, runCountOpaQuery, runOpaQuery)
+import Gargantext.Database.Schema.Ngrams ()
 import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.NodeNode
 import Gargantext.Prelude

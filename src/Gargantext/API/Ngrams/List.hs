@@ -10,7 +10,6 @@ Portability : POSIX
 -}
 
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ViewPatterns        #-}
@@ -29,21 +28,21 @@ import Data.Text (concat, pack, splitOn)
 import Data.Vector (Vector)
 import Data.Vector qualified as Vec
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
-import Gargantext.API.Admin.Orchestrator.Types
-import Gargantext.API.Errors.Types
+import Gargantext.API.Admin.Orchestrator.Types ( AsyncJobs, JobLog )
+import Gargantext.API.Errors.Types (BackendInternalError)
 import Gargantext.API.Ngrams (setListNgrams)
 import Gargantext.API.Ngrams.List.Types
 import Gargantext.API.Ngrams.Prelude (getNgramsList)
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude (GargServer, GargM, serverError, HasServerError)
-import Gargantext.API.Types
-import Gargantext.Core.NodeStory
+import Gargantext.API.Types (HTML)
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
+import Gargantext.Core.Text.Ngrams (Ngrams, NgramsType(NgramsTerms))
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Database.Action.Flow (reIndexWith)
-import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
+import Gargantext.Database.Admin.Types.Node ( NodeId(_NodeId), ListId )
 import Gargantext.Database.Query.Table.Node (getNode)
-import Gargantext.Database.Schema.Ngrams
+import Gargantext.Database.Schema.Ngrams ( text2ngrams, NgramsId )
 import Gargantext.Database.Schema.Node (_node_parent_id)
 import Gargantext.Database.Types (Indexed(..))
 import Gargantext.Prelude hiding (concat, toList)
@@ -113,7 +112,7 @@ getCsv :: HasNodeStory env err m
        -> m (Headers '[Header "Content-Disposition" Text] NgramsTableMap)
 getCsv lId = do
   lst <- getNgramsList lId
-  pure $ case Map.lookup TableNgrams.NgramsTerms lst of
+  pure $ case Map.lookup NgramsTerms lst of
     Nothing -> noHeader Map.empty
     Just (Versioned { _v_data }) ->
       addHeader (concat [ "attachment; filename=GarganText_NgramsList-"

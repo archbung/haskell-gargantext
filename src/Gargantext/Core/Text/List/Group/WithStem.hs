@@ -25,11 +25,11 @@ import Data.HashSet qualified as Set
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
-import Gargantext.API.Ngrams.Types
+import Gargantext.API.Ngrams.Types ( toNgramsPatch, NgramsPatch, NgramsTerm(..) )
 import Gargantext.Core (Lang(..), Form, Lem, NLPServerConfig)
-import Gargantext.Core.Text.List.Group.Prelude
-import Gargantext.Core.Text.List.Social.Patch
-import Gargantext.Core.Text.List.Social.Prelude
+import Gargantext.Core.Text.List.Group.Prelude ( Stem )
+import Gargantext.Core.Text.List.Social.Patch ( addScorePatch )
+import Gargantext.Core.Text.List.Social.Prelude ( FlowCont, FlowListScores )
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Prelude
 
@@ -43,7 +43,7 @@ addScoreStem groupParams ngrams fl = foldl' addScorePatch fl
 
 ------------------------------------------------------------------------
 -- | Main Types
-data StopSize = StopSize {unStopSize :: !Int}
+newtype StopSize = StopSize {unStopSize :: Int}
   deriving (Eq)
 
 -- | TODO: group with 2 terms only can be
@@ -80,7 +80,6 @@ groupWith (GroupParams { unGroupParams_lang = l }) t =
                   $ Text.splitOn " "
                   $ Text.replace "-" " "
                   $ unNgramsTerm t
-
 -- | This lemmatization group done with CoreNLP algo (or others)
 groupWith (GroupWithPosTag { _gwl_map = m }) t =
   case HashMap.lookup (unNgramsTerm t) m of
