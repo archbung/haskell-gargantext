@@ -5,14 +5,18 @@
 
 module Test.Offline.Phylo (tests) where
 
+import Data.GraphViz.Attributes.Complete qualified as Graphviz
+import Data.Vector qualified as V
 import Gargantext.Core.Viz.Phylo
 import Gargantext.Core.Viz.Phylo.API.Tools (readPhylo, writePhylo)
+import Gargantext.Core.Viz.Phylo.PhyloExport
 import Gargantext.Core.Viz.Phylo.PhyloMaker (toPhylo)
 import Gargantext.Core.Viz.Phylo.PhyloTools
 import Prelude
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
+import Data.Text.Lazy as TL
 
 import Paths_gargantext
 
@@ -43,6 +47,10 @@ phyloConfig = PhyloConfig {
 tests :: TestTree
 tests = testGroup "Phylo" [
   -- testCase "returns expected data" testSmallPhyloExpectedOutput
+  testGroup "Export" [
+      testCase "ngramsToLabel respects encoding" test_ngramsToLabel_01
+    , testCase "ngramsToLabel is rendered correctly in CustomAttribute" test_ngramsToLabel_02
+    ]
   ]
 
 testSmallPhyloExpectedOutput :: Assertion
@@ -51,3 +59,13 @@ testSmallPhyloExpectedOutput = do
   expected <- readPhylo =<< getDataFileName "test-data/phylo/issue-290-small.golden.json"
   let actual = toPhylo issue290PhyloSmall
   expected @?= actual
+
+test_ngramsToLabel_01 :: Assertion
+test_ngramsToLabel_01 =
+  let ngrams = V.fromList [ "évaluation", "méthodologique" ]
+  in ngramsToLabel ngrams [0,1] @?= "évaluation | méthodologique"
+
+test_ngramsToLabel_02 :: Assertion
+test_ngramsToLabel_02 =
+  let ngrams = V.fromList [ "钱", "狗" ]
+  in (Graphviz.customValue $ toAttr "lbl" $ TL.fromStrict $ ngramsToLabel ngrams [0,1]) @?= "钱 | 狗"
