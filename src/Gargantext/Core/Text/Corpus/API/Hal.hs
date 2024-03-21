@@ -20,9 +20,9 @@ import Gargantext.Core.Text.Corpus.Parsers.Date qualified as Date
 import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Defaults qualified as Defaults
 import Gargantext.Prelude hiding (intercalate)
-import HAL qualified as HAL
-import HAL.Client qualified as HAL
+import HAL qualified
 import HAL.Doc.Corpus qualified as HAL
+import HAL.Types qualified as HAL
 import Servant.Client (ClientError)
 
 get :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO [HyperdataDocument]
@@ -32,7 +32,7 @@ get la q ml = do
 
 getC :: Maybe ISO639.ISO639_1 -> Text -> Maybe Int -> IO (Either ClientError (Maybe Integer, ConduitT () HyperdataDocument IO ()))
 getC la q ml = do
-  eRes <- HAL.getMetadataWithC [q] (Just 0) (fromIntegral <$> ml) la
+  eRes <- HAL.getMetadataWithCursorC q (fromIntegral <$> ml) la
   pure $ (\(len, docsC) -> (len, docsC .| mapMC (toDoc' la))) <$> eRes
 --  case eRes of
 --    Left err -> panic $ pack $ show err
@@ -41,7 +41,7 @@ getC la q ml = do
 toDoc' :: Maybe ISO639.ISO639_1 -> HAL.Corpus -> IO HyperdataDocument
 toDoc' la (HAL.Corpus { .. }) = do
   -- printDebug "[toDoc corpus] h" h
-  let mDateS = maybe (Just $ pack $ show Defaults.year) Just _corpus_date
+  let mDateS = _corpus_date <|> Just (pack $ show Defaults.year)
   let (utctime, (pub_year, pub_month, pub_day)) = Date.mDateSplit mDateS
   let abstractDefault = unwords _corpus_abstract
   let abstract = case la of
@@ -52,8 +52,8 @@ toDoc' la (HAL.Corpus { .. }) = do
                          , _hd_url = Nothing
                          , _hd_page = Nothing
                          , _hd_title = Just $ unwords _corpus_title
-                         , _hd_authors = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" _corpus_authors_names
-                         , _hd_institutes = Just $ foldl (\x y -> if x == "" then y else x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
+                         , _hd_authors = Just $ foldl' (\x y -> if x == "" then y else x <> ", " <> y) "" _corpus_authors_names
+                         , _hd_institutes = Just $ foldl' (\x y -> if x == "" then y else x <> ", " <> y) "" $ _corpus_authors_affiliations <> map show _corpus_struct_id
                          , _hd_source = Just $ maybe "Nothing" identity _corpus_source
                          , _hd_abstract = Just abstract
                          , _hd_publication_date = fmap show utctime
