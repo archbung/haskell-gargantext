@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.7 [RELEASE CANDIDATE 007]
+
+* [BACK][FIX][[API search HAL] On the HAL api, launching the exact same request several times can give different results (#327)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/327)
+* [FRONT][FIX][[Node phylo] Phylomemy displays terms with broken accented words (#632)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/632)
+
 ## Version 0.0.6.9.9.9.6.7.1 [RELEASE CANDIDATE 007]
 
 * [BACK][FIX] Adding .mailmap file
