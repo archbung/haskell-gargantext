@@ -1,3 +1,7 @@
+## Version 0.0.6.9.9.9.7.1 [RELEASE CANDIDATE 007]
+
+* [BACK][FIX][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
+
 ## Version 0.0.6.9.9.9.7 [RELEASE CANDIDATE 007]
 
 * [BACK][FIX][[API search HAL] On the HAL api, launching the exact same request several times can give different results (#327)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/327)
