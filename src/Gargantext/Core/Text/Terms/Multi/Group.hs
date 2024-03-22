@@ -16,7 +16,7 @@ group the tokens into extracted terms.
 module Gargantext.Core.Text.Terms.Multi.Group (group2)
   where
 
-import Gargantext.Core.Types
+import Gargantext.Core.Types ( POS, TokenTag(TokenTag) )
 import Gargantext.Prelude
 
 -- | FIXME p1 and p2 not really taken into account

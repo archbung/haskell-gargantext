@@ -14,13 +14,13 @@ Portability : POSIX
 module Gargantext.API.Node.Corpus.Export.Types where
 
 import Data.Aeson.TH (deriveJSON)
-import Data.Swagger
+import Data.Swagger ( ToSchema(..), genericDeclareNamedSchema, ToParamSchema(..) )
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import qualified Gargantext.API.Node.Document.Export.Types as DocumentExport
-import Gargantext.Core.Types
+import Gargantext.API.Node.Document.Export.Types qualified as DocumentExport
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Core.Types ( ListId, TODO )
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Servant
 
 

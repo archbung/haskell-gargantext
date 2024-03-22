@@ -11,25 +11,21 @@ Multi-terms are ngrams where n > 1.
 
 -}
 
-{-# LANGUAGE OverloadedStrings #-}
-
 module Gargantext.Core.Text.Terms.Multi (multiterms, multiterms_rake, tokenTagsWith, tokenTags, cleanTextForNLP)
   where
 
-import Control.Applicative
-import Data.Attoparsec.Text                               as DAT
-import Data.Text hiding (map, group, filter, concat)
+import Data.Attoparsec.Text as DAT ( digit, space, notChar, string )
 import Gargantext.Core (Lang(..), NLPServerConfig(..), PosTagAlgo(..))
 import Gargantext.Core.Text.Terms.Multi.Lang.En qualified as En
 import Gargantext.Core.Text.Terms.Multi.Lang.Fr qualified as Fr
-import Gargantext.Core.Text.Terms.Multi.PosTagging
-import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
+import Gargantext.Core.Text.Terms.Multi.PosTagging ( corenlp, tokens2tokensTags )
+import Gargantext.Core.Text.Terms.Multi.PosTagging.Types ( PosSentences(_sentences), Sentence(_sentenceTokens) )
 import Gargantext.Core.Text.Terms.Multi.RAKE (multiterms_rake)
-import Gargantext.Core.Types
+import Gargantext.Core.Types ( POS(NP), Terms(Terms), TermsWithCount, TokenTag(TokenTag, _my_token_pos) )
 import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Prelude
 import Gargantext.Utils.SpacyNLP qualified as SpacyNLP
-import Replace.Attoparsec.Text                            as RAT
+import Replace.Attoparsec.Text as RAT ( streamEdit )
 
 -------------------------------------------------------------------
 type NLP_API = Lang -> Text -> IO PosSentences

@@ -37,27 +37,27 @@ compute graph
 module Gargantext.Core.Text.Terms
   where
 
-import Control.Lens
+import Control.Lens ( (^.), view, over, makeLenses )
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Data.Traversable
 import GHC.Base (String)
-import Gargantext.Core
+import Gargantext.Core ( Lang, NLPServerConfig, PosTagAlgo )
 import Gargantext.Core.Text (sentences, HasText(..))
+import Gargantext.Core.Text.Ngrams (Ngrams(..), NgramsType(..), ngramsTerms)
 import Gargantext.Core.Text.Terms.Eleve (mainEleveWith, Tries, Token, buildTries, toToken)
 import Gargantext.Core.Text.Terms.Mono  (monoTerms)
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Text.Terms.Mono.Token.En (tokenize)
 import Gargantext.Core.Text.Terms.Multi (multiterms)
-import Gargantext.Core.Types
+import Gargantext.Core.Types ( TermsCount, POS, Terms(Terms), TermsWithCount )
 import Gargantext.Core.Utils (groupWithCounts)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Ngrams (insertNgrams)
 import Gargantext.Database.Query.Table.NgramsPostag (NgramsPostag(..), insertNgramsPostag, np_form, np_lem)
-import Gargantext.Database.Schema.Ngrams (Ngrams(..), NgramsType(..), ngramsTerms, text2ngrams, NgramsId)
+import Gargantext.Database.Schema.Ngrams (text2ngrams, NgramsId)
 import Gargantext.Prelude
 
 data TermType lang
@@ -103,8 +103,7 @@ withLang (Unsupervised {..}) ns = Unsupervised { _tt_model = m', .. }
                     $ fmap toToken
                     $ uniText
                     $ Text.intercalate " . "
-                    $ List.concat
-                    $ map hasText ns
+                    $ concatMap hasText ns
       just_m -> just_m
 withLang l _ = l
 
@@ -126,7 +125,11 @@ class ExtractNgramsT h
 ------------------------------------------------------------------------
 enrichedTerms :: Lang -> PosTagAlgo -> POS -> Terms -> NgramsPostag
 enrichedTerms l pa po (Terms ng1 ng2) =
-  NgramsPostag l pa po form lem
+  NgramsPostag { _np_lang = l
+               , _np_algo = pa
+               , _np_postag = po
+               , _np_form = form
+               , _np_lem = lem }
     where
       form = text2ngrams $ Text.intercalate " " ng1
       lem  = text2ngrams $ Text.intercalate " " $ Set.toList ng2
@@ -138,7 +141,7 @@ cleanNgrams s ng
       | otherwise                           = text2ngrams (Text.take s (ng ^. ngramsTerms))
 
 cleanExtractedNgrams :: Int -> ExtractedNgrams -> ExtractedNgrams
-cleanExtractedNgrams s (SimpleNgrams   ng) = SimpleNgrams $ (cleanNgrams s) ng
+cleanExtractedNgrams s (SimpleNgrams   ng) = SimpleNgrams $ cleanNgrams s ng
 cleanExtractedNgrams s (EnrichedNgrams ng) = EnrichedNgrams $ over np_form (cleanNgrams s)
                                                             $ over np_lem  (cleanNgrams s) ng
 
@@ -156,8 +159,7 @@ insertExtractedNgrams ngs = do
   m2 <- insertNgramsPostag (map unEnrichedNgrams e)
   --printDebug "terms" m2
 
-  let result = HashMap.union m1 m2
-  pure result
+  pure $ HashMap.union m1 m2
 
 isSimpleNgrams :: ExtractedNgrams -> Bool
 isSimpleNgrams (SimpleNgrams _) = True
@@ -189,10 +191,10 @@ type MinNgramSize = Int
 termsUnsupervised :: TermType Lang -> Text -> [TermsWithCount]
 termsUnsupervised (Unsupervised { _tt_model = Nothing }) = panicTrace "[termsUnsupervised] no model"
 termsUnsupervised (Unsupervised { _tt_model = Just _tt_model, .. }) =
-               map (\(t, cnt) -> (text2term _tt_lang t, cnt))
+               map (first (text2term _tt_lang))
              . groupWithCounts
              -- . List.nub
-             . (List.filter (\l' -> List.length l' >= _tt_windowSize))
+             . List.filter (\l' -> List.length l' >= _tt_windowSize)
              . List.concat
              . mainEleveWith _tt_model _tt_ngramsSize
              . uniText
@@ -200,19 +202,18 @@ termsUnsupervised _ = undefined
 
 
 newTries :: Int -> Text -> Tries Token ()
-newTries n t = buildTries n (fmap toToken $ uniText t)
+newTries n t = buildTries n (toToken <$> uniText t)
 
 -- | TODO removing long terms > 24
 uniText :: Text -> [[Text]]
-uniText = map (List.filter (not . isPunctuation))
-        . map tokenize
-        . sentences       -- TODO get sentences according to lang
-        . Text.toLower
+uniText = map (List.filter (not . isPunctuation) . tokenize)
+            . sentences       -- TODO get sentences according to lang
+            . Text.toLower
 
 text2term :: Lang -> [Text] -> Terms
 text2term _ [] = Terms [] Set.empty
 text2term lang txt = Terms txt (Set.fromList $ map (stem lang PorterAlgorithm) txt)
 
 isPunctuation :: Text -> Bool
-isPunctuation x = List.elem x $  (Text.pack . pure)
+isPunctuation x = List.elem x $  Text.pack . pure
                              <$> ("!?(),;.:" :: String)

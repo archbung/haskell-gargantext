@@ -9,14 +9,13 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Gargantext.Core.Text.List
   where
 
-import Control.Lens hiding (both) -- ((^.), view, over, set, (_1), (_2))
+import Control.Lens ( view, over ) -- ((^.), view, over, set, (_1), (_2))
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
@@ -27,26 +26,27 @@ import Data.Set qualified as Set
 import Data.Tuple.Extra (both)
 import Gargantext.API.Ngrams.Types (NgramsElement, NgramsTerm(..))
 import Gargantext.Core.NLP (HasNLPServer)
-import Gargantext.Core.NodeStory
+import Gargantext.Core.NodeStory.Types ( HasNodeStory )
 import Gargantext.Core.Text (size)
-import Gargantext.Core.Text.List.Group
+import Gargantext.Core.Text.List.Group ( toGroupedTree, setScoresWithMap )
 import Gargantext.Core.Text.List.Group.Prelude
 import Gargantext.Core.Text.List.Group.WithStem
-import Gargantext.Core.Text.List.Social
-import Gargantext.Core.Text.List.Social.Prelude
+import Gargantext.Core.Text.List.Social ( FlowSocialListWith, flowSocialList )
+import Gargantext.Core.Text.List.Social.Prelude ( FlowListScores, FlowCont(FlowCont), flc_scores )
 import Gargantext.Core.Text.Metrics (scored', Scored(..), scored_speExc, scored_genInc, normalizeGlobal, normalizeLocal, scored_terms)
-import Gargantext.Core.Types (ListType(..), MasterCorpusId, UserCorpusId, ContextId)
+import Gargantext.Core.Text.Ngrams (NgramsType(..), Ngrams(..))
 import Gargantext.Core.Types.Individu (User(..))
+import Gargantext.Core.Types.Main ( ListType(..) )
 import Gargantext.Data.HashMap.Strict.Utils qualified as HashMap
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, getContextsByNgramsOnlyUser)
 import Gargantext.Database.Action.Metrics.TFICF (getTficf_withSample)
+import Gargantext.Database.Admin.Types.Node ( MasterCorpusId, UserCorpusId, ContextId )
 import Gargantext.Database.Prelude (DBCmd)
-import Gargantext.Database.Query.Table.Ngrams (text2ngrams)
 import Gargantext.Database.Query.Table.NgramsPostag (selectLems)
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError())
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..), Ngrams(..))
+import Gargantext.Database.Schema.Ngrams (text2ngrams)
 import Gargantext.Prelude
 
 {-
@@ -81,8 +81,8 @@ buildNgramsLists user uCid mCid mfslw gp = do
   pure $ Map.unions $ [ngTerms] <> othersTerms
 
 
-data MapListSize = MapListSize { unMapListSize :: !Int }
-data MaxListSize = MaxListSize { unMaxListSize :: !Int }
+newtype MapListSize = MapListSize { unMapListSize :: Int }
+newtype MaxListSize = MaxListSize { unMaxListSize :: Int }
 
 buildNgramsOthersList :: ( HasNodeError err
                          , HasNLPServer env
@@ -103,7 +103,7 @@ buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize,
     <- flowSocialList mfslw user nt ( FlowCont HashMap.empty
                                                       $ HashMap.fromList
                                                       $ List.zip (HashMap.keys allTerms)
-                                                                 (List.cycle [mempty])
+                                                                 (repeat mempty)
                                     )
   let
     groupedWithList = toGroupedTree {- groupParams -} socialLists allTerms
@@ -113,29 +113,36 @@ buildNgramsOthersList user uCid mfslw _groupParams (nt, MapListSize mapListSize,
 
     (mapTerms, tailTerms') = HashMap.partition ((== Just MapTerm)  . viewListType) tailTerms
 
-    listSize = mapListSize - (List.length mapTerms)
+    listSize = mapListSize - List.length mapTerms
     (mapTerms', candiTerms) = both HashMap.fromList
                             $ List.splitAt listSize
                             $ List.take maxListSize
                             $ List.sortOn (Down . viewScore . snd)
                             $ HashMap.toList tailTerms'
-
-
-  pure $ Map.fromList [( nt, List.take maxListSize $ (toNgramsElement stopTerms)
-                          <> (toNgramsElement mapTerms )
-                          <> (toNgramsElement $ setListType (Just MapTerm      ) mapTerms' )
-                          <> (toNgramsElement $ setListType (Just CandidateTerm) candiTerms)
+    
+  pure $ Map.fromList [( nt, List.take maxListSize $ toNgramsElement stopTerms
+                          <> toNgramsElement mapTerms
+                          <> toNgramsElement (setListType (Just MapTerm      ) mapTerms')
+                          <> toNgramsElement (setListType (Just CandidateTerm) candiTerms)
                           )]
 
 
+-- | https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169#note_10049
+-- Stemming can be useful if you do not have any context: ok for full text search then.
+-- 
+-- In document, we have context so we can add grammar and linguistics
+-- rules to be more precise than the stemmatization, that is why the
+-- lemmatization is used here to group. Basically it will avoid
+-- grouping homonyms in list. In search usually you add more context
+-- to "control" the stemmatization approximation.
 getGroupParams :: ( HasNodeError err
                   , HasTreeError err
                   )
                => GroupParams -> HashSet Ngrams -> DBCmd err GroupParams
-getGroupParams gp@(GroupWithPosTag l nsc _m) ng = do
-  !hashMap <- HashMap.fromList <$> selectLems l nsc (HashSet.toList ng)
+getGroupParams gp@(GroupWithPosTag { .. }) ng = do
+  !hashMap <- HashMap.fromList <$> selectLems _gwl_lang _gwl_nlp_config (HashSet.toList ng)
   -- printDebug "hashMap" hashMap
-  pure $ over gwl_map (\x -> x <> hashMap) gp
+  pure $ over gwl_map (<> hashMap) gp
 getGroupParams gp _ = pure gp
 
 
@@ -167,8 +174,8 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
   !(socialLists :: FlowCont NgramsTerm FlowListScores)
     <- flowSocialList mfslw user nt ( FlowCont HashMap.empty
                                                       $ HashMap.fromList
-                                                      $ List.zip (HashMap.keys   allTerms)
-                                                                 (List.cycle     [mempty])
+                                                      $ List.zip (HashMap.keys allTerms)
+                                                                 (repeat mempty)
                                     )
   -- printDebug "[buildNgramsTermsList: Flow Social List / end]" nt
 
@@ -181,16 +188,16 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
 
   !groupParams' <- getGroupParams groupParams (HashSet.map (text2ngrams . unNgramsTerm) ngramsKeys)
 
-  -- printDebug "[buildNgramsTermsList: groupParams']" ("" :: Text)
-
   let
     !socialLists_Stemmed = addScoreStem groupParams' ngramsKeys socialLists
     !groupedWithList = toGroupedTree socialLists_Stemmed allTerms
     !(stopTerms, candidateTerms) = HashMap.partition ((== Just StopTerm) . viewListType)
-                                 $ HashMap.filter (\g -> (view gts'_score g) > 1)
+                                 $ HashMap.filter (\g -> view gts'_score g > 1)
                                  $ view flc_scores groupedWithList
 
     !(groupedMono, groupedMult)  = HashMap.partitionWithKey (\(NgramsTerm t) _v -> size t < 2) candidateTerms
+
+  -- void $ panicTrace $ "groupedWithList: " <> show groupedWithList
 
   -- printDebug "[buildNgramsTermsList] socialLists" socialLists
   -- printDebug "[buildNgramsTermsList] socialLists with scores" socialLists_Stemmed
@@ -269,8 +276,8 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
     !(monoScored, multScored) = HashMap.partitionWithKey (\(NgramsTerm t) _v -> size t < 2) groupedTreeScores_SpeGen
 
       -- filter with max score
-    partitionWithMaxScore = HashMap.partition (\g -> (view scored_genInc $ view gts'_score g)
-                                                   > (view scored_speExc $ view gts'_score g)
+    partitionWithMaxScore = HashMap.partition (\g -> view scored_genInc (view gts'_score g)
+                                                   > view scored_speExc (view gts'_score g)
                                               )
 
     !(monoScoredIncl, monoScoredExcl) = partitionWithMaxScore monoScored
@@ -285,25 +292,25 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
     !inclSize = 0.4  :: Double
     !exclSize = 1 - inclSize
 
-    splitAt'' max' n' = (both (HashMap.fromList)) . (List.splitAt (round $ n' * max'))
-    sortOn'   f       = (List.sortOn (Down . (view (gts'_score . f)) . snd)) . HashMap.toList
+    splitAt'' max' n' = both HashMap.fromList . List.splitAt (round $ n' * max')
+    sortOn'   f       = List.sortOn (Down . view (gts'_score . f) . snd) . HashMap.toList
 
     monoInc_size n = splitAt'' n $ monoSize * inclSize / 2
     multExc_size n = splitAt'' n $ multSize * exclSize / 2
 
 
-    !(mapMonoScoredInclHead, monoScoredInclTail) = monoInc_size mapSize $ (sortOn' scored_genInc) monoScoredIncl
-    !(mapMonoScoredExclHead, monoScoredExclTail) = monoInc_size mapSize $ (sortOn' scored_speExc) monoScoredExcl
+    !(mapMonoScoredInclHead, monoScoredInclTail) = monoInc_size mapSize $ sortOn' scored_genInc monoScoredIncl
+    !(mapMonoScoredExclHead, monoScoredExclTail) = monoInc_size mapSize $ sortOn' scored_speExc monoScoredExcl
 
-    !(mapMultScoredInclHead, multScoredInclTail) = multExc_size mapSize $ (sortOn' scored_genInc) multScoredIncl
-    !(mapMultScoredExclHead, multScoredExclTail) = multExc_size mapSize $ (sortOn' scored_speExc) multScoredExcl
+    !(mapMultScoredInclHead, multScoredInclTail) = multExc_size mapSize $ sortOn' scored_genInc multScoredIncl
+    !(mapMultScoredExclHead, multScoredExclTail) = multExc_size mapSize $ sortOn' scored_speExc multScoredExcl
 
 
-    !(canMonoScoredIncHead , _) = monoInc_size canSize $ (sortOn' scored_genInc) monoScoredInclTail
-    !(canMonoScoredExclHead, _) = monoInc_size canSize $ (sortOn' scored_speExc) monoScoredExclTail
+    !(canMonoScoredIncHead , _) = monoInc_size canSize $ sortOn' scored_genInc monoScoredInclTail
+    !(canMonoScoredExclHead, _) = monoInc_size canSize $ sortOn' scored_speExc monoScoredExclTail
 
-    !(canMulScoredInclHead, _)  = multExc_size canSize $ (sortOn' scored_genInc) multScoredInclTail
-    !(canMultScoredExclHead, _) = multExc_size canSize $ (sortOn' scored_speExc) multScoredExclTail
+    !(canMulScoredInclHead, _)  = multExc_size canSize $ sortOn' scored_genInc multScoredInclTail
+    !(canMultScoredExclHead, _) = multExc_size canSize $ sortOn' scored_speExc multScoredExclTail
 
 ------------------------------------------------------------
     -- Final Step building the Typed list

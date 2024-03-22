@@ -11,8 +11,6 @@ Portability : POSIX
 
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE ConstraintKinds         #-}
-{-# LANGUAGE InstanceSigs            #-}
 
 module Gargantext.Database.Action.Flow.List
     where
@@ -27,12 +25,11 @@ import Gargantext.API.Ngrams (saveNodeStory)
 import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core.NodeStory (HasNodeStory, a_history, a_state, a_version)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Types (HasValidationError(..), assertValid)
 import Gargantext.Core.Types.Main (ListType(CandidateTerm))
 import Gargantext.Database.Admin.Types.Node
-import Gargantext.Database.Query.Table.Ngrams qualified as TableNgrams
 import Gargantext.Database.Query.Table.NodeNgrams (NodeNgramsPoly(..), NodeNgramsW, listInsertDb,{- getCgramsId -})
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (toList)
 
 -- FLOW LIST
@@ -169,7 +166,7 @@ listInsert lId ngs = mapM_ (\(typeList, ngElmts)
 -- the repo, they will be ignored.
 putListNgrams :: (HasValidationError err, HasNodeStory env err m)
               => NodeId
-              -> TableNgrams.NgramsType
+              -> NgramsType
               -> [NgramsElement]
               -> m ()
 putListNgrams _ _ [] = pure ()
@@ -179,7 +176,7 @@ putListNgrams nodeId ngramsType nes = putListNgrams' nodeId ngramsType m
 
     putListNgrams' :: (HasValidationError err, HasNodeStory env err m)
                    => NodeId
-                   -> TableNgrams.NgramsType
+                   -> NgramsType
                    -> Map NgramsTerm NgramsRepoElement
                    -> m ()
     putListNgrams' listId ngramsType' ns = do

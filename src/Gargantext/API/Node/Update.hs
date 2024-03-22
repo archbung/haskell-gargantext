@@ -9,9 +9,8 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeOperators      #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Gargantext.API.Node.Update
       where
@@ -19,16 +18,17 @@ module Gargantext.API.Node.Update
 import Control.Lens (view)
 import Data.Aeson
 import Data.Set qualified as Set
-import Data.Swagger
+import Data.Swagger ( ToSchema )
 import Gargantext.API.Admin.EnvTypes (GargJob(..), Env)
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
 import Gargantext.API.Admin.Types (HasSettings)
-import Gargantext.API.Errors.Types
+import Gargantext.API.Errors.Types ( BackendInternalError )
 import Gargantext.API.Metrics qualified as Metrics
 import Gargantext.API.Ngrams.Types qualified as NgramsTypes
 import Gargantext.API.Prelude (GargM, simuLogs)
 import Gargantext.Core.Methods.Similarities (GraphMetric(..))
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.NodeStory.Types (HasNodeStory)
+import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Core.Types.Main (ListType(..))
 import Gargantext.Core.Viz.Graph.API (recomputeGraph)
 import Gargantext.Core.Viz.Graph.Tools (PartitionMethod(..), BridgenessMethod(..))
@@ -38,20 +38,19 @@ import Gargantext.Core.Viz.Phylo.API.Tools (flowPhyloAPI)
 import Gargantext.Database.Action.Flow (reIndexWith)
 import Gargantext.Database.Action.Flow.Pairing (pairing)
 import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContextScore)
-import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Hyperdata.Phylo ( HyperdataPhylo(HyperdataPhylo) )
+import Gargantext.Database.Admin.Types.Node ( NodeId, NodeType(NodeCorpus, NodeAnnuaire) )
 import Gargantext.Database.Query.Table.Node (defaultList, getNode)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
-import Gargantext.Database.Schema.Ngrams (NgramsType(NgramsTerms))
 import Gargantext.Database.Schema.Node (node_parent_id)
 import Gargantext.Prelude
+import Gargantext.System.Logging ( MonadLogger )
 import Gargantext.Utils.Aeson qualified as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
+import Gargantext.Utils.UTCTime (timeMeasured)
 import Servant
 import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
-import Gargantext.Utils.UTCTime (timeMeasured)
-import Gargantext.System.Logging
+import Test.QuickCheck.Arbitrary ( Arbitrary(arbitrary) )
 
 ------------------------------------------------------------------------
 type API = Summary " Update node according to NodeType params"

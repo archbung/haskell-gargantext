@@ -14,8 +14,8 @@ Portability : POSIX
 
 module Gargantext.Core.Flow.Types where
 
-import Control.Lens
-import Gargantext.Database.Admin.Types.Node
+import Control.Lens ( Lens' )
+import Gargantext.Database.Admin.Types.Node ( Node )
 import Gargantext.Database.Schema.Node (node_hash_id)
 import Gargantext.Prelude
 import Gargantext.Prelude.Crypto.Hash (Hash)

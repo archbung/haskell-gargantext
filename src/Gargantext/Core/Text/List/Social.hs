@@ -18,24 +18,23 @@ import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
-import Data.Pool
-import Data.Swagger
+import Data.Pool ( withResource )
+import Data.Swagger ( ToSchema(..), genericDeclareNamedSchema, defaultSchemaOptions )
 import Data.Text qualified as T
 import Data.Vector qualified as V
-import GHC.Generics
 import Gargantext.API.Ngrams.Types (NgramsTerm, NgramsPatch)
-import Gargantext.Core.NodeStory (getNodesArchiveHistory)
+import Gargantext.Core.NodeStory.DB ( getNodesArchiveHistory )
 import Gargantext.Core.Text.List.Social.Find (findListsId)
 import Gargantext.Core.Text.List.Social.Patch (addScorePatches)
 import Gargantext.Core.Text.List.Social.Prelude (FlowCont, FlowListScores)
+import Gargantext.Core.Text.Ngrams (NgramsType)
 import Gargantext.Core.Types.Individu (User)
 import Gargantext.Database.Admin.Types.Node (ListId)
 import Gargantext.Database.Prelude (DBCmd, connPool)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree (NodeMode(Private), HasTreeError)
-import Gargantext.Database.Schema.Ngrams (NgramsType)
 import Gargantext.Prelude
-import Test.QuickCheck
+import Test.QuickCheck ( Arbitrary(arbitrary), oneof, arbitraryBoundedEnum )
 import Web.Internal.HttpApiData (ToHttpApiData, FromHttpApiData, parseUrlPiece, toUrlPiece)
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------

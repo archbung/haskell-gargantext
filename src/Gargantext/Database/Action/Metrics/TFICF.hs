@@ -9,8 +9,6 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE QuasiQuotes       #-}
-
 module Gargantext.Database.Action.Metrics.TFICF
   where
 
@@ -20,11 +18,11 @@ import Data.Set qualified as Set
 import Gargantext.API.Ngrams.Types
 import Gargantext.Core
 import Gargantext.Core.Text.Metrics.TFICF
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getContextsByNgramsUser, {-getOccByNgramsOnlyFast,-} getOccByNgramsOnlyFast_withSample)
 import Gargantext.Database.Admin.Types.Node -- (ListId, CorpusId, NodeId)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.NodeContext (selectCountDocs)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
 
 {-

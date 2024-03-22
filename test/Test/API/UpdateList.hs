@@ -13,7 +13,7 @@ module Test.API.UpdateList (
   , pollUntilFinished
   ) where
 
-import Control.Lens ((^.), mapped, over, view)
+import Control.Lens ((^.), mapped, over)
 import Control.Monad.Fail (fail)
 import Data.Aeson.QQ
 import Data.Map.Strict qualified as Map
@@ -27,14 +27,13 @@ import Gargantext.API.Admin.Auth.Types (Token)
 import Gargantext.API.Ngrams qualified as APINgrams
 import Gargantext.API.Ngrams.List ( ngramsListFromCSVData )
 import Gargantext.API.Ngrams.Types ( MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTablePatch(..), NgramsTerm(..), Versioned(..), mSetToList, toNgramsPatch, ne_children, ne_ngrams, vc_data, _NgramsTable )
-import Gargantext.Core.NodeStory (hasNodeStory, nse_getter, HasNodeArchiveStoryImmediateSaver(..))
+import Gargantext.Core.Text.Ngrams
 import Gargantext.Core.Types ( CorpusId, ListId, ListType(..), NodeId, _NodeId )
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Action.User
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root
-import Gargantext.Database.Schema.Ngrams
 import Gargantext.Prelude hiding (get)
 import Network.Wai.Handler.Warp qualified as Wai
 import Paths_gargantext (getDataFileName)

@@ -24,6 +24,7 @@ import Gargantext.API.Ngrams (commitStatePatch, mSetFromList, setListNgrams, sav
 import Gargantext.API.Ngrams.Types (MSet(..), NgramsPatch(..), NgramsRepoElement(..), NgramsTerm(..), Versioned(..), mkNgramsTablePatch, nre_children, nre_list, nre_parent, nre_root)
 import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.Core.NodeStory
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Types.Individu
 import Gargantext.Core.Types (ListType(..), ListId, NodeId, UserId)
 import Gargantext.Database.Action.User (getUserId)
@@ -32,7 +33,6 @@ import Gargantext.Database.Prelude (runPGSQuery)
 import Gargantext.Database.Query.Table.Ngrams (selectNgramsId)
 import Gargantext.Database.Query.Table.Node
 import Gargantext.Database.Query.Tree.Root
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Database.Schema.Node (NodePoly(..))
 import Gargantext.Prelude
 import Test.Database.Types

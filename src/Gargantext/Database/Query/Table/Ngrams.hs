@@ -13,7 +13,6 @@ Portability : POSIX
 
 {-# LANGUAGE Arrows            #-}
 {-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
 
 module Gargantext.Database.Query.Table.Ngrams
   ( module Gargantext.Database.Schema.Ngrams
@@ -30,6 +29,7 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Database.PostgreSQL.Simple qualified as PGS
+import Gargantext.Core.Text.Ngrams (Ngrams, NgramsType)
 import Gargantext.Core.Types
 import Gargantext.Database.Prelude (runOpaQuery, formatPGSQuery, runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Join (leftJoin3)

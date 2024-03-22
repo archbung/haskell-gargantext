@@ -46,11 +46,11 @@ import Gargantext.Core.Text.Corpus.Parsers.JSON (parseJSONC, parseIstex)
 import Gargantext.Core.Text.Corpus.Parsers.RIS qualified as RIS
 import Gargantext.Core.Text.Corpus.Parsers.RIS.Presse (presseEnrich)
 import Gargantext.Core.Text.Corpus.Parsers.WOS qualified as WOS
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
-import Gargantext.Database.Query.Table.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (show, undefined)
 import Gargantext.Utils.Zip qualified as UZip
-import Protolude
+import Protolude ( show )
 import System.FilePath (takeExtension)
 ------------------------------------------------------------------------
 

@@ -51,7 +51,7 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
     where
 
 import Conduit
-import Control.Lens hiding (elements, Indexed)
+import Control.Lens ( (^.), to, view, over )
 import Data.Bifunctor qualified as B
 import Data.Conduit qualified as C
 import Data.Conduit.Internal (zipSources)
@@ -60,56 +60,57 @@ import Data.Conduit.List qualified as CList
 import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
-import Data.Proxy
 import Data.Set qualified as Set
 import Data.Text qualified as T
 import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Ngrams.Tools (getTermsWith)
-import Gargantext.Core (Lang(..), NLPServerConfig)
-import Gargantext.Core (withDefaultLanguage)
+import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms), Ngrams(_ngramsTerms))
+import Gargantext.Core (Lang(..), NLPServerConfig, withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.NodeStory.Types (HasNodeStory)
 import Gargantext.Core.Text.Corpus.API qualified as API
 import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat, FileType)
 import Gargantext.Core.Text.List (buildNgramsLists)
-import Gargantext.Core.Text.List.Group.WithStem ({-StopSize(..),-} GroupParams(..))
+import Gargantext.Core.Text.List.Group.WithStem (GroupParams(..))
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
 import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types (HasValidationError, TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
-import Gargantext.Core.Types.Main
+import Gargantext.Core.Types.Main ( CorpusName, ListType(MapTerm) )
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Database.Action.Flow.Extract ()  -- ExtractNgramsT instances
-import Gargantext.Database.Action.Flow.List
+import Gargantext.Database.Action.Flow.List ( flowList_DbRepo, toNodeNgramsW' )
+import Gargantext.Database.Action.Flow.Types ( do_api, DataOrigin(..), DataText(..), FlowCorpus )
 import Gargantext.Database.Action.Flow.Utils (docNgrams, documentIdWithNgrams, insertDocNgrams, insertDocs, mapNodeIdNgrams)
-import Gargantext.Database.Action.Flow.Types
 import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContextScore)
 import Gargantext.Database.Action.Search (searchDocInDatabase)
 import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact )
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataAnnuaire, HyperdataCorpus(_hc_lang) )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( ToHyperdataDocument(toHyperdataDocument) )
 import Gargantext.Database.Admin.Types.Node hiding (DEBUG) -- (HyperdataDocument(..), NodeType(..), NodeId, UserId, ListId, CorpusId, RootId, MasterCorpusId, MasterUserId)
 import Gargantext.Database.Prelude (DbCmd', DBCmd, hasConfig)
-import Gargantext.Database.Query.Table.ContextNodeNgrams2
-import Gargantext.Database.Query.Table.Ngrams
-import Gargantext.Database.Query.Table.Node
+import Gargantext.Database.Query.Table.ContextNodeNgrams2 ( ContextNodeNgrams2Poly(..), insertContextNodeNgrams2 )
+import Gargantext.Database.Query.Table.Node ( MkCorpus, insertDefaultNodeIfNotExists, getOrMkList, getNodeWith )
 import Gargantext.Database.Query.Table.Node.Document.Add qualified as Doc (add)
-import Gargantext.Database.Query.Table.Node.Document.Insert -- (insertDocuments, ReturnId(..), addUniqIdsDoc, addUniqIdsContact, ToDbData(..))
+import Gargantext.Database.Query.Table.Node.Document.Insert ( ToNode(toNode) ) -- (insertDocuments, ReturnId(..), addUniqIdsDoc, addUniqIdsContact, ToDbData(..))
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Query.Table.NodeNgrams (listInsertDb , getCgramsId)
 import Gargantext.Database.Query.Tree.Root (getOrMkRoot, getOrMk_RootWithCorpus)
+import Gargantext.Database.Schema.Ngrams ( indexNgrams, text2ngrams )
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude hiding (to)
 import Gargantext.Prelude.Config (GargConfig(..))
-import Gargantext.System.Logging
-import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
+import Gargantext.System.Logging ( logLocM, LogLevel(DEBUG), MonadLogger )
+import Gargantext.Utils.Jobs.Monad ( JobHandle, MonadJobStatus(..) )
 import PUBMED.Types qualified as PUBMED
 
 ------------------------------------------------------------------------
 -- Imports for upgrade function
-import Gargantext.Database.Query.Tree (HasTreeError)
+import Gargantext.Database.Query.Tree.Error ( HasTreeError )
 
 ------------------------------------------------------------------------
 
@@ -182,11 +183,11 @@ flowDataText u (DataOld ids) tt cid mfslw _ = do
   _ <- Doc.add userCorpusId (map nodeId2ContextId ids)
   flowCorpusUser (_tt_lang tt) u userCorpusId listId corpusType mfslw
   where
-    corpusType = (Nothing :: Maybe HyperdataCorpus)
+    corpusType = Nothing :: Maybe HyperdataCorpus
 flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle = do
   $(logLocM) DEBUG $ T.pack $ "Found " <> show mLen <> " new documents to process"
   for_ (mLen <&> fromInteger) (`addMoreSteps` jobHandle)
-  flowCorpus u (Right [cid]) tt mfslw (fromMaybe 0 mLen, (transPipe liftBase txtC)) jobHandle
+  flowCorpus u (Right [cid]) tt mfslw (fromMaybe 0 mLen, transPipe liftBase txtC) jobHandle
 
 ------------------------------------------------------------------------
 -- TODO use proxy
@@ -199,13 +200,13 @@ flowAnnuaire :: ( DbCmd' env err m
                 , MonadJobStatus m )
              => User
              -> Either CorpusName [CorpusId]
-             -> (TermType Lang)
+             -> TermType Lang
              -> FilePath
              -> JobHandle m
              -> m AnnuaireId
 flowAnnuaire u n l filePath jobHandle = do
   -- TODO Conduit for file
-  docs <- liftBase $ ((readFile_Annuaire filePath) :: IO [HyperdataContact])
+  docs <- liftBase $ (readFile_Annuaire filePath :: IO [HyperdataContact])
   flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (fromIntegral $ length docs, yieldMany docs) jobHandle
 
 ------------------------------------------------------------------------
@@ -362,10 +363,11 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
   _ <- reIndexWith userCorpusId listId NgramsTerms (Set.singleton MapTerm)
   _ <- updateContextScore      userCorpusId listId
   _ <- updateNgramsOccurrences userCorpusId listId
-  
+
   pure userCorpusId
 
 
+-- | This function is responsible for contructing terms.
 buildSocialList :: ( HasNodeError err
                    , HasValidationError err
                    , HasNLPServer env
@@ -389,8 +391,12 @@ buildSocialList l user userCorpusId listId ctype mfslw = do
   nlpServer <- view (nlpServerGet l)
   --let gp = (GroupParams l 2 3 (StopSize 3))
   -- Here the PosTagAlgo should be chosen according to the Lang
-  ngs  <- buildNgramsLists user userCorpusId masterCorpusId mfslw
-          $ GroupWithPosTag l nlpServer HashMap.empty
+  -- let gp = GroupParams { unGroupParams_lang = l
+  --                      , unGroupParams_len = 10
+  --                      , unGroupParams_limit = 10
+  --                      , unGroupParams_stopSize = StopSize 10 }
+  let gp = GroupWithPosTag l nlpServer HashMap.empty
+  ngs  <- buildNgramsLists user userCorpusId masterCorpusId mfslw gp
 
   -- printDebug "flowCorpusUser:ngs" ngs
 
@@ -425,7 +431,7 @@ insertMasterDocs ncs c lang hs  =  do
                       (extractNgramsT ncs $ withLang lang documentsWithId)
                       (map (B.first contextId2NodeId) documentsWithId)
 
-  lId      <- getOrMkList masterCorpusId masterUserId
+  lId <- getOrMkList masterCorpusId masterUserId
   -- _ <- saveDocNgramsWith lId mapNgramsDocs'
   _ <- saveDocNgramsWith lId mapNgramsDocs'
 
@@ -445,13 +451,13 @@ saveDocNgramsWith lId mapNgramsDocs' = do
 
   -- new
   mapCgramsId <- listInsertDb lId toNodeNgramsW'
-               $ map (first _ngramsTerms . second Map.keys)
+               $ map (bimap _ngramsTerms Map.keys)
                $ HashMap.toList mapNgramsDocs
 
   --printDebug "saveDocNgramsWith" mapCgramsId
   -- insertDocNgrams
-  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 <$> Just (nodeId2ContextId nId)
-                                            <*> (getCgramsId mapCgramsId ngrams_type (_ngramsTerms terms''))
+  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 (nodeId2ContextId nId)
+                                            <$> getCgramsId mapCgramsId ngrams_type (_ngramsTerms terms'')
                                             <*> Just (fromIntegral w :: Double)
                        | (terms'', mapNgramsTypes)      <- HashMap.toList mapNgramsDocs
                        , (ngrams_type, mapNodeIdWeight) <- Map.toList mapNgramsTypes
@@ -498,5 +504,5 @@ reIndexWith cId lId nt lts = do
                 $ map (docNgrams corpusLang nt ts) docs
 
   -- Saving the indexation in database
-  _ <- mapM (saveDocNgramsWith lId) ngramsByDoc
+  mapM_ (saveDocNgramsWith lId) ngramsByDoc
   pure ()

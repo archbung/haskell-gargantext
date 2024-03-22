@@ -14,14 +14,13 @@ module Gargantext.Core.Text.List.Social.Patch
 import Control.Lens hiding (cons)
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
-import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Patch.Class qualified as Patch (Replace(..))
 import Gargantext.API.Ngrams.Prelude (unMSet, patchMSet_toList)
-import Gargantext.API.Ngrams.Types
+import Gargantext.API.Ngrams.Types ( NgramsTerm, nre_children, nre_list, MSet, NgramsPatch(..) )
 import Gargantext.Core.Text.List.Social.Prelude
-import Gargantext.Core.Types (ListId)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Database.Admin.Types.Node ( ListId )
 import Gargantext.Prelude
 
 addScorePatches :: NgramsType -> [ListId]
@@ -40,7 +39,7 @@ addScorePatchesList :: NgramsType
 addScorePatchesList nt repo fl lid =
   foldl' addScorePatch fl patches
   where
-    patches = maybe [] (List.concat . (map HashMap.toList)) patches'
+    patches = maybe [] (concatMap HashMap.toList) patches'
 
     patches' = do
       lists      <- Map.lookup lid repo

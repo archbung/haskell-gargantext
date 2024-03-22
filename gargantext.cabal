@@ -100,9 +100,9 @@ library
       Gargantext.API
       Gargantext.API.Admin.Auth.Types
       Gargantext.API.Admin.EnvTypes
+      Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Settings
       Gargantext.API.Admin.Settings.CORS
-      Gargantext.API.Admin.Orchestrator.Types
       Gargantext.API.Admin.Types
       Gargantext.API.Auth.PolicyCheck
       Gargantext.API.Dev
@@ -141,18 +141,21 @@ library
       Gargantext.Core.Text.Corpus.API
       Gargantext.Core.Text.Corpus.API.Arxiv
       Gargantext.Core.Text.Corpus.API.EPO
-      Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.API.OpenAlex
-      Gargantext.Core.Text.Corpus.Query
+      Gargantext.Core.Text.Corpus.API.Pubmed
       Gargantext.Core.Text.Corpus.Parsers
       Gargantext.Core.Text.Corpus.Parsers.CSV
       Gargantext.Core.Text.Corpus.Parsers.Date
       Gargantext.Core.Text.Corpus.Parsers.Date.Parsec
+      Gargantext.Core.Text.Corpus.Query
+      Gargantext.Core.Text.List
+      Gargantext.Core.Text.List.Group.WithStem
       Gargantext.Core.Text.List.Formats.CSV
       Gargantext.Core.Text.Metrics
       Gargantext.Core.Text.Metrics.CharByChar
       Gargantext.Core.Text.Metrics.Count
       Gargantext.Core.Text.Metrics.TFICF
+      Gargantext.Core.Text.Ngrams
       Gargantext.Core.Text.Prepare
       Gargantext.Core.Text.Search
       Gargantext.Core.Text.Terms
@@ -170,8 +173,8 @@ library
       Gargantext.Core.Types
       Gargantext.Core.Types.Individu
       Gargantext.Core.Types.Main
-      Gargantext.Core.Types.Query
       Gargantext.Core.Types.Phylo
+      Gargantext.Core.Types.Query
       Gargantext.Core.Utils
       Gargantext.Core.Utils.Prefix
       Gargantext.Core.Viz.Graph
@@ -189,6 +192,7 @@ library
       Gargantext.Core.Viz.Types
       Gargantext.Database.Action.Flow
       Gargantext.Database.Action.Flow.Types
+      Gargantext.Database.Action.Metrics.TFICF
       Gargantext.Database.Action.Search
       Gargantext.Database.Action.User
       Gargantext.Database.Action.User.New
@@ -205,8 +209,8 @@ library
       Gargantext.Database.Query.Table.Node
       Gargantext.Database.Query.Table.Node.Error
       Gargantext.Database.Query.Table.Node.UpdateOpaleye
-      Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Query.Table.User
+      Gargantext.Database.Query.Tree.Root
       Gargantext.Database.Schema.Ngrams
       Gargantext.Database.Schema.Node
       Gargantext.Database.Schema.User
@@ -309,11 +313,9 @@ library
       Gargantext.Core.Text.Corpus.Parsers.Wikidata.Crawler
       Gargantext.Core.Text.Corpus.Parsers.Wikimedia
       Gargantext.Core.Text.Learn
-      Gargantext.Core.Text.List
       Gargantext.Core.Text.List.Group
       Gargantext.Core.Text.List.Group.Prelude
       Gargantext.Core.Text.List.Group.WithScores
-      Gargantext.Core.Text.List.Group.WithStem
       Gargantext.Core.Text.List.Learn
       Gargantext.Core.Text.List.Merge
       Gargantext.Core.Text.List.Social
@@ -365,7 +367,6 @@ library
       Gargantext.Database.Action.Metrics
       Gargantext.Database.Action.Metrics.Lists
       Gargantext.Database.Action.Metrics.NgramsByContext
-      Gargantext.Database.Action.Metrics.TFICF
       Gargantext.Database.Action.Node
       Gargantext.Database.Action.Share
       Gargantext.Database.Action.TSQuery

@@ -11,18 +11,17 @@ Portability : POSIX
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Gargantext.Core.Viz.Phylo.API.Tools
   where
 
-import Control.Lens hiding (Context)
+import Control.Lens (to, view)
 import Data.Aeson (Value, decodeFileStrict, encode, eitherDecodeFileStrict')
 import Data.ByteString.Lazy qualified as Lazy
 import Data.Map.Strict qualified as Map
-import Data.Proxy
 import Data.Set qualified as Set
 import Data.Text (pack)
 import Data.Time.Calendar (fromGregorian, diffGregorianDurationClip, cdMonths, diffDays, showGregorian)
@@ -30,31 +29,31 @@ import Data.Time.Clock.POSIX(posixSecondsToUTCTime)
 import Gargantext.API.Ngrams.Prelude (getTermList)
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core (withDefaultLanguage, Lang)
-import Gargantext.Core.NodeStory (HasNodeStory)
+import Gargantext.Core.NodeStory.Types (HasNodeStory)
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Text.Terms.WithList (Patterns, buildPatterns, termsInText)
-import Gargantext.Core.Types (Context, nodeId2ContextId)
 import Gargantext.Core.Types.Main (ListType(MapTerm))
 import Gargantext.Core.Viz.Phylo (TimeUnit(..), Date, Document(..), PhyloConfig(..), Phylo)
 import Gargantext.Core.Viz.Phylo.PhyloExport (toPhyloExport, dotToFile)
 import Gargantext.Core.Viz.Phylo.PhyloMaker  (toPhylo, toPhyloWithoutLink)
 import Gargantext.Core.Viz.Phylo.PhyloTools  ({-printIOMsg, printIOComment,-} setConfig)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataPhylo(..), HyperdataCorpus(..))
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataCorpus(..) )
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
-import Gargantext.Database.Admin.Types.Node (CorpusId, ContextId, PhyloId)
+import Gargantext.Database.Admin.Types.Hyperdata.Phylo ( HyperdataPhylo(..) )
+import Gargantext.Database.Admin.Types.Node (Context, CorpusId, ContextId, PhyloId, nodeId2ContextId)
 import Gargantext.Database.Prelude (DBCmd)
 import Gargantext.Database.Query.Table.Node (defaultList, getNodeWith)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
-import Gargantext.Database.Schema.Context
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Context ( ContextPoly(_context_hyperdata, _context_id) )
+import Gargantext.Database.Schema.Node ( NodePoly(_node_hyperdata), node_hyperdata )
 import Gargantext.Prelude hiding (to)
-import Gargantext.System.Logging
+import Gargantext.System.Logging ( MonadLogger, LogLevel(DEBUG), logLocM )
+import Gargantext.Utils.UTCTime (timeMeasured)
 import Prelude qualified
 import System.FilePath ((</>))
 import System.IO.Temp (withTempDirectory)
 import System.Process qualified as Shell
-import Gargantext.Utils.UTCTime (timeMeasured)
 
 --------------------------------------------------------------------
 getPhyloData :: HasNodeError err

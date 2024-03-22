@@ -11,39 +11,40 @@ Portability : POSIX
 
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
-{-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Gargantext.Core.Viz.Graph.Tools
   where
 
-import Data.Aeson
+import Data.Aeson ( ToJSON, FromJSON )
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet qualified as HashSet
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import Data.Swagger hiding (items)
+import Data.Swagger ( ToSchema )
 import Data.Text qualified as Text
 import Data.Vector.Storable qualified as Vec
 import Gargantext.API.Ngrams.Types (NgramsTerm(..))
 import Gargantext.Core.Methods.Similarities (Similarity(..), measure)
-import Gargantext.Core.Statistics
+import Gargantext.Core.Statistics ( pcaReduceTo, Dimension(Dimension) )
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
 import Gargantext.Core.Viz.Graph.Bridgeness (bridgeness, Bridgeness(..), Partitions, nodeId2comId, {-recursiveClustering,-} recursiveClustering', setNodes2clusterNodes)
 import Gargantext.Core.Viz.Graph.Index (createIndices, toIndex, map2mat, mat2map, Index, MatrixShape(..))
 import Gargantext.Core.Viz.Graph.Tools.IGraph (mkGraphUfromEdges, spinglass, spinglass')
 import Gargantext.Core.Viz.Graph.Tools.Infomap (infomap)
 import Gargantext.Core.Viz.Graph.Types (Attributes(..), Edge(..), Graph(..), MultiPartite(..), Node(..), Partite(..), Strength(..))
 import Gargantext.Core.Viz.Graph.Utils (edgesFilter, nodesFilter)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude
 import Graph.BAC.ProxemyOptim qualified as BAC
 import Graph.Types (ClusterNode)
 import IGraph qualified as Igraph
 import IGraph.Algorithms.Layout qualified as Layout
-import IGraph.Random -- (Gen(..))
+import IGraph.Random ( Gen ) -- (Gen(..))
 import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
+import Test.QuickCheck.Arbitrary ( Arbitrary(arbitrary) )
 
 data PartitionMethod = Spinglass | Confluence | Infomap
     deriving (Generic, Eq, Ord, Enum, Bounded, Show)

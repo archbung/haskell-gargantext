@@ -27,7 +27,9 @@ import Gargantext.API.Node.Corpus.Export.Types ( Corpus(..) )
 import Gargantext.API.Node.Document.Export.Types qualified as DocumentExport
 import Gargantext.API.Prelude (GargNoServer)
 import Gargantext.Core.NodeStory.Types ( NodeListStory )
-import Gargantext.Core.Types
+import Gargantext.Core.Text.Ngrams (NgramsType(..))
+import Gargantext.Core.Types.Main ( ListType(MapTerm) )
+import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Action.Metrics.NgramsByContext (getNgramsByContextOnlyUser)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
@@ -37,7 +39,6 @@ import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select (selectNodesWithUsername)
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Schema.Context (_context_id)
-import Gargantext.Database.Schema.Ngrams (NgramsType(..))
 import Gargantext.Prelude hiding (hash)
 import Gargantext.Prelude.Crypto.Hash (hash)
 import Servant (Headers, Header, addHeader)

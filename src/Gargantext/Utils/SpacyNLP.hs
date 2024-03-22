@@ -13,7 +13,6 @@ Server to be used: https://gitlab.iscpif.fr/gargantext/spacy-server
 
 -}
 
-{-# LANGUAGE TemplateHaskell   #-}
 
 module Gargantext.Utils.SpacyNLP (
     module Gargantext.Utils.SpacyNLP.Types
@@ -24,9 +23,8 @@ module Gargantext.Utils.SpacyNLP (
   ) where
 
 import Data.Aeson (encode)
-import Data.Text hiding (map, group, filter, concat, zip)
 import Gargantext.Core (Lang(..))
-import Gargantext.Core.Text.Terms.Multi.PosTagging.Types
+import Gargantext.Core.Text.Terms.Multi.PosTagging.Types ( PosSentences(PosSentences), Sentence(Sentence), Token(Token) )
 import Gargantext.Prelude
 import Network.HTTP.Simple (parseRequest, httpJSON, setRequestBodyLBS, getResponseBody, Response)
 import Network.URI (URI(..))
@@ -42,22 +40,22 @@ spacyRequest uri txt = do
 
 ----------------------------------------------------------------
 spacyTagsToToken :: SpacyTags -> Token
-spacyTagsToToken st = Token (_spacyTags_index st)
-                   (_spacyTags_normalized st)
-                   (_spacyTags_text st)
-                   (_spacyTags_lemma st)
-                   (_spacyTags_head_index st)
-                   (_spacyTags_char_offset st)
-                   (Just $ _spacyTags_pos st)
-                   (Just $ _spacyTags_ent_type st)
-                   (Just $ _spacyTags_prefix st)
-                   (Just $ _spacyTags_suffix st)
+spacyTagsToToken st =
+  Token (_spacyTags_index st)
+        (_spacyTags_normalized st)
+        (_spacyTags_text st)
+        (_spacyTags_lemma st)
+        (_spacyTags_head_index st)
+        (_spacyTags_char_offset st)
+        (Just $ _spacyTags_pos st)
+        (Just $ _spacyTags_ent_type st)
+        (Just $ _spacyTags_prefix st)
+        (Just $ _spacyTags_suffix st)
 
 spacyDataToPosSentences :: SpacyData -> PosSentences
 spacyDataToPosSentences (SpacyData ds) = PosSentences
-   $  map (\(i, ts) -> Sentence i ts)
-   $ zip [1..]
-   $ map (\(SpacyText _ tags)-> map spacyTagsToToken tags) ds
+   $ zipWith Sentence [1..]
+                      (map (\(SpacyText _ tags)-> map spacyTagsToToken tags) ds)
 
 -----------------------------------------------------------------
 

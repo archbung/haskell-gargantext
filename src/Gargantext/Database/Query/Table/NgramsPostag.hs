@@ -24,11 +24,12 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core
-import Gargantext.Core.Types
+import Gargantext.Core.Text.Ngrams (Ngrams, ngramsSize, ngramsTerms)
+import Gargantext.Core.Types ( POS )
 import Gargantext.Database.Prelude (runPGSQuery, runPGSQuery_, DBCmd)
-import Gargantext.Database.Query.Table.Ngrams
+import Gargantext.Database.Query.Table.Ngrams ( NgramsId, insertNgrams )
 import Gargantext.Database.Schema.Prelude
-import Gargantext.Database.Types
+import Gargantext.Database.Types ( Indexed(Indexed) )
 import Gargantext.Prelude
 
 data NgramsPostag = NgramsPostag { _np_lang   :: !Lang
@@ -87,7 +88,7 @@ insertNgramsPostag' :: [NgramsPostagInsert] -> DBCmd err [Indexed Text Int]
 insertNgramsPostag' ns = runPGSQuery queryInsertNgramsPostag (PGS.Only $ Values fields ns)
   where
 
-    fields = map (\t -> QualifiedIdentifier Nothing t) $ snd fields_name
+    fields = map (QualifiedIdentifier Nothing) $ snd fields_name
 
     fields_name :: ( [Text], [Text])
     fields_name = ( ["lang_id", "algo_id", "postag", "form", "form_n", "lem" , "lem_n"]
@@ -155,7 +156,7 @@ SELECT terms,id FROM ins_form_ret
 selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> DBCmd err [(Form, Lem)]
 selectLems l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems (PGS.Only $ Values fields datas)
   where
-    fields = map (\t -> QualifiedIdentifier Nothing t) ["int4","int4","text", "int4"]
+    fields = map (QualifiedIdentifier Nothing) ["int4","int4","text", "int4"]
     datas  = map (\d -> [toField $ toDBid l, toField $ toDBid server] <> toRow d) ns
 
 ----------------------

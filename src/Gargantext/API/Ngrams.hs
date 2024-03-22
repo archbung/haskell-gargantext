@@ -19,11 +19,10 @@ add get
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
 {-# LANGUAGE ConstraintKinds   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators     #-}
-{-# LANGUAGE TypeFamilies      #-}
-
 {-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 
 
 module Gargantext.API.Ngrams
@@ -106,13 +105,13 @@ import Gargantext.API.Ngrams.Tools (getNodeStory)
 import Gargantext.API.Ngrams.Types
 import Gargantext.API.Prelude ( GargM )
 import Gargantext.Core.NodeStory (ArchiveList, HasNodeStory, HasNodeArchiveStoryImmediateSaver(..), HasNodeStoryImmediateSaver(..), NgramsStatePatch', a_history, a_state, a_version, currentVersion)
+import Gargantext.Core.Text.Ngrams (Ngrams, NgramsType)
 import Gargantext.Core.Types (ListType(..), NodeId, ListId, DocId, TODO, assertValid, HasValidationError, ContextId)
 import Gargantext.Core.Types.Query (Limit(..), Offset(..), MinSize(..), MaxSize(..))
 import Gargantext.Database.Action.Metrics.NgramsByContext (getOccByNgramsOnlyFast)
 import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Node (NodeType(..))
-import Gargantext.Database.Query.Table.Ngrams ( text2ngrams, Ngrams, insertNgrams, selectNgramsByDoc )
-import Gargantext.Database.Schema.Ngrams qualified as TableNgrams
+import Gargantext.Database.Query.Table.Ngrams ( text2ngrams, insertNgrams, selectNgramsByDoc )
 import Gargantext.Database.Query.Table.Node (getNode)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.Select ( selectNodesWithUsername )
@@ -179,7 +178,7 @@ listTypeConflictResolution :: ListType -> ListType -> ListType
 listTypeConflictResolution _ _ = undefined -- TODO Use Map User ListType
 
 
-ngramsStatePatchConflictResolution :: TableNgrams.NgramsType
+ngramsStatePatchConflictResolution :: NgramsType
                                    -> NgramsTerm
                                    -> ConflictResolutionNgramsPatch
 ngramsStatePatchConflictResolution _ngramsType _ngramsTerm
@@ -234,7 +233,7 @@ addListNgrams listId ngramsType nes = do
 -- UNSAFE
 setListNgrams :: HasNodeStory env err m
               => NodeId
-              -> TableNgrams.NgramsType
+              -> NgramsType
               -> Map NgramsTerm NgramsRepoElement
               -> m ()
 setListNgrams listId ngramsType ns = do
@@ -357,7 +356,7 @@ commitStatePatch listId (Versioned _p_version p) = do
 -- This is a special case of tableNgramsPut where the input patch is empty.
 tableNgramsPull :: HasNodeStory env err m
                 => ListId
-                -> TableNgrams.NgramsType
+                -> NgramsType
                 -> Version
                 -> m (Versioned NgramsTablePatch)
 tableNgramsPull listId ngramsType p_version = do
@@ -487,7 +486,7 @@ tableNgramsPostChartsAsync utn jobHandle = do
 
 getNgramsTableMap :: HasNodeStory env err m
                   => NodeId
-                  -> TableNgrams.NgramsType
+                  -> NgramsType
                   -> m (Versioned NgramsTableMap)
 getNgramsTableMap nodeId ngramsType = do
   a <- getNodeStory nodeId
@@ -498,7 +497,7 @@ getNgramsTableMap nodeId ngramsType = do
 dumpJsonTableMap :: HasNodeStory env err m
                  => Text
                  -> NodeId
-                 -> TableNgrams.NgramsType
+                 -> NgramsType
                  -> m ()
 dumpJsonTableMap fpath nodeId ngramsType = do
   m <- getNgramsTableMap nodeId ngramsType
@@ -617,7 +616,7 @@ getNgramsTable' :: forall env err m.
                    , HasNodeError err )
                 => NodeId
                 -> ListId
-                -> TableNgrams.NgramsType
+                -> NgramsType
                 -> m (Versioned (Map.Map NgramsTerm NgramsElement))
 getNgramsTable' nId listId ngramsType = do
   tableMap <- getNgramsTableMap listId ngramsType
@@ -631,7 +630,7 @@ setNgramsTableScores :: forall env err m t.
                         , HasNodeError err )
                      => NodeId
                      -> ListId
-                     -> TableNgrams.NgramsType
+                     -> NgramsType
                      -> t
                      -> m t
 setNgramsTableScores nId listId ngramsType table = do
@@ -821,7 +820,7 @@ apiNgramsAsync _dId =
 -- * listNgramsChangedSince: good precision, good bandwidth, bad computation.
 -- * tableNgramsPull: good precision, good bandwidth (if you use the received data!), bad computation.
 listNgramsChangedSince :: HasNodeStory env err m
-                       => ListId -> TableNgrams.NgramsType -> Version -> m (Versioned Bool)
+                       => ListId -> NgramsType -> Version -> m (Versioned Bool)
 listNgramsChangedSince listId ngramsType version
   | version < 0 =
       Versioned <$> currentVersion listId <*> pure True
