@@ -23,7 +23,7 @@ import Data.Swagger ( ToSchema(..), genericDeclareNamedSchema, defaultSchemaOpti
 import Data.Text qualified as T
 import Data.Vector qualified as V
 import Gargantext.API.Ngrams.Types (NgramsTerm, NgramsPatch)
-import Gargantext.Core.NodeStory (getNodesArchiveHistory)
+import Gargantext.Core.NodeStory.DB ( getNodesArchiveHistory )
 import Gargantext.Core.Text.List.Social.Find (findListsId)
 import Gargantext.Core.Text.List.Social.Patch (addScorePatches)
 import Gargantext.Core.Text.List.Social.Prelude (FlowCont, FlowListScores)

@@ -88,7 +88,7 @@ insertNgramsPostag' :: [NgramsPostagInsert] -> DBCmd err [Indexed Text Int]
 insertNgramsPostag' ns = runPGSQuery queryInsertNgramsPostag (PGS.Only $ Values fields ns)
   where
 
-    fields = map (\t -> QualifiedIdentifier Nothing t) $ snd fields_name
+    fields = map (QualifiedIdentifier Nothing) $ snd fields_name
 
     fields_name :: ( [Text], [Text])
     fields_name = ( ["lang_id", "algo_id", "postag", "form", "form_n", "lem" , "lem_n"]

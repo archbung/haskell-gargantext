@@ -139,8 +139,8 @@ getGroupParams :: ( HasNodeError err
                   , HasTreeError err
                   )
                => GroupParams -> HashSet Ngrams -> DBCmd err GroupParams
-getGroupParams gp@(GroupWithPosTag l nsc _m) ng = do
-  !hashMap <- HashMap.fromList <$> selectLems l nsc (HashSet.toList ng)
+getGroupParams gp@(GroupWithPosTag { .. }) ng = do
+  !hashMap <- HashMap.fromList <$> selectLems _gwl_lang _gwl_nlp_config (HashSet.toList ng)
   -- printDebug "hashMap" hashMap
   pure $ over gwl_map (<> hashMap) gp
 getGroupParams gp _ = pure gp
@@ -174,7 +174,7 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
   !(socialLists :: FlowCont NgramsTerm FlowListScores)
     <- flowSocialList mfslw user nt ( FlowCont HashMap.empty
                                                       $ HashMap.fromList
-                                                      $ List.zip (HashMap.keys   allTerms)
+                                                      $ List.zip (HashMap.keys allTerms)
                                                                  (repeat mempty)
                                     )
   -- printDebug "[buildNgramsTermsList: Flow Social List / end]" nt
@@ -187,8 +187,6 @@ buildNgramsTermsList user uCid mCid mfslw groupParams (nt, MapListSize mapListSi
   -- printDebug "[buildNgramsTermsList: ngramsKeys]" (HashSet.size ngramsKeys)
 
   !groupParams' <- getGroupParams groupParams (HashSet.map (text2ngrams . unNgramsTerm) ngramsKeys)
-
-  -- printDebug "[buildNgramsTermsList: groupParams']" ("" :: Text)
 
   let
     !socialLists_Stemmed = addScoreStem groupParams' ngramsKeys socialLists

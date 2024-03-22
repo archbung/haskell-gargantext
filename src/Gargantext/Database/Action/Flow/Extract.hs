@@ -20,7 +20,7 @@ module Gargantext.Database.Action.Flow.Extract
 import Control.Lens ((^.), _Just, view)
 import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict qualified as DM
-import Gargantext.Core (Lang, NLPServerConfig, PosTagAlgo(CoreNLP))
+import Gargantext.Core (Lang, NLPServerConfig(server))
 import Gargantext.Core.Text (HasText(..))
 import Gargantext.Core.Text.Corpus.Parsers (splitOn)
 import Gargantext.Core.Text.Ngrams (NgramsType(..))
@@ -77,7 +77,7 @@ instance ExtractNgramsT HyperdataDocument
                          $ maybe ["Nothing"] (splitOn Authors (doc^. hd_bdd))
                          $ doc ^. hd_authors
 
-          termsWithCounts' <- map (first (enrichedTerms (lang ^. tt_lang) CoreNLP NP)) . concat <$>
+          termsWithCounts' <- map (first (enrichedTerms (lang ^. tt_lang) (server ncs) NP)) . concat <$>
                                   liftBase (extractTerms ncs lang $ hasText doc)
 
           pure $ HashMap.fromList

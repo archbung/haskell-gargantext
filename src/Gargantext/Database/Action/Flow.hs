@@ -367,6 +367,7 @@ flowCorpusUser l user userCorpusId listId ctype mfslw = do
   pure userCorpusId
 
 
+-- | This function is responsible for contructing terms.
 buildSocialList :: ( HasNodeError err
                    , HasValidationError err
                    , HasNLPServer env
@@ -430,7 +431,7 @@ insertMasterDocs ncs c lang hs  =  do
                       (extractNgramsT ncs $ withLang lang documentsWithId)
                       (map (B.first contextId2NodeId) documentsWithId)
 
-  lId      <- getOrMkList masterCorpusId masterUserId
+  lId <- getOrMkList masterCorpusId masterUserId
   -- _ <- saveDocNgramsWith lId mapNgramsDocs'
   _ <- saveDocNgramsWith lId mapNgramsDocs'
 
@@ -455,8 +456,8 @@ saveDocNgramsWith lId mapNgramsDocs' = do
 
   --printDebug "saveDocNgramsWith" mapCgramsId
   -- insertDocNgrams
-  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 <$> Just (nodeId2ContextId nId)
-                                            <*> getCgramsId mapCgramsId ngrams_type (_ngramsTerms terms'')
+  let ngrams2insert =  catMaybes [ ContextNodeNgrams2 (nodeId2ContextId nId)
+                                            <$> getCgramsId mapCgramsId ngrams_type (_ngramsTerms terms'')
                                             <*> Just (fromIntegral w :: Double)
                        | (terms'', mapNgramsTypes)      <- HashMap.toList mapNgramsDocs
                        , (ngrams_type, mapNodeIdWeight) <- Map.toList mapNgramsTypes

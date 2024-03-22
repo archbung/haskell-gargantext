@@ -44,7 +44,7 @@ addScoreStem groupParams ngrams fl = foldl' addScorePatch fl
 ------------------------------------------------------------------------
 -- | Main Types
 newtype StopSize = StopSize {unStopSize :: Int}
-  deriving (Eq)
+  deriving (Eq, Show)
 
 -- | TODO: group with 2 terms only can be
 -- discussed. Main purpose of this is offering
@@ -61,7 +61,7 @@ data GroupParams = GroupParams { unGroupParams_lang     :: !Lang
                                    , _gwl_nlp_config :: !NLPServerConfig
                                    , _gwl_map        :: !(HashMap Form Lem)
                                    }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 ------------------------------------------------------------------------
 groupWith :: GroupParams
