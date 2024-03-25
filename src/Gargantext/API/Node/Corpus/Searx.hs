@@ -35,7 +35,6 @@ import Gargantext.Core.Utils.Prefix (unPrefix)
 import Gargantext.Database.Action.Flow (addDocumentsToHyperCorpus) --, DataText(..))
 import Gargantext.Database.Action.Flow.List (flowList_DbRepo)
 import Gargantext.Database.Action.User (getUserId)
-import Gargantext.Database.Admin.Config (userMaster)
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Hyperdata.Document (HyperdataDocument(..))
 import Gargantext.Database.Admin.Types.Node (CorpusId, ListId, NodeType(NodeTexts))
@@ -43,7 +42,7 @@ import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getOrMkList, insertDefaultNodeIfNotExists)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Tree.Error (HasTreeError)
-import Gargantext.Database.Query.Tree.Root (getOrMk_RootWithCorpus)
+import Gargantext.Database.Query.Tree.Root (getOrMkRootWithCorpus, MkCorpusUser (MkCorpusUserMaster))
 import Gargantext.Prelude hiding (All)
 import Gargantext.Prelude.Config
 import Gargantext.Utils.Jobs (JobHandle, MonadJobStatus(..))
@@ -148,7 +147,7 @@ insertSearxResponse user cId listId l (Right (SearxResponse { _srs_results })) =
   let mCorpus = Nothing :: Maybe HyperdataCorpus
   void $ addDocumentsToHyperCorpus server mCorpus (Multi l) cId docs'
   (_masterUserId, _masterRootId, masterCorpusId)
-    <- getOrMk_RootWithCorpus (UserName userMaster) (Left "") mCorpus
+    <- getOrMkRootWithCorpus MkCorpusUserMaster mCorpus
   let gp = GroupWithPosTag l server HashMap.empty
     -- gp = case l of
     --   FR -> GroupWithPosTag l Spacy HashMap.empty

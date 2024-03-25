@@ -3,6 +3,7 @@
 
 module Test.API.Setup where
 
+-- import Gargantext.Prelude (printDebug)
 import Control.Lens
 import Control.Monad.Reader
 import Gargantext.API (makeApp)
@@ -21,24 +22,24 @@ import Gargantext.Database.Admin.Trigger.Init
 import Gargantext.Database.Admin.Types.Hyperdata
 import Gargantext.Database.Prelude
 import Gargantext.Database.Query.Table.Node (getOrMkList)
--- import Gargantext.Prelude (printDebug)
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(..))
 import Gargantext.Prelude.Config
+import Gargantext.Prelude.Mail qualified as Mail
+import Gargantext.Prelude.NLP qualified as NLP
 import Gargantext.System.Logging
+import Gargantext.Utils.Jobs qualified as Jobs
+import Gargantext.Utils.Jobs.Monad qualified as Jobs
+import Gargantext.Utils.Jobs.Queue qualified as Jobs
+import Gargantext.Utils.Jobs.Settings qualified as Jobs
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.Wai (Application)
+import Network.Wai.Handler.Warp qualified as Warp
 import Prelude
 import Servant.Auth.Client ()
 import Servant.Client
+import Servant.Job.Async qualified as ServantAsync
 import Test.Database.Setup (withTestDB, fakeIniPath, testEnvToPgConnectionInfo)
 import Test.Database.Types
-import qualified Gargantext.Prelude.Mail as Mail
-import qualified Gargantext.Prelude.NLP as NLP
-import qualified Gargantext.Utils.Jobs as Jobs
-import qualified Gargantext.Utils.Jobs.Monad as Jobs
-import qualified Gargantext.Utils.Jobs.Queue as Jobs
-import qualified Gargantext.Utils.Jobs.Settings as Jobs
-import qualified Network.Wai.Handler.Warp         as Warp
-import qualified Servant.Job.Async as ServantAsync
 
 
 newTestEnv :: TestEnv -> Logger (GargM Env BackendInternalError) -> Warp.Port -> IO Env
@@ -97,9 +98,7 @@ setupEnvironment env = flip runReaderT env $ runTestMonad $ do
   void $ initFirstTriggers "secret_key"
   void $ new_user $ mkNewUser (userMaster <> "@cnrs.com") (GargPassword "secret_key")
   (masterUserId, _masterRootId, masterCorpusId)
-              <- getOrMk_RootWithCorpus (UserName userMaster)
-                                        (Left corpusMasterName)
-                                        (Nothing :: Maybe HyperdataCorpus)
+              <- getOrMkRootWithCorpus MkCorpusUserMaster (Nothing :: Maybe HyperdataCorpus)
   masterListId <- getOrMkList masterCorpusId masterUserId
   -- printDebug "[setupEnvironment] masterListId: " masterListId
   void $ initLastTriggers masterListId

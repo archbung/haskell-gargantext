@@ -15,22 +15,22 @@ Import a corpus binary.
 
 module Main where
 
-import Data.Either
-import qualified Data.Text as Text
-
-import Gargantext.API.Dev (withDevEnv, runCmdGargDev)
+import Data.Text qualified as Text
 import Gargantext.API.Admin.EnvTypes (DevEnv(..), DevJobHandle(..))
-import Gargantext.API.Errors.Types
+import Gargantext.API.Dev (withDevEnv, runCmdGargDev)
+import Gargantext.API.Errors.Types ( BackendInternalError )
 import Gargantext.API.Node () -- instances
 import Gargantext.Core (Lang(..))
+import Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..))
 import Gargantext.Core.Types.Individu (User(..))
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Database.Action.Flow (flowCorpusFile, flowAnnuaire, TermType(..))
 import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Node (CorpusId)
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(MkCorpusUserNormalCorpusName))
 import Gargantext.Prelude
-import Gargantext.Core.Text.Corpus.Parsers (FileFormat(..), FileType(..))
-import Gargantext.Utils.Jobs (MonadJobStatus, JobHandle)
+import Gargantext.Utils.Jobs.Monad ( MonadJobStatus, JobHandle )
+
 
 main :: IO ()
 main = do
@@ -46,13 +46,14 @@ main = do
       Nothing -> panicTrace $ "Cannot read limit: " <> (Text.pack limit)
       Just l  -> l
     corpus :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
-    corpus = flowCorpusFile (UserName $ cs user) (Left (cs name :: Text)) limit' tt  format Plain corpusPath Nothing DevJobHandle
+    mkCorpusUser = MkCorpusUserNormalCorpusName (UserName $ cs user) (cs name :: Text)
+    corpus = flowCorpusFile mkCorpusUser limit' tt  format Plain corpusPath Nothing DevJobHandle
 
     corpusCsvHal :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
-    corpusCsvHal = flowCorpusFile (UserName $ cs user) (Left (cs name :: Text)) limit' tt CsvHal Plain corpusPath Nothing DevJobHandle
+    corpusCsvHal = flowCorpusFile mkCorpusUser limit' tt CsvHal Plain corpusPath Nothing DevJobHandle
 
     annuaire :: forall m. (FlowCmdM DevEnv BackendInternalError m, MonadJobStatus m, JobHandle m ~ DevJobHandle) => m CorpusId
-    annuaire = flowAnnuaire (UserName $ cs user) (Left "Annuaire") (Multi EN) corpusPath DevJobHandle
+    annuaire = flowAnnuaire (MkCorpusUserNormalCorpusName (UserName $ cs user) "Annuaire") (Multi EN) corpusPath DevJobHandle
 
   {-
   let debatCorpus :: forall m. FlowCmdM DevEnv BackendInternalError m => m CorpusId
