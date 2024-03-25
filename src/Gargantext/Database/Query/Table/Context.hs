@@ -12,22 +12,20 @@ Portability : POSIX
 
 {-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 
 module Gargantext.Database.Query.Table.Context
   where
 
 import Control.Arrow (returnA)
-import Gargantext.Core
+import Gargantext.Core ( HasDBid(toDBid) )
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Admin.Types.Hyperdata.Any ( HyperdataAny )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, HyperdataDocumentV3 )
 import Gargantext.Database.Prelude (DBCmd, JSONB, runOpaQuery)
 import Gargantext.Database.Query.Filter (limit', offset')
-import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Query.Table.Node.Error ( HasNodeError, nodeError, NodeError(NoContextFound) )
 import Gargantext.Database.Schema.Context
 import Gargantext.Prelude hiding (sum, head)
 import Opaleye            hiding (FromField)

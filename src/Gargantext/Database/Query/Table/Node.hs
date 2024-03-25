@@ -14,7 +14,6 @@ Portability : POSIX
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE ViewPatterns           #-}
 
@@ -23,14 +22,19 @@ module Gargantext.Database.Query.Table.Node
 
 import Control.Arrow (returnA)
 import Control.Lens (set, view)
-import Data.Aeson
+import Data.Aeson ( encode, Value, ToJSON )
 import Database.PostgreSQL.Simple qualified as PGS
 import Database.PostgreSQL.Simple.SqlQQ (sql)
-import Gargantext.Core
+import Gargantext.Core ( HasDBid(toDBid) )
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
-import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Hyperdata.Default
+import Gargantext.Database.Admin.Types.Hyperdata.Any ( HyperdataAny )
+import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataAnnuaire, HyperdataCorpus )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, HyperdataDocumentV3 )
+import Gargantext.Database.Admin.Types.Hyperdata.List ( HyperdataList )
+import Gargantext.Database.Admin.Types.Hyperdata.Model ( HyperdataModel )
+import Gargantext.Database.Admin.Types.Hyperdata.Prelude ( Hyperdata )
+import Gargantext.Database.Admin.Types.Hyperdata.Default ( defaultHyperdata, DefaultHyperdata(..) )
 import Gargantext.Database.Prelude (DBCmd, JSONB, mkCmd, runPGSQuery, runOpaQuery)
 import Gargantext.Database.Query.Filter (limit', offset')
 import Gargantext.Database.Query.Table.Node.Error

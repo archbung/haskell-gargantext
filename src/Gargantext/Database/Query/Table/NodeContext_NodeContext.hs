@@ -10,7 +10,6 @@ Portability : POSIX
 
 {-# LANGUAGE Arrows                 #-}
 {-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
 
 module Gargantext.Database.Query.Table.NodeContext_NodeContext
   ( module Gargantext.Database.Schema.NodeContext_NodeContext
@@ -20,10 +19,10 @@ module Gargantext.Database.Query.Table.NodeContext_NodeContext
   where
 
 import Database.PostgreSQL.Simple qualified as PGS
-import Gargantext.Core.Types
+import Gargantext.Database.Admin.Types.Node ( ContactId, CorpusId, AnnuaireId, DocId )
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Schema.NodeContext_NodeContext
-import Gargantext.Database.Schema.Prelude hiding (sum)
+import Gargantext.Database.Schema.Prelude ( QualifiedIdentifier(QualifiedIdentifier), Values(Values), sql )
 import Gargantext.Prelude
 
 {-

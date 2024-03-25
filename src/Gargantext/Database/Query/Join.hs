@@ -15,10 +15,7 @@ Multiple Join functions with Opaleye.
 
 
 {-# LANGUAGE Arrows                    #-}
-{-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE TemplateHaskell           #-}
 
 ------------------------------------------------------------------------
 
@@ -36,11 +33,10 @@ module Gargantext.Database.Query.Join ( leftJoin2
   where
 
 import Control.Arrow ((>>>), returnA)
-import Data.Profunctor.Product.Default
-import Gargantext.Prelude
+import Data.Profunctor.Product.Default ( Default )
+import Gargantext.Prelude ( Applicative((<*>)), (<$>) )
 import Opaleye hiding (keepWhen)
 import Opaleye.Internal.Join (NullMaker(..))
-import qualified Opaleye.Internal.Unpackspec()
 
 
 keepWhen :: (a -> Field SqlBool) -> SelectArr a a

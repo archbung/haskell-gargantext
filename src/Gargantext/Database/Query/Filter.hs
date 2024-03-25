@@ -10,9 +10,6 @@ Portability : POSIX
 
 
 
-{-# LANGUAGE Arrows                 #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# OPTIONS_GHC -fno-warn-orphans   #-}
 
 module Gargantext.Database.Query.Filter

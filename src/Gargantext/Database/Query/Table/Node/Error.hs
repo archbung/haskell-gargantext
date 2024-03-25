@@ -27,9 +27,9 @@ module Gargantext.Database.Query.Table.Node.Error (
   ) where
 
 import Control.Lens (Prism', (#), (^?))
-import Data.Aeson
+import Data.Aeson ( object, ToJSON(toJSON) )
 import Data.Text qualified as T
-import Gargantext.Core.Types.Individu
+import Gargantext.Core.Types.Individu ( renderUser, User, Username )
 import Gargantext.Database.Admin.Types.Node (ListId, NodeId(..), ContextId, UserId, ParentId)
 import Gargantext.Prelude hiding (sum, head)
 import Prelude hiding (null, id, map, sum, show)

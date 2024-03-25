@@ -23,11 +23,6 @@ Next Step benchmark:
 
 {-# OPTIONS_GHC -fno-warn-orphans   #-}
 
-{-# LANGUAGE Arrows                 #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
-
 module Gargantext.Database.Query.Table.Node_NodeNgramsNodeNgrams
   where
 

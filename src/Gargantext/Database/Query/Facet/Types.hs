@@ -5,18 +5,18 @@ module Gargantext.Database.Query.Facet.Types where
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.TH (deriveJSON)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
-import Data.Swagger
-import qualified Data.Text as T
+import Data.Swagger ( ToParamSchema, ToSchema(..), genericDeclareNamedSchema )
+import Data.Text qualified as T
 import Data.Time (UTCTime)
 import Data.Time.Segment (jour)
-import Gargantext.Core.Types
+import Gargantext.Database.Admin.Types.Node ( NodeId )
 import Gargantext.Core.Utils.Prefix (unPrefix, unPrefixSwagger, wellNamedSchema)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument, arbitraryHyperdataDocuments)
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument, arbitraryHyperdataDocuments )
 import Opaleye
 import Protolude hiding (null, map, sum, not)
 import Servant.API (FromHttpApiData(..), ToHttpApiData(..))
 import Test.QuickCheck (elements)
-import Test.QuickCheck.Arbitrary
+import Test.QuickCheck.Arbitrary ( Arbitrary(arbitrary) )
 
 -- | DocFacet
 

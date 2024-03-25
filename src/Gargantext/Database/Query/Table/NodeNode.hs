@@ -16,7 +16,6 @@ commentary with @some markup@.
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell        #-}
 
 module Gargantext.Database.Query.Table.NodeNode
   ( module Gargantext.Database.Schema.NodeNode

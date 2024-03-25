@@ -64,7 +64,6 @@ import Data.Set qualified as Set
 import Data.Text qualified as T
 import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Ngrams.Tools (getTermsWith)
-import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms), Ngrams(_ngramsTerms))
 import Gargantext.Core (Lang(..), NLPServerConfig, withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
@@ -74,6 +73,7 @@ import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat, FileType)
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem (GroupParams(..))
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
+import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms), Ngrams(_ngramsTerms))
 import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types (HasValidationError, TermsCount)

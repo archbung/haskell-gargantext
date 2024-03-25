@@ -9,18 +9,15 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE QuasiQuotes       #-}
-
 module Gargantext.Database.Query.Table.Node.Update (Update(..), update)
   where
 
-import qualified Data.Text as DT
-import Database.PostgreSQL.Simple
-
-import Gargantext.Prelude
+import Data.Text qualified as DT
+import Database.PostgreSQL.Simple ( Only(Only) )
 import Gargantext.Core.Types (Name)
-import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Admin.Types.Node (NodeId, ParentId)
+import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
+import Gargantext.Prelude
 
 -- import Data.ByteString
 --rename :: NodeId -> Text -> IO ByteString

@@ -10,23 +10,22 @@ Portability : POSIX
 
 
 {-# OPTIONS_GHC -fno-warn-orphans        #-}
-
 {-# LANGUAGE Arrows                      #-}
 
 module Gargantext.Database.Query.Table.Node.Children
   where
 
 import Control.Arrow (returnA)
-import Data.Proxy
-import Gargantext.Core
+import Gargantext.Core ( HasDBid(toDBid) )
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataDocument, HyperdataContact)
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument )
 import Gargantext.Database.Prelude (DBCmd, JSONB, runCountOpaQuery, runOpaQuery)
-import Gargantext.Database.Query.Filter
-import Gargantext.Database.Query.Table.NodeContext
+import Gargantext.Database.Query.Filter ( limit', offset' )
+import Gargantext.Database.Query.Table.NodeContext ( NodeContextPoly(NodeContext), queryNodeContextTable )
 import Gargantext.Database.Schema.Context
-import Gargantext.Database.Schema.Node
+import Gargantext.Database.Schema.Node ( NodeRead, NodePoly(Node, _node_id), queryNodeTable )
 import Gargantext.Prelude
 import Opaleye
 

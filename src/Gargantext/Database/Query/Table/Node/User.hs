@@ -12,13 +12,13 @@ Portability : POSIX
 module Gargantext.Database.Query.Table.Node.User
   where
 
-import Gargantext.Core
+import Gargantext.Core ( HasDBid )
 import Gargantext.Core.Types (Name)
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), defaultHyperdataUser)
+import Gargantext.Database.Admin.Types.Hyperdata.User ( HyperdataUser(..), defaultHyperdataUser )
 import Gargantext.Database.Admin.Types.Node (Node, NodeId(..), UserId, NodeType(..), pgNodeId)
 import Gargantext.Database.Prelude (DBCmd, runOpaQuery)
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Schema.Node -- (Node(..))
+import Gargantext.Database.Query.Table.Node ( node, selectNode )
+import Gargantext.Database.Schema.Node ( NodeWrite ) -- (Node(..))
 import Gargantext.Prelude
 import Opaleye (limit)
 

@@ -11,10 +11,6 @@ Portability : POSIX
 
 {-#  OPTIONS_GHC -fno-warn-orphans  #-}
 
-{-# LANGUAGE Arrows                 #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TemplateHaskell        #-}
-
 module Gargantext.Database.Query.Table.NodeNodeNgrams
   ( module Gargantext.Database.Schema.NodeNodeNgrams
   , queryNodeNodeNgramsTable
