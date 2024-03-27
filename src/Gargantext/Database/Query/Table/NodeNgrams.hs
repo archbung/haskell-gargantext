@@ -30,9 +30,9 @@ import Data.List.Extra (nubOrd)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Database.PostgreSQL.Simple qualified as PGS (Query, Only(..))
-import Gargantext.Core
+import Gargantext.Core ( HasDBid(toDBid) )
 import Gargantext.Core.Text.Ngrams (NgramsType)
-import Gargantext.Core.Types
+import Gargantext.Database.Admin.Types.Node ( ListId )
 import Gargantext.Database.Prelude (DBCmd, runPGSQuery)
 import Gargantext.Database.Schema.Ngrams (fromNgramsTypeId)
 import Gargantext.Database.Schema.NodeNgrams

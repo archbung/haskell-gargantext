@@ -30,7 +30,7 @@ import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core.Text.Ngrams (Ngrams, NgramsType)
-import Gargantext.Core.Types
+import Gargantext.Database.Admin.Types.Node ( pgNodeId, CorpusId, ListId, DocId )
 import Gargantext.Database.Prelude (runOpaQuery, formatPGSQuery, runPGSQuery, DBCmd)
 import Gargantext.Database.Query.Join (leftJoin3)
 import Gargantext.Database.Query.Table.ContextNodeNgrams2
@@ -38,7 +38,7 @@ import Gargantext.Database.Query.Table.NodeNgrams (queryNodeNgramsTable)
 import Gargantext.Database.Schema.Ngrams
 import Gargantext.Database.Schema.NodeNgrams
 import Gargantext.Database.Schema.Prelude
-import Gargantext.Database.Types
+import Gargantext.Database.Types ( Indexed(Indexed) )
 import Gargantext.Prelude
 
 queryNgramsTable :: Select NgramsRead

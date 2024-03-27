@@ -24,7 +24,7 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.List qualified as List
 import Database.PostgreSQL.Simple qualified as PGS
 import Gargantext.Core
-import Gargantext.Core.Text.Ngrams (Ngrams, ngramsSize, ngramsTerms)
+import Gargantext.Core.Text.Ngrams (Ngrams(..), ngramsSize, ngramsTerms)
 import Gargantext.Core.Types ( POS )
 import Gargantext.Database.Prelude (runPGSQuery, runPGSQuery_, DBCmd)
 import Gargantext.Database.Query.Table.Ngrams ( NgramsId, insertNgrams )
@@ -154,14 +154,40 @@ SELECT terms,id FROM ins_form_ret
 -- TODO add lang and postag algo
 -- TODO remove when form == lem in insert
 selectLems :: Lang -> NLPServerConfig -> [Ngrams] -> DBCmd err [(Form, Lem)]
-selectLems l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems (PGS.Only $ Values fields datas)
+selectLems l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems (PGS.In (map _ngramsTerms ns), toDBid l, toDBid server)
+----------------------
+querySelectLems :: PGS.Query
+querySelectLems = [sql|
+  WITH
+     trms
+       AS (SELECT id, terms, n
+            FROM ngrams
+            WHERE terms IN ?)
+   , input_rows(lang_id, algo_id, terms,n)
+    AS (SELECT ? as lang_id, ? as algo_id, terms, n, id
+         FROM trms)
+    , lems AS ( select ir.terms as t1, n2.terms as t2, sum(np.score) as score from input_rows ir
+    JOIN ngrams_postag np ON np.ngrams_id = ir.id
+    JOIN ngrams        n2 ON n2.id    = np.lemm_id
+    WHERE np.lang_id = ir.lang_id
+      AND np.algo_id = ir.algo_id
+    GROUP BY ir.terms, n2.terms
+    ORDER BY score DESC
+  )
+
+  SELECT t1,t2 from lems
+  |]
+
+-- | This is the same as 'selectLems', but slower.
+selectLems' :: Lang -> NLPServerConfig -> [Ngrams] -> DBCmd err [(Form, Lem)]
+selectLems' l (NLPServerConfig { server }) ns = runPGSQuery querySelectLems' (PGS.Only $ Values fields datas)
   where
     fields = map (QualifiedIdentifier Nothing) ["int4","int4","text", "int4"]
     datas  = map (\d -> [toField $ toDBid l, toField $ toDBid server] <> toRow d) ns
 
-----------------------
-querySelectLems :: PGS.Query
-querySelectLems = [sql|
+    
+querySelectLems' :: PGS.Query
+querySelectLems' = [sql|
   WITH input_rows(lang_id, algo_id, terms,n)
     AS (?) -- ((VALUES ('automata' :: "text")))
     , lems AS ( select n1.terms as t1 ,n2.terms as t2 ,sum(np.score) as score from input_rows ir

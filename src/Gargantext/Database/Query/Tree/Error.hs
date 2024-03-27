@@ -9,17 +9,15 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE QuasiQuotes       #-}
-
 module Gargantext.Database.Query.Tree.Error
   where
 
 import Control.Lens (Prism', (#))
-import Gargantext.Core.Types
+import Data.List.NonEmpty qualified as NE
+import Data.Text qualified as T
+import Gargantext.Database.Admin.Types.Node ( NodeId )
 import Gargantext.Prelude
 import Prelude qualified
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Text as T
 
 ------------------------------------------------------------------------
 data TreeError = NoRoot

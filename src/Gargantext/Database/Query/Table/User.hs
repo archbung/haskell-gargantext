@@ -15,9 +15,6 @@ Functions to deal with users, database side.
 {-# OPTIONS_GHC -fno-warn-orphans        #-}
 
 {-# LANGUAGE Arrows                      #-}
-{-# LANGUAGE FunctionalDependencies      #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Gargantext.Database.Query.Table.User
@@ -53,16 +50,14 @@ module Gargantext.Database.Query.Table.User
 import Control.Arrow (returnA)
 import Control.Lens ((^.), (?~))
 import Data.List.NonEmpty qualified as NE
-import Data.Proxy
 import Data.Time (UTCTime)
 import Data.UUID qualified as UUID
 import Gargantext.Core (HasDBid, toDBid)
 import Gargantext.Core.Types.Individu
 import Gargantext.Database.Admin.Config ()
-import Gargantext.Database.Admin.Types.Hyperdata (HyperdataUser(..), hu_pubmed_api_key, hu_epo_api_user, hu_epo_api_token)
-import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), pgNodeId)
-import Gargantext.Database.Admin.Types.Node (UserId(..))
-import Gargantext.Database.Prelude
+import Gargantext.Database.Admin.Types.Hyperdata.User ( HyperdataUser(..), hu_pubmed_api_key, hu_epo_api_user, hu_epo_api_token )
+import Gargantext.Database.Admin.Types.Node (NodeType(NodeUser), Node, NodeId(..), UserId(..), pgNodeId)
+import Gargantext.Database.Prelude ( DBCmd, runOpaQuery, mkCmd )
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateNodeWithType)
 import Gargantext.Database.Schema.Node (NodeRead, node_hyperdata, queryNodeTable, node_id, node_user_id, node_typename)

@@ -13,7 +13,7 @@ module Gargantext.Database.Query.Table.Node.Contact
   where
 
 import Gargantext.Database.Admin.Types.Node ( Node)
-import Gargantext.Database.Admin.Types.Hyperdata.Contact
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact )
 
 ------------------------------------------------------------------------
 

@@ -56,6 +56,7 @@ import Gargantext.Database.GargDB qualified as GargDB
 import Gargantext.Database.Prelude (hasConfig)
 import Gargantext.Database.Query.Table.Node (getNodeWith, getOrMkList)
 import Gargantext.Database.Query.Table.Node.UpdateOpaleye (updateHyperdata)
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(MkCorpusUserNormalCorpusIds))
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (gc_max_docs_parsers)
@@ -335,8 +336,7 @@ addToCorpusWithForm user cid nwf jobHandle = do
       -- TODO granularity of the logStatus
       -- printDebug "flowCorpus with (corpus_id, lang)" (cid, l)
 
-      _cid' <- flowCorpus user
-                          (Right [cid])
+      _cid' <- flowCorpus (MkCorpusUserNormalCorpusIds user [cid])
                           (Multi l)
                           (Just (nwf ^. wf_selection))
                           --(Just $ fromIntegral $ length docs, docsC')

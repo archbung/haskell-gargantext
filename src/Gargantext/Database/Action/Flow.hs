@@ -41,7 +41,7 @@ module Gargantext.Database.Action.Flow -- (flowDatabase, ngrams2list)
   , reIndexWith
 
   , getOrMkRoot
-  , getOrMk_RootWithCorpus
+  , getOrMkRootWithCorpus
   , TermType(..)
   , DataOrigin(..)
   , allDataOrigins
@@ -64,7 +64,6 @@ import Data.Set qualified as Set
 import Data.Text qualified as T
 import EPO.API.Client.Types qualified as EPO
 import Gargantext.API.Ngrams.Tools (getTermsWith)
-import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms), Ngrams(_ngramsTerms))
 import Gargantext.Core (Lang(..), NLPServerConfig, withDefaultLanguage)
 import Gargantext.Core.Ext.IMTUser (readFile_Annuaire)
 import Gargantext.Core.NLP (HasNLPServer, nlpServerGet)
@@ -74,11 +73,12 @@ import Gargantext.Core.Text.Corpus.Parsers (parseFile, FileFormat, FileType)
 import Gargantext.Core.Text.List (buildNgramsLists)
 import Gargantext.Core.Text.List.Group.WithStem (GroupParams(..))
 import Gargantext.Core.Text.List.Social (FlowSocialListWith(..))
+import Gargantext.Core.Text.Ngrams (NgramsType(NgramsTerms), Ngrams(_ngramsTerms))
 import Gargantext.Core.Text.Terms
 import Gargantext.Core.Text.Terms.Mono.Stem (stem, StemmingAlgorithm(..))
 import Gargantext.Core.Types (HasValidationError, TermsCount)
 import Gargantext.Core.Types.Individu (User(..))
-import Gargantext.Core.Types.Main ( CorpusName, ListType(MapTerm) )
+import Gargantext.Core.Types.Main ( ListType(MapTerm) )
 import Gargantext.Core.Types.Query (Limit)
 import Gargantext.Database.Action.Flow.Extract ()  -- ExtractNgramsT instances
 import Gargantext.Database.Action.Flow.List ( flowList_DbRepo, toNodeNgramsW' )
@@ -86,7 +86,6 @@ import Gargantext.Database.Action.Flow.Types ( do_api, DataOrigin(..), DataText(
 import Gargantext.Database.Action.Flow.Utils (docNgrams, documentIdWithNgrams, insertDocNgrams, insertDocs, mapNodeIdNgrams)
 import Gargantext.Database.Action.Metrics (updateNgramsOccurrences, updateContextScore)
 import Gargantext.Database.Action.Search (searchDocInDatabase)
-import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
 import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact )
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataAnnuaire, HyperdataCorpus(_hc_lang) )
 import Gargantext.Database.Admin.Types.Hyperdata.Document ( ToHyperdataDocument(toHyperdataDocument) )
@@ -99,7 +98,7 @@ import Gargantext.Database.Query.Table.Node.Document.Insert ( ToNode(toNode) ) -
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError(..))
 import Gargantext.Database.Query.Table.NodeContext (selectDocNodes)
 import Gargantext.Database.Query.Table.NodeNgrams (listInsertDb , getCgramsId)
-import Gargantext.Database.Query.Tree.Root (getOrMkRoot, getOrMk_RootWithCorpus)
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(..), getOrMkRoot, getOrMkRootWithCorpus, userFromMkCorpusUser)
 import Gargantext.Database.Schema.Ngrams ( indexNgrams, text2ngrams )
 import Gargantext.Database.Schema.Node (node_hyperdata)
 import Gargantext.Prelude hiding (to)
@@ -140,10 +139,7 @@ getDataText (ExternalOrigin api) la q mPubmedAPIKey mAuthKey li = do
   eRes <- liftBase $ API.get api (_tt_lang la) q mPubmedAPIKey mAuthKey (_gc_epo_api_url cfg) li
   pure $ DataNew <$> eRes
 getDataText (InternalOrigin _) la q _ _ _li = do
-  (_masterUserId, _masterRootId, cId) <- getOrMk_RootWithCorpus
-                                           (UserName userMaster)
-                                           (Left "")
-                                           (Nothing :: Maybe HyperdataCorpus)
+  (_masterUserId, _masterRootId, cId) <- getOrMkRootWithCorpus MkCorpusUserMaster (Nothing :: Maybe HyperdataCorpus)
   ids <-  map fst <$> searchDocInDatabase cId (stem (_tt_lang la) GargPorterAlgorithm $ API.getRawQuery q)
   pure $ Right $ DataOld ids
 
@@ -179,7 +175,7 @@ flowDataText :: forall env err m.
                 -> m CorpusId
 flowDataText u (DataOld ids) tt cid mfslw _ = do
   $(logLocM) DEBUG $ T.pack $ "Found " <> show (length ids) <> " old node IDs"
-  (_userId, userCorpusId, listId) <- createNodes u (Right [cid]) corpusType
+  (_userId, userCorpusId, listId) <- createNodes (MkCorpusUserNormalCorpusIds u [cid]) corpusType
   _ <- Doc.add userCorpusId (map nodeId2ContextId ids)
   flowCorpusUser (_tt_lang tt) u userCorpusId listId corpusType mfslw
   where
@@ -187,7 +183,7 @@ flowDataText u (DataOld ids) tt cid mfslw _ = do
 flowDataText u (DataNew (mLen, txtC)) tt cid mfslw jobHandle = do
   $(logLocM) DEBUG $ T.pack $ "Found " <> show mLen <> " new documents to process"
   for_ (mLen <&> fromInteger) (`addMoreSteps` jobHandle)
-  flowCorpus u (Right [cid]) tt mfslw (fromMaybe 0 mLen, transPipe liftBase txtC) jobHandle
+  flowCorpus (MkCorpusUserNormalCorpusIds u [cid]) tt mfslw (fromMaybe 0 mLen, transPipe liftBase txtC) jobHandle
 
 ------------------------------------------------------------------------
 -- TODO use proxy
@@ -198,16 +194,15 @@ flowAnnuaire :: ( DbCmd' env err m
                 , HasTreeError err
                 , HasValidationError err
                 , MonadJobStatus m )
-             => User
-             -> Either CorpusName [CorpusId]
+             => MkCorpusUser
              -> TermType Lang
              -> FilePath
              -> JobHandle m
              -> m AnnuaireId
-flowAnnuaire u n l filePath jobHandle = do
+flowAnnuaire mkCorpusUser l filePath jobHandle = do
   -- TODO Conduit for file
-  docs <- liftBase $ (readFile_Annuaire filePath :: IO [HyperdataContact])
-  flow (Nothing :: Maybe HyperdataAnnuaire) u n l Nothing (fromIntegral $ length docs, yieldMany docs) jobHandle
+  docs <- liftBase (readFile_Annuaire filePath :: IO [HyperdataContact])
+  flow (Nothing :: Maybe HyperdataAnnuaire) mkCorpusUser l Nothing (fromIntegral $ length docs, yieldMany docs) jobHandle
 
 ------------------------------------------------------------------------
 flowCorpusFile :: ( DbCmd' env err m
@@ -217,8 +212,7 @@ flowCorpusFile :: ( DbCmd' env err m
                   , HasTreeError err
                   , HasValidationError err
                   , MonadJobStatus m )
-           => User
-           -> Either CorpusName [CorpusId]
+           => MkCorpusUser
            -> Limit -- Limit the number of docs (for dev purpose)
            -> TermType Lang
            -> FileType
@@ -227,11 +221,11 @@ flowCorpusFile :: ( DbCmd' env err m
            -> Maybe FlowSocialListWith
            -> JobHandle m
            -> m CorpusId
-flowCorpusFile u n _l la ft ff fp mfslw jobHandle = do
+flowCorpusFile mkCorpusUser _l la ft ff fp mfslw jobHandle = do
   eParsed <- liftBase $ parseFile ft ff fp
   case eParsed of
     Right parsed -> do
-      flowCorpus u n la mfslw (fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
+      flowCorpus mkCorpusUser la mfslw (fromIntegral $ length parsed, yieldMany parsed .| mapC toHyperdataDocument) jobHandle
       --let docs = splitEvery 500 $ take l parsed
       --flowCorpus u n la mfslw (yieldMany $ map (map toHyperdataDocument) docs) logStatus
     Left e       -> panicTrace $ "Error: " <> e
@@ -247,8 +241,7 @@ flowCorpus :: ( DbCmd' env err m
               , HasValidationError err
               , FlowCorpus a
               , MonadJobStatus m )
-           => User
-           -> Either CorpusName [CorpusId]
+           => MkCorpusUser
            -> TermType Lang
            -> Maybe FlowSocialListWith
            -> (Integer, ConduitT () a m ())
@@ -269,15 +262,14 @@ flow :: forall env err m a c.
         , MonadJobStatus m
         )
         => Maybe c
-        -> User
-        -> Either CorpusName [CorpusId]
+        -> MkCorpusUser
         -> TermType Lang
         -> Maybe FlowSocialListWith
         -> (Integer, ConduitT () a m ())
         -> JobHandle m
         -> m CorpusId
-flow c u cn la mfslw (count, docsC) jobHandle = do
-  (_userId, userCorpusId, listId) <- createNodes u cn c
+flow c mkCorpusUser la mfslw (count, docsC) jobHandle = do
+  (_userId, userCorpusId, listId) <- createNodes mkCorpusUser c
   -- TODO if public insertMasterDocs else insertUserDocs
   nlpServer <- view $ nlpServerGet (_tt_lang la)
   runConduit $ zipSources (yieldMany ([1..] :: [Int])) docsC
@@ -285,6 +277,8 @@ flow c u cn la mfslw (count, docsC) jobHandle = do
     .| mapM_C (addDocumentsWithProgress nlpServer userCorpusId)
     .| sinkNull
 
+  let u = userFromMkCorpusUser mkCorpusUser
+    
   $(logLocM) DEBUG "Calling flowCorpusUser"
   flowCorpusUser (la ^. tt_lang) u userCorpusId listId c mfslw
 
@@ -318,13 +312,12 @@ addDocumentsToHyperCorpus ncs mb_hyper la corpusId docs = do
 createNodes :: ( DbCmd' env err m, HasNodeError err
                , MkCorpus c
                )
-            => User
-            -> Either CorpusName [CorpusId]
+            => MkCorpusUser
             -> Maybe c
             -> m (UserId, CorpusId, ListId)
-createNodes user corpusName ctype = do
+createNodes mkCorpusUser ctype = do
   -- User Flow
-  (userId, _rootId, userCorpusId) <- getOrMk_RootWithCorpus user corpusName ctype
+  (userId, _rootId, userCorpusId) <- getOrMkRootWithCorpus mkCorpusUser ctype
   -- NodeTexts is first
   _tId <- insertDefaultNodeIfNotExists NodeTexts userCorpusId userId
   -- printDebug "NodeTexts: " tId
@@ -386,7 +379,7 @@ buildSocialList _l _user _userCorpusId _listId _ctype (Just (NoList _)) = pure (
 buildSocialList l user userCorpusId listId ctype mfslw = do
   -- User List Flow
   (masterUserId, _masterRootId, masterCorpusId)
-    <- getOrMk_RootWithCorpus (UserName userMaster) (Left "") ctype
+    <- getOrMkRootWithCorpus MkCorpusUserMaster ctype
 
   nlpServer <- view (nlpServerGet l)
   --let gp = (GroupParams l 2 3 (StopSize 3))
@@ -416,7 +409,7 @@ insertMasterDocs :: ( DbCmd' env err m
                  -> [a]
                  -> m [DocId]
 insertMasterDocs ncs c lang hs  =  do
-  (masterUserId, _, masterCorpusId) <- getOrMk_RootWithCorpus (UserName userMaster) (Left corpusMasterName) c
+  (masterUserId, _, masterCorpusId) <- getOrMkRootWithCorpus MkCorpusUserMaster c
   (ids', documentsWithId) <- insertDocs masterUserId masterCorpusId (map (toNode masterUserId Nothing) hs )
   _ <- Doc.add masterCorpusId ids'
   -- TODO

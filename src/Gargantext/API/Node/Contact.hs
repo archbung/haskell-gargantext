@@ -22,11 +22,7 @@ module Gargantext.API.Node.Contact
 
 import Conduit ( yield )
 import Data.Aeson
-import Data.Either (Either(Right))
-import Data.Maybe (Maybe(..))
 import Data.Swagger ( ToSchema )
-import Data.Text (Text)
-import GHC.Generics (Generic)
 import Gargantext.API.Admin.Auth.Types ( AuthenticatedUser(AuthenticatedUser) )
 import Gargantext.API.Admin.EnvTypes (Env, GargJob(..))
 import Gargantext.API.Admin.Orchestrator.Types (JobLog(..), AsyncJobs)
@@ -42,12 +38,13 @@ import Gargantext.Database.Action.Flow.Types (FlowCmdM)
 import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact, hyperdataContact )
 import Gargantext.Database.Admin.Types.Hyperdata.Corpus ( HyperdataAnnuaire(..) )
 import Gargantext.Database.Admin.Types.Node ( CorpusId, NodeId )
-import Gargantext.Prelude (($), {-printDebug,-})
+import Gargantext.Prelude (($), Generic, Maybe(..), Text)
 import Gargantext.Utils.Aeson qualified as GUA
 import Gargantext.Utils.Jobs (serveJobsAPI, MonadJobStatus(..))
 import Servant
 import Test.QuickCheck (elements)
 import Test.QuickCheck.Arbitrary ( Arbitrary(arbitrary) )
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(MkCorpusUserNormalCorpusIds))
 
 ------------------------------------------------------------------------
 type API = "contact" :> Summary "Contact endpoint"
@@ -85,7 +82,7 @@ addContact :: (HasSettings env, FlowCmdM env err m, MonadJobStatus m)
 addContact u nId (AddContactParams fn ln) jobHandle = do
 
   markStarted 2 jobHandle
-  _ <- flow (Nothing :: Maybe HyperdataAnnuaire) u (Right [nId]) (Multi EN) Nothing (1, yield $ hyperdataContact fn ln) jobHandle
+  _ <- flow (Nothing :: Maybe HyperdataAnnuaire) (MkCorpusUserNormalCorpusIds u [nId]) (Multi EN) Nothing (1, yield $ hyperdataContact fn ln) jobHandle
 
   markComplete jobHandle
 addContact _uId _nId _p jobHandle = do

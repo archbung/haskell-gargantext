@@ -20,11 +20,11 @@ module Gargantext.Database.Query.Table.Node.Document.Add
   where
 
 import Database.PostgreSQL.Simple (Query, Only(..))
-import Database.PostgreSQL.Simple.SqlQQ
+import Database.PostgreSQL.Simple.SqlQQ ( sql )
 import Database.PostgreSQL.Simple.ToField (toField)
 import Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Database.Admin.Types.Node ( CorpusId, ContextId, NodeId, ParentId )
 import Gargantext.Database.Prelude (runPGSQuery, formatPGSQuery, DBCmd)
 import Gargantext.Prelude
 

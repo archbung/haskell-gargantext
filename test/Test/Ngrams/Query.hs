@@ -36,7 +36,7 @@ mockFlatCorpus = Versioned 0 $ Map.fromList [
 
 mockQueryFn :: Maybe T.Text -> NgramsTerm -> Bool
 mockQueryFn searchQuery (NgramsTerm nt) =
-  maybe (const True) T.isInfixOf (T.toLower <$> searchQuery) (T.toLower nt)
+  maybe (const True) (T.isInfixOf . T.toLower) searchQuery (T.toLower nt)
 
 unitTests :: TestTree
 unitTests = testGroup "Query tests"

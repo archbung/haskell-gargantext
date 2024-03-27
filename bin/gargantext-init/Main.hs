@@ -15,21 +15,21 @@ Import a corpus binary.
 
 module Main where
 
+import Data.List.NonEmpty qualified as NE
 import Gargantext.API.Dev (withDevEnv, runCmdDev)
 import Gargantext.API.Errors.Types
 import Gargantext.API.Node () -- instances only
 import Gargantext.Core.Types.Individu (User(..), arbitraryNewUsers, NewUser(..), arbitraryUsername, GargPassword(..))
-import Gargantext.Database.Action.Flow (getOrMkRoot, getOrMk_RootWithCorpus)
-import Gargantext.Database.Admin.Config (userMaster, corpusMasterName)
+import Gargantext.Database.Action.Flow (getOrMkRoot, getOrMkRootWithCorpus)
 import Gargantext.Database.Admin.Trigger.Init (initFirstTriggers, initLastTriggers)
 import Gargantext.Database.Admin.Types.Hyperdata (HyperdataCorpus)
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (Cmd, DBCmd)
 import Gargantext.Database.Query.Table.Node (getOrMkList)
 import Gargantext.Database.Query.Table.User (insertNewUsers, )
+import Gargantext.Database.Query.Tree.Root (MkCorpusUser(MkCorpusUserMaster))
 import Gargantext.Prelude
 import Gargantext.Prelude.Config (GargConfig(..), readConfig)
-import qualified Data.List.NonEmpty as NE
 
 
 main :: IO ()
@@ -63,8 +63,7 @@ main = do
     initMaster :: Cmd BackendInternalError (UserId, RootId, CorpusId, ListId)
     initMaster = do
       (masterUserId, masterRootId, masterCorpusId)
-                  <- getOrMk_RootWithCorpus (UserName userMaster)
-                                            (Left corpusMasterName)
+                  <- getOrMkRootWithCorpus MkCorpusUserMaster
                                             (Nothing :: Maybe HyperdataCorpus)
       masterListId <- getOrMkList masterCorpusId masterUserId
       _triggers    <- initLastTriggers masterListId

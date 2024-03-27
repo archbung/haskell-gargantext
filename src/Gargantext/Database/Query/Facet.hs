@@ -41,15 +41,15 @@ module Gargantext.Database.Query.Facet
 import Control.Arrow (returnA)
 import Control.Lens ((^.))
 import Data.Text qualified as T
-import Gargantext.Core
+import Gargantext.Core ( HasDBid(toDBid) )
 import Gargantext.Core.Types
 import Gargantext.Core.Types.Query (Limit, Offset, IsTrash)
 import Gargantext.Database.Prelude (DBCmd, runCountOpaQuery, runOpaQuery)
 import Gargantext.Database.Query.Facet.Types
-import Gargantext.Database.Query.Filter
-import Gargantext.Database.Query.Table.Context
+import Gargantext.Database.Query.Filter ( limit', offset' )
+import Gargantext.Database.Query.Table.Context ( queryContextSearchTable )
 import Gargantext.Database.Query.Table.ContextNodeNgrams
-import Gargantext.Database.Query.Table.Ngrams
+import Gargantext.Database.Query.Table.Ngrams ( NgramsRead, NgramsPoly(_ngrams_id), queryNgramsTable, ngrams_id )
 import Gargantext.Database.Query.Table.Node (defaultList)
 import Gargantext.Database.Query.Table.Node.Error (HasNodeError)
 import Gargantext.Database.Query.Table.NodeContext (queryNodeContextTable)
@@ -58,7 +58,6 @@ import Gargantext.Database.Schema.Node
 import Gargantext.Database.Schema.NodeContext
 import Opaleye
 import Opaleye.Aggregate qualified as OAgg
-import Opaleye.Internal.Unpackspec ()
 import Protolude hiding (null, map, sum, not)
 
 ------------------------------------------------------------------------

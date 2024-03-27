@@ -66,7 +66,8 @@ import Database.PostgreSQL.Simple.SqlQQ ( sql )
 import Database.PostgreSQL.Simple.ToField (toField, Action{-, ToField-})
 import Database.PostgreSQL.Simple.Types (Values(..), QualifiedIdentifier(..))
 import Gargantext.Core (HasDBid(toDBid))
-import Gargantext.Database.Admin.Types.Hyperdata
+import Gargantext.Database.Admin.Types.Hyperdata.Contact ( HyperdataContact )
+import Gargantext.Database.Admin.Types.Hyperdata.Document ( HyperdataDocument(..) )
 import Gargantext.Database.Admin.Types.Node
 import Gargantext.Database.Prelude (runPGSQuery, DBCmd{-, formatPGSQuery-})
 import Gargantext.Database.Schema.Node (NodePoly(..))

@@ -9,19 +9,16 @@ Portability : POSIX
 
 -}
 
-{-# LANGUAGE QuasiQuotes       #-}
-
-
 module Gargantext.Database.Query.Table.Node.UpdateOpaleye
   where
 
 import Data.Aeson (encode)
-import Gargantext.Core
-import Gargantext.Database.Admin.Types.Hyperdata
-import Gargantext.Database.Admin.Types.Node
+import Gargantext.Core ( HasDBid )
+import Gargantext.Database.Admin.Types.Hyperdata.Prelude ( HyperdataC )
+import Gargantext.Database.Admin.Types.Node (NodeType, pgNodeId, NodeId)
 import Gargantext.Database.Prelude (mkCmd, DBCmd)
-import Gargantext.Database.Query.Table.Node
-import Gargantext.Database.Query.Table.Node.Error
+import Gargantext.Database.Query.Table.Node ( getNodeWithType, getNodesIdWithType, getNodesWithType )
+import Gargantext.Database.Query.Table.Node.Error ( HasNodeError )
 import Gargantext.Database.Schema.Node
 import Gargantext.Prelude
 import Opaleye
