@@ -1,3 +1,8 @@
+## Version 0.0.6.9.9.9.7.3 [RELEASE CANDIDATE 007]
+
+* [FRONT][FIX][[Forest] Tree node focus: find a way to focus on the current node in the forest layout layout (#556)](https://gitlab.iscpif.fr/gargantext/purescript-gargantext/issues/556)
+* [FRONT][DOC] Source code url
+
 ## Version 0.0.6.9.9.9.7.2.1 [RELEASE CANDIDATE 007]
 
 * [BACK][WIP][Singulars and plurals not grouped anymore (#169)](https://gitlab.iscpif.fr/gargantext/haskell-gargantext/issues/169)
