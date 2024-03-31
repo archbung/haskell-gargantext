@@ -65,7 +65,6 @@ common defaults
   build-depends:
     base >=4.7 && <5
 
-  optimization: 2
 common optimized
   ghc-options:
     -O2
@@ -817,7 +816,6 @@ executable gargantext-server
     , text ^>= 1.2.4.1
     , unordered-containers ^>= 0.2.16.0
     , vector ^>= 0.7.3
-  optimization: 2
 
 executable gargantext-upgrade
   import:
@@ -1060,7 +1058,6 @@ executable gargantext-phylo-profile
       Common
   hs-source-dirs:
       bin/gargantext-phylo-profile bin/gargantext-phylo/Phylo
-  default-extensions: GHC2021
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -O2 -Wmissing-signatures
   build-depends:
       base
@@ -1075,7 +1072,7 @@ executable gargantext-phylo-profile
     , split
     , vector
     , directory
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable garg-golden-file-diff
   import:

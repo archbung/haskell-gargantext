@@ -3,6 +3,7 @@
 index-state: 2023-12-10T10:34:46Z
 
 with-compiler: ghc-9.4.7
+optimization: 2
 
 packages:
     ./
